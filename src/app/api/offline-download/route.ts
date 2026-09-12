@@ -6,6 +6,7 @@ import * as fs from 'fs';
 import { NextRequest, NextResponse } from 'next/server';
 import * as path from 'path';
 
+import { logger } from '@/lib/logger';
 import { OfflineDownloader, OfflineDownloadTask } from '@/lib/offline-downloader';
 import { getAuthenticatedUser } from '@/lib/session';
 
@@ -45,7 +46,7 @@ function saveTasks(): void {
 
     fs.writeFileSync(TASKS_FILE, JSON.stringify(tasksArray, null, 2), 'utf-8');
   } catch (error) {
-    console.error('保存任务失败:', error);
+    logger.error('保存任务失败:', error);
   }
 }
 
@@ -54,16 +55,16 @@ function saveTasks(): void {
  */
 function loadTasks(): void {
   try {
-    console.log('尝试加载任务文件:', TASKS_FILE);
+    logger.debug('尝试加载任务文件:', TASKS_FILE);
 
     if (!fs.existsSync(TASKS_FILE)) {
-      console.log('任务文件不存在:', TASKS_FILE);
+      logger.debug('任务文件不存在:', TASKS_FILE);
       return;
     }
 
     const content = fs.readFileSync(TASKS_FILE, 'utf-8');
     const tasksArray = JSON.parse(content);
-    console.log(`从文件读取到 ${tasksArray.length} 个任务`);
+    logger.debug(`从文件读取到 ${tasksArray.length} 个任务`);
 
     for (const taskData of tasksArray) {
       const task: OfflineDownloadTask = {
@@ -81,9 +82,9 @@ function loadTasks(): void {
       tasks.set(task.id, task);
     }
 
-    console.log(`已加载 ${tasks.size} 个离线下载任务到内存`);
+    logger.debug(`已加载 ${tasks.size} 个离线下载任务到内存`);
   } catch (error) {
-    console.error('加载任务失败:', error);
+    logger.error('加载任务失败:', error);
   }
 }
 
@@ -253,7 +254,7 @@ export async function POST(request: NextRequest) {
         saveTasks(); // 持久化任务
       })
       .catch((error) => {
-        console.error('下载失败:', error);
+        logger.error('下载失败:', error);
         task.status = 'error';
         task.errorMessage = error.message;
         tasks.set(task.id, task);
@@ -275,7 +276,7 @@ export async function POST(request: NextRequest) {
       message: '任务已创建',
     });
   } catch (error) {
-    console.error('创建任务失败:', error);
+    logger.error('创建任务失败:', error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : '创建任务失败' },
       { status: 500 }
@@ -330,7 +331,7 @@ export async function DELETE(request: NextRequest) {
 
     return NextResponse.json({ message: '任务已删除' });
   } catch (error) {
-    console.error('删除任务失败:', error);
+    logger.error('删除任务失败:', error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : '删除任务失败' },
       { status: 500 }
@@ -392,7 +393,7 @@ export async function PUT(request: NextRequest) {
         saveTasks(); // 持久化任务
       })
       .catch((error) => {
-        console.error('重试下载失败:', error);
+        logger.error('重试下载失败:', error);
         task.status = 'error';
         task.errorMessage = error.message;
         tasks.set(task.id, task);
@@ -414,7 +415,7 @@ export async function PUT(request: NextRequest) {
       message: '任务已重新开始',
     });
   } catch (error) {
-    console.error('重试任务失败:', error);
+    logger.error('重试任务失败:', error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : '重试任务失败' },
       { status: 500 }

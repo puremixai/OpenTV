@@ -1,8 +1,9 @@
-import { ReactNode } from 'react';
 import { notFound } from 'next/navigation';
+import { ReactNode } from 'react';
+
+import { isTVModeEnabled } from '@/lib/tv-mode';
 
 import TVRemoteReceiver from '@/components/tv/TVRemoteReceiver';
-import { isTVModeEnabled } from '@/lib/tv-mode';
 
 export const metadata = {
   title: 'TV - MoonTV Plus',

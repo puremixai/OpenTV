@@ -11,6 +11,8 @@
  * 注意：此模块仅在服务端使用，通过 webpack 配置排除客户端打包
  */
 
+import { logger } from '@/lib/logger';
+
 import { D1PreparedStatement, D1Result,DatabaseAdapter } from './d1-adapter';
 
 /**
@@ -106,7 +108,7 @@ class TursoPreparedStatement implements D1PreparedStatement {
 
       return row as T;
     } catch (err) {
-      console.error('Turso first() error:', err);
+      logger.error('Turso first() error:', err);
       return null;
     }
   }
@@ -133,7 +135,7 @@ class TursoPreparedStatement implements D1PreparedStatement {
         results: result.rows as T[],
       };
     } catch (err: any) {
-      console.error('Turso run() error:', err);
+      logger.error('Turso run() error:', err);
       return {
         success: false,
         error: err.message,
@@ -156,7 +158,7 @@ class TursoPreparedStatement implements D1PreparedStatement {
         results: (result.rows || []) as T[],
       };
     } catch (err: any) {
-      console.error('Turso all() error:', err);
+      logger.error('Turso all() error:', err);
       return {
         success: false,
         error: err.message,

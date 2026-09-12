@@ -1,4 +1,5 @@
 import { clearExpiredDanmakuCache } from '@/lib/danmaku/cache';
+import { logger } from '@/lib/logger';
 import { initRecommendationCacheModule } from '@/lib/recommendations/cache';
 
 let startupCacheCleanupInitialized = false;
@@ -15,11 +16,11 @@ export function initStartupCacheCleanup(): void {
   clearExpiredDanmakuCache()
     .then((count) => {
       if (count > 0) {
-        console.log(`[弹幕缓存] 启动清理: 已删除 ${count} 个过期缓存`);
+        logger.debug(`[弹幕缓存] 启动清理: 已删除 ${count} 个过期缓存`);
       }
     })
     .catch((error) => {
-      console.error('[弹幕缓存] 清理失败:', error);
+      logger.error('[弹幕缓存] 清理失败:', error);
     });
 
   initRecommendationCacheModule();

@@ -1,5 +1,7 @@
 // 弹幕缓存工具（IndexedDB）
 
+import { logger } from '@/lib/logger';
+
 import type { DanmakuComment } from './types';
 
 // IndexedDB 数据库名称和版本
@@ -70,7 +72,7 @@ async function openDB(): Promise<IDBDatabase> {
       if (!db.objectStoreNames.contains(STORE_NAME)) {
         const objectStore = db.createObjectStore(STORE_NAME, { keyPath: 'cacheKey' });
         objectStore.createIndex('timestamp', 'timestamp', { unique: false });
-        console.log('IndexedDB 对象存储已创建:', STORE_NAME);
+        logger.debug('IndexedDB 对象存储已创建:', STORE_NAME);
       }
     };
   });
@@ -92,18 +94,18 @@ export async function saveDanmakuToCache(
 ): Promise<void> {
   // 验证参数
   if (!title || title.trim() === '') {
-    console.warn('弹幕缓存: title 为空，跳过保存');
+    logger.warn('弹幕缓存: title 为空，跳过保存');
     return;
   }
   if (episodeIndex === undefined || episodeIndex === null || episodeIndex < 0) {
-    console.warn('弹幕缓存: episodeIndex 无效，跳过保存');
+    logger.warn('弹幕缓存: episodeIndex 无效，跳过保存');
     return;
   }
 
   // 如果缓存时间设置为 0，不保存缓存
   const expireTime = getDanmakuCacheExpireTime();
   if (expireTime === 0) {
-    console.log('弹幕缓存已禁用，跳过保存');
+    logger.debug('弹幕缓存已禁用，跳过保存');
     return;
   }
 
@@ -129,18 +131,18 @@ export async function saveDanmakuToCache(
     };
 
     // 添加调试日志
-    console.log(`[弹幕缓存] 准备保存: cacheKey="${cacheKey}", title="${title}", episodeIndex=${episodeIndex}`);
+    logger.debug(`[弹幕缓存] 准备保存: cacheKey="${cacheKey}", title="${title}", episodeIndex=${episodeIndex}`);
 
     return new Promise((resolve, reject) => {
       const request = objectStore.put(cacheData);
 
       request.onsuccess = () => {
-        console.log(`弹幕已缓存: title=${title}, episodeIndex=${episodeIndex}, 数量=${comments.length}`);
+        logger.debug(`弹幕已缓存: title=${title}, episodeIndex=${episodeIndex}, 数量=${comments.length}`);
         resolve();
       };
 
       request.onerror = (event) => {
-        console.error('保存弹幕缓存失败，详细信息:', {
+        logger.error('保存弹幕缓存失败，详细信息:', {
           error: (event.target as IDBRequest).error,
           cacheKey,
           title,
@@ -154,7 +156,7 @@ export async function saveDanmakuToCache(
       };
     });
   } catch (error) {
-    console.error('保存弹幕缓存失败:', error);
+    logger.error('保存弹幕缓存失败:', error);
     throw error;
   }
 }
@@ -177,7 +179,7 @@ export async function getDanmakuFromCache(
   // 如果缓存时间设置为 0，不使用缓存
   const expireTime = getDanmakuCacheExpireTime();
   if (expireTime === 0) {
-    console.log('弹幕缓存已禁用，跳过读取');
+    logger.debug('弹幕缓存已禁用，跳过读取');
     return null;
   }
 
@@ -195,7 +197,7 @@ export async function getDanmakuFromCache(
         const result = request.result as DanmakuCacheData | undefined;
 
         if (!result) {
-          console.log(`弹幕缓存未找到: title=${title}, episodeIndex=${episodeIndex}`);
+          logger.debug(`弹幕缓存未找到: title=${title}, episodeIndex=${episodeIndex}`);
           resolve(null);
           return;
         }
@@ -207,7 +209,7 @@ export async function getDanmakuFromCache(
 
         if (age > expireTime) {
           const ageMinutes = Math.floor(age / 1000 / 60);
-          console.log(
+          logger.debug(
             `弹幕缓存已过期: title=${title}, episodeIndex=${episodeIndex}, 年龄=${ageMinutes}分钟`
           );
           resolve(null);
@@ -215,7 +217,7 @@ export async function getDanmakuFromCache(
         }
 
         const ageMinutes = Math.floor(age / 1000 / 60);
-        console.log(
+        logger.debug(
           `从缓存获取弹幕: title=${title}, episodeIndex=${episodeIndex}, 数量=${result.comments.length}, 年龄=${ageMinutes}分钟`
         );
         resolve({
@@ -240,7 +242,7 @@ export async function getDanmakuFromCache(
       };
     });
   } catch (error) {
-    console.error('获取弹幕缓存失败:', error);
+    logger.error('获取弹幕缓存失败:', error);
     return null;
   }
 }
@@ -258,7 +260,7 @@ export async function clearDanmakuCache(title: string, episodeIndex: number): Pr
       const request = objectStore.delete(cacheKey);
 
       request.onsuccess = () => {
-        console.log(`弹幕缓存已清除: title=${title}, episodeIndex=${episodeIndex}`);
+        logger.debug(`弹幕缓存已清除: title=${title}, episodeIndex=${episodeIndex}`);
         resolve();
       };
 
@@ -271,7 +273,7 @@ export async function clearDanmakuCache(title: string, episodeIndex: number): Pr
       };
     });
   } catch (error) {
-    console.error('清除弹幕缓存失败:', error);
+    logger.error('清除弹幕缓存失败:', error);
     throw error;
   }
 }
@@ -301,7 +303,7 @@ export async function clearDanmakuCacheByTitle(title: string): Promise<number> {
           cursor.continue();
         } else {
           if (deletedCount > 0) {
-            console.log(`已清除标题"${title}"的 ${deletedCount} 个弹幕缓存`);
+            logger.debug(`已清除标题"${title}"的 ${deletedCount} 个弹幕缓存`);
           }
           resolve(deletedCount);
         }
@@ -316,7 +318,7 @@ export async function clearDanmakuCacheByTitle(title: string): Promise<number> {
       };
     });
   } catch (error) {
-    console.error('清除弹幕缓存失败:', error);
+    logger.error('清除弹幕缓存失败:', error);
     return 0;
   }
 }
@@ -351,7 +353,7 @@ export async function clearExpiredDanmakuCache(): Promise<number> {
           cursor.continue();
         } else {
           if (deletedCount > 0) {
-            console.log(`已清除 ${deletedCount} 个过期弹幕缓存`);
+            logger.debug(`已清除 ${deletedCount} 个过期弹幕缓存`);
           }
           resolve(deletedCount);
         }
@@ -366,7 +368,7 @@ export async function clearExpiredDanmakuCache(): Promise<number> {
       };
     });
   } catch (error) {
-    console.error('清除过期弹幕缓存失败:', error);
+    logger.error('清除过期弹幕缓存失败:', error);
     return 0;
   }
 }
@@ -382,7 +384,7 @@ export async function clearAllDanmakuCache(): Promise<void> {
       const request = objectStore.clear();
 
       request.onsuccess = () => {
-        console.log('所有弹幕缓存已清除');
+        logger.debug('所有弹幕缓存已清除');
         resolve();
       };
 
@@ -395,7 +397,7 @@ export async function clearAllDanmakuCache(): Promise<void> {
       };
     });
   } catch (error) {
-    console.error('清除所有弹幕缓存失败:', error);
+    logger.error('清除所有弹幕缓存失败:', error);
     throw error;
   }
 }
@@ -449,7 +451,7 @@ export async function getDanmakuCacheStats(): Promise<{
       };
     });
   } catch (error) {
-    console.error('获取缓存统计信息失败:', error);
+    logger.error('获取缓存统计信息失败:', error);
     return { total: 0, expired: 0, totalSize: 0 };
   }
 }

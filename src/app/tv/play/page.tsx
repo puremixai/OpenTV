@@ -34,6 +34,7 @@ import {
   useState,
 } from 'react';
 
+import { isAnimeCategoryText } from '@/lib/anime-keyword-expr';
 import {
   convertDanmakuFormat,
   getDanmakuById,
@@ -43,7 +44,6 @@ import {
   saveDanmakuDisplayState,
   searchAnime,
 } from '@/lib/danmaku/api';
-import { isAnimeCategoryText } from '@/lib/anime-keyword-expr';
 import {
   deleteFavorite,
   generateStorageKey,
@@ -670,7 +670,7 @@ function TVPlayClient() {
           timeRef.current.current - TV_DANMAKU_SEEK_WINDOW - 1
         );
         setDanmakuItems(
-          convertDanmakuFormat(comments).slice(0, TV_DANMAKU_MAX_ITEMS)
+          (await convertDanmakuFormat(comments)).slice(0, TV_DANMAKU_MAX_ITEMS)
         );
       } catch {
         if (alive) setDanmakuItems([]);

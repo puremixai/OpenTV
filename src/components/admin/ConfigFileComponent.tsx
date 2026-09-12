@@ -3,12 +3,15 @@
 import { useEffect, useMemo, useState } from 'react';
 
 import type { AdminConfig, ConfigSubscription } from '@/lib/admin.types';
+import { adminFetch as fetch } from '@/lib/admin-fetch';
 import {
   MAX_CONFIG_SUBSCRIPTIONS,
   mergeSubscriptionConfigs,
   validateSubscriptions,
 } from '@/lib/config-subscriptions';
+import { useUnsavedChanges } from '@/hooks/useUnsavedChanges';
 
+import { ConfigHistory } from './ConfigHistory';
 import { buttonStyles } from './shared';
 
 const inputClass =
@@ -25,16 +28,19 @@ export function ConfigFileComponent({
   const [localContent, setLocalContent] = useState('{}');
   const [busy, setBusy] = useState('');
   const [dirty, setDirty] = useState(false);
+  const [draftVersion, setDraftVersion] = useState(0);
+  useUnsavedChanges(dirty);
   const [notice, setNotice] = useState<{ error: boolean; text: string } | null>(
     null
   );
 
   useEffect(() => {
-    if (!config) return;
+    if (!config || dirty) return;
+    setDraftVersion(config.ConfigVersion || 0);
     setSubscriptions(structuredClone(config.ConfigSubscriptions || []));
     setLocalContent(config.ConfigFileLocal || '{}');
     setDirty(false);
-  }, [config]);
+  }, [config, dirty]);
 
   const preview = useMemo(() => {
     try {
@@ -47,11 +53,50 @@ export function ConfigFileComponent({
         content: JSON.stringify(merged, null, 2),
         count: Object.keys(merged.api_site || {}).length,
         error: '',
+        changes: (() => {
+          const previous = JSON.parse(config?.ConfigFile || '{}');
+          const changes: string[] = [];
+          for (const section of [
+            'api_site',
+            'lives',
+            'custom_category',
+          ] as const) {
+            const before = previous[section] || {};
+            const after = merged[section] || {};
+            const label = {
+              api_site: '视频源',
+              lives: '直播源',
+              custom_category: '分类',
+            }[section];
+            for (const key of Array.from(
+              new Set([...Object.keys(before), ...Object.keys(after)])
+            )) {
+              if (
+                JSON.stringify(before[key]) ===
+                JSON.stringify((after as Record<string, unknown>)[key])
+              )
+                continue;
+              changes.push(
+                label +
+                  ' ' +
+                  key +
+                  '：' +
+                  (!(key in before)
+                    ? '新增'
+                    : !(key in after)
+                    ? '移除'
+                    : '修改')
+              );
+            }
+          }
+          return changes;
+        })(),
       };
     } catch (error) {
       return {
         content: '',
         count: 0,
+        changes: [] as string[],
         error: error instanceof Error ? error.message : '配置格式无效',
       };
     }
@@ -75,6 +120,7 @@ export function ConfigFileComponent({
         Enabled: true,
         AutoUpdate: true,
         LastCheck: '',
+        UpdateIntervalHours: 1,
       },
     ]);
     setDirty(true);
@@ -134,7 +180,10 @@ export function ConfigFileComponent({
       const list = validateSubscriptions(subscriptions);
       const response = await fetch('/api/admin/config_file', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'x-config-version': String(draftVersion),
+        },
         body: JSON.stringify({ configFile: localContent, subscriptions: list }),
       });
       const data = await response.json();
@@ -183,7 +232,7 @@ export function ConfigFileComponent({
 
   return (
     <div className='space-y-5'>
-      <div className='flex flex-wrap items-center justify-between gap-3'>
+      <div className='sticky top-16 z-10 flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 bg-white/95 py-3 backdrop-blur-sm dark:border-slate-800 dark:bg-[#111824]/95'>
         <div>
           <h3 className='text-xl font-semibold text-gray-900 dark:text-gray-100'>
             配置订阅
@@ -243,6 +292,25 @@ export function ConfigFileComponent({
         <div className='rounded-lg border border-dashed border-gray-300 p-8 text-center text-gray-500 dark:border-gray-600'>
           尚未添加订阅，点击“添加订阅”填写地址。
         </div>
+      )}
+      {dirty && (
+        <details
+          open
+          className='rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm dark:border-amber-800 dark:bg-amber-950'
+        >
+          <summary className='cursor-pointer font-medium'>
+            应用差异预览 · {preview.changes.length} 项内容变化
+          </summary>
+          {preview.changes.length ? (
+            <ul className='mt-2 max-h-64 list-inside list-disc overflow-auto'>
+              {preview.changes.map((change) => (
+                <li key={change}>{change}</li>
+              ))}
+            </ul>
+          ) : (
+            <p className='mt-2'>视频源内容未变化，仅更新订阅设置或检查状态。</p>
+          )}
+        </details>
       )}
       <fieldset disabled={!!busy} className='space-y-4'>
         <legend className='sr-only'>视频源订阅列表</legend>
@@ -306,6 +374,23 @@ export function ConfigFileComponent({
                   />
                   自动更新
                 </label>
+                <label className='flex items-center gap-2'>
+                  每
+                  <input
+                    aria-label={`订阅更新周期 ${index + 1}`}
+                    type='number'
+                    min={1}
+                    max={168}
+                    value={sub.UpdateIntervalHours || 1}
+                    onChange={(event) =>
+                      update(sub.ID, {
+                        UpdateIntervalHours: Number(event.target.value),
+                      })
+                    }
+                    className='w-16 rounded border bg-transparent px-2 py-1'
+                  />
+                  小时更新
+                </label>
               </div>
               <div className='flex flex-wrap gap-2'>
                 <button
@@ -332,7 +417,11 @@ export function ConfigFileComponent({
                   onClick={() => void pull(sub.ID)}
                   className={`${buttonStyles.primarySmall} disabled:opacity-40`}
                 >
-                  {busy === sub.ID ? '拉取中…' : '单独拉取'}
+                  {busy === sub.ID
+                    ? '拉取中…'
+                    : sub.LastError
+                    ? '重试失败订阅'
+                    : '单独拉取'}
                 </button>
                 <button
                   type='button'
@@ -365,6 +454,11 @@ export function ConfigFileComponent({
           </div>
         ))}
       </fieldset>
+      <ConfigHistory
+        onRestored={() => setDirty(false)}
+        version={config.ConfigVersion || 0}
+        refreshConfig={refreshConfig}
+      />
       <details className='rounded-lg border border-gray-200 p-4 dark:border-gray-700'>
         <summary className='cursor-pointer font-medium text-gray-800 dark:text-gray-100'>
           手动配置与合并预览

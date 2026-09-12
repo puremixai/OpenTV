@@ -8,6 +8,7 @@ import type { RedisClientType } from 'redis';
  * 只抽象 API 命名差异，不处理序列化（由调用者负责）
  */
 export interface RedisAdapter {
+  compareAndSetConfig(key: string, expectedVersion: number, value: string): Promise<boolean>;
   hCompareAndSet(key: string, field: string, expected: string, value: string): Promise<boolean>;
   // Hash 操作
   hSet(key: string, field: string, value: string): Promise<number>;
@@ -55,6 +56,11 @@ export class StandardRedisAdapter implements RedisAdapter {
       { keys: [key], arguments: [field, expected, value] }
     );
     return Number(result) > 0;
+  }
+
+  async compareAndSetConfig(key: string, expectedVersion: number, value: string): Promise<boolean> {
+    const result = await this.client.eval("local raw = redis.call('GET', KEYS[1]); local version = 0; if raw then version = cjson.decode(raw).ConfigVersion or 0 end; if version ~= tonumber(ARGV[1]) then return 0 end; redis.call('SET', KEYS[1], ARGV[2]); return 1", { keys: [key], arguments: [String(expectedVersion), value] });
+    return Number(result) === 1;
   }
 
   // Hash 操作
@@ -167,6 +173,11 @@ export class UpstashRedisAdapter implements RedisAdapter {
       [key], [field, expected, value]
     );
     return Number(result) > 0;
+  }
+
+  async compareAndSetConfig(key: string, expectedVersion: number, value: string): Promise<boolean> {
+    const result = await this.client.eval("local raw = redis.call('GET', KEYS[1]); local version = 0; if raw then version = cjson.decode(raw).ConfigVersion or 0 end; if version ~= tonumber(ARGV[1]) then return 0 end; redis.call('SET', KEYS[1], ARGV[2]); return 1", [key], [String(expectedVersion), value]);
+    return Number(result) === 1;
   }
 
   // Hash 操作

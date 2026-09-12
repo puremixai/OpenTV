@@ -1,7 +1,7 @@
 import { getConfig } from '@/lib/config';
 
-import { listQuarkShareVideos } from './quark.client';
 import type { QuarkPlayMode } from './quark.client';
+import { listQuarkShareVideos } from './quark.client';
 import {
   createQuarkNetdiskSession,
   getQuarkNetdiskSession,

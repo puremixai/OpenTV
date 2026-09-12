@@ -25,6 +25,7 @@ import { createPortal } from 'react-dom';
 
 import { isAnimeCategoryText } from '@/lib/anime-keyword-expr';
 import { getAuthInfoFromBrowserCookie } from '@/lib/auth';
+import { loadTraditionalToSimplifiedConverter } from '@/lib/danmaku/traditional-to-simplified';
 import {
   addSearchHistory,
   clearSearchHistory,
@@ -32,8 +33,9 @@ import {
   getSearchHistory,
   subscribeToDataUpdates,
 } from '@/lib/db.client';
-import { SearchResult } from '@/lib/types';
+import { logger } from '@/lib/logger';
 import { appendSpecialSourceParam, isSpecialSourcesEnabledOnDevice } from '@/lib/special-source.client';
+import { SearchResult } from '@/lib/types';
 import { processImageUrl } from '@/lib/utils';
 
 import AcgSearch from '@/components/AcgSearch';
@@ -48,7 +50,6 @@ import SearchResultFilter, {
 import SearchSuggestions from '@/components/SearchSuggestions';
 import VideoCard, { VideoCardHandle } from '@/components/VideoCard';
 import VirtualScrollableGrid from '@/components/VirtualScrollableGrid';
-import { loadTraditionalToSimplifiedConverter } from '@/lib/danmaku/traditional-to-simplified';
 
 const PANSOU_CLOUD_TYPE_OPTIONS = Object.entries(CLOUD_TYPE_NAMES).map(
   ([value, label]) => ({ value, label })
@@ -160,7 +161,7 @@ function SearchPageClient() {
         return parsed.results;
       }
     } catch (error) {
-      console.error('Failed to get cached results:', error);
+      logger.error('Failed to get cached results:', error);
     }
     return null;
   };
@@ -182,7 +183,7 @@ function SearchPageClient() {
       };
       sessionStorage.setItem(cacheKey, JSON.stringify(payload));
     } catch (error) {
-      console.error('Failed to cache results:', error);
+      logger.error('Failed to cache results:', error);
     }
   };
 
@@ -203,7 +204,7 @@ function SearchPageClient() {
       const cacheKey = getCacheKey(query);
       sessionStorage.removeItem(cacheKey);
     } catch (error) {
-      console.error('Failed to clear cached results:', error);
+      logger.error('Failed to clear cached results:', error);
     }
   };
 
@@ -1227,7 +1228,7 @@ function SearchPageClient() {
             return; // 等待 URL 更新后重新触发此 effect
           }
         } catch (error) {
-          console.error('[URL参数监听] 繁体转简体转换失败:', error);
+          logger.error('[URL参数监听] 繁体转简体转换失败:', error);
         }
       }
     }
@@ -1571,7 +1572,7 @@ function SearchPageClient() {
         try {
           trimmed = converterRef.current(trimmed);
         } catch (error) {
-          console.error('繁体转简体转换失败:', error);
+          logger.error('繁体转简体转换失败:', error);
         }
       }
     }
@@ -1611,7 +1612,7 @@ function SearchPageClient() {
         try {
           processedSuggestion = converterRef.current(suggestion);
         } catch (error) {
-          console.error('繁体转简体转换失败:', error);
+          logger.error('繁体转简体转换失败:', error);
         }
       }
     }

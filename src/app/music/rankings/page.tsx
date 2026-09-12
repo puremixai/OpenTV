@@ -1,10 +1,12 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import MusicLoadingIndicator from '@/components/music/MusicLoadingIndicator';
+import { useEffect, useState } from 'react';
+
 import { musicSources, normalizeSource } from '@/lib/music/shared';
 import type { Playlist } from '@/lib/music/types';
+
+import MusicLoadingIndicator from '@/components/music/MusicLoadingIndicator';
 
 export default function MusicRankingsPage() {
   const router = useRouter();

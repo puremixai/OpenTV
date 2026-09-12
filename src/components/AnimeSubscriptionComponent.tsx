@@ -5,17 +5,19 @@ import { AlertCircle, Loader2, Plus, RefreshCw, Trash2, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 
+import { AdminConfig } from '@/lib/admin.types';
+import { adminFetch as fetch } from '@/lib/admin-fetch';
 import {
+  type AnimeExcludePreset,
+  type AnimeFansubPreset,
   ANIME_EXCLUDE_PRESETS,
   ANIME_FANSUB_PRESETS,
   applyExcludeSingleSelect,
   applyFansubSingleSelect,
   isExcludePresetActive,
   isFansubPresetActive,
-  type AnimeExcludePreset,
-  type AnimeFansubPreset,
 } from '@/lib/anime-filter-presets';
-import { AdminConfig } from '@/lib/admin.types';
+
 import { AnimeSubscription, AnimeSubscriptionDownloadTool } from '@/types/anime-subscription';
 
 interface AnimeSubscriptionComponentProps {

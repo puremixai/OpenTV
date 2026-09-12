@@ -422,17 +422,20 @@ async function getInitConfig(
   return adminConfig;
 }
 
-export async function getConfig(): Promise<AdminConfig> {
+let configCachedAt = 0;
+export async function getConfig(fresh = false): Promise<AdminConfig> {
+  if (fresh || Date.now() - configCachedAt > 2000) cachedConfig = null as any;
   // 直接使用内存缓存
   if (cachedConfig) {
-    return cachedConfig;
+    return JSON.parse(JSON.stringify(cachedConfig));
   }
 
   // 如果正在初始化，等待初始化完成
   if (configInitPromise) {
-    return configInitPromise;
+    return JSON.parse(JSON.stringify(await configInitPromise));
   }
 
+  configCachedAt = Date.now();
   // 创建初始化 Promise
   configInitPromise = (async () => {
     const storageType = process.env.NEXT_PUBLIC_STORAGE_TYPE || 'localstorage';
@@ -519,7 +522,7 @@ export async function getConfig(): Promise<AdminConfig> {
     return cachedConfig;
   })();
 
-  return configInitPromise;
+  return JSON.parse(JSON.stringify(await configInitPromise));
 }
 
 export function configSelfCheck(adminConfig: AdminConfig): AdminConfig {
@@ -1222,7 +1225,7 @@ export async function resetConfig() {
     adminConfig.ConfigSubscriptions = originConfig.ConfigSubscriptions;
     adminConfig.ConfigFileLocal = originConfig.ConfigFileLocal;
   }
-  cachedConfig = adminConfig;
+  adminConfig.ConfigVersion = originConfig.ConfigVersion;
   await db.saveAdminConfig(adminConfig);
 
   return;
@@ -1309,7 +1312,8 @@ export async function getAvailableApiSites(
 }
 
 export async function setCachedConfig(config: AdminConfig) {
-  cachedConfig = config;
+  cachedConfig = JSON.parse(JSON.stringify(config));
+  configCachedAt = Date.now();
 }
 
 export async function clearConfigCache() {

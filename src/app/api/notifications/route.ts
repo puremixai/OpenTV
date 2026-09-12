@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import { getStorage } from '@/lib/db';
+import { logger } from '@/lib/logger';
 import { getAuthenticatedUser } from '@/lib/session';
 
 export const runtime = 'nodejs';
@@ -22,7 +23,7 @@ export async function GET(request: NextRequest) {
       unreadCount,
     });
   } catch (error) {
-    console.error('获取通知失败:', error);
+    logger.error('获取通知失败:', error);
     return NextResponse.json(
       { error: (error as Error).message },
       { status: 500 }
@@ -60,7 +61,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ error: '无效的操作' }, { status: 400 });
   } catch (error) {
-    console.error('操作通知失败:', error);
+    logger.error('操作通知失败:', error);
     return NextResponse.json(
       { error: (error as Error).message },
       { status: 500 }

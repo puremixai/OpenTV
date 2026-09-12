@@ -95,6 +95,8 @@ const subscriptionSchema = z.object({
   AutoUpdate: z.boolean(),
   LastCheck: z.union([z.string().datetime(), z.literal('')]),
   LastError: z.string().max(1000).optional(),
+  UpdateIntervalHours: z.number().int().min(1).max(168).optional(),
+  LastAttempt: z.union([z.string().datetime(), z.literal('')]).optional(),
   ConfigContent: z.string().max(MAX_CONFIG_BYTES).optional(),
 });
 

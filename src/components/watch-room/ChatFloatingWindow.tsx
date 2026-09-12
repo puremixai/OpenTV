@@ -4,6 +4,7 @@
 import { AlertCircle,Info, LogOut, Maximize2, MessageCircle, Mic, MicOff, Minimize2, Send, Smile, Users, Volume2, VolumeX, X, XCircle } from 'lucide-react';
 import { useEffect, useRef,useState } from 'react';
 
+import { logger } from '@/lib/logger';
 import { useVoiceChat } from '@/hooks/useVoiceChat';
 
 import { useWatchRoomContextSafe } from '@/components/WatchRoomProvider';
@@ -106,7 +107,7 @@ export default function ChatFloatingWindow() {
     try {
       await watchRoom.manualReconnect();
     } catch (error) {
-      console.error('[ChatFloatingWindow] Reconnect failed:', error);
+      logger.error('[ChatFloatingWindow] Reconnect failed:', error);
     } finally {
       setIsReconnecting(false);
     }

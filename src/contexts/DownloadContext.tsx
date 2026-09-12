@@ -1,9 +1,7 @@
 'use client';
 
-import React, { createContext, useCallback, useContext, useState, useEffect } from 'react';
+import React, { createContext, useCallback, useContext, useEffect,useState } from 'react';
 
-import { M3U8Downloader, M3U8DownloadTask } from '@/lib/m3u8-downloader';
-import Toast from '@/components/Toast';
 import { downloadDB } from '@/lib/download-db';
 import {
   buildIndexedDBVideoCacheKey,
@@ -12,6 +10,10 @@ import {
   isIndexedDBVideoDownloaded,
   requestIndexedDBVideoPersistentStorage,
 } from '@/lib/indexeddb-video-cache';
+import { logger } from '@/lib/logger';
+import { M3U8Downloader, M3U8DownloadTask } from '@/lib/m3u8-downloader';
+
+import Toast from '@/components/Toast';
 
 interface DownloadContextType {
   downloader: M3U8Downloader;
@@ -99,7 +101,7 @@ export function DownloadProvider({ children }: { children: React.ReactNode }) {
               }
               fileSize = totalSize;
             } catch (error) {
-              console.error('计算文件大小失败:', error);
+              logger.error('计算文件大小失败:', error);
             }
           } else if (task.downloadMode === 'indexeddb') {
             try {
@@ -110,7 +112,7 @@ export function DownloadProvider({ children }: { children: React.ReactNode }) {
               );
               fileSize = await getIndexedDBVideoCacheSize(cacheKey);
             } catch (error) {
-              console.error('计算 IndexedDB 缓存大小失败:', error);
+              logger.error('计算 IndexedDB 缓存大小失败:', error);
             }
           }
 
@@ -125,7 +127,7 @@ export function DownloadProvider({ children }: { children: React.ReactNode }) {
             fileSize,
           });
         } catch (error) {
-          console.error('保存已完成任务失败:', error);
+          logger.error('保存已完成任务失败:', error);
         }
       }
 
@@ -135,7 +137,7 @@ export function DownloadProvider({ children }: { children: React.ReactNode }) {
       startNextPendingTask(downloader);
     },
     onError: (task, error) => {
-      console.error('下载错误:', error);
+      logger.error('下载错误:', error);
       setTasks(downloader.getAllTasks());
       // 保存任务状态
       saveTasks(downloader.getAllTasks());
@@ -181,7 +183,7 @@ export function DownloadProvider({ children }: { children: React.ReactNode }) {
 
       await downloadDB.saveActiveTasks(tasksToSave);
     } catch (error) {
-      console.error('保存任务失败:', error);
+      logger.error('保存任务失败:', error);
     }
   }, []);
 
@@ -300,7 +302,7 @@ export function DownloadProvider({ children }: { children: React.ReactNode }) {
                 }
               }
             } catch (error) {
-              console.error('恢复任务失败:', savedTask.title, error);
+              logger.error('恢复任务失败:', savedTask.title, error);
               // 恢复失败的任务也标记为删除
               tasksToDelete.push(savedTask.id);
             }
@@ -312,13 +314,13 @@ export function DownloadProvider({ children }: { children: React.ReactNode }) {
 
         // 批量删除无效任务
         if (tasksToDelete.length > 0) {
-          console.log('清理无效任务:', tasksToDelete.length, '个');
+          logger.debug('清理无效任务:', tasksToDelete.length, '个');
           await downloadDB.deleteActiveTasks(tasksToDelete);
         }
 
         setTasks(downloader.getAllTasks());
       } catch (error) {
-        console.error('恢复任务失败:', error);
+        logger.error('恢复任务失败:', error);
       }
     };
 
@@ -399,12 +401,12 @@ export function DownloadProvider({ children }: { children: React.ReactNode }) {
           });
 
           if (alreadyDownloaded) {
-            console.log('视频已下载（文件系统检查），跳过:', title, metadata);
+            logger.debug('视频已下载（文件系统检查），跳过:', title, metadata);
             setToast({ message: `${title} 已经下载过了，无需重复下载`, type: 'info' });
             return;
           }
         } catch (error) {
-          console.error('检查下载状态失败:', error);
+          logger.error('检查下载状态失败:', error);
         }
       }
 
@@ -424,7 +426,7 @@ export function DownloadProvider({ children }: { children: React.ReactNode }) {
           );
 
           if (alreadyDownloaded) {
-            console.log('视频已下载（IndexedDB 缓存检查），跳过:', title, metadata);
+            logger.debug('视频已下载（IndexedDB 缓存检查），跳过:', title, metadata);
             setToast({ message: `${title} 已经缓存过了，无需重复下载`, type: 'info' });
             return;
           }
@@ -444,7 +446,7 @@ export function DownloadProvider({ children }: { children: React.ReactNode }) {
             }
           }
         } catch (error) {
-          console.error('检查 IndexedDB 下载状态失败:', error);
+          logger.error('检查 IndexedDB 下载状态失败:', error);
         }
       }
 
@@ -491,7 +493,7 @@ export function DownloadProvider({ children }: { children: React.ReactNode }) {
 
               // 检查 object store 是否存在
               if (!db.objectStoreNames.contains(storeName)) {
-                console.warn('Object store 不存在，跳过读取');
+                logger.warn('Object store 不存在，跳过读取');
                 db.close();
                 resolve();
                 return;
@@ -508,10 +510,10 @@ export function DownloadProvider({ children }: { children: React.ReactNode }) {
                   const task = downloader.getTask(taskId);
                   if (task) {
                     task.filesystemDirHandle = dirHandle;
-                    console.log('已设置 filesystem 目录句柄:', dirHandle.name);
+                    logger.debug('已设置 filesystem 目录句柄:', dirHandle.name);
                   }
                 } else {
-                  console.warn('未找到保存目录，使用浏览器下载模式');
+                  logger.warn('未找到保存目录，使用浏览器下载模式');
                   // 如果没有目录句柄，回退到 browser 模式
                   const task = downloader.getTask(taskId);
                   if (task) {
@@ -533,7 +535,7 @@ export function DownloadProvider({ children }: { children: React.ReactNode }) {
             };
           });
         } catch (error) {
-          console.error('读取目录句柄失败:', error);
+          logger.error('读取目录句柄失败:', error);
         }
       }
 
@@ -573,7 +575,7 @@ export function DownloadProvider({ children }: { children: React.ReactNode }) {
         return prev;
       });
     } catch (error) {
-      console.error('添加下载任务失败:', error);
+      logger.error('添加下载任务失败:', error);
       throw error;
     }
   }, [downloader]);

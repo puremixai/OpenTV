@@ -4,6 +4,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { validateKeywordExpr } from '@/lib/anime-keyword-expr';
 import { getConfig } from '@/lib/config';
 import { db } from '@/lib/db';
+import { logger } from '@/lib/logger';
+import { checkMutationVersion, withConfigMutation } from '@/lib/server/config-mutation';
 import { getAuthenticatedUser } from '@/lib/session';
 
 export const runtime = 'nodejs';
@@ -12,7 +14,7 @@ export const runtime = 'nodejs';
  * PUT /api/admin/anime-subscription/[id]
  * 更新订阅
  */
-export async function PUT(
+export const PUT = withConfigMutation(async function PUT(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
@@ -23,7 +25,8 @@ export async function PUT(
       return NextResponse.json({ error: '无权限访问' }, { status: 403 });
     }
 
-    const config = await getConfig();
+    const config = await getConfig(true);
+    checkMutationVersion(config.ConfigVersion || 0);
     const subscriptions = config.AnimeSubscriptionConfig?.Subscriptions || [];
 
     const index = subscriptions.findIndex((sub) => sub.id === params.id);
@@ -113,19 +116,19 @@ export async function PUT(
 
     return NextResponse.json(subscription);
   } catch (error: any) {
-    console.error('更新追番订阅失败:', error);
+    logger.error('更新追番订阅失败:', error);
     return NextResponse.json(
       { error: error.message || '更新订阅失败' },
       { status: 500 }
     );
   }
-}
+});
 
 /**
  * DELETE /api/admin/anime-subscription/[id]
  * 删除订阅
  */
-export async function DELETE(
+export const DELETE = withConfigMutation(async function DELETE(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
@@ -136,7 +139,8 @@ export async function DELETE(
       return NextResponse.json({ error: '无权限访问' }, { status: 403 });
     }
 
-    const config = await getConfig();
+    const config = await getConfig(true);
+    checkMutationVersion(config.ConfigVersion || 0);
     const subscriptions = config.AnimeSubscriptionConfig?.Subscriptions || [];
 
     const index = subscriptions.findIndex((sub) => sub.id === params.id);
@@ -149,10 +153,10 @@ export async function DELETE(
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
-    console.error('删除追番订阅失败:', error);
+    logger.error('删除追番订阅失败:', error);
     return NextResponse.json(
       { error: error.message || '删除订阅失败' },
       { status: 500 }
     );
   }
-}
+});

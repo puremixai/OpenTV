@@ -1,7 +1,7 @@
 /* eslint-disable no-constant-condition */
 
 import { getConfig } from '@/lib/config';
-import { db } from '@/lib/db';
+import { updateConfig } from '@/lib/server/update-config';
 
 const defaultUA = 'AptvPlayer/1.4.10';
 
@@ -66,8 +66,10 @@ export async function getCachedLiveChannels(
     if (channelNum === 0) {
       return null;
     }
-    liveInfo.channelNumber = channelNum;
-    await db.saveAdminConfig(config);
+    await updateConfig(current => {
+      const live = current.LiveConfig?.find(item => item.key === key && item.url === liveInfo.url);
+      if (live) live.channelNumber = channelNum;
+    });
   }
   return cachedLiveChannels[key] || null;
 }

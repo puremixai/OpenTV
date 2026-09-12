@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-import { extractSongmid, fetchLxLyric, MusicQuality, normalizeMusicQuality, normalizeSong, lxPostJson } from '@/lib/music-v2';
+import { logger } from '@/lib/logger';
+import { extractSongmid, fetchLxLyric, lxPostJson,MusicQuality, normalizeMusicQuality, normalizeSong } from '@/lib/music-v2';
 import { badRequest, internalError } from '@/lib/music-v2-api';
 
 export const runtime = 'nodejs';
@@ -159,7 +160,7 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('[music-v2] play route error:', error);
+    logger.error('[music-v2] play route error:', error);
     return internalError('获取播放信息失败', (error as Error).message);
   }
 }

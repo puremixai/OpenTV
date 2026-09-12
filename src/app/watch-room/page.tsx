@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect,useState } from 'react';
 
 import { getAuthInfoFromBrowserCookie } from '@/lib/auth';
+import { logger } from '@/lib/logger';
 
 import PageLayout from '@/components/PageLayout';
 import Toast, { ToastProps } from '@/components/Toast';
@@ -106,7 +107,7 @@ export default function WatchRoomPage() {
       const roomList = await getRoomList();
       setRooms(roomList);
     } catch (error) {
-      console.error('[WatchRoom] Failed to load rooms:', error);
+      logger.error('[WatchRoom] Failed to load rooms:', error);
     } finally {
       if (showLoading) {
         setLoading(false);

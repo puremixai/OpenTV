@@ -2,11 +2,12 @@ import { NextRequest, NextResponse } from 'next/server';
 
 import { getConfig, setCachedConfig } from '@/lib/config';
 import { db } from '@/lib/db';
+import { checkMutationVersion, withConfigMutation } from '@/lib/server/config-mutation';
 import { getAuthenticatedUser } from '@/lib/session';
 
 export const runtime = 'nodejs';
 
-export async function POST(request: NextRequest) {
+export const POST = withConfigMutation(async function POST(request: NextRequest) {
   const storageType = process.env.NEXT_PUBLIC_STORAGE_TYPE || 'localstorage';
   if (storageType === 'localstorage') {
     return NextResponse.json(
@@ -33,7 +34,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: '缺少导入数据' }, { status: 400 });
     }
 
-    const adminConfig = await getConfig();
+    const adminConfig = await getConfig(true);
+    checkMutationVersion(adminConfig.ConfigVersion || 0);
 
     // 追加和覆盖：合并Sources数组
     if (data.Sources && Array.isArray(data.Sources)) {
@@ -77,4 +79,4 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+});

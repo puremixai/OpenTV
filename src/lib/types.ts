@@ -1,6 +1,6 @@
 import { AdminConfig } from './admin.types';
-import { MangaReadRecord, MangaShelfItem } from './manga.types';
 import { BookReadRecord, BookShelfItem } from './book.types';
+import { MangaReadRecord, MangaShelfItem } from './manga.types';
 
 // 播放记录数据结构
 export interface PlayRecord {
@@ -144,6 +144,7 @@ export interface IStorage {
   // 管理员配置相关
   getAdminConfig(): Promise<AdminConfig | null>;
   setAdminConfig(config: AdminConfig): Promise<void>;
+  compareAndSetAdminConfig(expectedVersion: number, config: AdminConfig): Promise<boolean>;
 
   // 跳过片头片尾配置相关
   getSkipConfig(

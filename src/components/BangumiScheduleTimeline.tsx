@@ -9,6 +9,7 @@ import {
   BangumiScheduleItem,
   GetBangumiScheduleData,
 } from '@/lib/bangumi.client';
+import { logger } from '@/lib/logger';
 
 import { ImagePlaceholder } from '@/components/ImagePlaceholder';
 import VideoCard from '@/components/VideoCard';
@@ -121,7 +122,7 @@ function BangumiScheduleTimeline({
         setLoading(false);
       })
       .catch((err) => {
-        console.error('获取时刻表失败:', err);
+        logger.error('获取时刻表失败:', err);
         setError('时刻表加载失败，请稍后重试');
         setLoading(false);
       });

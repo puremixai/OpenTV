@@ -7,8 +7,8 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { getAuthInfoFromBrowserCookie } from '@/lib/auth';
 import { base58Encode } from '@/lib/utils';
 
-import TVLayout from '@/components/tv/TVLayout';
 import TVCard from '@/components/tv/TVCard';
+import TVLayout from '@/components/tv/TVLayout';
 import { TVItem } from '@/components/tv/types';
 
 type SourceType = 'openlist' | 'emby' | 'xiaoya';

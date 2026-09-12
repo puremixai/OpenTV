@@ -26,6 +26,7 @@ import {
   normalizeUCCookie,
   validateUCCookieReadable,
 } from '@/lib/netdisk/uc.client';
+import { checkMutationVersion, withConfigMutation } from '@/lib/server/config-mutation';
 import { getAuthenticatedUser } from '@/lib/session';
 
 export const runtime = 'nodejs';
@@ -34,7 +35,7 @@ function requireOwner(username: string | undefined) {
   return username === process.env.USERNAME;
 }
 
-export async function POST(request: NextRequest) {
+export const POST = withConfigMutation(async function POST(request: NextRequest) {
   const storageType = process.env.NEXT_PUBLIC_STORAGE_TYPE || 'localstorage';
   if (storageType === 'localstorage') {
     return NextResponse.json(
@@ -58,7 +59,8 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json();
     const { action, Quark, Mobile, Baidu, Tianyi, Pan123, UC, Pan115, provider } = body;
-    const adminConfig = await getConfig();
+    const adminConfig = await getConfig(true);
+    checkMutationVersion(adminConfig.ConfigVersion || 0);
 
     if (action === 'save') {
       const normalizedCookie = Quark?.Cookie ? assertQuarkCookieHeaderSafe(Quark.Cookie) : '';
@@ -205,4 +207,4 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+});

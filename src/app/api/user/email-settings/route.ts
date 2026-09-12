@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import { getStorage } from '@/lib/db';
+import { logger } from '@/lib/logger';
 import { getAuthenticatedUser } from '@/lib/session';
 
 export const runtime = 'nodejs';
@@ -31,7 +32,7 @@ export async function GET(request: NextRequest) {
       emailNotifications,
     });
   } catch (error) {
-    console.error('获取用户通知设置失败:', error);
+    logger.error('获取用户通知设置失败:', error);
     return NextResponse.json(
       { error: (error as Error).message },
       { status: 500 }
@@ -83,7 +84,7 @@ export async function POST(request: NextRequest) {
       message: '通知设置保存成功',
     });
   } catch (error) {
-    console.error('保存用户通知设置失败:', error);
+    logger.error('保存用户通知设置失败:', error);
     return NextResponse.json(
       { error: (error as Error).message },
       { status: 500 }

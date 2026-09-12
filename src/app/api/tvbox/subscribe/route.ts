@@ -5,6 +5,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAvailableApiSites, getConfig } from '@/lib/config';
 import { db } from '@/lib/db';
 import { getCachedLiveChannels } from '@/lib/live';
+import { logger } from '@/lib/logger';
 import { hasFeaturePermission } from '@/lib/permissions';
 
 export const runtime = 'nodejs';
@@ -45,7 +46,7 @@ export async function GET(request: NextRequest) {
   if (globalToken && token === globalToken) {
     // 全局token（管理员订阅）
     isGlobalToken = true;
-    console.log('使用全局token访问TVBox订阅');
+    logger.debug('使用全局token访问TVBox订阅');
   } else {
     // 用户token，查询用户名
     username = await db.getUsernameByTvboxToken(token) || undefined;
@@ -65,7 +66,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    console.log(`用户 ${username} 访问TVBox订阅`);
+    logger.debug(`用户 ${username} 访问TVBox订阅`);
   }
 
   try {
@@ -96,7 +97,7 @@ export async function GET(request: NextRequest) {
       baseUrl = `${proto}://${host}`;
     }
 
-    console.log('TVBOX 订阅 baseUrl:', baseUrl, 'adFilter:', adFilter, 'yellowFilter:', yellowFilter);
+    logger.debug('TVBOX 订阅 baseUrl:', baseUrl, 'adFilter:', adFilter, 'yellowFilter:', yellowFilter);
 
     // 检查是否配置了 OpenList
     const hasOpenList = !!(
@@ -204,7 +205,7 @@ export async function GET(request: NextRequest) {
       tvboxSubscription.sites = tvboxSubscription.sites.filter(
         site => !blockedSources.includes(site.key)
       );
-      console.log('TVBOX 订阅已屏蔽源:', blockedSources);
+      logger.debug('TVBOX 订阅已屏蔽源:', blockedSources);
     }
 
     return NextResponse.json(tvboxSubscription, {
@@ -214,7 +215,7 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('生成TVBOX订阅失败:', error);
+    logger.error('生成TVBOX订阅失败:', error);
     return NextResponse.json(
       {
         error: '生成订阅失败',

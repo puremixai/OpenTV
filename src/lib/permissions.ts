@@ -4,10 +4,11 @@ import { getAuthInfoFromCookie } from '@/lib/auth';
 import { getConfig } from '@/lib/config';
 import { db } from '@/lib/db';
 import {
-  ALL_FEATURE_PERMISSION_KEYS,
   type FeaturePermissionKey,
+  ALL_FEATURE_PERMISSION_KEYS,
   sanitizeFeaturePermissions,
 } from '@/lib/feature-permissions';
+import { logger } from '@/lib/logger';
 
 export type FeatureAccessMap = Record<FeaturePermissionKey, boolean>;
 
@@ -72,7 +73,7 @@ export async function getUserFeatureAccess(username?: string | null): Promise<Fe
   try {
     return await getUserFeatureAccessMap(username);
   } catch (error) {
-    console.error('[Permissions] Failed to load feature access:', error);
+    logger.error('[Permissions] Failed to load feature access:', error);
     return username === process.env.USERNAME
       ? createFullFeatureAccessMap()
       : createEmptyFeatureAccessMap();

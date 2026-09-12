@@ -5,6 +5,7 @@ import { Plus, ToggleLeft, ToggleRight,Trash2, X } from 'lucide-react';
 import { useEffect, useRef,useState } from 'react';
 
 import { getDanmakuFilterConfig, saveDanmakuFilterConfig } from '@/lib/db.client';
+import { logger } from '@/lib/logger';
 import { DanmakuFilterConfig, DanmakuFilterRule } from '@/lib/types';
 
 interface DanmakuFilterSettingsProps {
@@ -128,7 +129,7 @@ export default function DanmakuFilterSettings({
         setConfig({ rules: [] });
       }
     } catch (error) {
-      console.error('加载弹幕过滤配置失败:', error);
+      logger.error('加载弹幕过滤配置失败:', error);
     } finally {
       setLoading(false);
     }
@@ -150,7 +151,7 @@ export default function DanmakuFilterSettings({
         onClose();
       }, 300);
     } catch (error) {
-      console.error('保存弹幕过滤配置失败:', error);
+      logger.error('保存弹幕过滤配置失败:', error);
       if (onShowToast) {
         onShowToast('保存失败，请重试', 'error');
       }

@@ -1,4 +1,7 @@
 const React = require('react');
+// History has its own API tests; keep these tests focused on subscription drafts.
+jest.mock('../src/components/admin/ConfigHistory', () => ({ ConfigHistory: () => null }));
+global.Headers = require('vm').runInThisContext('Headers');
 const { TextEncoder } = require('util');
 global.TextEncoder = TextEncoder;
 global.structuredClone = (value) => JSON.parse(JSON.stringify(value));
@@ -108,4 +111,19 @@ test('changing a subscription address discards the old address cache before savi
     .subscriptions[0];
   expect(savedEntry.ConfigContent).toBeUndefined();
   expect(savedEntry.LastCheck).toBe('');
+});
+
+
+test('unsaved draft survives a concurrent reload and sends its original revision', async () => {
+  global.fetch = jest.fn(async () => ({ ok: false, status: 409, clone: () => ({ json: async () => ({ error: '配置已更新，请刷新' }) }) }));
+  const props = { config: { ...config, ConfigVersion: 7 }, refreshConfig: jest.fn() };
+  const { rerender } = render(React.createElement(ConfigFileComponent, props));
+  fireEvent.change(screen.getByLabelText('订阅名称 1'), { target: { value: 'unsaved name' } });
+  rerender(React.createElement(ConfigFileComponent, { ...props, config: { ...config, ConfigVersion: 8 } }));
+  expect(screen.getByLabelText('订阅名称 1').value).toBe('unsaved name');
+  const event = new Event('beforeunload', { cancelable: true }); window.dispatchEvent(event); expect(event.defaultPrevented).toBe(true);
+  fireEvent.click(screen.getByRole('button', { name: '保存并应用' }));
+  await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent('配置已更新'));
+  expect(global.fetch.mock.calls[0][1].headers.get('x-config-version')).toBe('7');
+  expect(screen.getByLabelText('订阅名称 1').value).toBe('unsaved name');
 });

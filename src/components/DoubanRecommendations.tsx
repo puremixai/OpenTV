@@ -2,16 +2,16 @@
 
 import { useCallback,useEffect, useState } from 'react';
 
-import { useEnableComments } from '@/hooks/useEnableComments';
-
-import ScrollableRow from '@/components/ScrollableRow';
-import VideoCard from '@/components/VideoCard';
-
+import { logger } from '@/lib/logger';
 import {
   getRecommendationCache,
   recommendationCacheKeys,
   setRecommendationCache,
 } from '@/lib/recommendations/cache';
+import { useEnableComments } from '@/hooks/useEnableComments';
+
+import ScrollableRow from '@/components/ScrollableRow';
+import VideoCard from '@/components/VideoCard';
 
 interface DoubanRecommendation {
   doubanId: string;
@@ -33,7 +33,7 @@ export default function DoubanRecommendations({ doubanId }: DoubanRecommendation
 
   const fetchRecommendations = useCallback(async () => {
     try {
-      console.log('正在获取推荐');
+      logger.debug('正在获取推荐');
       setLoading(true);
       setError(null);
 
@@ -41,7 +41,7 @@ export default function DoubanRecommendations({ doubanId }: DoubanRecommendation
       const cached = getRecommendationCache<DoubanRecommendation[]>(cacheKey);
 
       if (cached) {
-        console.log('使用缓存的推荐数据');
+        logger.debug('使用缓存的推荐数据');
         setRecommendations(cached);
         setLoading(false);
         return;
@@ -56,14 +56,14 @@ export default function DoubanRecommendations({ doubanId }: DoubanRecommendation
       }
 
       const result = await response.json();
-      console.log('获取到推荐:', result.recommendations);
+      logger.debug('获取到推荐:', result.recommendations);
 
       const recommendationsData = result.recommendations || [];
       setRecommendations(recommendationsData);
 
       setRecommendationCache(cacheKey, recommendationsData);
     } catch (err) {
-      console.error('获取推荐失败:', err);
+      logger.error('获取推荐失败:', err);
       setError(err instanceof Error ? err.message : '获取推荐失败');
     } finally {
       setLoading(false);

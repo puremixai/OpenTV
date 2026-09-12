@@ -1,9 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import MusicLoadingIndicator from '@/components/music/MusicLoadingIndicator';
+import { useEffect, useState } from 'react';
+
 import { musicSources, normalizeSource } from '@/lib/music/shared';
+
+import MusicLoadingIndicator from '@/components/music/MusicLoadingIndicator';
 
 interface SongListItem {
   id: string;

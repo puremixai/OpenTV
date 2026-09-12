@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect,useState } from 'react';
 import { createPortal } from 'react-dom';
 
+import { logger } from '@/lib/logger';
 import { getTMDBImageUrl } from '@/lib/tmdb.client';
 import { processImageUrl } from '@/lib/utils';
 
@@ -77,7 +78,7 @@ export default function MovieRequestPage() {
         setSearchResults([]);
       }
     } catch (err) {
-      console.error('搜索失败:', err);
+      logger.error('搜索失败:', err);
       setAlertModal({ isOpen: true, type: 'error', title: '搜索失败', message: '请稍后重试' });
     } finally {
       setIsSearching(false);
@@ -107,7 +108,7 @@ export default function MovieRequestPage() {
           }
         }
       } catch (err) {
-        console.error('加载季度失败:', err);
+        logger.error('加载季度失败:', err);
       } finally {
         setLoadingSeasons(false);
       }
@@ -156,7 +157,7 @@ export default function MovieRequestPage() {
         setAlertModal({ isOpen: true, type: 'error', title: '求片失败', message: data.error || '请稍后重试' });
       }
     } catch (err) {
-      console.error('求片失败:', err);
+      logger.error('求片失败:', err);
       setAlertModal({ isOpen: true, type: 'error', title: '求片失败', message: '请稍后重试' });
     } finally {
       setSubmitting(false);
@@ -181,7 +182,7 @@ export default function MovieRequestPage() {
           setMyRequests(data.requests);
         }
       } catch (err) {
-        console.error('加载求片列表失败:', err);
+        logger.error('加载求片列表失败:', err);
       } finally {
         setLoadingMyRequests(false);
       }
@@ -199,7 +200,7 @@ export default function MovieRequestPage() {
         setMyRequests(data.requests);
       }
     } catch (err) {
-      console.error('刷新求片列表失败:', err);
+      logger.error('刷新求片列表失败:', err);
     }
   };
 

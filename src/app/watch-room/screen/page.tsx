@@ -5,9 +5,10 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 
+import { type ScreenShareQualityPreset, screenShareQualityOptions, useScreenShare } from '@/hooks/useScreenShare';
+
 import Toast, { ToastProps } from '@/components/Toast';
 import { useWatchRoomContext } from '@/components/WatchRoomProvider';
-import { screenShareQualityOptions, type ScreenShareQualityPreset, useScreenShare } from '@/hooks/useScreenShare';
 
 const NEW_TAB_KEY_PREFIX = 'watch_room_screen_home_opened_';
 const WATCH_ROOM_NO_CONNECT_KEY = 'watch_room_no_connect';

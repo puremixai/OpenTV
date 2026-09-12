@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { useWatchRoomContext } from '@/components/WatchRoomProvider';
+
 import type { MusicQueueItem, MusicSyncState } from '@/types/watch-room';
 
 interface LyricLine {

@@ -2,13 +2,15 @@ import { NextRequest, NextResponse } from 'next/server';
 
 import { getConfig } from '@/lib/config';
 import { db } from '@/lib/db';
+import { checkMutationVersion, withConfigMutation } from '@/lib/server/config-mutation';
 import { getAuthenticatedUser } from '@/lib/session';
 
-export async function POST(request: NextRequest) {
+export const POST = withConfigMutation(async function POST(request: NextRequest) {
   try {
     const authInfo = await getAuthenticatedUser(request);
     const username = authInfo?.username;
-    const config = await getConfig();
+    const config = await getConfig(true);
+    checkMutationVersion(config.ConfigVersion || 0);
     if (username !== process.env.USERNAME) {
       const userInfo = await db.getUserInfoV2(username || '');
       if (!userInfo || userInfo.role !== 'admin' || userInfo.banned) {
@@ -128,4 +130,4 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+});

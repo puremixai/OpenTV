@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 /**
  * 追番订阅关键词表达式（纯函数，可被客户端安全引用）
  *
@@ -220,7 +221,7 @@ export function matchesFilter(title: string, filterText: string): boolean {
   if (!filterText) return true;
   const result = matchKeywordExpr(title, filterText, 'and');
   if (result.error) {
-    console.warn(`[AnimeSubscription] 过滤表达式无效: ${result.error} | ${filterText}`);
+    logger.warn(`[AnimeSubscription] 过滤表达式无效: ${result.error} | ${filterText}`);
   }
   return result.match;
 }
@@ -230,7 +231,7 @@ export function matchesExclude(title: string, excludeText?: string): boolean {
   if (!excludeText) return false;
   const result = matchKeywordExpr(title, excludeText, 'or');
   if (result.error) {
-    console.warn(`[AnimeSubscription] 排除表达式无效: ${result.error} | ${excludeText}`);
+    logger.warn(`[AnimeSubscription] 排除表达式无效: ${result.error} | ${excludeText}`);
     // 非法排除式：保守起见不排除（避免误杀全部），但已打日志
     return false;
   }

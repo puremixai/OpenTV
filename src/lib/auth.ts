@@ -1,5 +1,7 @@
 import { NextRequest } from 'next/server';
 
+import { logger } from '@/lib/logger';
+
 import { isAccessTokenInvalidated } from './access-token-invalidation';
 
 export type AuthInfo = {
@@ -129,6 +131,6 @@ export function clearAuthCookie(): void {
     // 如果有其他域名或路径的cookie，也尝试清除
     document.cookie = 'auth_info=; path=/; domain=' + window.location.hostname + '; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax';
   } catch (error) {
-    console.error('[Auth] Failed to clear cookie:', error);
+    logger.error('[Auth] Failed to clear cookie:', error);
   }
 }

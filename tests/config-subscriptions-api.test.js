@@ -38,7 +38,7 @@ const request = (body) =>
   new NextRequest('http://localhost/api/admin/config_file', {
     method: 'POST',
     body: JSON.stringify(body),
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', 'x-config-version': '0' },
   });
 let current;
 beforeEach(() => {

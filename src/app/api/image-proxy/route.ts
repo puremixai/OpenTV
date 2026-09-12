@@ -1,10 +1,11 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { HttpsProxyAgent } from 'https-proxy-agent';
-import nodeFetch from 'node-fetch';
 import { NextResponse } from 'next/server';
+import nodeFetch from 'node-fetch';
 
 import { getConfig } from '@/lib/config';
+import { logger } from '@/lib/logger';
 
 export const runtime = 'nodejs';
 
@@ -135,7 +136,7 @@ export async function GET(request: Request) {
       headers,
     });
   } catch (error) {
-    console.error('图片代理请求失败:', error);
+    logger.error('图片代理请求失败:', error);
     return NextResponse.json(
       { error: 'Error fetching image' },
       { status: 500 }

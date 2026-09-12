@@ -1,14 +1,14 @@
 // WatchRoom 全局状态管理 Provider
 'use client';
 
-import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
+import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
 
+import { getAuthInfoFromBrowserCookie } from '@/lib/auth';
+import { logger } from '@/lib/logger';
 import { useWatchRoom } from '@/hooks/useWatchRoom';
 
 import Toast, { ToastProps } from '@/components/Toast';
-
-import { getAuthInfoFromBrowserCookie } from '@/lib/auth';
 
 import type { ChatMessage, Member, MusicSyncState, Room, RoomType, ScreenState, WatchRoomConfig } from '@/types/watch-room';
 
@@ -106,7 +106,7 @@ export function WatchRoomProvider({ children }: WatchRoomProviderProps) {
 
   // 处理房间删除的回调
   const handleRoomDeleted = useCallback((data?: { reason?: string }) => {
-    console.log('[WatchRoomProvider] Room deleted:', data);
+    logger.debug('[WatchRoomProvider] Room deleted:', data);
 
     // 显示Toast提示
     if (data?.reason === 'owner_left') {
@@ -128,7 +128,7 @@ export function WatchRoomProvider({ children }: WatchRoomProviderProps) {
 
   // 处理房间状态清除的回调（房主离开超过30秒）
   const handleStateCleared = useCallback(() => {
-    console.log('[WatchRoomProvider] Room state cleared');
+    logger.debug('[WatchRoomProvider] Room state cleared');
 
     setToast({
       message: '房主已离开，播放状态已清除',
@@ -183,20 +183,20 @@ export function WatchRoomProvider({ children }: WatchRoomProviderProps) {
 
   // 手动重连
   const manualReconnect = useCallback(async () => {
-    console.log('[WatchRoomProvider] Manual reconnect initiated');
+    logger.debug('[WatchRoomProvider] Manual reconnect initiated');
     setReconnectFailed(false);
 
     const { watchRoomSocketManager } = await import('@/lib/watch-room-socket');
     const success = await watchRoomSocketManager.reconnect();
 
     if (success) {
-      console.log('[WatchRoomProvider] Manual reconnect succeeded');
+      logger.debug('[WatchRoomProvider] Manual reconnect succeeded');
       // 尝试重新加入房间
       const storedInfo = localStorage.getItem('watch_room_info');
       if (storedInfo && watchRoom.socket) {
         try {
           const info = JSON.parse(storedInfo);
-          console.log('[WatchRoomProvider] Attempting to rejoin room after reconnect');
+          logger.debug('[WatchRoomProvider] Attempting to rejoin room after reconnect');
           await watchRoom.joinRoom({
             roomId: info.roomId,
             password: info.password,
@@ -204,11 +204,11 @@ export function WatchRoomProvider({ children }: WatchRoomProviderProps) {
             ownerToken: info.ownerToken,
           });
         } catch (error) {
-          console.error('[WatchRoomProvider] Failed to rejoin room after reconnect:', error);
+          logger.error('[WatchRoomProvider] Failed to rejoin room after reconnect:', error);
         }
       }
     } else {
-      console.error('[WatchRoomProvider] Manual reconnect failed');
+      logger.error('[WatchRoomProvider] Manual reconnect failed');
       setReconnectFailed(true);
     }
   }, [watchRoom]);
@@ -246,7 +246,7 @@ export function WatchRoomProvider({ children }: WatchRoomProviderProps) {
           if (watchRoomConfig.serverType === 'external' && watchRoomConfig.enabled) {
             // 检查用户是否已登录
             if (!isLoggedIn) {
-              console.log('[WatchRoom] User not logged in, skipping auth info request');
+              logger.debug('[WatchRoom] User not logged in, skipping auth info request');
               // 用户未登录，不调用认证接口
             } else {
               try {
@@ -255,12 +255,12 @@ export function WatchRoomProvider({ children }: WatchRoomProviderProps) {
                   const authData = await authResponse.json();
                   watchRoomConfig.externalServerAuth = authData.externalServerAuth;
                 } else {
-                  console.error('[WatchRoom] Failed to load auth info:', authResponse.status);
+                  logger.error('[WatchRoom] Failed to load auth info:', authResponse.status);
                   // 如果无法获取认证信息，禁用观影室
                   watchRoomConfig.enabled = false;
                 }
               } catch (error) {
-                console.error('[WatchRoom] Error loading auth info:', error);
+                logger.error('[WatchRoom] Error loading auth info:', error);
                 // 如果无法获取认证信息，禁用观影室
                 watchRoomConfig.enabled = false;
               }
@@ -272,26 +272,26 @@ export function WatchRoomProvider({ children }: WatchRoomProviderProps) {
 
           // 只在启用了观影室时才连接
           if (watchRoomConfig.enabled) {
-            console.log('[WatchRoom] Connecting with config:', watchRoomConfig);
+            logger.debug('[WatchRoom] Connecting with config:', watchRoomConfig);
 
             // 设置重连回调
             const { watchRoomSocketManager } = await import('@/lib/watch-room-socket');
             watchRoomSocketManager.setReconnectFailedCallback(() => {
-              console.log('[WatchRoomProvider] Reconnect failed callback triggered');
+              logger.debug('[WatchRoomProvider] Reconnect failed callback triggered');
               setReconnectFailed(true);
             });
 
             watchRoomSocketManager.setReconnectSuccessCallback(() => {
-              console.log('[WatchRoomProvider] Reconnect success callback triggered');
+              logger.debug('[WatchRoomProvider] Reconnect success callback triggered');
               setReconnectFailed(false);
             });
 
             await watchRoom.connect(watchRoomConfig);
           } else {
-            console.log('[WatchRoom] Watch room is disabled, skipping connection');
+            logger.debug('[WatchRoom] Watch room is disabled, skipping connection');
           }
         } else {
-          console.error('[WatchRoom] Failed to load config:', response.status);
+          logger.error('[WatchRoom] Failed to load config:', response.status);
           // 加载配置失败时，不连接，保持禁用状态
           const defaultConfig: WatchRoomConfig = {
             enabled: false,
@@ -301,7 +301,7 @@ export function WatchRoomProvider({ children }: WatchRoomProviderProps) {
           setIsEnabled(false);
         }
       } catch (error) {
-        console.error('[WatchRoom] Error loading config:', error);
+        logger.error('[WatchRoom] Error loading config:', error);
         // 加载配置失败时，不连接，保持禁用状态
         const defaultConfig: WatchRoomConfig = {
           enabled: false,

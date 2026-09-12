@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import { getConfig } from '@/lib/config';
+import { logger } from '@/lib/logger';
 import { getTMDBUpcomingContent } from '@/lib/tmdb.client';
 
 // 内存缓存对象
@@ -60,7 +61,7 @@ export async function GET(request: NextRequest) {
       cached: false,
     });
   } catch (error) {
-    console.error('获取TMDB即将上映数据失败:', error);
+    logger.error('获取TMDB即将上映数据失败:', error);
     return NextResponse.json(
       { code: 500, message: '服务器内部错误' },
       { status: 500 }

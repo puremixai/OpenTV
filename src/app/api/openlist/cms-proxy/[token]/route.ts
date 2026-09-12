@@ -3,6 +3,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import { getConfig } from '@/lib/config';
+import { logger } from '@/lib/logger';
 import { hasFeaturePermission } from '@/lib/permissions';
 
 export const runtime = 'nodejs';
@@ -108,7 +109,7 @@ export async function GET(
           }
         }
       } catch (error) {
-        console.error('[OpenList CMS Proxy] 从数据库读取 metainfo 失败:', error);
+        logger.error('[OpenList CMS Proxy] 从数据库读取 metainfo 失败:', error);
       }
     }
 
@@ -152,7 +153,7 @@ export async function GET(
     // 列表模式（返回所有）
     return await handleSearch(metaInfo, '', request);
   } catch (error) {
-    console.error('[OpenList CMS Proxy] 错误:', error);
+    logger.error('[OpenList CMS Proxy] 错误:', error);
     return NextResponse.json(
       {
         code: 500,

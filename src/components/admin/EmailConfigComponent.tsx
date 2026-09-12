@@ -4,6 +4,7 @@
 import { useEffect, useState } from 'react';
 
 import { AdminConfig } from '@/lib/admin.types';
+import { adminFetch as fetch } from '@/lib/admin-fetch';
 
 import {
   AlertModal,

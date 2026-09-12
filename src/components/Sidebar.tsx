@@ -15,6 +15,8 @@ import {
 } from 'react';
 
 import { useSite } from './SiteProvider';
+import { ThemeToggle } from './ThemeToggle';
+import { UserMenu } from './UserMenu';
 import { useWatchRoomContextSafe } from './WatchRoomProvider';
 
 interface SidebarContextType {
@@ -252,7 +254,7 @@ const Sidebar = ({ onToggle, activePath = '/' }: SidebarProps) => {
         >
           <div className='flex h-full flex-col'>
             {/* 顶部 Logo 区域 */}
-            <div className='relative h-16'>
+            <div className='relative h-16 shrink-0'>
               <div
                 className={`absolute inset-0 flex items-center justify-center transition-opacity duration-200 ${isCollapsed ? 'opacity-0' : 'opacity-100'
                   }`}
@@ -263,6 +265,8 @@ const Sidebar = ({ onToggle, activePath = '/' }: SidebarProps) => {
               </div>
               <button
                 onClick={handleToggle}
+                aria-label={isCollapsed ? '展开菜单栏' : '折叠菜单栏'}
+                aria-expanded={!isCollapsed}
                 className={`absolute top-1/2 -translate-y-1/2 flex items-center justify-center w-8 h-8 rounded-lg text-gray-500 hover:text-gray-700 hover:bg-gray-100/50 transition-colors duration-200 z-10 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-700/50 ${isCollapsed ? 'left-1/2 -translate-x-1/2' : 'right-2'
                   }`}
               >
@@ -271,7 +275,7 @@ const Sidebar = ({ onToggle, activePath = '/' }: SidebarProps) => {
             </div>
 
             {/* 首页和搜索导航 */}
-            <nav className='px-2 mt-4 space-y-1'>
+            <nav className='shrink-0 px-2 mt-4 space-y-1'>
               <Link
                 href='/'
                 prefetch={false}
@@ -310,7 +314,7 @@ const Sidebar = ({ onToggle, activePath = '/' }: SidebarProps) => {
             </nav>
 
             {/* 菜单项 */}
-            <div className='flex-1 overflow-y-auto px-2 pt-4'>
+            <div className='min-h-0 flex-1 overflow-y-auto px-2 pt-4 pb-4'>
               <div className='space-y-1'>
                 {menuItems.map((item) => {
                   // 检查当前路径是否匹配这个菜单项
@@ -351,6 +355,15 @@ const Sidebar = ({ onToggle, activePath = '/' }: SidebarProps) => {
                   );
                 })}
               </div>
+            </div>
+            <div
+              aria-label='外观与个人设置'
+              className={`flex shrink-0 items-center gap-2 border-t border-gray-200/50 px-3 py-3 dark:border-gray-700/50 ${
+                isCollapsed ? 'flex-col' : ''
+              }`}
+            >
+              <ThemeToggle />
+              <UserMenu placement='top-start' showLabel={!isCollapsed} />
             </div>
           </div>
         </aside>

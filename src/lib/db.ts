@@ -2,6 +2,8 @@
 
 import { AdminConfig } from './admin.types';
 import { BookReadRecord, BookShelfItem } from './book.types';
+import { ConfigConflictError, nextConfig, publicConfig, StoredAdminConfig } from './config-revisions';
+import { checkMutationVersion, recordConfigConflict } from './config-write-context';
 import { MusicPlayRecord } from './db.client';
 import { MangaReadRecord, MangaShelfItem } from './manga.types';
 import {
@@ -1052,15 +1054,31 @@ export class DbManager {
 
   // ---------- 管理员配置 ----------
   async getAdminConfig(): Promise<AdminConfig | null> {
-    if (typeof (this.storage as any).getAdminConfig === 'function') {
-      return (this.storage as any).getAdminConfig();
-    }
-    return null;
+    const config = await this.storage?.getAdminConfig();
+    return config ? publicConfig(config) : null;
+  }
+
+  async getConfigHistory() {
+    const config = await this.storage?.getAdminConfig() as StoredAdminConfig | null;
+    return config?._history || [];
   }
 
   async saveAdminConfig(config: AdminConfig): Promise<void> {
-    if (typeof (this.storage as any).setAdminConfig === 'function') {
-      await (this.storage as any).setAdminConfig(config);
+    if (!this.storage) return;
+    try {
+      const current = await this.storage.getAdminConfig() as StoredAdminConfig | null;
+      checkMutationVersion(current?.ConfigVersion || 0);
+      const next = nextConfig(current, config);
+      if (!await this.storage.compareAndSetAdminConfig(current?.ConfigVersion || 0, next)) throw new ConfigConflictError();
+      config.ConfigVersion = next.ConfigVersion;
+      config.ConfigUpdatedAt = next.ConfigUpdatedAt;
+      const { setCachedConfig } = await import('./config');
+      await setCachedConfig(config);
+    } catch (error) {
+      recordConfigConflict(error);
+      const { clearConfigCache } = await import('./config');
+      await clearConfigCache();
+      throw error;
     }
   }
 

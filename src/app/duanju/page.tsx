@@ -5,6 +5,7 @@ import { ArrowLeft, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { Suspense, useEffect, useRef, useState } from 'react';
 
+import { logger } from '@/lib/logger';
 import { SearchResult } from '@/lib/types';
 
 import PageLayout from '@/components/PageLayout';
@@ -47,7 +48,7 @@ function DuanjuPageClient() {
           }
         }
       } catch (error) {
-        console.error('Failed to load duanju sources:', error);
+        logger.error('Failed to load duanju sources:', error);
       } finally {
         setIsLoadingSources(false);
       }
@@ -84,7 +85,7 @@ function DuanjuPageClient() {
           setHasMore(data.page < data.pageCount);
         }
       } catch (error) {
-        console.error('Failed to load duanju videos:', error);
+        logger.error('Failed to load duanju videos:', error);
       } finally {
         setIsLoadingVideos(false);
       }

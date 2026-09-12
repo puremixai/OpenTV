@@ -1,6 +1,6 @@
 'use client';
 
-import { ExternalLink, Film, Loader2, PlayCircle, Youtube, X } from 'lucide-react';
+import { ExternalLink, Film, Loader2, PlayCircle, X,Youtube } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 

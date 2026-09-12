@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 import { getConfig } from '@/lib/config';
 import { db } from '@/lib/db';
+import { checkMutationVersion, withConfigMutation } from '@/lib/server/config-mutation';
 import { getAuthenticatedUser } from '@/lib/session';
 import { normalizeApiBaseUrl } from '@/lib/url';
 import { XiaoyaClient } from '@/lib/xiaoya.client';
@@ -14,7 +15,7 @@ export const runtime = 'nodejs';
  * POST /api/admin/xiaoya
  * 管理小雅配置
  */
-export async function POST(request: NextRequest) {
+export const POST = withConfigMutation(async function POST(request: NextRequest) {
   try {
     const authInfo = await getAuthenticatedUser(request);
     if (!authInfo || (authInfo.role !== 'admin' && authInfo.role !== 'owner')) {
@@ -48,7 +49,8 @@ export async function POST(request: NextRequest) {
 
     if (action === 'save') {
       // 保存配置
-      const config = await getConfig();
+      const config = await getConfig(true);
+    checkMutationVersion(config.ConfigVersion || 0);
 
       config.XiaoyaConfig = {
         Enabled: configData.Enabled || false,
@@ -71,4 +73,4 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+});

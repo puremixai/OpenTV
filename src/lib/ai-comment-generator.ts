@@ -2,6 +2,7 @@
 
 import { parseStringPromise } from 'xml2js';
 
+import { logger } from '@/lib/logger';
 import { normalizeApiBaseUrl } from '@/lib/url';
 
 export interface AIComment {
@@ -168,7 +169,7 @@ async function searchMovieInfo(
 
     return searchResults;
   } catch (error) {
-    console.error('搜索影片资料失败:', error);
+    logger.error('搜索影片资料失败:', error);
     return '';
   }
 }
@@ -234,7 +235,7 @@ export async function generateAIComments(
         commentsData = JSON.parse(content);
       }
     } catch (parseError) {
-      console.error('解析AI返回的JSON失败:', content);
+      logger.error('解析AI返回的JSON失败:', content);
       throw new Error('AI返回格式错误');
     }
 
@@ -257,7 +258,7 @@ export async function generateAIComments(
 
     return aiComments;
   } catch (error) {
-    console.error('AI评论生成失败:', error);
+    logger.error('AI评论生成失败:', error);
     throw error;
   }
 }

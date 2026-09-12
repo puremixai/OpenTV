@@ -1,6 +1,7 @@
 import 'server-only';
 
 import { DbManager } from '@/lib/db';
+import { logger } from '@/lib/logger';
 
 const MEMORY_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 const DATABASE_CACHE_TTL_MS = 30 * 24 * 60 * 60 * 1000;
@@ -63,7 +64,7 @@ export async function getBangumiScheduleDatabaseCache<T>(
     setBangumiScheduleMemoryCache(season, year, entry.data, entry.cachedAt);
     return entry.data;
   } catch (error) {
-    console.warn('读取 Bangumi 时刻表数据库缓存失败:', error);
+    logger.warn('读取 Bangumi 时刻表数据库缓存失败:', error);
     return null;
   }
 }
@@ -80,6 +81,6 @@ export async function setBangumiScheduleDatabaseCache<T>(
       JSON.stringify({ season, year, cachedAt, data })
     );
   } catch (error) {
-    console.warn('写入 Bangumi 时刻表数据库缓存失败:', error);
+    logger.warn('写入 Bangumi 时刻表数据库缓存失败:', error);
   }
 }

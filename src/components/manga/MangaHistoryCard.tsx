@@ -4,9 +4,9 @@ import { BookOpen, CircleMinus, CirclePlus, Info, Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useMemo, useState } from 'react';
 
-import { useLongPress } from '@/hooks/useLongPress';
 import { MangaReadRecord } from '@/lib/manga.types';
 import { processImageUrl } from '@/lib/utils';
+import { useLongPress } from '@/hooks/useLongPress';
 
 import ImageViewer from '@/components/ImageViewer';
 import MobileActionSheet from '@/components/MobileActionSheet';

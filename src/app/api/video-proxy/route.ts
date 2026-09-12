@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+import { logger } from '@/lib/logger';
 import { isMediaProxyAuthorized } from '@/lib/server/media-proxy-auth';
 import { fetchPublicUrl } from '@/lib/server/public-fetch';
 
@@ -89,7 +90,7 @@ export async function GET(request: NextRequest) {
       headers,
     });
   } catch (error) {
-    console.error('Error proxying video:', error);
+    logger.error('Error proxying video:', error);
     return NextResponse.json(
       { error: 'Error fetching video' },
       { status: 500 }

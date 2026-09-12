@@ -2,6 +2,7 @@ import { nanoid } from 'nanoid';
 import { NextRequest, NextResponse } from 'next/server';
 
 import { getStorage } from '@/lib/db';
+import { logger } from '@/lib/logger';
 import { getAuthenticatedUser } from '@/lib/session';
 import { MovieRequest } from '@/lib/types';
 
@@ -55,7 +56,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ requests });
   } catch (error) {
-    console.error('获取求片列表失败:', error);
+    logger.error('获取求片列表失败:', error);
     return NextResponse.json(
       { error: (error as Error).message },
       { status: 500 }
@@ -205,7 +206,7 @@ export async function POST(request: NextRequest) {
       request: newRequest
     });
   } catch (error) {
-    console.error('创建求片失败:', error);
+    logger.error('创建求片失败:', error);
     return NextResponse.json(
       { error: (error as Error).message },
       { status: 500 }

@@ -1,12 +1,14 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
+import { useEffect, useState } from 'react';
+
 import { playMusicList } from '@/lib/music/actions';
-import MusicLoadingIndicator from '@/components/music/MusicLoadingIndicator';
-import SongList from '@/components/music/SongList';
 import { mapSong, normalizeSource } from '@/lib/music/shared';
 import type { Song } from '@/lib/music/types';
+
+import MusicLoadingIndicator from '@/components/music/MusicLoadingIndicator';
+import SongList from '@/components/music/SongList';
 
 export default function MusicSongListDetailPage() {
   const params = useParams<{ source: string; playlistId: string }>();

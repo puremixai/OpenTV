@@ -7,6 +7,7 @@ import { createPortal } from 'react-dom';
 
 import { getEpisodeFilterConfig, saveEpisodeFilterConfig } from '@/lib/db.client';
 import { normalizeEpisodeFilterConfig } from '@/lib/episode-filter';
+import { logger } from '@/lib/logger';
 import { EpisodeFilterConfig, EpisodeFilterRule } from '@/lib/types';
 
 interface EpisodeFilterSettingsProps {
@@ -136,7 +137,7 @@ export default function EpisodeFilterSettings({
         setConfig(normalizeEpisodeFilterConfig());
       }
     } catch (error) {
-      console.error('加载集数过滤配置失败:', error);
+      logger.error('加载集数过滤配置失败:', error);
     } finally {
       setLoading(false);
     }
@@ -176,7 +177,7 @@ export default function EpisodeFilterSettings({
         onClose();
       }, 300);
     } catch (error) {
-      console.error('保存集数过滤配置失败:', error);
+      logger.error('保存集数过滤配置失败:', error);
       if (onShowToast) {
         onShowToast('保存失败，请重试', 'error');
       }

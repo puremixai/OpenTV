@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getConfig, setCachedConfig } from '@/lib/config';
 import { db } from '@/lib/db';
 import { legadoSubscriptionStore } from '@/lib/legado/subscription-store';
+import { checkMutationVersion, withConfigMutation } from '@/lib/server/config-mutation';
 import { getAuthenticatedUser } from '@/lib/session';
 
 export const runtime = 'nodejs';
@@ -17,12 +18,13 @@ async function ensureAdmin(request: NextRequest) {
   return authInfo.username;
 }
 
-export async function POST(request: NextRequest, context: { params: Promise<{ id: string }> }) {
+export const POST = withConfigMutation(async function POST(request: NextRequest, context: { params: Promise<{ id: string }> }) {
   const ensured = await ensureAdmin(request);
   if (ensured instanceof NextResponse) return ensured;
   const { id } = await context.params;
   try {
-    const config = await getConfig();
+    const config = await getConfig(true);
+    checkMutationVersion(config.ConfigVersion || 0);
     const opds = config.OPDSConfig || { Enabled: false, Sources: [], LegadoSubscriptions: [], CacheTTL: 10 * 60 * 1000 };
     const current = (opds.LegadoSubscriptions || []).find((item) => item.id === id);
     if (!current) return NextResponse.json({ success: false, error: '订阅不存在' }, { status: 404 });
@@ -32,7 +34,8 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
     await setCachedConfig(nextConfig);
     return NextResponse.json({ success: true, subscription: { ...current, ...meta, enabled: current.enabled !== false } });
   } catch (error) {
-    const config = await getConfig();
+    const config = await getConfig(true);
+    checkMutationVersion(config.ConfigVersion || 0);
     const opds = config.OPDSConfig || { Enabled: false, Sources: [], LegadoSubscriptions: [], CacheTTL: 10 * 60 * 1000 };
     const now = Date.now();
     const message = error instanceof Error ? error.message : '刷新 Legado 订阅失败';
@@ -42,4 +45,4 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
     await setCachedConfig(nextConfig);
     return NextResponse.json({ success: false, error: message }, { status: 400 });
   }
-}
+});

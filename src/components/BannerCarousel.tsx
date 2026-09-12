@@ -17,12 +17,13 @@ import {
   useState,
 } from 'react';
 
+import { getDoubanDetail } from '@/lib/douban.client';
+import { logger } from '@/lib/logger';
 import {
   type TMDBItem,
   getGenreNames,
   getTMDBImageUrl,
 } from '@/lib/tmdb.client';
-import { getDoubanDetail } from '@/lib/douban.client';
 
 import ProxyImage from '@/components/ProxyImage';
 
@@ -274,7 +275,7 @@ export default function BannerCarousel({
                 cacheExpired = Date.now() - timestamp > LOCALSTORAGE_DURATION;
               }
             } catch (e) {
-              console.error('解析缓存数据失败:', e);
+              logger.error('解析缓存数据失败:', e);
             }
           }
         }
@@ -311,12 +312,12 @@ export default function BannerCarousel({
               );
             } catch (e) {
               // localStorage 可能已满，忽略错误
-              console.error('保存到 localStorage 失败:', e);
+              logger.error('保存到 localStorage 失败:', e);
             }
           }
         }
       } catch (error) {
-        console.error('获取热门内容失败:', error);
+        logger.error('获取热门内容失败:', error);
       } finally {
         setIsLoading(false);
       }
@@ -357,7 +358,7 @@ export default function BannerCarousel({
                 trailer_url: trailerUrl,
               };
             } catch (error) {
-              console.error(`获取豆瓣电影 ${item.id} 预告片失败:`, error);
+              logger.error(`获取豆瓣电影 ${item.id} 预告片失败:`, error);
               return item;
             }
           })
@@ -366,7 +367,7 @@ export default function BannerCarousel({
         setItems(itemsWithTrailers);
         setTrailersLoaded(true);
       } catch (error) {
-        console.error('获取豆瓣预告片失败:', error);
+        logger.error('获取豆瓣预告片失败:', error);
       }
     };
 

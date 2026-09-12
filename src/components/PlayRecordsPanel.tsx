@@ -11,6 +11,7 @@ import {
   getAllPlayRecords,
   subscribeToDataUpdates,
 } from '@/lib/db.client';
+import { logger } from '@/lib/logger';
 
 import VideoCard from '@/components/VideoCard';
 
@@ -65,7 +66,7 @@ export default function PlayRecordsPanel({
         );
       });
     } catch (error) {
-      console.error('加载播放记录失败:', error);
+      logger.error('加载播放记录失败:', error);
       setPlayRecords([]);
     } finally {
       setLoading(false);
@@ -80,7 +81,7 @@ export default function PlayRecordsPanel({
       setEditMode(false);
       setShowConfirmDialog(false);
     } catch (error) {
-      console.error('清空播放记录失败:', error);
+      logger.error('清空播放记录失败:', error);
     }
   };
 
@@ -123,7 +124,7 @@ export default function PlayRecordsPanel({
       setEditMode(false);
       setShowDeleteSelectedDialog(false);
     } catch (error) {
-      console.error('删除选中播放记录失败:', error);
+      logger.error('删除选中播放记录失败:', error);
     } finally {
       setDeletingSelected(false);
     }

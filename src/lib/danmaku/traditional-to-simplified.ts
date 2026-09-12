@@ -7,9 +7,9 @@
 
 type OpenCCConverter = (text: string) => string;
 
-// opencc-js 静态导入。server 构建下由 next.config.js 的 alias 指向 shim，
-// 避免把 ~1.9MB 字典内联进 Cloudflare Worker；client 构建用真库做繁简转换。
-import { Converter } from 'opencc-js';
+// Load only the traditional-to-simplified dictionary when conversion is requested.
+
+import { logger } from '@/lib/logger';
 
 let danmakuConverter: OpenCCConverter | null = null;
 let danmakuConverterPromise: Promise<OpenCCConverter | null> | null = null;
@@ -19,26 +19,30 @@ let danmakuConverterPromise: Promise<OpenCCConverter | null> | null = null;
  * 仅客户端可调用；服务端（SSR）下 window 未定义时由调用方自行保护。
  */
 export function loadTraditionalToSimplifiedConverter(): Promise<OpenCCConverter | null> {
+  if (typeof window === 'undefined') return Promise.resolve(null);
   if (danmakuConverter) return Promise.resolve(danmakuConverter);
   if (!danmakuConverterPromise) {
-    danmakuConverterPromise = Promise.resolve()
-      .then(() => {
-        // 静态导入的 Converter 已可用；包一层 Promise 保持返回签名一致
+    danmakuConverterPromise = import('opencc-js/t2cn')
+      .then(({ Converter }) => {
         danmakuConverter = Converter({ from: 'hk', to: 'cn' });
         return danmakuConverter;
       })
       .catch((error) => {
-        console.error('初始化繁简转换器失败:', error);
+        logger.error('初始化繁简转换器失败:', error);
         danmakuConverter = null;
+        danmakuConverterPromise = null;
         return null;
       });
   }
   return danmakuConverterPromise;
 }
 
-// 客户端加载时预热转换器（服务端 SSR 时 window 未定义，无副作用）
-if (typeof window !== 'undefined') {
-  void loadTraditionalToSimplifiedConverter();
+export async function prepareDanmakuTextConversion(): Promise<void> {
+  if (
+    typeof window !== 'undefined' &&
+    localStorage.getItem('danmakuTraditionalToSimplified') === 'true'
+  )
+    await loadTraditionalToSimplifiedConverter();
 }
 
 export function convertDanmakuText(text: string): string {
@@ -55,7 +59,7 @@ export function convertDanmakuText(text: string): string {
   try {
     return danmakuConverter(text);
   } catch (error) {
-    console.error('弹幕繁简转换失败:', error);
+    logger.error('弹幕繁简转换失败:', error);
     return text;
   }
 }

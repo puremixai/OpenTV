@@ -2,9 +2,8 @@
 
 import crypto from 'crypto';
 
-import { safeFetch } from './safe-http';
-
 import { lockManager } from './lock';
+import { safeFetch } from './safe-http';
 import { IStorage, Notification, PushSubscriptionRecord } from './types';
 
 const DEFAULT_TTL_SECONDS = 60 * 60 * 24;

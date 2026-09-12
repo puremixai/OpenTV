@@ -3,6 +3,8 @@
 
 import { useEffect, useState } from 'react';
 
+import { logger } from '@/lib/logger';
+
 interface Song {
   id: string;
   name: string;
@@ -118,7 +120,7 @@ export default function AddToPlaylistModal({
         setPlaylists(data.data?.playlists || []);
       }
     } catch (error) {
-      console.error('加载歌单失败:', error);
+      logger.error('加载歌单失败:', error);
     } finally {
       setLoading(false);
     }
@@ -151,7 +153,7 @@ export default function AddToPlaylistModal({
         onError?.(getApiErrorMessage(data.error, '创建歌单失败'));
       }
     } catch (error) {
-      console.error('创建歌单失败:', error);
+      logger.error('创建歌单失败:', error);
       onError?.('创建歌单失败');
     } finally {
       setCreating(false);
@@ -187,7 +189,7 @@ export default function AddToPlaylistModal({
         onError?.(getApiErrorMessage(data.error, '添加失败'));
       }
     } catch (error) {
-      console.error('添加到歌单失败:', error);
+      logger.error('添加到歌单失败:', error);
       onError?.('添加到歌单失败');
     } finally {
       setAddingToPlaylistId(null);

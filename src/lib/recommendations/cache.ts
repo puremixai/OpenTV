@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 const DAY_IN_MS = 24 * 60 * 60 * 1000;
 
 const RECOMMENDATION_CACHE_CONFIG = {
@@ -127,7 +128,7 @@ export function getRecommendationCache<T>(
 
     return entry.value;
   } catch (error) {
-    console.error('读取推荐缓存失败:', error);
+    logger.error('读取推荐缓存失败:', error);
     localStorage.removeItem(key);
     return null;
   }
@@ -143,7 +144,7 @@ export function setRecommendationCache<T>(key: string, value: T): void {
     };
     localStorage.setItem(key, JSON.stringify(entry));
   } catch (error) {
-    console.error('保存推荐缓存失败:', error);
+    logger.error('保存推荐缓存失败:', error);
   }
 }
 
@@ -178,7 +179,7 @@ export async function clearExpiredRecommendationCaches(): Promise<number> {
     keysToRemove.forEach((key) => localStorage.removeItem(key));
     return keysToRemove.length;
   } catch (error) {
-    console.error('清理推荐缓存失败:', error);
+    logger.error('清理推荐缓存失败:', error);
     return 0;
   }
 }
@@ -194,11 +195,11 @@ export function initRecommendationCacheModule(): void {
     void clearExpiredRecommendationCaches()
       .then((count) => {
         if (count > 0) {
-          console.log(`[推荐缓存] 启动清理: 已删除 ${count} 个过期缓存`);
+          logger.debug(`[推荐缓存] 启动清理: 已删除 ${count} 个过期缓存`);
         }
       })
       .catch((error) => {
-        console.error('[推荐缓存] 清理失败:', error);
+        logger.error('[推荐缓存] 清理失败:', error);
       });
   });
 }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import { API_CONFIG, getAvailableApiSites } from '@/lib/config';
+import { logger } from '@/lib/logger';
 import { getAuthenticatedUser } from '@/lib/session';
 import { SearchResult } from '@/lib/types';
 
@@ -123,7 +124,7 @@ export async function GET(request: NextRequest) {
       pageCount: videoData.pagecount || 0,
     });
   } catch (error) {
-    console.error('Failed to get videos:', error);
+    logger.error('Failed to get videos:', error);
     return NextResponse.json(
       { error: '获取视频列表失败' },
       { status: 500 }

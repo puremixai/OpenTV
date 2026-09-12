@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useEffect, useState } from 'react';
 
+import { logger } from '@/lib/logger';
 import { checkForUpdates, UpdateStatus } from '@/lib/version_check';
 
 interface VersionCheckContextType {
@@ -28,7 +29,7 @@ export const VersionCheckProvider: React.FC<{ children: React.ReactNode }> = ({
         const status = await checkForUpdates();
         setUpdateStatus(status);
       } catch (error) {
-        console.warn('版本检查失败:', error);
+        logger.warn('版本检查失败:', error);
       } finally {
         setIsChecking(false);
       }

@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 import { getConfig } from '@/lib/config';
 import { getDanmakuApiBaseUrl } from '@/lib/danmaku/config';
+import { logger } from '@/lib/logger';
 
 export const runtime = 'nodejs';
 
@@ -63,7 +64,7 @@ export async function GET(request: NextRequest) {
       throw fetchError;
     }
   } catch (error) {
-    console.error('弹幕搜索代理错误:', error);
+    logger.error('弹幕搜索代理错误:', error);
     return NextResponse.json(
       {
         errorCode: -1,

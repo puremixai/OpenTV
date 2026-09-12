@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { getConfig } from '@/lib/config';
+import { logger } from '@/lib/logger';
 import { SearchResult } from '@/lib/types';
 
 /**
@@ -417,7 +418,7 @@ export async function getSpecialSourceDetail(
     // 不是特殊源，返回 null
     return null;
   } catch (error) {
-    console.error(`获取特殊源详情失败 (${source}+${id}):`, error);
+    logger.error(`获取特殊源详情失败 (${source}+${id}):`, error);
     throw error;
   }
 }

@@ -7,6 +7,8 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { URL } from 'url';
 
+import { logger } from '@/lib/logger';
+
 import { safeFetch } from './safe-http';
 
 export interface OfflineDownloadTask {
@@ -136,19 +138,19 @@ export class OfflineDownloader {
 
       // 检查是否为主播放列表（包含多个分辨率）
       if (this.isMasterPlaylist(m3u8Content)) {
-        console.log('检测到主播放列表，正在选择最高分辨率...');
+        logger.debug('检测到主播放列表，正在选择最高分辨率...');
 
         // 解析主播放列表，获取最高分辨率的子播放列表URL
         const bestVariantUrl = this.selectBestVariant(m3u8Content, task.m3u8Url);
 
         if (bestVariantUrl) {
-          console.log('已选择最高分辨率流:', bestVariantUrl);
+          logger.debug('已选择最高分辨率流:', bestVariantUrl);
           finalM3u8Url = bestVariantUrl;
 
           // 下载子播放列表
           m3u8Content = await this.fetchContent(bestVariantUrl);
         } else {
-          console.warn('无法找到子播放列表，使用原始URL');
+          logger.warn('无法找到子播放列表，使用原始URL');
         }
       }
 
@@ -251,7 +253,7 @@ export class OfflineDownloader {
       return b.bandwidth - a.bandwidth; // 降序
     });
 
-    console.log('可用的流变体:', variants.map(v => ({
+    logger.debug('可用的流变体:', variants.map(v => ({
       url: v.url,
       bandwidth: v.bandwidth,
       resolution: v.resolution ? `${v.resolution.width}x${v.resolution.height}` : '未知',
@@ -390,7 +392,7 @@ export class OfflineDownloader {
         return;
       } catch (error) {
         lastError = error instanceof Error ? error : new Error(String(error));
-        console.error(`下载失败 (尝试 ${attempt + 1}/${this.maxRetries}): ${url}`, error);
+        logger.error(`下载失败 (尝试 ${attempt + 1}/${this.maxRetries}): ${url}`, error);
 
         if (attempt < this.maxRetries - 1) {
           await this.sleep(this.retryDelay * (attempt + 1));

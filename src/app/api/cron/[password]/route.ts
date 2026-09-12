@@ -2,9 +2,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import { checkAnimeSubscriptions } from '@/lib/anime-subscription';
-import { getConfig, refineConfig, setCachedConfig } from '@/lib/config';
+import { getConfig, refineConfig } from '@/lib/config';
 import { applySubscriptionConfig } from '@/lib/config-subscriptions';
-import { refreshSubscriptions } from '@/lib/server/config-subscriptions';
 import { db, getStorage } from '@/lib/db';
 import { EmailService } from '@/lib/email.service';
 import {
@@ -22,6 +21,9 @@ import {
 } from '@/lib/live';
 import { MangaChapter, MangaShelfItem } from '@/lib/manga.types';
 import { startOpenListRefresh } from '@/lib/openlist-refresh';
+import { refreshSubscriptions } from '@/lib/server/config-subscriptions';
+import { refreshSourceHealth } from '@/lib/server/source-health';
+import { updateConfig } from '@/lib/server/update-config';
 import { getSuwayomiConfig, loginWithSimpleAuth, SuwayomiClient } from '@/lib/suwayomi.client';
 import { SearchResult } from '@/lib/types';
 
@@ -236,6 +238,7 @@ async function cronJob() {
     refreshOpenList(),
     refreshRecordAndFavorites(),
     checkAnimeSubscriptions(),
+    getConfig().then(config => refreshSourceHealth(config.SourceConfig)),
   ]);
 }
 
@@ -272,7 +275,12 @@ async function refreshAllLiveChannels() {
   setLastGlobalLiveRefreshTime(Date.now());
 
   // 保存配置
-  await db.saveAdminConfig(config);
+  await updateConfig(current => {
+    for (const live of current.LiveConfig || []) {
+      const result = config.LiveConfig?.find(item => item.key === live.key && item.url === live.url);
+      if (result && !live.disabled) live.channelNumber = result.channelNumber;
+    }
+  });
 }
 
 async function refreshConfig() {
@@ -282,16 +290,16 @@ async function refreshConfig() {
     if (!subscriptions.some((sub) => sub.Enabled && sub.AutoUpdate)) return;
     const updated = await refreshSubscriptions(subscriptions, { automatic: true });
     // Fetches may take time. Preserve settings saved while a refresh was in flight.
-    let config = structuredClone(await getConfig());
+    await updateConfig(config => {
     const next = (config.ConfigSubscriptions || []).map((sub) => {
       const result = updated.find((item) => item.ID === sub.ID && item.URL === sub.URL);
       if (!result || !sub.Enabled || !sub.AutoUpdate) return sub;
       if (result.LastCheck < sub.LastCheck) return sub;
-      return { ...sub, ConfigContent: result.ConfigContent, LastCheck: result.LastCheck, LastError: result.LastError };
+      return { ...sub, ConfigContent: result.ConfigContent, LastCheck: result.LastCheck, LastAttempt: result.LastAttempt, LastError: result.LastError };
     });
     config = refineConfig(applySubscriptionConfig(config, config.ConfigFileLocal || '{}', next));
-    await db.saveAdminConfig(config);
-    await setCachedConfig(config);
+    return config;
+    });
     await db.deleteGlobalValue('duanju');
   } catch (error) {
     console.error('刷新配置订阅失败:', error);

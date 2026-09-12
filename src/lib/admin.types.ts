@@ -6,10 +6,14 @@ export interface ConfigSubscription {
   AutoUpdate: boolean;
   LastCheck: string;
   LastError?: string;
+  UpdateIntervalHours?: number;
+  LastAttempt?: string;
   ConfigContent?: string;
 }
 
 export interface AdminConfig {
+  ConfigVersion?: number;
+  ConfigUpdatedAt?: string;
   ConfigSubscriptions?: ConfigSubscription[];
   // Manual configuration is kept separately from the effective merged ConfigFile.
   ConfigFileLocal?: string;

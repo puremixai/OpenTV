@@ -2,13 +2,15 @@
 
 import { createHash } from 'crypto';
 
+import { logger } from '@/lib/logger';
+
 import { getConfig } from './config';
 import {
   MangaChapter,
   MangaDetail,
   MangaRecommendResult,
-  MangaSearchFailure,
   MangaRecommendType,
+  MangaSearchFailure,
   MangaSearchItem,
   MangaSearchResult,
   MangaSource,
@@ -454,7 +456,7 @@ export class SuwayomiClient {
           return await this.searchMangaSource(keyword, source, page);
         } catch (error) {
           const message = error instanceof Error ? error.message : '未知错误';
-          console.warn(`[Suwayomi] manga search source failed: ${source.id} - ${message}`);
+          logger.warn(`[Suwayomi] manga search source failed: ${source.id} - ${message}`);
           failedSources.push({
             sourceId: String(source.id),
             sourceName: source.displayName || source.name || String(source.id),

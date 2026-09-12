@@ -9,7 +9,10 @@
  */
 
 import { sql } from '@vercel/postgres';
-import { DatabaseAdapter, D1PreparedStatement, D1Result } from './d1-adapter';
+
+import { logger } from '@/lib/logger';
+
+import { D1PreparedStatement, D1Result,DatabaseAdapter } from './d1-adapter';
 
 /**
  * Vercel Postgres 适配器
@@ -88,7 +91,7 @@ class PostgresPreparedStatement implements D1PreparedStatement {
 
       return row as T;
     } catch (err) {
-      console.error('Postgres first() error:', err);
+      logger.error('Postgres first() error:', err);
       return null;
     }
   }
@@ -111,7 +114,7 @@ class PostgresPreparedStatement implements D1PreparedStatement {
         results: result.rows,
       };
     } catch (err: any) {
-      console.error('Postgres run() error:', err);
+      logger.error('Postgres run() error:', err);
       return {
         success: false,
         error: err.message,
@@ -133,7 +136,7 @@ class PostgresPreparedStatement implements D1PreparedStatement {
         results: result.rows || [],
       };
     } catch (err: any) {
-      console.error('Postgres all() error:', err);
+      logger.error('Postgres all() error:', err);
       return {
         success: false,
         error: err.message,

@@ -1,10 +1,13 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+
+import { logger } from '@/lib/logger';
 import { playMusicList, playMusicSong } from '@/lib/music/actions';
-import MusicLoadingIndicator from '@/components/music/MusicLoadingIndicator';
 import { getApiErrorMessage } from '@/lib/music/errors';
 import { mapSong, SourcePill } from '@/lib/music/shared';
+
+import MusicLoadingIndicator from '@/components/music/MusicLoadingIndicator';
 
 export default function MusicMyPlaylistsPage() {
   const [userPlaylists, setUserPlaylists] = useState<any[]>([]);
@@ -68,7 +71,7 @@ export default function MusicMyPlaylistsPage() {
       }
       loadUserPlaylists();
     } catch (error) {
-      console.error('删除歌单失败:', error);
+      logger.error('删除歌单失败:', error);
       window.alert('删除歌单失败');
     } finally {
       setDeletingPlaylistId(null);
@@ -93,7 +96,7 @@ export default function MusicMyPlaylistsPage() {
 
       loadUserPlaylistSongs(selectedUserPlaylist.id);
     } catch (error) {
-      console.error('移除歌曲失败:', error);
+      logger.error('移除歌曲失败:', error);
       window.alert('移除歌曲失败');
     } finally {
       setRemovingSongId(null);

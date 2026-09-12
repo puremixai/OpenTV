@@ -1,7 +1,6 @@
 /* eslint-disable no-console,@typescript-eslint/no-explicit-any */
 
 import type { NextRequest } from 'next/server';
-import { safeFetch } from './safe-http';
 
 import type { AdminConfig } from './admin.types';
 import {
@@ -11,6 +10,7 @@ import {
 import { getConfig } from './config';
 import { db, getStorage } from './db';
 import { lockManager } from './lock';
+import { safeFetch } from './safe-http';
 import type { IStorage, Notification } from './types';
 import { normalizeApiBaseUrl } from './url';
 import { getNotificationClickUrl } from './web-push';

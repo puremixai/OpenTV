@@ -1,5 +1,7 @@
 import parseTorrentName from 'parse-torrent-name';
 
+import { logger } from '@/lib/logger';
+
 export interface ParsedVideoInfo {
   episode?: number;
   season?: number;
@@ -37,7 +39,7 @@ export function parseVideoFileName(fileName: string): ParsedVideoInfo {
       };
     }
   } catch (error) {
-    console.error('parse-torrent-name 解析失败:', fileName, error);
+    logger.error('parse-torrent-name 解析失败:', fileName, error);
   }
 
   // 降级方案：使用多种正则模式提取集数

@@ -36,3 +36,33 @@ docker compose -f compose.local.yaml up -d
 - 应用进程使用 UID 1001 运行。
 - 登录页、管理员登录、HttpOnly Cookie、持久化会话、媒体令牌、匿名代理拦截、Socket 连接及 TV 注册均验证通过，验证用登录会话已退出。
 - 两个持久化卷已挂载，服务设置为 `unless-stopped` 自动重启。
+
+## 2026-09-13 优化版更新
+
+已更新为镜像 `e1a639757b53`，健康检查和真实站长登录通过。升级前现有的 2 个订阅、34 个视频源、1 个用户均保留，订阅 ID/URL 和源 key/API 与备份逐项一致。
+
+旧镜像保留为 `moontvplus:before-optimization`。SQLite 在线备份在数据库卷内的 `/app/.data/moontv-before-optimization-20260913.db`，备份与升级后数据库均通过完整性检查。
+
+只回退应用镜像、保留当前数据：
+
+```powershell
+docker tag moontvplus:before-optimization moontvplus:local
+docker compose -f compose.local.yaml up -d --no-build
+```
+
+该命令不恢复历史数据库；独立数据恢复应先停止服务并另行保留当前数据库。日常配置回滚可在站长后台“配置文件 → 配置历史”操作。
+
+本轮性能指标、权限和配置版本变化详见 [第二轮优化记录](OPTIMIZATION-ROUND-2.md)。更新后请刷新已有后台页面。
+
+## 2026-09-13 管理工作台更新
+
+当前运行镜像为 `6f060f5471cc`，健康检查通过。原有 2 个订阅、34 个视频源、1 个用户保留。新版采用分类导航、功能搜索和单栏目布局，主题与个人设置入口已移到观影侧栏底部，详见 [管理工作台说明](ADMIN-UI.md)。侧栏调整前的镜像单独保留为 `moontvplus:before-sidebar-controls`。
+
+本次升级前的镜像是 `moontvplus:before-admin-ui`，数据库在线备份为 `/app/.data/moontv-before-admin-ui-20260913.db`。只回退本次界面更新可执行：
+
+```powershell
+docker tag moontvplus:before-admin-ui moontvplus:local
+docker compose -f compose.local.yaml up -d --no-build
+```
+
+数据库不会随镜像回退。新版管理入口为 <http://localhost:3000/admin>，已有页面请 Ctrl+F5 刷新。

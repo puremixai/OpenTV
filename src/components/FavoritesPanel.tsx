@@ -12,6 +12,7 @@ import {
   getAllPlayRecords,
   subscribeToDataUpdates,
 } from '@/lib/db.client';
+import { logger } from '@/lib/logger';
 
 import VideoCard from '@/components/VideoCard';
 
@@ -75,7 +76,7 @@ export const FavoritesPanel: React.FC<FavoritesPanelProps> = ({
         });
       setFavoriteItems(sorted);
     } catch (error) {
-      console.error('加载收藏失败:', error);
+      logger.error('加载收藏失败:', error);
     } finally {
       setLoading(false);
     }
@@ -88,7 +89,7 @@ export const FavoritesPanel: React.FC<FavoritesPanelProps> = ({
       setFavoriteItems([]);
       setShowConfirmDialog(false);
     } catch (error) {
-      console.error('清空收藏失败:', error);
+      logger.error('清空收藏失败:', error);
     }
   };
 

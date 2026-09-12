@@ -3,6 +3,8 @@
 
 import { useCallback,useEffect, useRef } from 'react';
 
+import { logger } from '@/lib/logger';
+
 import { useWatchRoomContextSafe } from '@/components/WatchRoomProvider';
 
 import type { LiveState } from '@/types/watch-room';
@@ -43,7 +45,7 @@ export function useLiveSync({
       channelUrl: currentChannelUrl,
     };
 
-    console.log('[LiveSync] Broadcasting channel change:', state);
+    logger.debug('[LiveSync] Broadcasting channel change:', state);
     watchRoom.changeLiveChannel(state);
   }, [isOwner, socket, currentChannelId, currentChannelName, currentChannelUrl, watchRoom]);
 
@@ -54,7 +56,7 @@ export function useLiveSync({
     const handleLiveChange = (state: LiveState) => {
       if (syncingRef.current) return;
 
-      console.log('[LiveSync] Received channel change:', state);
+      logger.debug('[LiveSync] Received channel change:', state);
       syncingRef.current = true;
 
       try {

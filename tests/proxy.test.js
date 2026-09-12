@@ -1,5 +1,6 @@
 /** @jest-environment node */
 require('./web-globals');
+global.fetch = require('vm').runInThisContext('fetch');
 const dns = require('dns');
 const { Readable } = require('stream');
 const { isPrivateIP, resolvePublicTarget } = require('../src/lib/server/ssrf');
@@ -122,4 +123,21 @@ test('limits playlist memory consumption', async () => {
   await expect(readLimitedText(new Response('0123456789'), 5)).rejects.toThrow(
     'size limit'
   );
+});
+
+
+test('fake DNS answers are replaced with trusted public addresses, never allowed directly', async () => {
+  jest.spyOn(dns.promises, 'lookup').mockResolvedValue([{ address: '198.18.0.95', family: 4 }]);
+  const doh = jest.spyOn(global, 'fetch').mockImplementation(async url => new Response(JSON.stringify({ Status: 0, Answer: url.endsWith('type=A') ? [{ type: 1, TTL: 0, data: '151.101.2.132' }] : [] })));
+  const resolved = await resolvePublicTarget('https://fake-dns.example/video');
+  expect(resolved.addresses).toEqual([{ address: '151.101.2.132', family: 4 }]);
+  expect(doh).toHaveBeenCalledTimes(2);
+  await expect(resolvePublicTarget('https://198.18.0.95/video')).rejects.toThrow();
+});
+test('private real-DNS answers and mixed fake/private OS answers remain blocked', async () => {
+  const lookup = jest.spyOn(dns.promises, 'lookup').mockResolvedValue([{ address: '198.18.1.5', family: 4 }]);
+  const doh = jest.spyOn(global, 'fetch').mockResolvedValue(new Response(JSON.stringify({ Status: 0, Answer: [{ type: 1, TTL: 0, data: '127.0.0.1' }] })));
+  await expect(resolvePublicTarget('https://private-real.example/video')).rejects.toThrow();
+  doh.mockClear(); lookup.mockResolvedValue([{ address: '198.18.1.5', family: 4 }, { address: '10.0.0.1', family: 4 }]);
+  await expect(resolvePublicTarget('https://mixed.example/video')).rejects.toThrow(); expect(doh).not.toHaveBeenCalled();
 });

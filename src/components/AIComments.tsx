@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useState } from 'react';
 
+import { logger } from '@/lib/logger';
+
 interface AIComment {
   id: string;
   userName: string;
@@ -26,7 +28,7 @@ export default function AIComments({ movieName, movieInfo }: AICommentsProps) {
 
   const fetchComments = useCallback(async () => {
     try {
-      console.log('正在生成AI评论...');
+      logger.debug('正在生成AI评论...');
       setLoading(true);
       setError(null);
 
@@ -50,11 +52,11 @@ export default function AIComments({ movieName, movieInfo }: AICommentsProps) {
       }
 
       const data = await response.json();
-      console.log('AI评论生成成功:', data.comments.length);
+      logger.debug('AI评论生成成功:', data.comments.length);
 
       setComments(data.comments);
     } catch (err) {
-      console.error('生成AI评论失败:', err);
+      logger.error('生成AI评论失败:', err);
       setError(err instanceof Error ? err.message : '生成AI评论失败');
     } finally {
       setLoading(false);
@@ -70,13 +72,13 @@ export default function AIComments({ movieName, movieInfo }: AICommentsProps) {
   }, [movieName]);
 
   const startLoading = () => {
-    console.log('开始生成AI评论');
+    logger.debug('开始生成AI评论');
     setHasStartedLoading(true);
     fetchComments();
   };
 
   const regenerate = () => {
-    console.log('重新生成AI评论');
+    logger.debug('重新生成AI评论');
     fetchComments();
   };
 

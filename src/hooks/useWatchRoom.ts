@@ -3,6 +3,7 @@
 
 import { useCallback, useEffect, useRef,useState } from 'react';
 
+import { logger } from '@/lib/logger';
 import { type WatchRoomSocket,watchRoomSocketManager } from '@/lib/watch-room-socket';
 
 import type {
@@ -40,11 +41,11 @@ export function useWatchRoom(
     }
 
     rejoinInFlightRef.current = true;
-    console.log('[WatchRoom] Auto-rejoining room:', info);
+    logger.debug('[WatchRoom] Auto-rejoining room:', info);
     try {
       const sock = watchRoomSocketManager.getSocket();
       if (!sock || !watchRoomSocketManager.isConnected()) {
-        console.error('[WatchRoom] Not connected, cannot rejoin');
+        logger.error('[WatchRoom] Not connected, cannot rejoin');
         return;
       }
 
@@ -67,9 +68,9 @@ export function useWatchRoom(
       setMembers(result.members);
       // 根据服务器返回的 room.ownerId 判断是否是房主
       setIsOwner(result.room.ownerId === sock.id);
-      console.log('[WatchRoom] Successfully rejoined room:', result.room.name);
+      logger.debug('[WatchRoom] Successfully rejoined room:', result.room.name);
     } catch (error) {
-      console.error('[WatchRoom] Failed to rejoin room:', error);
+      logger.error('[WatchRoom] Failed to rejoin room:', error);
       clearStoredRoomInfo();
     } finally {
       rejoinInFlightRef.current = false;
@@ -96,11 +97,11 @@ export function useWatchRoom(
       // 尝试自动重连房间
       const storedInfo = getStoredRoomInfo();
       if (storedInfo) {
-        console.log('[WatchRoom] Attempting to reconnect to room:', storedInfo.roomId);
+        logger.debug('[WatchRoom] Attempting to reconnect to room:', storedInfo.roomId);
         scheduleRejoin(storedInfo);
       }
     } catch (error) {
-      console.error('[WatchRoom] Failed to connect:', error);
+      logger.error('[WatchRoom] Failed to connect:', error);
       setIsConnected(false);
     }
   }, [scheduleRejoin]);
@@ -236,11 +237,11 @@ export function useWatchRoom(
     (state: PlayState) => {
       const sock = watchRoomSocketManager.getSocket();
       if (!sock || !isOwner) {
-        console.log('[WatchRoom] Cannot update play state:', { hasSocket: !!sock, isOwner });
+        logger.debug('[WatchRoom] Cannot update play state:', { hasSocket: !!sock, isOwner });
         return;
       }
 
-      console.log('[WatchRoom] Emitting play:update with state:', state);
+      logger.debug('[WatchRoom] Emitting play:update with state:', state);
       sock.emit('play:update', state);
     },
     [isOwner]
@@ -251,11 +252,11 @@ export function useWatchRoom(
     (currentTime: number) => {
       const sock = watchRoomSocketManager.getSocket();
       if (!sock) {
-        console.log('[WatchRoom] Cannot seek - no socket');
+        logger.debug('[WatchRoom] Cannot seek - no socket');
         return;
       }
 
-      console.log('[WatchRoom] Emitting play:seek with time:', currentTime);
+      logger.debug('[WatchRoom] Emitting play:seek with time:', currentTime);
       sock.emit('play:seek', currentTime);
     },
     []
@@ -265,11 +266,11 @@ export function useWatchRoom(
   const play = useCallback(() => {
     const sock = watchRoomSocketManager.getSocket();
     if (!sock) {
-      console.log('[WatchRoom] Cannot play - no socket');
+      logger.debug('[WatchRoom] Cannot play - no socket');
       return;
     }
 
-    console.log('[WatchRoom] Emitting play:play');
+    logger.debug('[WatchRoom] Emitting play:play');
     sock.emit('play:play');
   }, []);
 
@@ -277,11 +278,11 @@ export function useWatchRoom(
   const pause = useCallback(() => {
     const sock = watchRoomSocketManager.getSocket();
     if (!sock) {
-      console.log('[WatchRoom] Cannot pause - no socket');
+      logger.debug('[WatchRoom] Cannot pause - no socket');
       return;
     }
 
-    console.log('[WatchRoom] Emitting play:pause');
+    logger.debug('[WatchRoom] Emitting play:pause');
     sock.emit('play:pause');
   }, []);
 
@@ -290,15 +291,15 @@ export function useWatchRoom(
     (state: PlayState) => {
       const sock = watchRoomSocketManager.getSocket();
       if (!sock) {
-        console.log('[WatchRoom] Cannot change video - no socket');
+        logger.debug('[WatchRoom] Cannot change video - no socket');
         return;
       }
       if (!isOwner) {
-        console.log('[WatchRoom] Cannot change video - not owner');
+        logger.debug('[WatchRoom] Cannot change video - not owner');
         return;
       }
 
-      console.log('[WatchRoom] Emitting play:change with state:', state);
+      logger.debug('[WatchRoom] Emitting play:change with state:', state);
       sock.emit('play:change', state);
     },
     [isOwner]
@@ -398,15 +399,15 @@ export function useWatchRoom(
   const clearRoomState = useCallback(() => {
     const sock = watchRoomSocketManager.getSocket();
     if (!sock) {
-      console.log('[WatchRoom] Cannot clear state - no socket');
+      logger.debug('[WatchRoom] Cannot clear state - no socket');
       return;
     }
     if (!isOwner) {
-      console.log('[WatchRoom] Cannot clear state - not owner');
+      logger.debug('[WatchRoom] Cannot clear state - not owner');
       return;
     }
 
-    console.log('[WatchRoom] Emitting state:clear');
+    logger.debug('[WatchRoom] Emitting state:clear');
     sock.emit('state:clear');
   }, [isOwner]);
 
@@ -433,7 +434,7 @@ export function useWatchRoom(
     });
 
     socket.on('room:deleted', (data?: { reason?: string }) => {
-      console.log('[WatchRoom] Room deleted:', data);
+      logger.debug('[WatchRoom] Room deleted:', data);
 
       // 调用回调显示Toast
       onRoomDeleted?.(data);
@@ -522,7 +523,7 @@ export function useWatchRoom(
 
     // 状态清除事件（房主心跳超时）
     socket.on('state:cleared', () => {
-      console.log('[WatchRoom] Room state cleared by server (owner inactive)');
+      logger.debug('[WatchRoom] Room state cleared by server (owner inactive)');
 
       // 清除当前房间的播放/直播状态
       setCurrentRoom((prev) => (prev ? { ...prev, currentState: null } : null));

@@ -269,3 +269,18 @@ test('rejects duplicate addresses/IDs, invalid schemes and malformed config stru
     expect(() => parseSubscriptionConfig(text)).toThrow();
   }
 });
+
+
+test('automatic refresh respects independent intervals and records failed attempts', async () => {
+  const base = { ID: 'interval', Name: 'interval', URL: 'https://example.com/interval', Enabled: true, AutoUpdate: true, LastCheck: '', LastAttempt: new Date().toISOString(), UpdateIntervalHours: 24 };
+  const fetcher = jest.fn().mockRejectedValue(new Error('offline'));
+  await refreshSubscriptions([base], { automatic: true, retries: 0 }, fetcher); expect(fetcher).not.toHaveBeenCalled();
+  const result = await refreshSubscriptions([{ ...base, LastAttempt: '' }], { automatic: true, retries: 0 }, fetcher);
+  expect(result[0].LastAttempt).toBeTruthy(); expect(result[0].LastError).toBe('offline'); expect(result[0].LastCheck).toBe('');
+});
+test('transient subscription fetch failures retry before accepting the new cache', async () => {
+  const fetcher = jest.fn().mockRejectedValueOnce(new Error('timeout')).mockResolvedValue('{}');
+  const base = { ID: 'retry', Name: 'retry', URL: 'https://example.com/retry', Enabled: true, AutoUpdate: true, LastCheck: '' };
+  const [result] = await refreshSubscriptions([base], { retries: 1 }, fetcher);
+  expect(fetcher).toHaveBeenCalledTimes(2); expect(result.ConfigContent).toBe('{}'); expect(result.LastError).toBe('');
+});

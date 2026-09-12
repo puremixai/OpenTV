@@ -14,7 +14,7 @@
  * 如后续需要在客户端读取收藏等其它数据，可按同样方式在此文件中补充实现。
  */
 
-import { getAuthInfoFromBrowserCookie, clearAuthCookie } from './auth';
+import { clearAuthCookie,getAuthInfoFromBrowserCookie } from './auth';
 import { normalizeEpisodeFilterConfig } from './episode-filter';
 import { MangaReadRecord, MangaShelfItem } from './manga.types';
 import { isLoginPathname, resolveLoginPath } from './tv-mode';

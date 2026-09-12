@@ -4,6 +4,7 @@ import { NextResponse } from 'next/server';
 
 import { getConfig } from '@/lib/config';
 import { fetchDoubanData } from '@/lib/douban';
+import { logger } from '@/lib/logger';
 import { getTMDBTrendingContent, getTMDBVideos } from '@/lib/tmdb.client';
 
 // 缓存配置 - 服务器内存缓存3小时
@@ -91,7 +92,7 @@ export async function GET() {
 
     return NextResponse.json(result);
   } catch (error) {
-    console.error('获取热门内容失败:', error);
+    logger.error('获取热门内容失败:', error);
     return NextResponse.json(
       { code: 500, message: '获取热门内容失败' },
       { status: 500 }
@@ -150,7 +151,7 @@ async function getTXBannerContent(): Promise<{ code: number; list: any[] }> {
     });
 	
     if (!response.ok) {
-      console.error('TX API 请求失败:', response.status, response.statusText);
+      logger.error('TX API 请求失败:', response.status, response.statusText);
       return { code: response.status, list: [] };
     }
 
@@ -164,7 +165,7 @@ async function getTXBannerContent(): Promise<{ code: number; list: any[] }> {
       list: bannerItems,
     };
   } catch (error) {
-    console.error('获取 TX 轮播图数据失败:', error);
+    logger.error('获取 TX 轮播图数据失败:', error);
     return { code: 500, list: [] };
   }
 }
@@ -244,7 +245,7 @@ function parseTXBannerData(data: any): any[] {
     // 所有 pc_shelves 卡片都没有有效数据
     return [];
   } catch (error) {
-    console.error('解析 TX 轮播图数据失败:', error);
+    logger.error('解析 TX 轮播图数据失败:', error);
     return [];
   }
 }
@@ -343,7 +344,7 @@ async function getDoubanBannerContent(): Promise<{ code: number; list: any[] }> 
             video_key: null, // 豆瓣不使用YouTube key
           };
         } catch (error) {
-          console.error(`获取豆瓣电影 ${movie.id} 详情失败:`, error);
+          logger.error(`获取豆瓣电影 ${movie.id} 详情失败:`, error);
 
           // 从card_subtitle提取标签（只读取第二个部分，通过空格分割）
           let tags: string[] = [];
@@ -385,7 +386,7 @@ async function getDoubanBannerContent(): Promise<{ code: number; list: any[] }> 
       list: validBannerItems,
     };
   } catch (error) {
-    console.error('获取豆瓣轮播图数据失败:', error);
+    logger.error('获取豆瓣轮播图数据失败:', error);
     return { code: 500, list: [] };
   }
 }

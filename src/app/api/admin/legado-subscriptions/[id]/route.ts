@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getConfig, setCachedConfig } from '@/lib/config';
 import { db } from '@/lib/db';
 import { legadoSubscriptionStore } from '@/lib/legado/subscription-store';
+import { checkMutationVersion, withConfigMutation } from '@/lib/server/config-mutation';
 import { getAuthenticatedUser } from '@/lib/session';
 
 export const runtime = 'nodejs';
@@ -17,12 +18,13 @@ async function ensureAdmin(request: NextRequest) {
   return authInfo.username;
 }
 
-export async function DELETE(request: NextRequest, context: { params: Promise<{ id: string }> }) {
+export const DELETE = withConfigMutation(async function DELETE(request: NextRequest, context: { params: Promise<{ id: string }> }) {
   const ensured = await ensureAdmin(request);
   if (ensured instanceof NextResponse) return ensured;
   const { id } = await context.params;
   try {
-    const config = await getConfig();
+    const config = await getConfig(true);
+    checkMutationVersion(config.ConfigVersion || 0);
     const opds = config.OPDSConfig || { Enabled: false, Sources: [], LegadoSubscriptions: [], CacheTTL: 10 * 60 * 1000 };
     const nextConfig = { ...config, OPDSConfig: { ...opds, LegadoSubscriptions: (opds.LegadoSubscriptions || []).filter((item) => item.id !== id) } };
     await legadoSubscriptionStore.delete(id);
@@ -32,4 +34,4 @@ export async function DELETE(request: NextRequest, context: { params: Promise<{ 
   } catch (error) {
     return NextResponse.json({ success: false, error: error instanceof Error ? error.message : '删除 Legado 订阅失败' }, { status: 400 });
   }
-}
+});

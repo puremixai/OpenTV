@@ -163,6 +163,10 @@ const createNextConfig = (phase) => {
           // server 构建用空实现 shim 替换，避免字典内联进 Worker；client 构建用真库。
           ...(isCloudflare && isServer
             ? {
+                'opencc-js/t2cn': path.resolve(
+                  __dirname,
+                  'src/lib/cloudflare-shims/opencc-js.ts'
+                ),
                 'opencc-js': path.resolve(
                   __dirname,
                   'src/lib/cloudflare-shims/opencc-js.ts'

@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import { getConfig } from '@/lib/config';
+import { logger } from '@/lib/logger';
 import {
   addOpenListOfflineDownload,
   getOfflineDownloadBasePath,
@@ -74,7 +75,7 @@ export async function POST(req: NextRequest) {
     });
 
   } catch (error: any) {
-    console.error('添加离线下载任务失败:', error);
+    logger.error('添加离线下载任务失败:', error);
     return NextResponse.json(
       { error: error.message || '添加离线下载任务失败' },
       { status: 500 }

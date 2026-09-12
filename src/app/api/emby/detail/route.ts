@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 import { embyManager } from '@/lib/emby-manager';
 import { getProxyToken } from '@/lib/emby-token';
+import { logger } from '@/lib/logger';
 import { requireFeaturePermission } from '@/lib/permissions';
 
 export const runtime = 'nodejs';
@@ -69,7 +70,7 @@ export async function GET(request: NextRequest) {
       episodes: item.Type === 'Series' ? episodes : [],
     });
   } catch (error) {
-    console.error('获取 Emby 详情失败:', error);
+    logger.error('获取 Emby 详情失败:', error);
     return NextResponse.json(
       { error: '获取 Emby 详情失败: ' + (error as Error).message },
       { status: 500 }

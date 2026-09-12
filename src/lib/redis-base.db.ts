@@ -1872,6 +1872,10 @@ export abstract class BaseRedisStorage implements IStorage {
     return val ? (JSON.parse(val) as AdminConfig) : null;
   }
 
+  async compareAndSetAdminConfig(expectedVersion: number, config: AdminConfig): Promise<boolean> {
+    return this.adapter.compareAndSetConfig(this.adminConfigKey(), expectedVersion, JSON.stringify(config));
+  }
+
   async setAdminConfig(config: AdminConfig): Promise<void> {
     await this.withRetry(() =>
       this.adapter.set(this.adminConfigKey(), JSON.stringify(config))
@@ -2118,8 +2122,7 @@ export abstract class BaseRedisStorage implements IStorage {
         await this.deleteUserV2(username);
       }
 
-      // 删除管理员配置
-      await this.withRetry(() => this.adapter.del(this.adminConfigKey()));
+      // Preserve admin configuration and its history, as SQL storage does.
 
       console.log('所有数据已清空');
     } catch (error) {

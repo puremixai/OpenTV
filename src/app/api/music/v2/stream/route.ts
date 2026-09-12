@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+import { logger } from '@/lib/logger';
 import { extractSongmid, isMusicSource, lxPostJson, normalizeMusicQuality, normalizeSong } from '@/lib/music-v2';
 import { badRequest } from '@/lib/music-v2-api';
 
@@ -168,7 +169,7 @@ export async function GET(request: NextRequest) {
         signal: AbortSignal.timeout(90000),
         cache: 'no-store',
       });
-      console.warn('[music-v2/stream] upstream fetch failed once, retried with refreshed URL', {
+      logger.warn('[music-v2/stream] upstream fetch failed once, retried with refreshed URL', {
         source,
         songId,
         quality,

@@ -11,14 +11,14 @@ import {
   useState,
 } from 'react';
 
-import { getVideoResolutionFromM3u8, processImageUrl } from '@/lib/utils';
 import { SearchResult } from '@/lib/types';
+import { getVideoResolutionFromM3u8, processImageUrl } from '@/lib/utils';
 
-import TVLayout from '@/components/tv/TVLayout';
 import {
   fetchTVDetail,
   resolveTVEpisodeUrl,
 } from '@/components/tv/player/utils';
+import TVLayout from '@/components/tv/TVLayout';
 
 type SourceTestInfo = {
   quality: string;

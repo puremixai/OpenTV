@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import { getConfig } from '@/lib/config';
+import { logger } from '@/lib/logger';
 import {
   getTMDBImageUrl,
   getTMDBMovieDetails,
@@ -87,12 +88,12 @@ export async function GET(request: NextRequest) {
       // 检查服务器缓存
       const cached = searchCache.get(cacheKey);
       if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
-        console.log('使用服务器缓存的搜索结果');
+        logger.debug('使用服务器缓存的搜索结果');
         tmdbId = cached.data.tmdbId;
         mediaType = cached.data.mediaType;
       } else {
         // 搜索TMDB
-        console.log('搜索TMDB:', cleanedTitle);
+        logger.debug('搜索TMDB:', cleanedTitle);
         const searchResult = await searchTMDBMulti(
           tmdbApiKey,
           cleanedTitle,
@@ -175,7 +176,7 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('获取 TMDB 详情失败:', error);
+    logger.error('获取 TMDB 详情失败:', error);
     return NextResponse.json(
       { error: '获取详情失败' },
       { status: 500 }

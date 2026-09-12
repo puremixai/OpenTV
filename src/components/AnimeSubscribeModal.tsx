@@ -4,15 +4,16 @@ import { Loader2, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 
+import { adminFetch as fetch } from '@/lib/admin-fetch';
 import {
+  type AnimeExcludePreset,
+  type AnimeFansubPreset,
   ANIME_EXCLUDE_PRESETS,
   ANIME_FANSUB_PRESETS,
   applyExcludeSingleSelect,
   applyFansubSingleSelect,
   isExcludePresetActive,
   isFansubPresetActive,
-  type AnimeExcludePreset,
-  type AnimeFansubPreset,
 } from '@/lib/anime-filter-presets';
 
 export interface AnimeSubscribeModalProps {

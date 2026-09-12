@@ -3365,6 +3365,25 @@ export class PostgresStorage implements IStorage {
     }
   }
 
+  async compareAndSetAdminConfig(expectedVersion: number, config: AdminConfig): Promise<boolean> {
+    const result = await this.db.prepare(`
+      INSERT INTO admin_config (id, config, updated_at)
+      SELECT 1, $1, $2 WHERE $3 = 0
+      ON CONFLICT(id) DO UPDATE SET config = excluded.config, updated_at = excluded.updated_at
+      WHERE COALESCE((admin_config.config::jsonb->>'ConfigVersion')::bigint, 0) = $4
+    `).bind(JSON.stringify(config), Date.now(), expectedVersion, expectedVersion).run();
+    // An existing row must also be updated for nonzero revisions.
+    if (!result.success) throw new Error(result.error || 'Configuration storage failed');
+    if (Number(result.meta?.changes) > 0) return true;
+    if (expectedVersion === 0) return false;
+    const updated = await this.db.prepare(`
+      UPDATE admin_config SET config = $1, updated_at = $2
+      WHERE id = 1 AND COALESCE((config::jsonb->>'ConfigVersion')::bigint, 0) = $3
+    `).bind(JSON.stringify(config), Date.now(), expectedVersion).run();
+    if (!updated.success) throw new Error(updated.error || 'Configuration storage failed');
+    return Number(updated.meta?.changes) > 0;
+  }
+
   async setAdminConfig(config: AdminConfig): Promise<void> {
     try {
       await this.db

@@ -6,6 +6,7 @@ import { getAvailableApiSites, getCacheTime, getConfig } from '@/lib/config';
 import { searchFromApi } from '@/lib/downstream';
 import { getProxyToken } from '@/lib/emby-token';
 import { hasFeaturePermission } from '@/lib/permissions';
+import { sourceWeightMap } from '@/lib/server/source-health';
 import { getAuthenticatedUser } from '@/lib/session';
 import {
   executeSavedSourceScript,
@@ -53,10 +54,7 @@ export async function GET(request: NextRequest) {
   ]);
 
   // 创建权重映射表
-  const weightMap = new Map<string, number>();
-  config.SourceConfig.forEach(source => {
-    weightMap.set(source.key, source.weight ?? 0);
-  });
+  const weightMap = await sourceWeightMap(config.SourceConfig);
 
   // 检查是否配置了 OpenList
   const hasOpenList = !!(

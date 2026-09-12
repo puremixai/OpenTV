@@ -4,11 +4,12 @@ import { NextRequest, NextResponse } from 'next/server';
 
 import { getConfig } from '@/lib/config';
 import { db } from '@/lib/db';
+import { checkMutationVersion, withConfigMutation } from '@/lib/server/config-mutation';
 import { getAuthenticatedUser } from '@/lib/session';
 
 export const runtime = 'nodejs';
 
-export async function POST(request: NextRequest) {
+export const POST = withConfigMutation(async function POST(request: NextRequest) {
   const storageType = process.env.NEXT_PUBLIC_STORAGE_TYPE || 'localstorage';
   if (storageType === 'localstorage') {
     return NextResponse.json(
@@ -114,7 +115,8 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const adminConfig = await getConfig();
+    const adminConfig = await getConfig(true);
+    checkMutationVersion(adminConfig.ConfigVersion || 0);
 
     // 权限校验 - 使用v2用户系统
     if (username !== process.env.USERNAME) {
@@ -172,4 +174,4 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+});

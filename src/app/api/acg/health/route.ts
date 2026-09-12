@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import { getConfig } from '@/lib/config';
+import { logger } from '@/lib/logger';
 import {
   getMagnetHealthConcurrency,
   MagnetHealthBusyError,
@@ -69,7 +70,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    console.error('磁力测活失败:', error);
+    logger.error('磁力测活失败:', error);
     return NextResponse.json(
       { error: error?.message || '测活失败' },
       { status: 500 }

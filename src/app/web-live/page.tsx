@@ -4,10 +4,10 @@ import { AlertTriangle,Radio } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 
+import { logger } from '@/lib/logger';
 import { useWebLiveSync } from '@/hooks/useWebLiveSync';
 
 import PageLayout from '@/components/PageLayout';
-import { useWatchRoomContextSafe } from '@/components/WatchRoomProvider';
 
 let Artplayer: any = null;
 let Hls: any = null;
@@ -98,7 +98,7 @@ export default function WebLivePage() {
         await new Promise(resolve => setTimeout(resolve, 500));
       }
     } catch (err) {
-      console.error('获取直播源失败:', err);
+      logger.error('获取直播源失败:', err);
     } finally {
       setLoading(false);
     }
@@ -152,7 +152,7 @@ export default function WebLivePage() {
     const flvPlayer = flvjs.createPlayer({ type: 'flv', url, isLive: true });
     flvPlayer.attachMediaElement(video);
     flvPlayer.on(flvjs.Events.ERROR, (errorType: string, errorDetail: string) => {
-      console.error('FLV.js error:', errorType, errorDetail);
+      logger.error('FLV.js error:', errorType, errorDetail);
       setErrorMessage(`播放失败: ${errorType} - ${errorDetail}`);
       setVideoUrl('');
     });
@@ -186,7 +186,7 @@ export default function WebLivePage() {
             (artPlayerRef.current.video as any).flv.destroy();
             (artPlayerRef.current.video as any).flv = null;
           } catch (flvError) {
-            console.warn('FLV实例销毁时出错:', flvError);
+            logger.warn('FLV实例销毁时出错:', flvError);
             (artPlayerRef.current.video as any).flv = null;
           }
         }
@@ -199,7 +199,7 @@ export default function WebLivePage() {
         artPlayerRef.current.destroy();
         artPlayerRef.current = null;
       } catch (err) {
-        console.warn('清理播放器资源时出错:', err);
+        logger.warn('清理播放器资源时出错:', err);
         artPlayerRef.current = null;
       }
     }
@@ -295,7 +295,7 @@ export default function WebLivePage() {
         setErrorMessage(data.error || '获取直播流失败');
       }
     } catch (err) {
-      console.error('获取直播流失败:', err);
+      logger.error('获取直播流失败:', err);
       setErrorMessage(err instanceof Error ? err.message : '获取直播流失败');
     } finally {
       setIsVideoLoading(false);

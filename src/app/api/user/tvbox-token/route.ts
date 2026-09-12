@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import { db } from '@/lib/db';
+import { logger } from '@/lib/logger';
 import { getAuthenticatedUser } from '@/lib/session';
 import { generateTvboxToken } from '@/lib/tvbox-token';
 
@@ -30,12 +31,12 @@ export async function GET(request: NextRequest) {
       // 懒加载：首次访问时生成token
       token = generateTvboxToken();
       await db.setTvboxSubscribeToken(username, token);
-      console.log(`为用户 ${username} 生成TVBox订阅token`);
+      logger.debug(`为用户 ${username} 生成TVBox订阅token`);
     }
 
     return NextResponse.json({ token });
   } catch (error) {
-    console.error('获取TVBox订阅token失败:', error);
+    logger.error('获取TVBox订阅token失败:', error);
     return NextResponse.json(
       {
         error: '获取订阅token失败',

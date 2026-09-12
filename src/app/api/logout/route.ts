@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { invalidateDeviceAccessToken } from '@/lib/access-token-invalidation';
 import { clearAuthCookies } from '@/lib/auth-response';
 import { getStorage } from '@/lib/db';
+import { logger } from '@/lib/logger';
 import { revokeRefreshToken } from '@/lib/refresh-token';
 import { getAuthenticatedUser } from '@/lib/session';
 
@@ -19,7 +20,7 @@ export async function POST(request: NextRequest) {
       const storage = getStorage();
       await storage.deletePushSubscriptionsByTokenId?.(authInfo.username, authInfo.tokenId);
     } catch (error) {
-      console.error('Failed to revoke refresh token:', error);
+      logger.error('Failed to revoke refresh token:', error);
     }
   }
 

@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 /**
  * IndexedDB 视频缓存（独立库）
  *
@@ -583,7 +584,7 @@ export async function ensureIndexedDBVideoServiceWorker(): Promise<boolean> {
     await waitForServiceWorkerActivation(registration);
     return waitForServiceWorkerController();
   } catch (error) {
-    console.warn(
+    logger.warn(
       '[IndexedDBVideo] Service Worker 不可用，降级为 Blob URL 播放:',
       error
     );
@@ -724,7 +725,7 @@ export async function getIndexedDBVideoPlaybackUrl(
 
     return createIndexedDBVideoBlobPlaybackUrl(manifest.cacheKey);
   } catch (error) {
-    console.error('[IndexedDBVideo] 获取本地播放地址失败:', error);
+    logger.error('[IndexedDBVideo] 获取本地播放地址失败:', error);
     return { hasLocal: false, reason: String(error) };
   }
 }

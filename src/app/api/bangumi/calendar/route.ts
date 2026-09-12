@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 
 import { fetchBangumiFromServer } from '@/lib/bangumi.server';
 import { getConfig } from '@/lib/config';
+import { logger } from '@/lib/logger';
 
 export async function GET() {
   try {
@@ -25,7 +26,7 @@ export async function GET() {
       },
     });
   } catch (error) {
-    console.error('获取 Bangumi calendar 失败:', error);
+    logger.error('获取 Bangumi calendar 失败:', error);
     return NextResponse.json(
       { error: '获取 Bangumi calendar 失败' },
       { status: 500 }

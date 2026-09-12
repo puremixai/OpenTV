@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 import { getAuthInfoFromBrowserCookie } from '@/lib/auth';
+import { logger } from '@/lib/logger';
 import { Notification } from '@/lib/types';
 
 interface NotificationPanelProps {
@@ -34,7 +35,7 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({
         setNotifications(data.notifications || []);
       }
     } catch (error) {
-      console.error('加载通知失败:', error);
+      logger.error('加载通知失败:', error);
     } finally {
       setLoading(false);
     }
@@ -62,7 +63,7 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({
         window.dispatchEvent(new Event('notificationsUpdated'));
       }
     } catch (error) {
-      console.error('标记已读失败:', error);
+      logger.error('标记已读失败:', error);
     }
   };
 
@@ -87,7 +88,7 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({
         }
       }
     } catch (error) {
-      console.error('删除通知失败:', error);
+      logger.error('删除通知失败:', error);
     }
   };
 
@@ -108,7 +109,7 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({
         window.dispatchEvent(new Event('notificationsUpdated'));
       }
     } catch (error) {
-      console.error('清空通知失败:', error);
+      logger.error('清空通知失败:', error);
     }
   };
 

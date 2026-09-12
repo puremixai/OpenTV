@@ -10,6 +10,7 @@ import {
   normalizeOpenListPath,
   normalizePathMetaMap,
 } from '@/lib/openlist-path-meta';
+import { checkMutationVersion, withConfigMutation } from '@/lib/server/config-mutation';
 import { getAuthenticatedUser } from '@/lib/session';
 import { normalizeApiBaseUrl } from '@/lib/url';
 
@@ -33,7 +34,7 @@ function parsePathMeta(raw: unknown): OpenListPathMetaMap {
  * POST /api/admin/openlist
  * 保存 OpenList 配置
  */
-export async function POST(request: NextRequest) {
+export const POST = withConfigMutation(async function POST(request: NextRequest) {
   const storageType = process.env.NEXT_PUBLIC_STORAGE_TYPE || 'localstorage';
   if (storageType === 'localstorage') {
     return NextResponse.json(
@@ -71,7 +72,8 @@ export async function POST(request: NextRequest) {
     const username = authInfo.username;
 
     // 获取配置
-    const adminConfig = await getConfig();
+    const adminConfig = await getConfig(true);
+    checkMutationVersion(adminConfig.ConfigVersion || 0);
 
     // 权限检查 - 使用v2用户系统
     if (username !== process.env.USERNAME) {
@@ -221,4 +223,4 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+});

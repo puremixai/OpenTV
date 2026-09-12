@@ -43,7 +43,7 @@ export async function fetchSubscriptionContent(url: string): Promise<string> {
 
 export async function refreshSubscriptions(
   subscriptions: ConfigSubscription[],
-  options: { id?: string; automatic?: boolean } = {},
+  options: { id?: string; automatic?: boolean; retries?: number } = {},
   fetchContent: (url: string) => Promise<string> = fetchSubscriptionContent
 ): Promise<ConfigSubscription[]> {
   const next = subscriptions.map((sub) => ({ ...sub }));
@@ -51,7 +51,7 @@ export async function refreshSubscriptions(
     (sub) =>
       sub.Enabled &&
       (!options.id || sub.ID === options.id) &&
-      (!options.automatic || sub.AutoUpdate)
+      (!options.automatic || (sub.AutoUpdate && (!sub.LastAttempt || Date.now() - Date.parse(sub.LastAttempt) >= (sub.UpdateIntervalHours || 1) * 3600_000)))
   );
   // Limit concurrent requests without making a failed subscription block its peers.
   await Promise.all(
@@ -60,7 +60,15 @@ export async function refreshSubscriptions(
         const sub = pending.shift();
         if (!sub) return;
         try {
-          const content = await fetchContent(sub.URL);
+          sub.LastAttempt = new Date().toISOString();
+          let content = '';
+          for (let attempt = 0; ; attempt++) {
+            try { content = await fetchContent(sub.URL); break; }
+            catch (error) {
+              if (attempt >= (options.retries ?? 2)) throw error;
+              await new Promise(resolve => setTimeout(resolve, 250 * 2 ** attempt));
+            }
+          }
           parseSubscriptionConfig(content);
           sub.ConfigContent = content;
           sub.LastCheck = new Date().toISOString();

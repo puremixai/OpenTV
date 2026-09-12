@@ -13,6 +13,7 @@ import {
 
 import { isAnimeCategoryText } from '@/lib/anime-keyword-expr';
 import { ApiSite } from '@/lib/config';
+import { logger } from '@/lib/logger';
 import { appendSpecialSourceParam } from '@/lib/special-source.client';
 import { SearchResult } from '@/lib/types';
 
@@ -201,7 +202,7 @@ function SourceSearchPageClient() {
           }
         }
       } catch (error) {
-        console.error('Failed to load API sources:', error);
+        logger.error('Failed to load API sources:', error);
       } finally {
         setIsLoadingSources(false);
       }
@@ -240,7 +241,7 @@ function SourceSearchPageClient() {
           }
         }
       } catch (error) {
-        console.error('Failed to load categories:', error);
+        logger.error('Failed to load categories:', error);
       } finally {
         setIsLoadingCategories(false);
       }
@@ -276,7 +277,7 @@ function SourceSearchPageClient() {
           setHasMore(data.page < data.pageCount);
         }
       } catch (error) {
-        console.error('Failed to load videos:', error);
+        logger.error('Failed to load videos:', error);
       } finally {
         setIsLoadingVideos(false);
       }
@@ -312,7 +313,7 @@ function SourceSearchPageClient() {
           setHasMore(data.page < data.pageCount);
         }
       } catch (error) {
-        console.error('Failed to search videos:', error);
+        logger.error('Failed to search videos:', error);
       } finally {
         setIsLoadingVideos(false);
       }

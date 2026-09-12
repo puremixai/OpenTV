@@ -10,8 +10,8 @@ import {
   ShieldCheck,
   SlidersHorizontal,
   User,
-  Wifi,
   Volume2,
+  Wifi,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import {

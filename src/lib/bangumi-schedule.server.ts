@@ -1,8 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import * as cheerio from 'cheerio/slim';
-import { safeFetch } from './safe-http';
+
 import { isCloudflareEnvironment } from '@/lib/bangumi.server';
+
+import { safeFetch } from './safe-http';
 
 /**
  * Bangumi 番剧每日放送时刻表 —— 服务端实现。

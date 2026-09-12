@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 import { fetchDoubanData } from '@/lib/douban';
 import { fetchDoubanWithVerification } from '@/lib/douban-anti-crawler';
+import { logger } from '@/lib/logger';
 
 export const runtime = 'nodejs';
 
@@ -45,7 +46,7 @@ export async function GET(request: NextRequest) {
 
     const recommendations: DoubanRecommendation[] = [];
 
-    console.log('开始解析豆瓣推荐');
+    logger.debug('开始解析豆瓣推荐');
 
     // 解析推荐模块
     $('.recommendations-bd dl').each((index, element) => {
@@ -76,7 +77,7 @@ export async function GET(request: NextRequest) {
       }
     });
 
-    console.log('解析到推荐数:', recommendations.length);
+    logger.debug('解析到推荐数:', recommendations.length);
 
     // 处理标题截断问题
     const processedRecommendations: DoubanRecommendation[] = [];
@@ -84,7 +85,7 @@ export async function GET(request: NextRequest) {
     for (const rec of recommendations) {
       // 检查标题是否被截断（包含三个点）
       if (rec.title.includes('...')) {
-        console.log(`检测到截断标题: ${rec.title}, ID: ${rec.doubanId}`);
+        logger.debug(`检测到截断标题: ${rec.title}, ID: ${rec.doubanId}`);
 
         try {
           // 调用豆瓣详情接口获取完整名称
@@ -92,17 +93,17 @@ export async function GET(request: NextRequest) {
           const detailData = await fetchDoubanData<DoubanDetailApiResponse>(detailUrl);
 
           if (detailData && detailData.title) {
-            console.log(`成功获取完整标题: ${detailData.title}`);
+            logger.debug(`成功获取完整标题: ${detailData.title}`);
             processedRecommendations.push({
               ...rec,
               title: detailData.title,
             });
           } else {
-            console.log(`详情接口未返回标题，移除该视频: ${rec.doubanId}`);
+            logger.debug(`详情接口未返回标题，移除该视频: ${rec.doubanId}`);
             // 补充失败，不添加到结果中
           }
         } catch (error) {
-          console.error(`获取完整标题失败，移除该视频: ${rec.doubanId}`, error);
+          logger.error(`获取完整标题失败，移除该视频: ${rec.doubanId}`, error);
           // 补充失败，不添加到结果中
         }
       } else {
@@ -111,7 +112,7 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    console.log('处理后的推荐数:', processedRecommendations.length);
+    logger.debug('处理后的推荐数:', processedRecommendations.length);
 
     return NextResponse.json(
       {
@@ -124,7 +125,7 @@ export async function GET(request: NextRequest) {
       }
     );
   } catch (error) {
-    console.error('Douban recommendations fetch error:', error);
+    logger.error('Douban recommendations fetch error:', error);
     return NextResponse.json(
       { error: 'Failed to parse douban recommendations' },
       { status: 500 }

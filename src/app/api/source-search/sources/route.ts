@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import { getAvailableApiSites } from '@/lib/config';
+import { logger } from '@/lib/logger';
 import { getAuthenticatedUser } from '@/lib/session';
 
 export const runtime = 'nodejs';
@@ -23,7 +24,7 @@ export async function GET(request: NextRequest) {
       })),
     });
   } catch (error) {
-    console.error('Failed to get available API sites:', error);
+    logger.error('Failed to get available API sites:', error);
     return NextResponse.json(
       { error: 'Failed to load sources' },
       { status: 500 }

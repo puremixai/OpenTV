@@ -1,6 +1,7 @@
 /* eslint-disable no-console */
 
 import { NextRequest, NextResponse } from 'next/server';
+
 import { requireFeaturePermission } from '@/lib/permissions';
 
 export const runtime = 'nodejs';

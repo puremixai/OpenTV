@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-import { db } from '@/lib/db';
 import { bookProvider } from '@/lib/book-provider';
+import { db } from '@/lib/db';
 
 import { getAuthorizedBooksUsername } from '../_utils';
 

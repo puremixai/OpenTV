@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getConfig, setCachedConfig } from '@/lib/config';
 import { db } from '@/lib/db';
 import { legadoSubscriptionStore } from '@/lib/legado/subscription-store';
+import { checkMutationVersion, withConfigMutation } from '@/lib/server/config-mutation';
 import { getAuthenticatedUser } from '@/lib/session';
 
 export const runtime = 'nodejs';
@@ -17,7 +18,7 @@ async function ensureAdmin(request: NextRequest) {
   return authInfo.username;
 }
 
-export async function POST(request: NextRequest) {
+export const POST = withConfigMutation(async function POST(request: NextRequest) {
   const ensured = await ensureAdmin(request);
   if (ensured instanceof NextResponse) return ensured;
   try {
@@ -25,7 +26,8 @@ export async function POST(request: NextRequest) {
     const url = String(body?.url || '').trim();
     const name = String(body?.name || '').trim() || 'Legado 订阅';
     const meta = await legadoSubscriptionStore.sync({ name, url });
-    const config = await getConfig();
+    const config = await getConfig(true);
+    checkMutationVersion(config.ConfigVersion || 0);
     const nextConfig = legadoSubscriptionStore.mergeMeta(config, meta);
     await db.saveAdminConfig(nextConfig);
     await setCachedConfig(nextConfig);
@@ -33,4 +35,4 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     return NextResponse.json({ success: false, error: error instanceof Error ? error.message : '导入 Legado 订阅失败' }, { status: 400 });
   }
-}
+});

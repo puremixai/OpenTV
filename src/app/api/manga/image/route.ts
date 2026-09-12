@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-import { getAuthorizedUsername } from '../_utils';
 import { getSuwayomiConfig, loginWithSimpleAuth } from '@/lib/suwayomi.client';
+
+import { getAuthorizedUsername } from '../_utils';
 
 export const runtime = 'nodejs';
 

@@ -3,6 +3,8 @@
 import { Loader2, Pause, Play } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
+import { logger } from '@/lib/logger';
+
 declare global {
   interface HTMLVideoElement {
     hls?: any;
@@ -232,7 +234,7 @@ export default function TVNativeVideo({
         videoEl.muted = false;
         playSafely();
       } catch (err) {
-        console.error('[TVNativeVideo] attach failed:', err);
+        logger.error('[TVNativeVideo] attach failed:', err);
         setError('播放器初始化失败');
         setLoading(false);
       }

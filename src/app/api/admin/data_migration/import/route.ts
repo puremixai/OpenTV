@@ -8,13 +8,14 @@ import { configSelfCheck, setCachedConfig } from '@/lib/config';
 import { SimpleCrypto } from '@/lib/crypto';
 import { clearProgress,updateProgress } from '@/lib/data-migration-progress';
 import { db } from '@/lib/db';
+import { withConfigMutation } from '@/lib/server/config-mutation';
 import { getAuthenticatedUser } from '@/lib/session';
 
 export const runtime = 'nodejs';
 
 const gunzipAsync = promisify(gunzip);
 
-export async function POST(req: NextRequest) {
+export const POST = withConfigMutation(async function POST(req: NextRequest) {
   try {
     // 检查存储类型
     const storageType = process.env.NEXT_PUBLIC_STORAGE_TYPE || 'localstorage';
@@ -106,6 +107,11 @@ export async function POST(req: NextRequest) {
         ]))))
       : {};
 
+    const currentConfig = await db.getAdminConfig();
+    importData.data.adminConfig = configSelfCheck({ ...importData.data.adminConfig, ConfigVersion: currentConfig?.ConfigVersion || 0 });
+    await db.saveAdminConfig(importData.data.adminConfig);
+    await setCachedConfig(importData.data.adminConfig);
+
     // 开始导入数据 - 先清空现有数据
     updateProgress(username, 'import', 'clearing', 0, 1, '正在清空现有数据...');
     await db.clearAllData();
@@ -118,9 +124,7 @@ export async function POST(req: NextRequest) {
     console.log(`已清除 ${existingUsers.users.length} 个现有V2用户`);
 
     // 导入管理员配置
-    importData.data.adminConfig = configSelfCheck(importData.data.adminConfig);
-    await db.saveAdminConfig(importData.data.adminConfig);
-    await setCachedConfig(importData.data.adminConfig);
+
 
     // 清除短剧视频源缓存（因为导入的配置可能包含不同的视频源）
     try {
@@ -488,4 +492,4 @@ export async function POST(req: NextRequest) {
       { status: 500 }
     );
   }
-}
+});

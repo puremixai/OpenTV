@@ -1,3 +1,5 @@
+import { logger } from '@/lib/logger';
+
 import { EpisodeFilterConfig } from './types';
 
 export function normalizeEpisodeFilterConfig(
@@ -26,7 +28,7 @@ export function doesEpisodeTitleMatchFilterRules(
         return true;
       }
     } catch (e) {
-      console.error('集数过滤规则错误:', e);
+      logger.error('集数过滤规则错误:', e);
     }
   }
 

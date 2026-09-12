@@ -4,6 +4,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { validateKeywordExpr } from '@/lib/anime-keyword-expr';
 import { getConfig } from '@/lib/config';
 import { db } from '@/lib/db';
+import { logger } from '@/lib/logger';
+import { checkMutationVersion, withConfigMutation } from '@/lib/server/config-mutation';
 import { getAuthenticatedUser } from '@/lib/session';
 
 import { AnimeSubscription } from '@/types/anime-subscription';
@@ -22,7 +24,8 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: '无权限访问' }, { status: 403 });
     }
 
-    const config = await getConfig();
+    const config = await getConfig(true);
+    checkMutationVersion(config.ConfigVersion || 0);
     const animeConfig = config.AnimeSubscriptionConfig || {
       Enabled: false,
       DownloadTool: 'aria2',
@@ -34,7 +37,7 @@ export async function GET(req: NextRequest) {
       DownloadTool: animeConfig.DownloadTool || 'aria2',
     });
   } catch (error: any) {
-    console.error('获取追番订阅配置失败:', error);
+    logger.error('获取追番订阅配置失败:', error);
     return NextResponse.json(
       { error: error.message || '获取配置失败' },
       { status: 500 }
@@ -46,7 +49,7 @@ export async function GET(req: NextRequest) {
  * POST /api/admin/anime-subscription
  * 创建新订阅
  */
-export async function POST(req: NextRequest) {
+export const POST = withConfigMutation(async function POST(req: NextRequest) {
   try {
     // 权限检查
     const authInfo = await getAuthenticatedUser(req);
@@ -92,7 +95,8 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const config = await getConfig();
+    const config = await getConfig(true);
+    checkMutationVersion(config.ConfigVersion || 0);
     if (!config.AnimeSubscriptionConfig) {
       config.AnimeSubscriptionConfig = {
         Enabled: false,
@@ -155,10 +159,10 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json(newSubscription);
   } catch (error: any) {
-    console.error('创建追番订阅失败:', error);
+    logger.error('创建追番订阅失败:', error);
     return NextResponse.json(
       { error: error.message || '创建订阅失败' },
       { status: 500 }
     );
   }
-}
+});

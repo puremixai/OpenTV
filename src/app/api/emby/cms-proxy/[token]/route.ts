@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 import { getConfig } from '@/lib/config';
 import { EmbyClient } from '@/lib/emby.client';
+import { logger } from '@/lib/logger';
 import { hasFeaturePermission } from '@/lib/permissions';
 
 export const runtime = 'nodejs';
@@ -114,7 +115,7 @@ export async function GET(
       return await handleSearch(client, '', requestToken);
     }
   } catch (error) {
-    console.error('[Emby CMS Proxy] 错误:', error);
+    logger.error('[Emby CMS Proxy] 错误:', error);
     return NextResponse.json({
       code: 500,
       msg: (error as Error).message,

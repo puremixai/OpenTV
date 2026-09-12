@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 
 import { getConfig } from '@/lib/config';
+import { logger } from '@/lib/logger';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic'; // 禁用缓存
@@ -33,7 +34,7 @@ export async function GET(request: Request) {
       });
     }
   } catch (error) {
-    console.error('获取去广告代码配置失败:', error);
+    logger.error('获取去广告代码配置失败:', error);
     return NextResponse.json(
       { error: '获取配置失败', details: (error as Error).message },
       { status: 500 }

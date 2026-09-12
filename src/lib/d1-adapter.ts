@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 /**
@@ -115,7 +116,7 @@ class SQLitePreparedStatement implements D1PreparedStatement {
       if (colName) return result[colName] ?? null;
       return result;
     } catch (err) {
-      console.error('SQLite first() error:', err);
+      logger.error('SQLite first() error:', err);
       return null;
     }
   }
@@ -131,7 +132,7 @@ class SQLitePreparedStatement implements D1PreparedStatement {
         },
       };
     } catch (err: any) {
-      console.error('SQLite run() error:', err);
+      logger.error('SQLite run() error:', err);
       return {
         success: false,
         error: err.message,
@@ -147,7 +148,7 @@ class SQLitePreparedStatement implements D1PreparedStatement {
         results: results || [],
       };
     } catch (err: any) {
-      console.error('SQLite all() error:', err);
+      logger.error('SQLite all() error:', err);
       return {
         success: false,
         error: err.message,

@@ -12,13 +12,13 @@ import {
   Users,
   X,
 } from 'lucide-react';
-import Image from 'next/image';
 import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 
 import { getBangumiSubject, getBangumiSubjectUrl } from '@/lib/bangumi.client';
+import { logger } from '@/lib/logger';
 import { appendSpecialSourceParam } from '@/lib/special-source.client';
-import { getTMDBImageUrl } from '@/lib/tmdb.client';
+import { getTMDBImageUrl } from '@/lib/tmdb-image-base';
 import { processImageUrl } from '@/lib/utils';
 
 import ImageViewer from '@/components/ImageViewer';
@@ -217,7 +217,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
       setGalleryImages(data.list || []);
       setGalleryTotal(data.total || 0);
     } catch (err) {
-      console.error('获取照片墙失败:', err);
+      logger.error('获取照片墙失败:', err);
       setGalleryError(err instanceof Error ? err.message : '获取照片墙失败');
     } finally {
       setGalleryLoading(false);
@@ -431,7 +431,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
                 return;
               }
             } catch (err) {
-              console.error('获取source-detail失败:', err);
+              logger.error('获取source-detail失败:', err);
               // 继续执行后续逻辑
             }
           }
@@ -513,7 +513,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
 
         throw new Error('缺少必要的查询参数');
       } catch (err) {
-        console.error('获取详情失败:', err);
+        logger.error('获取详情失败:', err);
         setError(err instanceof Error ? err.message : '获取详情失败');
       } finally {
         setLoading(false);
@@ -594,7 +594,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
               seasonData = await seasonResponse.json();
             }
           } catch (err) {
-            console.error('获取季度信息失败', err);
+            logger.error('获取季度信息失败', err);
           }
         }
 
@@ -695,7 +695,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
       try {
         await fetchTmdbDataForToggle();
       } catch (err) {
-        console.error('切换到TMDB失败:', err);
+        logger.error('切换到TMDB失败:', err);
         setError(err instanceof Error ? err.message : '切换到TMDB失败');
         // 切换失败，但保持 currentSource 为 tmdb，这样可以显示切换回按钮
         setCurrentSource('tmdb');
@@ -778,7 +778,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
             seasonData = await seasonResponse.json();
           }
         } catch (err) {
-          console.error('获取季度信息失败', err);
+          logger.error('获取季度信息失败', err);
         }
       }
 
@@ -880,7 +880,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
         });
         setSeasonsLoaded(true);
       } catch (err) {
-        console.error('获取季度和集数详情失败:', err);
+        logger.error('获取季度和集数详情失败:', err);
       } finally {
         setLoadingSeasons(false);
       }
@@ -971,7 +971,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
             : null
         );
       } catch (err) {
-        console.error('获取演职人员信息失败:', err);
+        logger.error('获取演职人员信息失败:', err);
       }
     };
 
@@ -1037,7 +1037,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
 
       setExpandedEpisodes(new Set());
     } catch (err) {
-      console.error('获取集数详情失败:', err);
+      logger.error('获取集数详情失败:', err);
     } finally {
       setLoadingSeasons(false);
     }

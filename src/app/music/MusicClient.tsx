@@ -26,6 +26,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 
+import { logger } from '@/lib/logger';
 import { getSourceDisplayLabel, normalizeSource, SourcePill } from '@/lib/music/shared';
 import type { MusicQuality, MusicSource, Song } from '@/lib/music/types';
 
@@ -705,7 +706,7 @@ export default function MusicClient({ children: _children }: { children?: React.
     recordQuality?: MusicQuality
   ) => {
     saveHistoryRecord(record, song, playTime, totalDuration, lastPlayedAt, recordQuality).catch(err => {
-      console.error('保存播放记录到数据库失败:', err);
+      logger.error('保存播放记录到数据库失败:', err);
     });
   };
 
@@ -864,7 +865,7 @@ export default function MusicClient({ children: _children }: { children?: React.
                 }
               })
               .catch((error) => {
-                console.error('加载歌词失败:', error);
+                logger.error('加载歌词失败:', error);
               });
           } else {
             const data = await fetchPlayData(latestDbSong, platform, selectedQuality, true);
@@ -883,7 +884,7 @@ export default function MusicClient({ children: _children }: { children?: React.
           }
         }
       } catch (error) {
-        console.error('加载播放记录失败:', error);
+        logger.error('加载播放记录失败:', error);
       }
     };
 
@@ -1018,7 +1019,7 @@ export default function MusicClient({ children: _children }: { children?: React.
       await playSong(targetSongs[0], 0);
       setToast({ message: `已开始播放 ${title}`, type: 'success', onClose: () => setToast(null) });
     } catch (error) {
-      console.error('播放全部失败:', error);
+      logger.error('播放全部失败:', error);
       setToast({ message: '播放全部失败', type: 'error', onClose: () => setToast(null) });
     }
   };
@@ -1114,7 +1115,7 @@ export default function MusicClient({ children: _children }: { children?: React.
           audioRef.current.src = streamUrl;
           audioRef.current.load();
           audioRef.current.play().catch(err => {
-            console.error('播放失败:', err);
+            logger.error('播放失败:', err);
             setIsBuffering(false);
           });
           setIsPlaying(true);
@@ -1136,11 +1137,11 @@ export default function MusicClient({ children: _children }: { children?: React.
                 setLyrics(parsedLyrics);
               }
             } else {
-              console.error('播放信息获取失败:', data);
+              logger.error('播放信息获取失败:', data);
             }
           })
           .catch((error) => {
-            console.error('加载歌词失败:', error);
+            logger.error('加载歌词失败:', error);
           });
       } else {
         const data = await fetchPlayData(song, platform, quality, true);
@@ -1165,17 +1166,17 @@ export default function MusicClient({ children: _children }: { children?: React.
             audioRef.current.src = data.data.play.directUrl;
             audioRef.current.load();
             audioRef.current.play().catch(err => {
-              console.error('播放失败:', err);
+              logger.error('播放失败:', err);
               setIsBuffering(false);
             });
             setIsPlaying(true);
           }
         } else {
-          console.error('播放信息获取失败:', data);
+          logger.error('播放信息获取失败:', data);
         }
       }
     } catch (error) {
-      console.error('播放失败:', error);
+      logger.error('播放失败:', error);
       setIsBuffering(false);
     } finally {
       endResolving();
@@ -1253,13 +1254,13 @@ export default function MusicClient({ children: _children }: { children?: React.
         if (currentSong && playlistIndex >= 0 && playRecords[playlistIndex]) {
           const record = playRecords[playlistIndex];
           saveHistoryRecord(record, currentSong, audioRef.current.currentTime, audioRef.current.duration || 0).catch(err => {
-            console.error('暂停时保存播放记录失败:', err);
+            logger.error('暂停时保存播放记录失败:', err);
           });
         }
       } else {
         setIsBuffering(true);
         audioRef.current.play().catch(err => {
-          console.error('播放失败:', err);
+          logger.error('播放失败:', err);
           setIsBuffering(false);
         });
         setIsPlaying(true);
@@ -1402,7 +1403,7 @@ export default function MusicClient({ children: _children }: { children?: React.
               audio.currentTime = seekTime;
             }
           } catch (error) {
-            console.warn('切换音质后恢复播放进度失败:', error);
+            logger.warn('切换音质后恢复播放进度失败:', error);
           }
         }
 
@@ -1412,7 +1413,7 @@ export default function MusicClient({ children: _children }: { children?: React.
           audio.play()
             .then(() => setIsPlaying(true))
             .catch((error) => {
-              console.error('切换音质后播放失败:', error);
+              logger.error('切换音质后播放失败:', error);
               setIsPlaying(false);
               setIsBuffering(false);
             });
@@ -1428,7 +1429,7 @@ export default function MusicClient({ children: _children }: { children?: React.
       audio.load();
       setIsPlaying(shouldResume);
     } catch (error) {
-      console.error('切换音质失败:', error);
+      logger.error('切换音质失败:', error);
       setIsBuffering(false);
       setToast({
         message: (error as Error).message || '切换音质失败',
@@ -1484,7 +1485,7 @@ export default function MusicClient({ children: _children }: { children?: React.
       });
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
     } catch (error) {
-      console.error('保存播放顺序失败:', error);
+      logger.error('保存播放顺序失败:', error);
       setPlaylist(prevPlaylist);
       setPlayRecords(prevRecords);
       setPlaylistIndex(prevIndex);
@@ -1509,7 +1510,7 @@ export default function MusicClient({ children: _children }: { children?: React.
         setPlaylistIndex(playlistIndex - 1);
       }
     } catch (error) {
-      console.error('删除播放记录失败:', error);
+      logger.error('删除播放记录失败:', error);
     }
   };
 
@@ -1532,7 +1533,7 @@ export default function MusicClient({ children: _children }: { children?: React.
             onClose: () => setToast(null),
           });
         } catch (error) {
-          console.error('清空播放记录失败:', error);
+          logger.error('清空播放记录失败:', error);
           setToast({
             message: '清空播放记录失败',
             type: 'error',
@@ -1619,7 +1620,7 @@ export default function MusicClient({ children: _children }: { children?: React.
       .then(buffer => {
         if (!cancelled && convolver) convolver.buffer = buffer;
       })
-      .catch(error => console.warn('加载环境混响音效失败:', error));
+      .catch(error => logger.warn('加载环境混响音效失败:', error));
     return () => { cancelled = true; };
   }, [reverbPreset, reverbEnabled]);
 
@@ -1687,7 +1688,7 @@ export default function MusicClient({ children: _children }: { children?: React.
               // 保存到数据库
               const record = updated[playlistIndex];
               saveHistoryRecord(record, currentSong, audio.currentTime, audio.duration || 0).catch(err => {
-                console.error('保存播放记录到数据库失败:', err);
+                logger.error('保存播放记录到数据库失败:', err);
               });
             }
             return updated;
@@ -1737,7 +1738,7 @@ export default function MusicClient({ children: _children }: { children?: React.
             // 保存到数据库（包含时长信息）
             const record = updated[playlistIndex];
             saveHistoryRecord(record, currentSong, record.playTime, audio.duration).catch(err => {
-              console.error('保存播放记录到数据库失败:', err);
+              logger.error('保存播放记录到数据库失败:', err);
             });
           }
           return updated;
@@ -2134,7 +2135,7 @@ export default function MusicClient({ children: _children }: { children?: React.
           await audioContextRef.current.resume();
         }
       } catch (error) {
-        console.warn('初始化频谱分析器失败，将使用模拟动画:', error);
+        logger.warn('初始化频谱分析器失败，将使用模拟动画:', error);
       }
     };
 

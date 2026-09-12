@@ -9,10 +9,10 @@ import {
   setNetdiskCheckInflight,
 } from './cache';
 import type { NetdiskCheckPlatform, NetdiskCheckResult } from './types';
-import { check115 } from './vendor/checkers/pan115';
 import { checkAliyun } from './vendor/checkers/aliyun';
 import { checkBaidu } from './vendor/checkers/baidu';
 import { checkCMCC } from './vendor/checkers/cmcc';
+import { check115 } from './vendor/checkers/pan115';
 import { check123 } from './vendor/checkers/pan123';
 import { checkQuark } from './vendor/checkers/quark';
 import { checkTianyi } from './vendor/checkers/tianyi';

@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { Suspense, useEffect, useState } from 'react';
 
+import { logger } from '@/lib/logger';
 import { CURRENT_VERSION } from '@/lib/version';
 
 import { useSite } from '@/components/SiteProvider';
@@ -30,7 +31,7 @@ function OIDCRegisterPageClient() {
           router.replace('/login?error=' + encodeURIComponent('OIDC会话已过期'));
         }
       } catch (error) {
-        console.error('检查session失败:', error);
+        logger.error('检查session失败:', error);
         router.replace('/login');
       }
     };

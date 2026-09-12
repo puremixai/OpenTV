@@ -10,6 +10,7 @@ import ReactMarkdown from 'react-markdown';
 
 import { VideoContext } from '@/lib/ai-orchestrator';
 import { getAuthInfoFromBrowserCookie } from '@/lib/auth';
+import { logger } from '@/lib/logger';
 
 interface ChatMessage {
   role: 'user' | 'assistant';
@@ -504,7 +505,7 @@ export default function AIChatPanel({
           setMessages(parsed);
         }
       } catch (error) {
-        console.error('加载聊天记录失败:', error);
+        logger.error('加载聊天记录失败:', error);
       }
     }
 
@@ -519,7 +520,7 @@ export default function AIChatPanel({
     try {
       sessionStorage.setItem(storageKey, JSON.stringify(messages));
     } catch (error) {
-      console.error('保存聊天记录失败:', error);
+      logger.error('保存聊天记录失败:', error);
     }
   }, [messages, storageKey]); // 消息变化时保存
 
@@ -530,14 +531,14 @@ export default function AIChatPanel({
     if (prevStorageKeyRef.current !== storageKey) {
       // 上下文变化了，取消正在进行的请求
       if (abortControllerRef.current) {
-        console.log('视频上下文变化，取消正在进行的AI请求');
+        logger.debug('视频上下文变化，取消正在进行的AI请求');
         abortControllerRef.current.abort();
         abortControllerRef.current = null;
         setIsStreaming(false);
       }
 
       // 清除消息并重置为欢迎消息
-      console.log('视频上下文变化，清除聊天记录');
+      logger.debug('视频上下文变化，清除聊天记录');
       clearToolChain();
       setMessages([{ role: 'assistant', content: welcomeMessage }]);
 
@@ -713,7 +714,7 @@ export default function AIChatPanel({
                   });
                 }
               } catch (e) {
-                console.error('解析SSE数据失败:', e);
+                logger.error('解析SSE数据失败:', e);
               }
             }
           }
@@ -749,7 +750,7 @@ export default function AIChatPanel({
                   }
                 }
               } catch (e) {
-                console.error('解析最终缓冲区数据失败:', e);
+                logger.error('解析最终缓冲区数据失败:', e);
               }
             }
           }
@@ -814,11 +815,11 @@ export default function AIChatPanel({
     } catch (error) {
       // 如果是主动取消的请求（切换视频或其他原因），不显示错误
       if ((error as Error).name === 'AbortError') {
-        console.log('请求已取消');
+        logger.debug('请求已取消');
         return;
       }
 
-      console.error('发送消息失败:', error);
+      logger.error('发送消息失败:', error);
 
       // 更新最后一条空消息为错误消息
       setMessages((prev) => {
@@ -857,7 +858,7 @@ export default function AIChatPanel({
     clearToolChain();
     setMessages([{ role: 'assistant', content: welcomeMessage }]);
 
-    console.log('已清空聊天上下文');
+    logger.debug('已清空聊天上下文');
   };
 
   const modalContent = useDrawer ? (

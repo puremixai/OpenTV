@@ -10,11 +10,12 @@ import {
   validateSubscriptions,
 } from '@/lib/config-subscriptions';
 import { db } from '@/lib/db';
+import { checkMutationVersion, withConfigMutation } from '@/lib/server/config-mutation';
 import { getAuthenticatedUser } from '@/lib/session';
 
 export const runtime = 'nodejs';
 
-export async function POST(request: NextRequest) {
+export const POST = withConfigMutation(async function POST(request: NextRequest) {
   const storageType = process.env.NEXT_PUBLIC_STORAGE_TYPE || 'localstorage';
   if (storageType === 'localstorage') {
     return NextResponse.json(
@@ -33,7 +34,8 @@ export async function POST(request: NextRequest) {
 
   try {
     // 检查用户权限
-    let adminConfig = structuredClone(await getConfig());
+    let adminConfig = structuredClone(await getConfig(true));
+    checkMutationVersion(adminConfig.ConfigVersion || 0);
     migrateConfigSubscriptions(adminConfig);
 
     // 仅站长可以修改配置文件
@@ -146,4 +148,4 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+});

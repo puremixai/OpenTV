@@ -3,6 +3,8 @@ import { NextRequest, NextResponse } from 'next/server';
 
 import { getConfig } from '@/lib/config';
 import { db } from '@/lib/db';
+import { logger } from '@/lib/logger';
+import { checkMutationVersion, withConfigMutation } from '@/lib/server/config-mutation';
 import { getAuthenticatedUser } from '@/lib/session';
 
 export const runtime = 'nodejs';
@@ -18,7 +20,7 @@ function isDownloadTool(tool: unknown): tool is DownloadTool {
  * PUT /api/admin/anime-subscription/toggle
  * 切换追番功能启用状态
  */
-export async function PUT(req: NextRequest) {
+export const PUT = withConfigMutation(async function PUT(req: NextRequest) {
   try {
     // 权限检查
     const authInfo = await getAuthenticatedUser(req);
@@ -42,7 +44,8 @@ export async function PUT(req: NextRequest) {
       );
     }
 
-    const config = await getConfig();
+    const config = await getConfig(true);
+    checkMutationVersion(config.ConfigVersion || 0);
     if (!config.AnimeSubscriptionConfig) {
       config.AnimeSubscriptionConfig = { Enabled: false, Subscriptions: [] };
     }
@@ -61,10 +64,10 @@ export async function PUT(req: NextRequest) {
       downloadTool: config.AnimeSubscriptionConfig.DownloadTool,
     });
   } catch (error: any) {
-    console.error('切换追番功能状态失败:', error);
+    logger.error('切换追番功能状态失败:', error);
     return NextResponse.json(
       { error: error.message || '切换状态失败' },
       { status: 500 }
     );
   }
-}
+});

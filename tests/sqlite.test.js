@@ -99,3 +99,17 @@ test('session records persist and disappear through the SQL hash adapter', async
     await storage.adapter.hGet('user_tokens:legacy-user', 'device')
   ).toBeNull();
 });
+
+
+test('SQLite config CAS admits one writer and preserves the winning revision', async () => {
+  await storage.setAdminConfig({ ConfigVersion: 0, marker: 'legacy' });
+  const results = await Promise.all([
+    storage.compareAndSetAdminConfig(0, { ConfigVersion: 1, marker: 'one' }),
+    storage.compareAndSetAdminConfig(0, { ConfigVersion: 1, marker: 'two' }),
+  ]);
+  expect(results.filter(Boolean)).toHaveLength(1);
+  expect((await storage.getAdminConfig()).ConfigVersion).toBe(1);
+  expect(await storage.compareAndSetAdminConfig(0, { ConfigVersion: 1, marker: 'stale' })).toBe(false);
+  expect(await storage.compareAndSetAdminConfig(1, { ConfigVersion: 2, marker: 'next' })).toBe(true);
+  expect((await storage.getAdminConfig()).marker).toBe('next');
+});

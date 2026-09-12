@@ -1,3 +1,4 @@
+let configVersion = 0;
 // Integration test against a disposable Docker container; never uses the user's database.
 const assert = require('node:assert/strict');
 const { execFileSync } = require('node:child_process');
@@ -31,6 +32,7 @@ async function request(path, body, headers = {}) {
       'Content-Type': 'application/json',
       'sec-fetch-site': 'same-origin',
       ...(cookie ? { cookie } : {}),
+      'x-config-version': String(configVersion),
       ...headers,
     },
     ...(body === undefined ? {} : { body: JSON.stringify(body) }),
@@ -56,7 +58,9 @@ async function ready() {
 async function readConfig() {
   const response = await request('/api/admin/config');
   assert.equal(response.status, 200);
-  return (await response.json()).Config;
+  const config = (await response.json()).Config;
+  configVersion = config.ConfigVersion || 0;
+  return config;
 }
 async function restart() {
   docker(['restart', name]);
@@ -104,7 +108,7 @@ async function save(local, subscriptions) {
         'PORT=3000',
         '-e',
         'CRON_WAIT_FOR_COMPLETION=true',
-        'moontvplus:local',
+        process.env.SMOKE_IMAGE || 'moontvplus:local',
       ],
       {
         env: {

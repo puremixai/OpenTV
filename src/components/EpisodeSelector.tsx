@@ -2,7 +2,6 @@
 
 import { Link as LinkIcon, Settings } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { createPortal } from 'react-dom';
 import React, {
   useCallback,
   useEffect,
@@ -10,19 +9,21 @@ import React, {
   useRef,
   useState,
 } from 'react';
+import { createPortal } from 'react-dom';
 
 import type { DanmakuComment,DanmakuSelection } from '@/lib/danmaku/types';
 import { generateStorageKey, getCachedPlayRecordsSnapshot } from '@/lib/db.client';
 import { isEpisodeHiddenByFilter } from '@/lib/episode-filter';
 import { loadAllLocalEpisodeProgressRecords } from '@/lib/episode-progress';
+import { logger } from '@/lib/logger';
 import { isNetdiskSource } from '@/lib/netdisk/source';
 import { EpisodeFilterConfig,SearchResult } from '@/lib/types';
 import { getVideoResolutionFromM3u8 } from '@/lib/utils';
+import { useLongPress } from '@/hooks/useLongPress';
 
 import DanmakuPanel from '@/components/DanmakuPanel';
 import EpisodeFilterSettings from '@/components/EpisodeFilterSettings';
 import ProxyImage from '@/components/ProxyImage';
-import { useLongPress } from '@/hooks/useLongPress';
 
 /** 选集按钮上显示的短标签（数字等）；全名仍保留在 originalTitle 供长按查看 */
 function getEpisodeDisplayLabel(
@@ -461,7 +462,7 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
         watched.add(record.index);
       }
     } catch (error) {
-      console.warn('[EpisodeSelector] Failed to read cached play records:', error);
+      logger.warn('[EpisodeSelector] Failed to read cached play records:', error);
     }
 
     try {
@@ -478,7 +479,7 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
         }
       }
     } catch (error) {
-      console.warn('[EpisodeSelector] Failed to read local episode progress:', error);
+      logger.warn('[EpisodeSelector] Failed to read local episode progress:', error);
     }
 
     setWatchedEpisodes(watched);

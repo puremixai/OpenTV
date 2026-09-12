@@ -2,6 +2,7 @@
 
 import { useCallback,useEffect, useState } from 'react';
 
+import { logger } from '@/lib/logger';
 import { useEnableComments } from '@/hooks/useEnableComments';
 
 interface DoubanComment {
@@ -37,7 +38,7 @@ export default function DoubanComments({ doubanId }: DoubanCommentsProps) {
 
   const fetchComments = useCallback(async (startIndex: number) => {
     try {
-      console.log('正在获取评论，起始位置:', startIndex);
+      logger.debug('正在获取评论，起始位置:', startIndex);
       setLoading(true);
       setError(null);
 
@@ -50,7 +51,7 @@ export default function DoubanComments({ doubanId }: DoubanCommentsProps) {
       }
 
       const data = await response.json();
-      console.log('获取到评论数据:', {
+      logger.debug('获取到评论数据:', {
         newComments: data.comments.length,
         total: data.total,
         hasMore: data.hasMore,
@@ -61,16 +62,16 @@ export default function DoubanComments({ doubanId }: DoubanCommentsProps) {
         setComments(data.comments);
       } else {
         setComments((prev) => {
-          console.log('追加评论，之前:', prev.length, '新增:', data.comments.length);
+          logger.debug('追加评论，之前:', prev.length, '新增:', data.comments.length);
           return [...prev, ...data.comments];
         });
       }
 
       setTotal(data.total);
       setHasMore(data.hasMore);
-      console.log('更新后状态 - hasMore:', data.hasMore, 'total:', data.total);
+      logger.debug('更新后状态 - hasMore:', data.hasMore, 'total:', data.total);
     } catch (err) {
-      console.error('获取评论失败:', err);
+      logger.error('获取评论失败:', err);
       setError(err instanceof Error ? err.message : '获取评论失败');
     } finally {
       setLoading(false);
@@ -88,13 +89,13 @@ export default function DoubanComments({ doubanId }: DoubanCommentsProps) {
   }, [doubanId]); // 只在 doubanId 变化时重新获取
 
   const startLoading = () => {
-    console.log('开始加载评论');
+    logger.debug('开始加载评论');
     setHasStartedLoading(true);
     fetchComments(0);
   };
 
   const loadMore = () => {
-    console.log('点击加载更多，当前状态:', {
+    logger.debug('点击加载更多，当前状态:', {
       loading,
       hasMore,
       commentsLength: comments.length,

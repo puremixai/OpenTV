@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import { embyManager } from '@/lib/emby-manager';
+import { logger } from '@/lib/logger';
 import { requireFeaturePermission } from '@/lib/permissions';
 
 export const runtime = 'nodejs';
@@ -22,7 +23,7 @@ export async function GET(request: NextRequest) {
       })),
     });
   } catch (error) {
-    console.error('[Emby Sources] 获取Emby源列表失败:', error);
+    logger.error('[Emby Sources] 获取Emby源列表失败:', error);
     return NextResponse.json(
       { error: '获取Emby源列表失败', sources: [] },
       { status: 500 }

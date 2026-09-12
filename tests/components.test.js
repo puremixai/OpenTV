@@ -11,6 +11,9 @@ jest.mock('../src/components/SiteProvider', () => ({
 jest.mock('../src/components/WatchRoomProvider', () => ({
   useWatchRoomContextSafe: () => null,
 }));
+jest.mock('../src/components/UserMenu', () => ({
+  UserMenu: () => React.createElement('button', null, '个人设置'),
+}));
 const Sidebar = require('../src/components/Sidebar').default;
 const MobileBottomNav = require('../src/components/MobileBottomNav').default;
 const { EmailSettingsPanel } = require('../src/components/EmailSettingsPanel');

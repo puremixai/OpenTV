@@ -4,6 +4,8 @@ import { NextRequest, NextResponse } from 'next/server';
 
 import { AdminConfigResult } from '@/lib/admin.types';
 import { getConfig } from '@/lib/config';
+import { configPatchSchema } from '@/lib/server/admin-config-policy';
+import { checkMutationVersion, withConfigMutation } from '@/lib/server/config-mutation';
 import { getAuthenticatedUser } from '@/lib/session';
 
 export const runtime = 'nodejs';
@@ -26,7 +28,8 @@ export async function GET(request: NextRequest) {
   const username = authInfo.username;
 
   try {
-    const config = await getConfig();
+    const config = await getConfig(true);
+    checkMutationVersion(config.ConfigVersion || 0);
     const result: AdminConfigResult = {
       Role: 'owner',
       Config: config,
@@ -65,7 +68,7 @@ export async function GET(request: NextRequest) {
   }
 }
 
-export async function POST(request: NextRequest) {
+export const POST = withConfigMutation(async function POST(request: NextRequest) {
   const storageType = process.env.NEXT_PUBLIC_STORAGE_TYPE || 'localstorage';
   if (storageType === 'localstorage') {
     return NextResponse.json(
@@ -88,7 +91,7 @@ export async function POST(request: NextRequest) {
       const { db } = await import('@/lib/db');
       const userInfoV2 = await db.getUserInfoV2(username);
 
-      if (!userInfoV2 || (userInfoV2.role !== 'admin' && userInfoV2.role !== 'owner') || userInfoV2.banned) {
+      if (!userInfoV2 || userInfoV2.role !== 'admin' || userInfoV2.banned) {
         return NextResponse.json({ error: '权限不足' }, { status: 401 });
       }
     }
@@ -98,7 +101,14 @@ export async function POST(request: NextRequest) {
     const { configSelfCheck, setCachedConfig } = await import('@/lib/config');
 
     // 自检配置
-    const checkedConfig = configSelfCheck(newConfig);
+    const parsed = configPatchSchema.safeParse(newConfig);
+    if (!parsed.success) return NextResponse.json({ error: '仅允许更新指定字段；敏感配置请使用专用接口。', details: parsed.error.flatten() }, { status: 400 });
+    const current = await getConfig(true);
+    checkMutationVersion(current.ConfigVersion || 0);
+    const checkedConfig = configSelfCheck({ ...current, ...parsed.data,
+      SiteConfig: { ...current.SiteConfig, ...parsed.data.SiteConfig },
+      OPDSConfig: parsed.data.OPDSConfig ? { ...current.OPDSConfig, ...parsed.data.OPDSConfig } : current.OPDSConfig,
+    });
 
     // 保存到数据库
     await db.saveAdminConfig(checkedConfig);
@@ -114,4 +124,4 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+});

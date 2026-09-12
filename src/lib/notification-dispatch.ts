@@ -1,5 +1,5 @@
-import type { IStorage, Notification } from './types';
 import { dispatchTelegramNotification } from './telegram';
+import type { IStorage, Notification } from './types';
 import { dispatchWebPushNotification } from './web-push';
 
 export async function dispatchNotificationChannels(

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+import { logger } from '@/lib/logger';
 import { fetchLxLyric, normalizeSong } from '@/lib/music-v2';
 import { badRequest, internalError } from '@/lib/music-v2-api';
 
@@ -24,7 +25,7 @@ export async function POST(request: NextRequest) {
       }
     );
   } catch (error) {
-    console.error('[music-v2] lyric route error:', error);
+    logger.error('[music-v2] lyric route error:', error);
     return internalError('获取歌词失败', (error as Error).message);
   }
 }

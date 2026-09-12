@@ -4,5 +4,11 @@ declare module 'opencc-js' {
     to: string;
   }
 
-  export function Converter(options: ConverterOptions): (text: string) => string;
+  export function Converter(
+    options: ConverterOptions
+  ): (text: string) => string;
+}
+
+declare module 'opencc-js/t2cn' {
+  export { Converter } from 'opencc-js';
 }
