@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-import { getAuthInfoFromCookie } from '@/lib/auth';
 import { getConfig } from '@/lib/config';
 import {
   getMobileShareDownloadUrl,
@@ -13,12 +12,13 @@ import {
   parseMobileNetdiskId,
   refreshMobileNetdiskSession,
 } from '@/lib/netdisk/mobile-session-cache';
+import { getAuthenticatedUser } from '@/lib/session';
 
 export const runtime = 'nodejs';
 
 export async function GET(request: NextRequest) {
   try {
-    const authInfo = getAuthInfoFromCookie(request);
+    const authInfo = await getAuthenticatedUser(request);
     if (!authInfo?.username) {
       return NextResponse.json({ error: '未授权' }, { status: 401 });
     }

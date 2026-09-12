@@ -1,40 +1,13 @@
 /* eslint-disable no-console,@typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from 'next/server';
 
+import { generateAuthCookieValue } from '@/lib/auth-cookie';
+import { setAuthCookies } from '@/lib/auth-response';
 import { getConfig } from '@/lib/config';
 import { db } from '@/lib/db';
-import {
-  generateRefreshToken,
-  generateTokenId,
-  storeRefreshToken,
-  TOKEN_CONFIG,
-} from '@/lib/refresh-token';
+import { TOKEN_CONFIG } from '@/lib/token-config';
 
 export const runtime = 'nodejs';
-
-// 生成签名
-async function generateSignature(
-  data: string,
-  secret: string
-): Promise<string> {
-  const encoder = new TextEncoder();
-  const keyData = encoder.encode(secret);
-  const messageData = encoder.encode(data);
-
-  const key = await crypto.subtle.importKey(
-    'raw',
-    keyData,
-    { name: 'HMAC', hash: 'SHA-256' },
-    false,
-    ['sign']
-  );
-
-  const signature = await crypto.subtle.sign('HMAC', key, messageData);
-
-  return Array.from(new Uint8Array(signature))
-    .map((b) => b.toString(16).padStart(2, '0'))
-    .join('');
-}
 
 // 获取设备信息
 function getDeviceInfo(userAgent: string): string {
@@ -65,50 +38,6 @@ function getDeviceInfo(userAgent: string): string {
   if (ua.includes('linux')) return 'Linux';
 
   return 'Unknown Device';
-}
-
-// 生成认证Cookie
-async function generateAuthCookie(
-  username: string,
-  role: 'owner' | 'admin' | 'user',
-  deviceInfo: string
-): Promise<string> {
-  const authData: any = { role };
-
-  if (username && process.env.PASSWORD) {
-    authData.username = username;
-    authData.timestamp = Date.now();
-
-    // 生成签名（包含 username, role, timestamp）
-    const dataToSign = JSON.stringify({
-      username: authData.username,
-      role: authData.role,
-      timestamp: authData.timestamp
-    });
-    const signature = await generateSignature(dataToSign, process.env.PASSWORD);
-    authData.signature = signature;
-
-    // 生成双 Token
-    const tokenId = generateTokenId();
-    const refreshToken = generateRefreshToken();
-    const now = Date.now();
-    const refreshExpires = now + TOKEN_CONFIG.REFRESH_TOKEN_AGE;
-
-    authData.tokenId = tokenId;
-    authData.refreshToken = refreshToken;
-    authData.refreshExpires = refreshExpires;
-
-    // 存储 Refresh Token
-    await storeRefreshToken(username, tokenId, {
-      token: refreshToken,
-      deviceInfo,
-      createdAt: now,
-      expiresAt: refreshExpires,
-      lastUsed: now,
-    });
-  }
-
-  return encodeURIComponent(JSON.stringify(authData));
 }
 
 export async function POST(request: NextRequest) {
@@ -221,16 +150,10 @@ export async function POST(request: NextRequest) {
       const response = NextResponse.json({ ok: true, message: '注册成功' });
       const userAgent = request.headers.get('user-agent') || 'Unknown';
       const deviceInfo = getDeviceInfo(userAgent);
-      const cookieValue = await generateAuthCookie(username, 'user', deviceInfo);
+      const cookieValue = await generateAuthCookieValue({ username, role: 'user', deviceInfo });
       const expires = new Date(Date.now() + TOKEN_CONFIG.REFRESH_TOKEN_AGE);
 
-      response.cookies.set('auth', cookieValue, {
-        path: '/',
-        expires,
-        sameSite: 'lax',
-        httpOnly: false,
-        secure: false,
-      });
+      setAuthCookies(response, cookieValue, request);
 
       // 清除OIDC session
       response.cookies.delete('oidc_session');

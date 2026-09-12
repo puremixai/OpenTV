@@ -1,14 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import { invalidateDeviceAccessToken } from '@/lib/access-token-invalidation';
-import { getAuthInfoFromCookie } from '@/lib/auth';
+import { clearAuthCookies } from '@/lib/auth-response';
 import { getStorage } from '@/lib/db';
 import { revokeRefreshToken } from '@/lib/refresh-token';
+import { getAuthenticatedUser } from '@/lib/session';
 
 export const runtime = 'nodejs';
 
 export async function POST(request: NextRequest) {
-  const authInfo = getAuthInfoFromCookie(request);
+  const authInfo = await getAuthenticatedUser(request, { allowExpiredAccessToken: true });
 
   // 撤销当前设备的 Refresh Token
   if (authInfo && authInfo.username && authInfo.tokenId) {
@@ -25,13 +26,7 @@ export async function POST(request: NextRequest) {
   const response = NextResponse.json({ ok: true });
 
   // 清除认证cookie
-  response.cookies.set('auth', '', {
-    path: '/',
-    expires: new Date(0),
-    sameSite: 'lax',
-    httpOnly: false,
-    secure: false,
-  });
+  clearAuthCookies(response);
 
   return response;
 }

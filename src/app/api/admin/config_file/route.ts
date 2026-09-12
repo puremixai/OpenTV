@@ -2,9 +2,15 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 
-import { getAuthInfoFromCookie } from '@/lib/auth';
-import { getConfig, refineConfig } from '@/lib/config';
+import { getConfig, refineConfig, setCachedConfig } from '@/lib/config';
+import {
+  applySubscriptionConfig,
+  migrateConfigSubscriptions,
+  parseSubscriptionConfig,
+  validateSubscriptions,
+} from '@/lib/config-subscriptions';
 import { db } from '@/lib/db';
+import { getAuthenticatedUser } from '@/lib/session';
 
 export const runtime = 'nodejs';
 
@@ -19,7 +25,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const authInfo = getAuthInfoFromCookie(request);
+  const authInfo = await getAuthenticatedUser(request);
   if (!authInfo || !authInfo.username) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
@@ -27,7 +33,8 @@ export async function POST(request: NextRequest) {
 
   try {
     // 检查用户权限
-    let adminConfig = await getConfig();
+    let adminConfig = structuredClone(await getConfig());
+    migrateConfigSubscriptions(adminConfig);
 
     // 仅站长可以修改配置文件
     if (username !== process.env.USERNAME) {
@@ -39,7 +46,13 @@ export async function POST(request: NextRequest) {
 
     // 获取请求体
     const body = await request.json();
-    const { configFile, subscriptionUrl, autoUpdate, lastCheckTime } = body;
+    const {
+      configFile,
+      subscriptions,
+      subscriptionUrl,
+      autoUpdate,
+      lastCheckTime,
+    } = body;
 
     if (!configFile || typeof configFile !== 'string') {
       return NextResponse.json(
@@ -50,7 +63,7 @@ export async function POST(request: NextRequest) {
 
     // 验证 JSON 格式
     try {
-      JSON.parse(configFile);
+      parseSubscriptionConfig(configFile);
     } catch (e) {
       return NextResponse.json(
         { error: '配置文件格式错误，请检查 JSON 语法' },
@@ -58,27 +71,57 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    adminConfig.ConfigFile = configFile;
-    if (!adminConfig.ConfigSubscribtion) {
-      adminConfig.ConfigSubscribtion = {
-        URL: '',
-        AutoUpdate: false,
-        LastCheck: '',
-      };
+    try {
+      if (subscriptions !== undefined) {
+        const validated = validateSubscriptions(subscriptions);
+        adminConfig = applySubscriptionConfig(
+          adminConfig,
+          configFile,
+          validated
+        );
+      } else if (subscriptionUrl !== undefined) {
+        if ((adminConfig.ConfigSubscriptions?.length || 0) > 1) {
+          return NextResponse.json(
+            { error: '已启用多订阅，请刷新管理页面后保存' },
+            { status: 409 }
+          );
+        }
+        const legacy = subscriptionUrl
+          ? validateSubscriptions([
+              {
+                ID: 'legacy',
+                Name: '原有订阅',
+                URL: subscriptionUrl,
+                Enabled: true,
+                AutoUpdate: autoUpdate ?? false,
+                LastCheck: lastCheckTime || '',
+                ConfigContent: configFile,
+              },
+            ])
+          : [];
+        adminConfig = applySubscriptionConfig(
+          adminConfig,
+          subscriptionUrl ? '{}' : configFile,
+          legacy
+        );
+      } else {
+        adminConfig = applySubscriptionConfig(
+          adminConfig,
+          configFile,
+          adminConfig.ConfigSubscriptions || []
+        );
+      }
+    } catch (error) {
+      return NextResponse.json(
+        { error: error instanceof Error ? error.message : '配置无效' },
+        { status: 400 }
+      );
     }
-
-    // 更新订阅配置
-    if (subscriptionUrl !== undefined) {
-      adminConfig.ConfigSubscribtion.URL = subscriptionUrl;
-    }
-    if (autoUpdate !== undefined) {
-      adminConfig.ConfigSubscribtion.AutoUpdate = autoUpdate;
-    }
-    adminConfig.ConfigSubscribtion.LastCheck = lastCheckTime || '';
 
     adminConfig = refineConfig(adminConfig);
     // 更新配置文件
     await db.saveAdminConfig(adminConfig);
+    await setCachedConfig(adminConfig);
 
     // 清除短剧视频源缓存（因为配置文件可能包含新的视频源）
     try {

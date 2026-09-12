@@ -17,14 +17,10 @@
 const { createClient } = require('@libsql/client/http');
 const fs = require('fs');
 const path = require('path');
-const crypto = require('crypto');
+const { hashPassword } = require('./password-hash');
 
 const MIGRATIONS_DIR = path.join(__dirname, '../migrations');
 const MIGRATION_BASELINE_CUTOFF = '008_web_push_notifications.sql';
-
-function hashPassword(password) {
-  return crypto.createHash('sha256').update(password).digest('hex');
-}
 
 function splitSqlStatements(sql) {
   const withoutLineComments = sql
@@ -50,8 +46,7 @@ function getMigrationFiles() {
 }
 
 function isIgnorableMigrationError(error) {
-  const message =
-    error instanceof Error ? error.message : String(error || '');
+  const message = error instanceof Error ? error.message : String(error || '');
   return (
     (message.includes('table') && message.includes('already exists')) ||
     (message.includes('index') && message.includes('already exists')) ||
@@ -107,7 +102,11 @@ async function runMigrations(client) {
   const migrationFiles = getMigrationFiles();
   const hadExistingSchema = await tableExists(client, 'users');
   await ensureMigrationTable(client);
-  await seedExistingMigrationBaseline(client, migrationFiles, hadExistingSchema);
+  await seedExistingMigrationBaseline(
+    client,
+    migrationFiles,
+    hadExistingSchema
+  );
 
   for (const file of migrationFiles) {
     const applied = await getAppliedMigrations(client);
@@ -139,7 +138,9 @@ async function runMigrations(client) {
 
 async function ensureDefaultAdmin(client) {
   const username = process.env.USERNAME || 'admin';
-  const password = process.env.PASSWORD || '123456789';
+  const password = process.env.PASSWORD;
+  if (!password)
+    throw new Error('PASSWORD must be set before creating an administrator');
   const passwordHash = hashPassword(password);
 
   const existingUser = await client.execute({
@@ -202,4 +203,7 @@ async function initTursoDatabase() {
   }
 }
 
-initTursoDatabase();
+if (require.main === module) {
+  require('./load-env').loadAppEnv();
+  initTursoDatabase();
+}

@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
       }
 
       const chunks: Uint8Array[] = [];
-      while (true) {
+      for (;;) {
         const { done, value } = await reader.read();
         if (done) break;
         chunks.push(value);

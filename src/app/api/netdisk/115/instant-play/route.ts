@@ -1,17 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-import { getAuthInfoFromCookie } from '@/lib/auth';
 import { getConfig } from '@/lib/config';
 import { listPan115ShareVideos } from '@/lib/netdisk/pan115.client';
 import { createPan115NetdiskSession } from '@/lib/netdisk/pan115-session-cache';
 import { NETDISK_115_SOURCE } from '@/lib/netdisk/source';
 import { hasFeaturePermission } from '@/lib/permissions';
+import { getAuthenticatedUser } from '@/lib/session';
 
 export const runtime = 'nodejs';
 
 export async function POST(request: NextRequest) {
   try {
-    const authInfo = getAuthInfoFromCookie(request);
+    const authInfo = await getAuthenticatedUser(request);
     if (!authInfo?.username) {
       return NextResponse.json({ error: '未登录' }, { status: 401 });
     }

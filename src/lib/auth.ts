@@ -3,6 +3,7 @@ import { NextRequest } from 'next/server';
 import { isAccessTokenInvalidated } from './access-token-invalidation';
 
 export type AuthInfo = {
+  version?: number;
   password?: string;
   username?: string;
   signature?: string;
@@ -54,7 +55,8 @@ export function parseAuthInfo(value?: string | null): AuthInfo | null {
   }
 
   try {
-    return JSON.parse(decoded) as AuthInfo;
+    const parsed = JSON.parse(decoded);
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed as AuthInfo : null;
   } catch (error) {
     return null;
   }
@@ -104,7 +106,7 @@ export function getAuthInfoFromBrowserCookie(): AuthInfo | null {
       return acc;
     }, {} as Record<string, string>);
 
-    const authCookie = cookies['auth'];
+    const authCookie = cookies['auth_info'];
     if (!authCookie) {
       return null;
     }
@@ -123,9 +125,9 @@ export function clearAuthCookie(): void {
 
   try {
     // 清除 auth cookie，设置过期时间为过去
-    document.cookie = 'auth=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax';
+    document.cookie = 'auth_info=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax';
     // 如果有其他域名或路径的cookie，也尝试清除
-    document.cookie = 'auth=; path=/; domain=' + window.location.hostname + '; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax';
+    document.cookie = 'auth_info=; path=/; domain=' + window.location.hostname + '; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax';
   } catch (error) {
     console.error('[Auth] Failed to clear cookie:', error);
   }

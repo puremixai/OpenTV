@@ -2,8 +2,8 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 
-import { getAuthInfoFromCookie } from '@/lib/auth';
 import { getConfig } from '@/lib/config';
+import { getAuthenticatedUser } from '@/lib/session';
 import { getTMDBVideoList, searchTMDBMulti } from '@/lib/tmdb.client';
 
 export const runtime = 'nodejs';
@@ -20,7 +20,7 @@ function normalizeType(type: string | null): 'movie' | 'tv' | null {
  */
 export async function GET(request: NextRequest) {
   try {
-    const authInfo = getAuthInfoFromCookie(request);
+    const authInfo = await getAuthenticatedUser(request);
     if (!authInfo || !authInfo.username) {
       return NextResponse.json({ error: '未授权' }, { status: 401 });
     }

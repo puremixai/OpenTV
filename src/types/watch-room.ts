@@ -94,6 +94,7 @@ export interface RoomMemberInfo {
 
 // Socket.IO 事件类型
 export interface ServerToClientEvents {
+  'auth:expired': () => void;
   'room:created': (room: Room) => void;
   'room:joined': (data: { room: Room; members: Member[] }) => void;
   'room:left': () => void;

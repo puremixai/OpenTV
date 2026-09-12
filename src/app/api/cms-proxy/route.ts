@@ -1,5 +1,4 @@
 /* eslint-disable @typescript-eslint/no-explicit-any, no-console */
-
 import { NextRequest, NextResponse } from 'next/server';
 
 import { getConfig } from '@/lib/config';
@@ -9,6 +8,9 @@ import {
   MetaInfo,
   setCachedMetaInfo,
 } from '@/lib/openlist-cache';
+import { createMediaProxyToken,isMediaProxyAuthorized } from '@/lib/server/media-proxy-auth';
+import { fetchPublicUrl } from '@/lib/server/public-fetch';
+import { getAuthenticatedUser } from '@/lib/session';
 import { getTMDBImageUrl } from '@/lib/tmdb.search';
 import { yellowWords } from '@/lib/yellow';
 
@@ -20,6 +22,7 @@ export const runtime = 'nodejs';
  * GET /api/cms-proxy?api=<CMS API地址>&参数1=值1&参数2=值2...
  */
 export async function GET(request: NextRequest) {
+  if (!(await isMediaProxyAuthorized(request))) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   try {
     const { searchParams } = new URL(request.url);
     const apiUrl = searchParams.get('api');
@@ -42,7 +45,7 @@ export async function GET(request: NextRequest) {
 
     // 将所有查询参数（除了 api）转发到目标 API
     searchParams.forEach((value, key) => {
-      if (key !== 'api') {
+      if (!['api', 'token', 'adFilter', 'yellowFilter'].includes(key)) {
         targetUrl.searchParams.append(key, value);
       }
     });
@@ -54,7 +57,7 @@ export async function GET(request: NextRequest) {
     const timeoutId = setTimeout(() => controller.abort(), 15000); // 15秒超时
 
     try {
-      const response = await fetch(targetUrl.toString(), {
+      const response = await fetchPublicUrl(targetUrl.toString(), {
         headers: {
           'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
           'Accept': 'application/json',
@@ -98,7 +101,9 @@ export async function GET(request: NextRequest) {
       console.log('CMS 代理 origin:', origin);
 
       // 处理返回数据，替换播放链接为代理链接
-      const processedData = processCmsResponse(data, origin, yellowFilter);
+      const auth = await getAuthenticatedUser(request);
+      const mediaToken = auth ? await createMediaProxyToken(auth) : request.nextUrl.searchParams.get('token') || '';
+      const processedData = processCmsResponse(data, origin, yellowFilter, mediaToken);
 
       return NextResponse.json(processedData, {
         headers: {
@@ -132,7 +137,7 @@ export async function GET(request: NextRequest) {
 /**
  * 处理 CMS API 返回数据，将播放链接替换为代理链接
  */
-function processCmsResponse(data: any, proxyOrigin: string, yellowFilter: boolean): any {
+function processCmsResponse(data: any, proxyOrigin: string, yellowFilter: boolean, proxyToken: string): any {
   if (!data || typeof data !== 'object') {
     return data;
   }
@@ -163,7 +168,6 @@ function processCmsResponse(data: any, proxyOrigin: string, yellowFilter: boolea
   }
 
   // 获取 M3U8 代理 token
-  const proxyToken = process.env.NEXT_PUBLIC_PROXY_M3U8_TOKEN || '';
   const tokenParam = proxyToken ? `&token=${encodeURIComponent(proxyToken)}` : '';
 
   // 处理列表数据

@@ -1,35 +1,34 @@
-/* eslint-disable no-console, @typescript-eslint/no-explicit-any */
-
-/**
- * D1 Storage Implementation
- *
- * 注意：此模块仅在服务端使用，通过 webpack 配置排除客户端打包
- */
-
-import {
-  IStorage,
-  PlayRecord,
-  Favorite,
-  SkipConfig,
-  DanmakuFilterConfig,
-  Notification,
-  MovieRequest,
-  PushSubscriptionRecord,
-  LocalSettingsSyncRecord,
-  SetLocalSettingsSyncOptions,
-  SetLocalSettingsSyncResult,
-} from './types';
 import { AdminConfig } from './admin.types';
-import { MangaReadRecord, MangaShelfItem } from './manga.types';
 import { BookReadRecord, BookShelfItem } from './book.types';
 import { DatabaseAdapter } from './d1-adapter';
+import { MangaReadRecord, MangaShelfItem } from './manga.types';
 import {
   MusicV2HistoryRecord,
   MusicV2PlaylistItem,
   MusicV2PlaylistRecord,
 } from './music-v2';
-import { userInfoCache } from './user-cache';
 import { dispatchNotificationChannels } from './notification-dispatch';
+import { hashPassword, verifyPassword } from './password';
+/* eslint-disable no-console, @typescript-eslint/no-explicit-any */
+/**
+ * D1 Storage Implementation
+ *
+ * 注意：此模块仅在服务端使用，通过 webpack 配置排除客户端打包
+ */
+import {
+  DanmakuFilterConfig,
+  Favorite,
+  IStorage,
+  LocalSettingsSyncRecord,
+  MovieRequest,
+  Notification,
+  PlayRecord,
+  PushSubscriptionRecord,
+  SetLocalSettingsSyncOptions,
+  SetLocalSettingsSyncResult,
+  SkipConfig,
+} from './types';
+import { userInfoCache } from './user-cache';
 
 /**
  * Cloudflare D1 存储实现
@@ -1268,13 +1267,9 @@ export class D1Storage implements IStorage {
 
   // ==================== 用户管理 ====================
 
-  // SHA256 加密密码（与 Redis 保持一致）
-  private async hashPassword(password: string): Promise<string> {
-    const encoder = new TextEncoder();
-    const data = encoder.encode(password);
-    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    return hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
+  // 带盐与工作因子的密码哈希
+  private hashPassword(password: string): Promise<string> {
+    return hashPassword(password);
   }
 
   async verifyUser(userName: string, password: string): Promise<boolean> {
@@ -1296,9 +1291,13 @@ export class D1Storage implements IStorage {
 
       if (!user || !user.password_hash) return false;
 
-      // 使用 SHA-256 验证密码（与 Redis 保持一致）
-      const hashedPassword = await this.hashPassword(password);
-      return user.password_hash === hashedPassword;
+      // 验证旧格式并在成功登录后升级
+      const result = await verifyPassword(password, user.password_hash as string);
+      if (result.valid && result.needsUpgrade) {
+        await this.db.prepare('UPDATE users SET password_hash = ? WHERE username = ? AND password_hash = ?')
+          .bind(await hashPassword(password), userName, user.password_hash).run();
+      }
+      return result.valid;
     } catch (err) {
       console.error('D1Storage.verifyUser error:', err);
       return false;
@@ -1365,10 +1364,10 @@ export class D1Storage implements IStorage {
     }
   }
 
-  async getUserInfoV2(userName: string): Promise<any> {
+  async getUserInfoV2(userName: string, fresh = false): Promise<any> {
     try {
       // 先从缓存获取
-      const cached = userInfoCache?.get(userName);
+      const cached = fresh ? null : userInfoCache?.get(userName);
       if (cached) {
         return cached;
       }
@@ -1642,14 +1641,18 @@ export class D1Storage implements IStorage {
   async verifyUserV2(userName: string, password: string): Promise<boolean> {
     try {
       const user = await this.db
-        .prepare('SELECT password_hash FROM users WHERE username = ?')
+        .prepare('SELECT password_hash FROM users WHERE username = ? AND banned = 0')
         .bind(userName)
         .first();
 
       if (!user) return false;
 
-      const hashedPassword = await this.hashPassword(password);
-      return user.password_hash === hashedPassword;
+      const result = await verifyPassword(password, user.password_hash as string);
+      if (result.valid && result.needsUpgrade) {
+        await this.db.prepare('UPDATE users SET password_hash = ? WHERE username = ? AND password_hash = ?')
+          .bind(await hashPassword(password), userName, user.password_hash).run();
+      }
+      return result.valid;
     } catch (err) {
       console.error('D1Storage.verifyUserV2 error:', err);
       return false;
@@ -1795,7 +1798,7 @@ export class D1Storage implements IStorage {
   async getUserPasswordHash(userName: string): Promise<string | null> {
     try {
       const user = await this.db
-        .prepare('SELECT password_hash FROM users WHERE username = ?')
+        .prepare('SELECT password_hash FROM users WHERE username = ? AND banned = 0')
         .bind(userName)
         .first();
 
@@ -3755,6 +3758,14 @@ export class D1Storage implements IStorage {
  */
 class RedisHashAdapter {
   constructor(private db: DatabaseAdapter) {}
+
+  async hCompareAndSet(hashKey: string, field: string, expected: string, value: string): Promise<boolean> {
+    const result = await this.db.prepare('UPDATE global_config SET value = ?, updated_at = ? WHERE key = ? AND value = ?')
+      .bind(value, Date.now(), `${hashKey}:${field}`, expected).run();
+    if (!result.success) throw new Error(result.error || 'Session update failed');
+    return Number(result.meta?.changes) === 1;
+  }
+
 
   /**
    * 设置 Hash 字段

@@ -1,15 +1,16 @@
 /* eslint-disable no-console,@typescript-eslint/no-explicit-any */
-
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
 import { getConfig } from "@/lib/config";
-import { getBaseUrl, resolveUrl } from "@/lib/live";
-import { validateProxyUrlServerSide } from '@/lib/server/ssrf';
+import { isMediaProxyAuthorized } from '@/lib/server/media-proxy-auth';
 import { buildProxyM3u8Headers, buildProxyStreamHeaders } from '@/lib/server/proxy-headers';
+import { fetchPublicUrl, readLimitedText } from '@/lib/server/public-fetch';
+import { rewriteMediaPlaylist } from '@/lib/server/rewrite-m3u8';
 
 export const runtime = 'nodejs';
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
+  if (!(await isMediaProxyAuthorized(request))) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   const { searchParams } = new URL(request.url);
   const url = searchParams.get('url');
   const source = searchParams.get('source'); // 视频源key
@@ -38,15 +39,12 @@ export async function GET(request: Request) {
   let responseUsed = false;
 
   try {
-    const decodedUrl = decodeURIComponent(url);
+    const decodedUrl = url; // URLSearchParams already decoded the outer parameter.
 
     // 安全校验：防 SSRF 拦截请求内网或非法 URL
-    const isSafeUrl = await validateProxyUrlServerSide(decodedUrl);
-    if (!isSafeUrl) {
-      return NextResponse.json({ error: 'Proxy request to local or invalid network is forbidden' }, { status: 403 });
-    }
 
-    response = await fetch(decodedUrl, {
+    response = await fetchPublicUrl(decodedUrl, {
+      signal: request.signal,
       cache: 'no-cache',
       redirect: 'follow',
       credentials: 'same-origin',
@@ -65,11 +63,11 @@ export async function GET(request: Request) {
     if (contentType.toLowerCase().includes('mpegurl') || contentType.toLowerCase().includes('octet-stream') || decodedUrl.includes('.m3u8')) {
       // 获取最终的响应URL（处理重定向后的URL）
       const finalUrl = response.url;
-      const m3u8Content = await response.text();
+      const m3u8Content = await readLimitedText(response);
       responseUsed = true; // 标记 response 已被使用
 
       // 使用最终的响应URL作为baseUrl，而不是原始的请求URL
-      const baseUrl = getBaseUrl(finalUrl);
+      const baseUrl = finalUrl;
 
       // 重写 M3U8 内容
       const modifiedContent = rewriteM3U8Content(m3u8Content, baseUrl, request, source);
@@ -81,8 +79,9 @@ export async function GET(request: Request) {
     const headers = buildProxyStreamHeaders(
       response.headers.get('Content-Type') || 'application/vnd.apple.mpegurl'
     );
-    headers.set('Cache-Control', 'no-cache');
+    headers.set('Cache-Control', 'private, no-store');
 
+    responseUsed = true; // Ownership of the stream moves to the response.
     // 直接返回视频流
     return new Response(response.body, {
       status: 200,
@@ -104,87 +103,6 @@ export async function GET(request: Request) {
 }
 
 function rewriteM3U8Content(content: string, baseUrl: string, req: Request, source: string) {
-  // 从 referer 头提取协议信息
-  const referer = req.headers.get('referer');
-  let protocol = 'http';
-  if (referer) {
-    try {
-      const refererUrl = new URL(referer);
-      protocol = refererUrl.protocol.replace(':', '');
-    } catch (error) {
-      // ignore
-    }
-  }
-
-  const host = req.headers.get('host');
-  const proxyBase = `${protocol}://${host}/api/proxy/vod`;
-
-  const lines = content.split('\n');
-  const rewrittenLines: string[] = [];
-
-  for (let i = 0; i < lines.length; i++) {
-    let line = lines[i].trim();
-
-    // 处理 TS 片段 URL 和其他媒体文件
-    if (line && !line.startsWith('#')) {
-      const resolvedUrl = resolveUrl(baseUrl, line);
-      const proxyUrl = `${proxyBase}/segment?url=${encodeURIComponent(resolvedUrl)}&source=${source}`;
-      rewrittenLines.push(proxyUrl);
-      continue;
-    }
-
-    // 处理 EXT-X-MAP 标签中的 URI
-    if (line.startsWith('#EXT-X-MAP:')) {
-      line = rewriteMapUri(line, baseUrl, proxyBase, source);
-    }
-
-    // 处理 EXT-X-KEY 标签中的 URI
-    if (line.startsWith('#EXT-X-KEY:')) {
-      line = rewriteKeyUri(line, baseUrl, proxyBase, source);
-    }
-
-    // 处理嵌套的 M3U8 文件 (EXT-X-STREAM-INF)
-    if (line.startsWith('#EXT-X-STREAM-INF:')) {
-      rewrittenLines.push(line);
-      // 下一行通常是 M3U8 URL
-      if (i + 1 < lines.length) {
-        i++;
-        const nextLine = lines[i].trim();
-        if (nextLine && !nextLine.startsWith('#')) {
-          const resolvedUrl = resolveUrl(baseUrl, nextLine);
-          const proxyUrl = `${proxyBase}/m3u8?url=${encodeURIComponent(resolvedUrl)}&source=${source}`;
-          rewrittenLines.push(proxyUrl);
-        } else {
-          rewrittenLines.push(nextLine);
-        }
-      }
-      continue;
-    }
-
-    rewrittenLines.push(line);
-  }
-
-  return rewrittenLines.join('\n');
-}
-
-function rewriteMapUri(line: string, baseUrl: string, proxyBase: string, source: string) {
-  const uriMatch = line.match(/URI="([^"]+)"/);
-  if (uriMatch) {
-    const originalUri = uriMatch[1];
-    const resolvedUrl = resolveUrl(baseUrl, originalUri);
-    const proxyUrl = `${proxyBase}/segment?url=${encodeURIComponent(resolvedUrl)}&source=${source}`;
-    return line.replace(uriMatch[0], `URI="${proxyUrl}"`);
-  }
-  return line;
-}
-
-function rewriteKeyUri(line: string, baseUrl: string, proxyBase: string, source: string) {
-  const uriMatch = line.match(/URI="([^"]+)"/);
-  if (uriMatch) {
-    const originalUri = uriMatch[1];
-    const resolvedUrl = resolveUrl(baseUrl, originalUri);
-    const proxyUrl = `${proxyBase}/key?url=${encodeURIComponent(resolvedUrl)}&source=${source}`;
-    return line.replace(uriMatch[0], `URI="${proxyUrl}"`);
-  }
-  return line;
+  const requestUrl = new URL(req.url);
+  return rewriteMediaPlaylist(content, baseUrl, { origin: requestUrl.origin, source, token: requestUrl.searchParams.get('token') || '', mode: 'vod', proxySegments: true });
 }

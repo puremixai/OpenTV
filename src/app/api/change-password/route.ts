@@ -3,10 +3,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import { invalidateDeviceAccessToken } from '@/lib/access-token-invalidation';
-import { getAuthInfoFromCookie } from '@/lib/auth';
 import { getStorage } from '@/lib/db';
 import { db } from '@/lib/db';
 import { getUserDevices, revokeRefreshToken } from '@/lib/refresh-token';
+import { getAuthenticatedUser } from '@/lib/session';
 
 export const runtime = 'nodejs';
 
@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
     const { newPassword } = body;
 
     // 获取认证信息
-    const authInfo = getAuthInfoFromCookie(request);
+    const authInfo = await getAuthenticatedUser(request);
     if (!authInfo || !authInfo.username) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

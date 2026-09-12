@@ -1,18 +1,18 @@
 /* eslint-disable no-console, @typescript-eslint/no-explicit-any, @typescript-eslint/no-non-null-assertion */
-
 import { AdminConfig } from './admin.types';
-import { MangaReadRecord, MangaShelfItem } from './manga.types';
 import { BookReadRecord, BookShelfItem } from './book.types';
+import { MangaReadRecord, MangaShelfItem } from './manga.types';
 import {
   MusicV2HistoryRecord,
   MusicV2PlaylistItem,
   MusicV2PlaylistRecord,
   sortMusicV2History,
 } from './music-v2';
-import { RedisAdapter } from './redis-adapter';
-import { Favorite, IStorage, LocalSettingsSyncRecord, Notification, PlayRecord, PushSubscriptionRecord, SetLocalSettingsSyncOptions, SetLocalSettingsSyncResult, SkipConfig } from './types';
-import { userInfoCache } from './user-cache';
 import { dispatchNotificationChannels } from './notification-dispatch';
+import { hashPassword, verifyPassword } from './password';
+import { RedisAdapter } from './redis-adapter';
+import { Favorite, IStorage, LocalSettingsSyncRecord, PlayRecord, PushSubscriptionRecord, SetLocalSettingsSyncOptions, SetLocalSettingsSyncResult, SkipConfig } from './types';
+import { userInfoCache } from './user-cache';
 
 // 搜索历史最大条数
 const SEARCH_HISTORY_LIMIT = 20;
@@ -985,12 +985,7 @@ export abstract class BaseRedisStorage implements IStorage {
   }
 
   async verifyUser(userName: string, password: string): Promise<boolean> {
-    const stored = await this.withRetry(() =>
-      this.adapter.get(this.userPwdKey(userName))
-    );
-    if (stored === null) return false;
-    // 确保比较时都是字符串类型
-    return ensureString(stored) === password;
+    return this.verifyUserV2(userName, password);
   }
 
   // 检查用户是否存在
@@ -1004,10 +999,7 @@ export abstract class BaseRedisStorage implements IStorage {
 
   // 修改用户密码
   async changePassword(userName: string, newPassword: string): Promise<void> {
-    // 简单存储明文密码，生产环境应加密
-    await this.withRetry(() =>
-      this.adapter.set(this.userPwdKey(userName), newPassword)
-    );
+    await this.changePasswordV2(userName, newPassword);
   }
 
   // 删除用户及其所有数据
@@ -1125,13 +1117,9 @@ export abstract class BaseRedisStorage implements IStorage {
     return `oidc:sub:${oidcSub}`;
   }
 
-  // SHA256加密密码
-  private async hashPassword(password: string): Promise<string> {
-    const encoder = new TextEncoder();
-    const data = encoder.encode(password);
-    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    return hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
+  // 带盐与工作因子的密码哈希
+  private hashPassword(password: string): Promise<string> {
+    return hashPassword(password);
   }
 
   // 创建新用户（新版本）
@@ -1202,12 +1190,18 @@ export abstract class BaseRedisStorage implements IStorage {
       return false;
     }
 
-    const hashedPassword = await this.hashPassword(password);
-    return userInfo.password === hashedPassword;
+    if (userInfo.banned === 'true') return false;
+    const result = await verifyPassword(password, userInfo.password);
+    if (result.valid && result.needsUpgrade) {
+      const upgraded = await hashPassword(password);
+      // Avoid overwriting a password changed concurrently with this login.
+      await this.adapter.hCompareAndSet(this.userInfoKey(userName), 'password', userInfo.password, upgraded);
+    }
+    return result.valid;
   }
 
   // 获取用户信息（新版本）
-  async getUserInfoV2(userName: string): Promise<{
+  async getUserInfoV2(userName: string, fresh = false): Promise<{
     role: 'owner' | 'admin' | 'user';
     banned: boolean;
     tags?: string[];
@@ -1222,7 +1216,7 @@ export abstract class BaseRedisStorage implements IStorage {
     emailNotifications?: boolean;
   } | null> {
     // 先从缓存获取
-    const cached = userInfoCache?.get(userName);
+    const cached = fresh ? null : userInfoCache?.get(userName);
     if (cached) {
       return cached;
     }

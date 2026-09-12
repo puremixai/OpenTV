@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-import { getAuthInfoFromCookie } from '@/lib/auth';
 import { API_CONFIG, getAvailableApiSites } from '@/lib/config';
+import { getAuthenticatedUser } from '@/lib/session';
 import { SearchResult } from '@/lib/types';
 
 export const runtime = 'nodejs';
@@ -27,7 +27,7 @@ interface CmsVideoResponse {
  * 获取指定视频源的分类视频列表
  */
 export async function GET(request: NextRequest) {
-  const authInfo = getAuthInfoFromCookie(request);
+  const authInfo = await getAuthenticatedUser(request);
   if (!authInfo || !authInfo.username) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }

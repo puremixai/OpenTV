@@ -4,11 +4,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { promisify } from 'util';
 import { gunzip } from 'zlib';
 
-import { getAuthInfoFromCookie } from '@/lib/auth';
 import { configSelfCheck, setCachedConfig } from '@/lib/config';
 import { SimpleCrypto } from '@/lib/crypto';
+import { clearProgress,updateProgress } from '@/lib/data-migration-progress';
 import { db } from '@/lib/db';
-import { updateProgress, clearProgress } from '@/lib/data-migration-progress';
+import { getAuthenticatedUser } from '@/lib/session';
 
 export const runtime = 'nodejs';
 
@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
     }
 
     // 验证身份和权限
-    const authInfo = getAuthInfoFromCookie(req);
+    const authInfo = await getAuthenticatedUser(req);
     if (!authInfo || !authInfo.username) {
       return NextResponse.json({ error: '未登录' }, { status: 401 });
     }
@@ -479,7 +479,7 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     console.error('数据导入失败:', error);
     // 清除进度信息
-    const authInfo = getAuthInfoFromCookie(req);
+    const authInfo = await getAuthenticatedUser(req);
     if (authInfo?.username) {
       clearProgress(authInfo.username, 'import');
     }

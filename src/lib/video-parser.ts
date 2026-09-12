@@ -58,7 +58,7 @@ export function parseVideoFileName(fileName: string): ParsedVideoInfo {
     // _01_, -01-, _01.5_, -01.5- (支持小数)
     { pattern: /[_-](\d+(?:\.\d+)?)[_-]/ },
     // - 02 [, - 01 [..  (横线/空格分隔，数字后是空格或左括号) 如 "S04 - 02 [WebRip"
-    { pattern: /[-\s](\d+(?:\.\d+)?)[\s\[]/ },
+    { pattern: /[-\s](\d+(?:\.\d+)?)[\s[]/ },
     // 01.mp4, 001.mp4, 01.5.mp4 (纯数字开头，支持小数) - 最不具体
     { pattern: /^(\d+(?:\.\d+)?)[^\d.]/ },
   ];

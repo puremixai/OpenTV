@@ -2,11 +2,11 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 
-import { getAuthInfoFromCookie } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { requireFeaturePermission } from '@/lib/permissions';
 import { MusicPlayRecord } from '@/lib/db.client';
 import { getCachedSongs, setCachedSong } from '@/lib/music-song-cache';
+import { requireFeaturePermission } from '@/lib/permissions';
+import { getAuthenticatedUser } from '@/lib/session';
 
 export const runtime = 'nodejs';
 
@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
     const authResult = await requireFeaturePermission(request, 'music', '无权限访问音乐功能');
     if (authResult instanceof NextResponse) return authResult;
     // 从 cookie 获取用户信息
-    const authInfo = getAuthInfoFromCookie(request);
+    const authInfo = await getAuthenticatedUser(request);
     if (!authInfo || !authInfo.username) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -69,7 +69,7 @@ export async function POST(request: NextRequest) {
     const authResult = await requireFeaturePermission(request, 'music', '无权限访问音乐功能');
     if (authResult instanceof NextResponse) return authResult;
     // 从 cookie 获取用户信息
-    const authInfo = getAuthInfoFromCookie(request);
+    const authInfo = await getAuthenticatedUser(request);
     if (!authInfo || !authInfo.username) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -189,7 +189,7 @@ export async function DELETE(request: NextRequest) {
     const authResult = await requireFeaturePermission(request, 'music', '无权限访问音乐功能');
     if (authResult instanceof NextResponse) return authResult;
     // 从 cookie 获取用户信息
-    const authInfo = getAuthInfoFromCookie(request);
+    const authInfo = await getAuthenticatedUser(request);
     if (!authInfo || !authInfo.username) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

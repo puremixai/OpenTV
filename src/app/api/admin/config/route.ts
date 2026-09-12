@@ -3,8 +3,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import { AdminConfigResult } from '@/lib/admin.types';
-import { getAuthInfoFromCookie } from '@/lib/auth';
 import { getConfig } from '@/lib/config';
+import { getAuthenticatedUser } from '@/lib/session';
 
 export const runtime = 'nodejs';
 
@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const authInfo = getAuthInfoFromCookie(request);
+  const authInfo = await getAuthenticatedUser(request);
   if (!authInfo || !authInfo.username) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
@@ -74,7 +74,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const authInfo = getAuthInfoFromCookie(request);
+  const authInfo = await getAuthenticatedUser(request);
   if (!authInfo || !authInfo.username) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }

@@ -1,21 +1,21 @@
 /* eslint-disable no-console */
-
 import { NextRequest, NextResponse } from 'next/server';
 
 import { invalidateDeviceAccessToken, invalidateUserAccessTokens } from '@/lib/access-token-invalidation';
-import { getAuthInfoFromCookie } from '@/lib/auth';
+import { clearAuthCookies } from '@/lib/auth-response';
 import { getStorage } from '@/lib/db';
 import {
   getUserDevices,
   revokeAllRefreshTokens,
   revokeRefreshToken,
 } from '@/lib/refresh-token';
+import { getAuthenticatedUser } from '@/lib/session';
 
 export const runtime = 'nodejs';
 
 // 获取所有设备
 export async function GET(request: NextRequest) {
-  const authInfo = getAuthInfoFromCookie(request);
+  const authInfo = await getAuthenticatedUser(request, { allowExpiredAccessToken: true });
 
   if (!authInfo || !authInfo.username) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
 
 // 撤销指定设备
 export async function DELETE(request: NextRequest) {
-  const authInfo = getAuthInfoFromCookie(request);
+  const authInfo = await getAuthenticatedUser(request, { allowExpiredAccessToken: true });
 
   if (!authInfo || !authInfo.username) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -66,7 +66,7 @@ export async function DELETE(request: NextRequest) {
 
 // 登出所有设备
 export async function POST(request: NextRequest) {
-  const authInfo = getAuthInfoFromCookie(request);
+  const authInfo = await getAuthenticatedUser(request, { allowExpiredAccessToken: true });
 
   if (!authInfo || !authInfo.username) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -81,13 +81,7 @@ export async function POST(request: NextRequest) {
     const response = NextResponse.json({ ok: true });
 
     // 清除当前设备的 Cookie
-    response.cookies.set('auth', '', {
-      path: '/',
-      expires: new Date(0),
-      sameSite: 'lax',
-      httpOnly: false,
-      secure: false,
-    });
+    clearAuthCookies(response);
 
     return response;
   } catch (error) {

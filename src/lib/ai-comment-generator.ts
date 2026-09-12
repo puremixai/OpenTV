@@ -1,7 +1,8 @@
 // AI评论生成核心逻辑
 
-import { normalizeApiBaseUrl } from '@/lib/url';
 import { parseStringPromise } from 'xml2js';
+
+import { normalizeApiBaseUrl } from '@/lib/url';
 
 export interface AIComment {
   id: string;
@@ -43,7 +44,7 @@ function buildCommentPrompt(
   movieName: string,
   movieInfo?: string,
   searchResults?: string,
-  count: number = 10
+  count = 10
 ): string {
   return `你是一个影评生成助手。请生成真实自然的观众评论。
 

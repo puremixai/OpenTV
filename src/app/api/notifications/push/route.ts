@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-import { getAuthInfoFromCookie } from '@/lib/auth';
 import { getStorage } from '@/lib/db';
+import { getAuthenticatedUser } from '@/lib/session';
 import {
   createPushSubscriptionRecord,
   getVapidPublicKey,
@@ -17,7 +17,7 @@ function extractSubscriptionKeys(subscription: any) {
 }
 
 export async function GET(request: NextRequest) {
-  const authInfo = getAuthInfoFromCookie(request);
+  const authInfo = await getAuthenticatedUser(request);
   if (!authInfo?.username) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
@@ -47,7 +47,7 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const authInfo = getAuthInfoFromCookie(request);
+  const authInfo = await getAuthenticatedUser(request);
   if (!authInfo?.username) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
@@ -93,7 +93,7 @@ export async function POST(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
-  const authInfo = getAuthInfoFromCookie(request);
+  const authInfo = await getAuthenticatedUser(request);
   if (!authInfo?.username) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }

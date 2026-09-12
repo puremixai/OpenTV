@@ -13,7 +13,7 @@
 ![Next.js](https://img.shields.io/badge/Next.js-14-000?logo=nextdotjs)
 ![TailwindCSS](https://img.shields.io/badge/TailwindCSS-3-38bdf8?logo=tailwindcss)
 ![TypeScript](https://img.shields.io/badge/TypeScript-4.x-3178c6?logo=typescript)
-![License](https://img.shields.io/badge/License-MIT-green)
+![License](https://img.shields.io/badge/License-CC_BY--NC--SA_4.0-green)
 ![Docker Ready](https://img.shields.io/badge/Docker-ready-blue?logo=docker)
 
 </div>
@@ -468,7 +468,7 @@ dockge/komodo 等 docker compose UI 也有自动更新功能
 | ---------------------------------------- | ------------------------------------------------------------ | --------------------------- | ------------------------------------------------------------ |
 | USERNAME                                 | 站长账号                                                     | 任意字符串                  | 无默认，必填字段                                             |
 | PASSWORD                                 | 站长密码                                                     | 任意字符串                  | 无默认，必填字段                                             |
-| CRON_PASSWORD                            | 定时任务 API 访问密码（用于保护 /api/cron 端点）             | 任意字符串                  | mtvpls                                                       |
+| CRON_SECRET / CRON_PASSWORD | 定时任务凭据；优先 CRON_SECRET，支持旧变量，无默认值 | 任意随机字符串 | (空，停用调度) |
 | CRON_WAIT_FOR_COMPLETION                 | 定时任务接口是否等待任务完全结束后再返回响应（true 时返回 200，false 时立即返回 202）。部署在 serverless 平台（如 Vercel）时建议设置为 true，否则响应返回后异步执行可能会被平台杀后台导致任务中断 | true/false                  | false                                                        |
 | CRON_USER_BATCH_SIZE                     | 定时任务用户批处理大小（控制并发处理的用户数量，影响播放记录和收藏更新任务的并发性能） | 正整数                      | 3                                                            |
 | SITE_BASE                                | 站点 url                                                     | 形如 https://example.com    | 空                                                           |
@@ -489,7 +489,7 @@ dockge/komodo 等 docker compose UI 也有自动更新功能
 | NEXT_PUBLIC_DOUBAN_IMAGE_PROXY           | 自定义豆瓣图片代理 URL                                       | url prefix                  | (空)                                                         |
 | NEXT_PUBLIC_DISABLE_YELLOW_FILTER        | 关闭色情内容过滤                                             | true/false                  | false                                                        |
 | NEXT_PUBLIC_FLUID_SEARCH                 | 是否开启搜索接口流式输出                                     | true/ false                 | true                                                         |
-| NEXT_PUBLIC_PROXY_M3U8_TOKEN             | M3U8 代理 API 鉴权 Token（外部播放器跳转时的鉴权token，不填为无鉴权） | 任意字符串                  | (空)                                                         |
+| PROXY_M3U8_TOKEN | 可选的服务端媒体共享令牌；浏览器默认使用按会话签发的短期令牌 | 随机字符串 | (空) |
 | NEXT_PUBLIC_DANMAKU_CACHE_EXPIRE_MINUTES | 弹幕缓存失效时间（分钟数，设为 0 时不缓存）                  | 0 或正整数                  | 4320（3天）                                                  |
 | ENABLE_TV_MODE                           | 是否启用 TV 模式；设为 false 后 /tv 不可访问，且不启动电视遥控 Socket.IO 监听 | true/false                  | true                                                         |
 | ENABLE_TVBOX_SUBSCRIBE                   | 是否启用 TVBOX 订阅功能                                      | true/false                  | false                                                        |
@@ -657,9 +657,13 @@ NEXT_PUBLIC_VOICE_CHAT_STRATEGY 选项解释：
 - 项目开发者不对用户的使用行为承担任何法律责任
 - 本项目不在中国大陆地区提供服务。如有该项目在向中国大陆地区提供服务，属个人行为。在该地区使用所产生的法律风险及责任，属于用户个人行为，与本项目无关，须自行承担全部责任。特此声明
 
+## 升级与本地开发
+
+本轮鉴权、代理和脚本执行行为有调整。部署前请阅读 [升级说明](docs/SECURITY-UPGRADE.md)，逐项状态见 [修改清单](docs/MODIFICATION-CHECKLIST.md)。
+
 ## License
 
-[MIT](LICENSE) © 2025 MoonTV & Contributors
+仓库当前 [LICENSE](LICENSE) 文件为 **CC BY-NC-SA 4.0**。此前 README 的 MIT 标注与该文件不一致，现按文件内容标注；本次修改不变更许可证。派生代码及各贡献部分的授权范围仍需上游维护者澄清。
 
 ## 致谢
 

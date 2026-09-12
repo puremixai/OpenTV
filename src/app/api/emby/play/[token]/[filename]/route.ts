@@ -2,9 +2,9 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 
-import { getAuthInfoFromCookie } from '@/lib/auth';
 import { getConfig } from '@/lib/config';
 import { hasFeaturePermission } from '@/lib/permissions';
+import { getAuthenticatedUser } from '@/lib/session';
 
 export const runtime = 'nodejs';
 
@@ -39,7 +39,7 @@ export async function GET(
     // 双重验证：TVBox Token（全局或用户） 或 用户登录
     const requestToken = params.token;
     const globalToken = process.env.TVBOX_SUBSCRIBE_TOKEN;
-    const authInfo = getAuthInfoFromCookie(request);
+    const authInfo = await getAuthenticatedUser(request);
 
     // 验证 TVBox Token（全局token或用户token）
     let hasValidToken = false;
@@ -187,7 +187,7 @@ export async function GET(
     (async () => {
       const writer = writable.getWriter();
       try {
-        while (true) {
+        for (;;) {
           const { done, value } = await reader.read();
           if (done) break;
           await writer.write(value);

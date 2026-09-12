@@ -2,9 +2,9 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 
-import { getAuthInfoFromCookie } from '@/lib/auth';
 import { getConfig } from '@/lib/config';
 import { db } from '@/lib/db';
+import { getAuthenticatedUser } from '@/lib/session';
 import { normalizeApiBaseUrl } from '@/lib/url';
 
 export const runtime = 'nodejs';
@@ -23,11 +23,18 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
 
-    const authInfo = getAuthInfoFromCookie(request);
+    const authInfo = await getAuthenticatedUser(request);
     if (!authInfo || !authInfo.username) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     const username = authInfo.username;
+    if (username !== process.env.USERNAME) {
+      const current = await getConfig();
+      const executableFields = ['CustomAdFilterCode', 'AnalyticsCustomScript', 'AnalyticsScriptUrl'];
+      if (executableFields.some(key => body[key] !== undefined && body[key] !== (current.SiteConfig as any)[key])) {
+        return NextResponse.json({ error: '只有站长可以修改可执行脚本配置' }, { status: 403 });
+      }
+    }
 
     const {
       SiteName,

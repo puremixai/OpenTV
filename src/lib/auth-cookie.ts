@@ -1,5 +1,6 @@
+import type { AuthInfo } from './auth';
+import { signAuthData } from './auth-signature';
 /* eslint-disable @typescript-eslint/no-explicit-any */
-
 import {
   generateRefreshToken,
   generateTokenId,
@@ -65,45 +66,28 @@ export async function generateAuthCookieValue(input: {
   includePassword?: boolean;
   deviceInfo?: string;
 }): Promise<string> {
+  if (!input.username || !process.env.PASSWORD) throw new Error('Authentication is not configured');
   const now = Date.now();
-  const authData: any = { role: input.role || 'user' };
-
-  if (input.includePassword && input.password) {
-    authData.password = input.password;
-  }
-
-  if (input.username && process.env.PASSWORD) {
-    authData.username = input.username;
-    authData.timestamp = now;
-
-    if (!input.includePassword && STORAGE_TYPE !== 'localstorage') {
-      const tokenId = generateTokenId();
-      const refreshToken = generateRefreshToken();
-      const refreshExpires = now + TOKEN_CONFIG.REFRESH_TOKEN_AGE;
-
-      authData.tokenId = tokenId;
-      authData.refreshToken = refreshToken;
-      authData.refreshExpires = refreshExpires;
-
-      await storeRefreshToken(input.username, tokenId, {
-        token: refreshToken,
-        deviceInfo: input.deviceInfo || 'Unknown Device',
-        createdAt: now,
-        expiresAt: refreshExpires,
-        lastUsed: now,
-      });
-    }
-
-    const dataToSign = JSON.stringify({
-      username: authData.username,
-      role: authData.role,
-      timestamp: authData.timestamp,
+  const authData: AuthInfo = {
+    version: 2, username: input.username, role: input.role || 'user', timestamp: now,
+    refreshExpires: now + TOKEN_CONFIG.REFRESH_TOKEN_AGE,
+  };
+  if (STORAGE_TYPE !== 'localstorage') {
+    authData.tokenId = generateTokenId();
+    authData.refreshToken = generateRefreshToken();
+    await storeRefreshToken(input.username, authData.tokenId, {
+      token: authData.refreshToken,
+      deviceInfo: input.deviceInfo || 'Unknown Device',
+      createdAt: now, expiresAt: authData.refreshExpires!, lastUsed: now,
     });
-    authData.signature = await generateAuthSignature(
-      dataToSign,
-      process.env.PASSWORD
-    );
   }
-
+  authData.signature = await signAuthData(authData);
   return encodeURIComponent(JSON.stringify(authData));
+}
+
+export function generateAuthCookie(
+  username?: string, password?: string, role?: 'owner' | 'admin' | 'user',
+  includePassword = false, deviceInfo?: string
+) {
+  return generateAuthCookieValue({ username, password, role, includePassword, deviceInfo });
 }

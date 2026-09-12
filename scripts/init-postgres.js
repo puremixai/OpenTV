@@ -5,12 +5,9 @@
  */
 
 const { sql } = require('@vercel/postgres');
-const crypto = require('crypto');
+const { hashPassword } = require('./password-hash');
 
 // SHA-256 加密密码
-function hashPassword(password) {
-  return crypto.createHash('sha256').update(password).digest('hex');
-}
 
 console.log('📦 Initializing Vercel Postgres database...');
 
@@ -26,8 +23,9 @@ if (!fs.existsSync(migrationsDir)) {
 }
 
 // 读取并排序所有 .sql 文件
-const migrationFiles = fs.readdirSync(migrationsDir)
-  .filter(file => file.endsWith('.sql'))
+const migrationFiles = fs
+  .readdirSync(migrationsDir)
+  .filter((file) => file.endsWith('.sql'))
   .sort(); // 按文件名排序，确保按顺序执行
 
 if (migrationFiles.length === 0) {
@@ -35,7 +33,10 @@ if (migrationFiles.length === 0) {
   process.exit(1);
 }
 
-console.log(`📄 Found ${migrationFiles.length} migration file(s):`, migrationFiles.join(', '));
+console.log(
+  `📄 Found ${migrationFiles.length} migration file(s):`,
+  migrationFiles.join(', ')
+);
 
 const MIGRATION_BASELINE_CUTOFF = '008_web_push_notifications.sql';
 
@@ -52,10 +53,9 @@ function splitSqlStatements(schemaSql) {
 }
 
 async function tableExists(tableName) {
-  const result = await sql.query(
-    "SELECT to_regclass($1) AS table_name",
-    [`public.${tableName}`]
-  );
+  const result = await sql.query('SELECT to_regclass($1) AS table_name', [
+    `public.${tableName}`,
+  ]);
   return Boolean(result.rows?.[0]?.table_name);
 }
 
@@ -124,7 +124,9 @@ async function init() {
 
     // 创建默认管理员用户
     const username = process.env.USERNAME || 'admin';
-    const password = process.env.PASSWORD || '123456789';
+    const password = process.env.PASSWORD;
+    if (!password)
+      throw new Error('PASSWORD must be set before creating an administrator');
     const passwordHash = hashPassword(password);
 
     console.log('👤 Creating default admin user...');
@@ -148,4 +150,7 @@ async function init() {
   }
 }
 
-init();
+if (require.main === module) {
+  require('./load-env').loadAppEnv();
+  init();
+}

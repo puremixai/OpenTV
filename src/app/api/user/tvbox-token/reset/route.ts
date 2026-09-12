@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-import { getAuthInfoFromCookie } from '@/lib/auth';
 import { db } from '@/lib/db';
+import { getAuthenticatedUser } from '@/lib/session';
 import { generateTvboxToken } from '@/lib/tvbox-token';
 
 export const runtime = 'nodejs';
@@ -13,7 +13,7 @@ export const runtime = 'nodejs';
 export async function POST(request: NextRequest) {
   try {
     // 验证用户登录
-    const authInfo = getAuthInfoFromCookie(request);
+    const authInfo = await getAuthenticatedUser(request);
     if (!authInfo?.username) {
       return NextResponse.json(
         { error: '未登录' },

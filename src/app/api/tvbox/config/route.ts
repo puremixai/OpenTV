@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-import { getAuthInfoFromCookie } from '@/lib/auth';
+import { getAuthenticatedUser } from '@/lib/session';
 
 export const runtime = 'nodejs';
 
@@ -9,7 +9,7 @@ export const runtime = 'nodejs';
  */
 export async function GET(request: NextRequest) {
   // 验证用户登录
-  const authInfo = getAuthInfoFromCookie(request);
+  const authInfo = await getAuthenticatedUser(request);
   if (!authInfo || !authInfo.username) {
     return NextResponse.json(
       { error: 'Unauthorized' },

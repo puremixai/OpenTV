@@ -6,8 +6,8 @@ import * as fs from 'fs';
 import { NextRequest, NextResponse } from 'next/server';
 import * as path from 'path';
 
-import { getAuthInfoFromCookie } from '@/lib/auth';
 import { OfflineDownloader, OfflineDownloadTask } from '@/lib/offline-downloader';
+import { getAuthenticatedUser } from '@/lib/session';
 
 // 检查是否启用离线下载功能
 const OFFLINE_DOWNLOAD_ENABLED = process.env.NEXT_PUBLIC_ENABLE_OFFLINE_DOWNLOAD === 'true';
@@ -100,12 +100,12 @@ function getDownloader(): OfflineDownloader {
 /**
  * 检查用户权限（仅管理员和站长）
  */
-function checkPermission(request: NextRequest): boolean {
+async function checkPermission(request: NextRequest): Promise<boolean> {
   if (!OFFLINE_DOWNLOAD_ENABLED) {
     return false;
   }
 
-  const authInfo = getAuthInfoFromCookie(request);
+  const authInfo = await getAuthenticatedUser(request);
   if (!authInfo || !authInfo.username) {
     return false;
   }
@@ -118,7 +118,7 @@ function checkPermission(request: NextRequest): boolean {
  * GET - 获取任务列表或检查下载状态
  */
 export async function GET(request: NextRequest) {
-  if (!checkPermission(request)) {
+  if (!(await checkPermission(request))) {
     return NextResponse.json({ error: '无权限' }, { status: 403 });
   }
 
@@ -159,7 +159,7 @@ export async function GET(request: NextRequest) {
  * POST - 创建离线下载任务
  */
 export async function POST(request: NextRequest) {
-  if (!checkPermission(request)) {
+  if (!(await checkPermission(request))) {
     return NextResponse.json({ error: '无权限' }, { status: 403 });
   }
 
@@ -287,7 +287,7 @@ export async function POST(request: NextRequest) {
  * DELETE - 删除任务
  */
 export async function DELETE(request: NextRequest) {
-  if (!checkPermission(request)) {
+  if (!(await checkPermission(request))) {
     return NextResponse.json({ error: '无权限' }, { status: 403 });
   }
 
@@ -342,7 +342,7 @@ export async function DELETE(request: NextRequest) {
  * PUT - 重试任务
  */
 export async function PUT(request: NextRequest) {
-  if (!checkPermission(request)) {
+  if (!(await checkPermission(request))) {
     return NextResponse.json({ error: '无权限' }, { status: 403 });
   }
 

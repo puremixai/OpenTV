@@ -9,6 +9,7 @@
 
 import { createHash, randomBytes } from 'crypto';
 import dgram from 'dgram';
+
 import { safeFetch } from './safe-http';
 
 export type MagnetHealthLevel = 'good' | 'ok' | 'risk' | 'unknown';
@@ -170,6 +171,7 @@ function bdecode(data: Buffer, idx = 0): [any, number] {
   const asStr = slice.toString('utf8');
   if (
     Buffer.byteLength(asStr, 'utf8') === slice.length &&
+    // eslint-disable-next-line no-control-regex -- Remove disallowed control characters from external text.
     !/[\x00-\x08\x0B\x0C\x0E-\x1F]/.test(asStr)
   ) {
     return [asStr, end];

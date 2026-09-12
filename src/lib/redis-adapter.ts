@@ -8,6 +8,7 @@ import type { RedisClientType } from 'redis';
  * 只抽象 API 命名差异，不处理序列化（由调用者负责）
  */
 export interface RedisAdapter {
+  hCompareAndSet(key: string, field: string, expected: string, value: string): Promise<boolean>;
   // Hash 操作
   hSet(key: string, field: string, value: string): Promise<number>;
   hSet(key: string, data: Record<string, string>): Promise<number>;
@@ -47,6 +48,14 @@ export interface RedisAdapter {
  */
 export class StandardRedisAdapter implements RedisAdapter {
   constructor(private client: RedisClientType) {}
+
+  async hCompareAndSet(key: string, field: string, expected: string, value: string): Promise<boolean> {
+    const result = await this.client.eval(
+      "if redis.call('HGET', KEYS[1], ARGV[1]) == ARGV[2] then return redis.call('HSET', KEYS[1], ARGV[1], ARGV[3]) + 1 end return 0",
+      { keys: [key], arguments: [field, expected, value] }
+    );
+    return Number(result) > 0;
+  }
 
   // Hash 操作
   async hSet(key: string, fieldOrData: string | Record<string, string>, value?: string): Promise<number> {
@@ -151,6 +160,14 @@ export class StandardRedisAdapter implements RedisAdapter {
  */
 export class UpstashRedisAdapter implements RedisAdapter {
   constructor(private client: Redis) {}
+
+  async hCompareAndSet(key: string, field: string, expected: string, value: string): Promise<boolean> {
+    const result = await this.client.eval(
+      "if redis.call('HGET', KEYS[1], ARGV[1]) == ARGV[2] then return redis.call('HSET', KEYS[1], ARGV[1], ARGV[3]) + 1 end return 0",
+      [key], [field, expected, value]
+    );
+    return Number(result) > 0;
+  }
 
   // Hash 操作
   async hSet(key: string, fieldOrData: string | Record<string, string>, value?: string): Promise<number> {

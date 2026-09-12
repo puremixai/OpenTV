@@ -2,6 +2,7 @@
 
 import crypto from 'crypto';
 import zlib from 'zlib';
+
 import { request } from './http';
 
 const XUNLEI_DEVICE_ID = '5505bd0cab8c9469b98e5891d9fb3e0d';
@@ -92,7 +93,7 @@ export async function checkXunlei(link) {
   try {
     const u = new URL(link);
     passCode = u.searchParams.get('pwd') || '';
-  } catch (_) {}
+  } catch (_) { /* Continue with an empty extraction password. */ }
 
   try {
     let captchaToken = '';
@@ -105,7 +106,7 @@ export async function checkXunlei(link) {
         client_version: '1.92.10',
         user_id: '0',
       });
-    } catch (_) {}
+    } catch (_) { /* Try the share endpoint without an optional captcha token. */ }
 
     const apiURL = `https://api-pan.xunlei.com/drive/v1/share?share_id=${encodeURIComponent(shareID)}&pass_code=${encodeURIComponent(passCode)}&limit=100&pass_code_token=&page_token=&thumbnail_size=SIZE_SMALL`;
     const reqHeaders = {

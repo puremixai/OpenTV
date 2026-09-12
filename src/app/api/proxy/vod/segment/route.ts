@@ -1,14 +1,16 @@
 /* eslint-disable no-console,@typescript-eslint/no-explicit-any */
 
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
 import { getConfig } from '@/lib/config';
-import { validateProxyUrlServerSide } from '@/lib/server/ssrf';
+import { isMediaProxyAuthorized } from '@/lib/server/media-proxy-auth';
 import { buildProxyStreamHeaders } from '@/lib/server/proxy-headers';
+import { fetchPublicUrl } from '@/lib/server/public-fetch';
 
 export const runtime = 'nodejs';
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
+  if (!(await isMediaProxyAuthorized(request))) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   const { searchParams } = new URL(request.url);
   const url = searchParams.get('url');
   const source = searchParams.get('source');
@@ -43,15 +45,12 @@ export async function GET(request: Request) {
   let reader: ReadableStreamDefaultReader<Uint8Array> | null = null;
 
   try {
-    const decodedUrl = decodeURIComponent(url);
+    const decodedUrl = url; // URLSearchParams already decoded the outer parameter.
 
     // 安全校验：防 SSRF 拦截请求内网或非法 URL (强制检查所有代理请求)
-    const isSafeUrl = await validateProxyUrlServerSide(decodedUrl);
-    if (!isSafeUrl) {
-      return NextResponse.json({ error: 'Proxy request to local or invalid network is forbidden' }, { status: 403 });
-    }
 
-    response = await fetch(decodedUrl, {
+    response = await fetchPublicUrl(decodedUrl, {
+      signal: request.signal,
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
         'Referer': decodedUrl,

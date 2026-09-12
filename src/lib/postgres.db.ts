@@ -1,5 +1,15 @@
+import { AdminConfig } from './admin.types';
+import { BookReadRecord, BookShelfItem } from './book.types';
+import { DatabaseAdapter } from './d1-adapter';
+import { MangaReadRecord, MangaShelfItem } from './manga.types';
+import {
+  MusicV2HistoryRecord,
+  MusicV2PlaylistItem,
+  MusicV2PlaylistRecord,
+} from './music-v2';
+import { dispatchNotificationChannels } from './notification-dispatch';
+import { hashPassword, verifyPassword } from './password';
 /* eslint-disable no-console, @typescript-eslint/no-explicit-any */
-
 /**
  * Vercel Postgres Storage Implementation
  *
@@ -7,30 +17,19 @@
  *
  * 注意：此模块仅在服务端使用，通过 webpack 配置排除客户端打包
  */
-
 import {
-  IStorage,
-  PlayRecord,
-  Favorite,
-  SkipConfig,
   DanmakuFilterConfig,
-  Notification,
-  MovieRequest,
-  PushSubscriptionRecord,
+  Favorite,
+  IStorage,
   LocalSettingsSyncRecord,
+  MovieRequest,
+  Notification,
+  PlayRecord,
+  PushSubscriptionRecord,
   SetLocalSettingsSyncOptions,
   SetLocalSettingsSyncResult,
+  SkipConfig,
 } from './types';
-import { AdminConfig } from './admin.types';
-import { MangaReadRecord, MangaShelfItem } from './manga.types';
-import { BookReadRecord, BookShelfItem } from './book.types';
-import { DatabaseAdapter } from './d1-adapter';
-import {
-  MusicV2HistoryRecord,
-  MusicV2PlaylistItem,
-  MusicV2PlaylistRecord,
-} from './music-v2';
-import { dispatchNotificationChannels } from './notification-dispatch';
 
 /**
  * Vercel Postgres 存储实现
@@ -416,12 +415,8 @@ export class PostgresStorage implements IStorage {
 
   // ==================== 用户管理 ====================
 
-  private async hashPassword(password: string): Promise<string> {
-    const encoder = new TextEncoder();
-    const data = encoder.encode(password);
-    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    return hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
+  private hashPassword(password: string): Promise<string> {
+    return hashPassword(password);
   }
 
   async verifyUser(userName: string, password: string): Promise<boolean> {
@@ -443,9 +438,13 @@ export class PostgresStorage implements IStorage {
 
       if (!user || !user.password_hash) return false;
 
-      // 使用 SHA-256 验证密码（与 Redis 保持一致）
-      const hashedPassword = await this.hashPassword(password);
-      return user.password_hash === hashedPassword;
+      // 验证旧格式并在成功登录后升级
+      const result = await verifyPassword(password, user.password_hash as string);
+      if (result.valid && result.needsUpgrade) {
+        await this.db.prepare('UPDATE users SET password_hash = $1 WHERE username = $2 AND password_hash = $3')
+          .bind(await hashPassword(password), userName, user.password_hash).run();
+      }
+      return result.valid;
     } catch (err) {
       console.error('PostgresStorage.verifyUser error:', err);
       return false;
@@ -512,11 +511,11 @@ export class PostgresStorage implements IStorage {
     }
   }
 
-  async getUserInfoV2(userName: string): Promise<any> {
+  async getUserInfoV2(userName: string, fresh = false): Promise<any> {
     try {
       // 先尝试从缓存获取用户信息
       const { userInfoCache } = await import('./user-cache');
-      const cached = userInfoCache.get(userName);
+      const cached = fresh ? null : userInfoCache.get(userName);
       if (cached) {
         return cached;
       }
@@ -782,14 +781,18 @@ export class PostgresStorage implements IStorage {
   async verifyUserV2(userName: string, password: string): Promise<boolean> {
     try {
       const user = await this.db
-        .prepare('SELECT password_hash FROM users WHERE username = $1')
+        .prepare('SELECT password_hash FROM users WHERE username = $1 AND banned = 0')
         .bind(userName)
         .first();
 
       if (!user) return false;
 
-      const hashedPassword = await this.hashPassword(password);
-      return user.password_hash === hashedPassword;
+      const result = await verifyPassword(password, user.password_hash as string);
+      if (result.valid && result.needsUpgrade) {
+        await this.db.prepare('UPDATE users SET password_hash = $1 WHERE username = $2 AND password_hash = $3')
+          .bind(await hashPassword(password), userName, user.password_hash).run();
+      }
+      return result.valid;
     } catch (err) {
       console.error('PostgresStorage.verifyUserV2 error:', err);
       return false;
@@ -938,7 +941,7 @@ export class PostgresStorage implements IStorage {
   async getUserPasswordHash(userName: string): Promise<string | null> {
     try {
       const user = await this.db
-        .prepare('SELECT password_hash FROM users WHERE username = $1')
+        .prepare('SELECT password_hash FROM users WHERE username = $1 AND banned = 0')
         .bind(userName)
         .first();
 
@@ -3745,6 +3748,14 @@ export class PostgresStorage implements IStorage {
  */
 class PostgresRedisHashAdapter {
   constructor(private db: DatabaseAdapter) {}
+
+  async hCompareAndSet(hashKey: string, field: string, expected: string, value: string): Promise<boolean> {
+    const result = await this.db.prepare('UPDATE global_config SET value = $1, updated_at = $2 WHERE key = $3 AND value = $4')
+      .bind(value, Date.now(), `${hashKey}:${field}`, expected).run();
+    if (!result.success) throw new Error(result.error || 'Session update failed');
+    return Number(result.meta?.changes) === 1;
+  }
+
 
   async hSet(hashKey: string, field: string, value: string): Promise<void> {
     const key = `${hashKey}:${field}`;

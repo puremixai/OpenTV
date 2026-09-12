@@ -1,9 +1,9 @@
 /* eslint-disable no-console, @typescript-eslint/no-explicit-any, @typescript-eslint/no-non-null-assertion */
 
 import { AdminConfig } from './admin.types';
+import { BookReadRecord, BookShelfItem } from './book.types';
 import { MusicPlayRecord } from './db.client';
 import { MangaReadRecord, MangaShelfItem } from './manga.types';
-import { BookReadRecord, BookShelfItem } from './book.types';
 import {
   MusicV2HistoryRecord,
   MusicV2PlaylistItem,
@@ -37,52 +37,64 @@ const STORAGE_TYPE =
 // 创建存储实例
 function createStorage(): IStorage {
   switch (STORAGE_TYPE) {
-    case 'redis':
+    case 'redis': {
       if (IS_CLOUDFLARE_BUILD) {
         throw new Error(
           'Node Redis storage is not supported in Cloudflare builds. Use D1 or Upstash instead.'
         );
       }
+      // eslint-disable-next-line @typescript-eslint/no-var-requires -- Load the runtime adapter only on the server or share the CommonJS server singleton.
       const { RedisStorage } = require('./redis.db');
       return new RedisStorage();
-    case 'upstash':
+    }
+    case 'upstash': {
+      // eslint-disable-next-line @typescript-eslint/no-var-requires -- Load the runtime adapter only on the server or share the CommonJS server singleton.
       const { UpstashRedisStorage } = require('./upstash.db');
       return new UpstashRedisStorage();
-    case 'kvrocks':
+    }
+    case 'kvrocks': {
       if (IS_CLOUDFLARE_BUILD) {
         throw new Error(
           'Kvrocks storage is not supported in Cloudflare builds. Use D1 or Upstash instead.'
         );
       }
+      // eslint-disable-next-line @typescript-eslint/no-var-requires -- Load the runtime adapter only on the server or share the CommonJS server singleton.
       const { KvrocksStorage } = require('./kvrocks.db');
       return new KvrocksStorage();
-    case 'd1':
+    }
+    case 'd1': {
       // D1Storage 只能在服务端使用，客户端会报错
       if (typeof window !== 'undefined') {
         throw new Error('D1Storage can only be used on the server side');
       }
       const d1Adapter = getD1Adapter();
       // 动态导入 D1Storage 以避免客户端打包
+      // eslint-disable-next-line @typescript-eslint/no-var-requires -- Load the runtime adapter only on the server or share the CommonJS server singleton.
       const { D1Storage } = require('./d1.db');
       return new D1Storage(d1Adapter);
-    case 'postgres':
+    }
+    case 'postgres': {
       // PostgresStorage 只能在服务端使用，客户端会报错
       if (typeof window !== 'undefined') {
         throw new Error('PostgresStorage can only be used on the server side');
       }
       const postgresAdapter = getPostgresAdapter();
       // 动态导入 PostgresStorage 以避免客户端打包
+      // eslint-disable-next-line @typescript-eslint/no-var-requires -- Load the runtime adapter only on the server or share the CommonJS server singleton.
       const { PostgresStorage } = require('./postgres.db');
       return new PostgresStorage(postgresAdapter);
-    case 'turso':
+    }
+    case 'turso': {
       // TursoStorage 只能在服务端使用，客户端会报错
       if (typeof window !== 'undefined') {
         throw new Error('TursoStorage can only be used on the server side');
       }
       const tursoAdapter = getTursoAdapter();
       // 复用 D1Storage（Turso 基于 libSQL/SQLite，SQL 语法完全兼容）
+      // eslint-disable-next-line @typescript-eslint/no-var-requires -- Load the runtime adapter only on the server or share the CommonJS server singleton.
       const { D1Storage: TursoD1Storage } = require('./d1.db');
       return new TursoD1Storage(tursoAdapter);
+    }
     case 'localstorage':
     default:
       return null as unknown as IStorage;
@@ -95,6 +107,7 @@ function createStorage(): IStorage {
  */
 function getPostgresAdapter(): any {
   // 动态导入适配器以避免客户端打包
+  // eslint-disable-next-line @typescript-eslint/no-var-requires -- Load the runtime adapter only on the server or share the CommonJS server singleton.
   const { PostgresAdapter } = require('./postgres-adapter');
 
   console.log('Using Vercel Postgres database');
@@ -109,6 +122,7 @@ function getPostgresAdapter(): any {
  */
 function getTursoAdapter(): any {
   // 动态导入适配器以避免客户端打包
+  // eslint-disable-next-line @typescript-eslint/no-var-requires -- Load the runtime adapter only on the server or share the CommonJS server singleton.
   const { TursoAdapter } = require('./turso-adapter');
 
   const tursoUrl = process.env.TURSO_URL;
@@ -132,6 +146,7 @@ function getTursoAdapter(): any {
  */
 function getD1Adapter(): any {
   // 动态导入适配器以避免客户端打包
+  // eslint-disable-next-line @typescript-eslint/no-var-requires -- Load the runtime adapter only on the server or share the CommonJS server singleton.
   const { CloudflareD1Adapter, SQLiteAdapter } = require('./d1-adapter');
 
   // 检查是否为 Cloudflare 构建
@@ -152,6 +167,7 @@ function getD1Adapter(): any {
             try {
               const {
                 getCloudflareContext,
+              // eslint-disable-next-line @typescript-eslint/no-var-requires -- Load the runtime adapter only on the server or share the CommonJS server singleton.
               } = require('@opennextjs/cloudflare');
               const { env } = getCloudflareContext();
 
@@ -176,7 +192,9 @@ function getD1Adapter(): any {
   }
 
   // 开发环境：better-sqlite3
+  // eslint-disable-next-line @typescript-eslint/no-var-requires -- Load the runtime adapter only on the server or share the CommonJS server singleton.
   const Database = require('better-sqlite3');
+  // eslint-disable-next-line @typescript-eslint/no-var-requires -- Load the runtime adapter only on the server or share the CommonJS server singleton.
   const path = require('path');
 
   const dbPath =
@@ -612,7 +630,7 @@ export class DbManager {
     return false;
   }
 
-  async getUserInfoV2(userName: string): Promise<{
+  async getUserInfoV2(userName: string, fresh = false): Promise<{
     role: 'owner' | 'admin' | 'user';
     banned: boolean;
     tags?: string[];
@@ -624,7 +642,7 @@ export class DbManager {
     skip_migrated?: boolean;
   } | null> {
     if (typeof (this.storage as any).getUserInfoV2 === 'function') {
-      return (this.storage as any).getUserInfoV2(userName);
+      return (this.storage as any).getUserInfoV2(userName, fresh);
     }
     return null;
   }
@@ -794,19 +812,19 @@ export class DbManager {
                 password = storedPassword;
                 console.log(`用户 ${user.username} 使用旧密码迁移`);
               } else {
-                // 没有旧密码，使用默认密码
-                password = 'defaultPassword123';
-                console.log(`用户 ${user.username} 没有旧密码，使用默认密码`);
+                // 没有旧密码，使用随机密码，需管理员重置
+                password = crypto.randomUUID();
+                console.log(`用户 ${user.username} 没有旧密码，使用随机密码，需管理员重置`);
               }
             } else {
-              password = 'defaultPassword123';
+              password = crypto.randomUUID();
             }
           } catch (err) {
             console.error(
-              `获取用户 ${user.username} 的密码失败，使用默认密码`,
+              `获取用户 ${user.username} 的密码失败，使用随机密码，需管理员重置`,
               err
             );
-            password = 'defaultPassword123';
+            password = crypto.randomUUID();
           }
         }
 
@@ -825,6 +843,9 @@ export class DbManager {
           (user as any).oidcSub,
           user.enabledApis
         );
+
+        // 新版凭据已持久化，删除旧版明文密码。
+        if ((this.storage as any).client?.del) await (this.storage as any).client.del(`u:${user.username}:pwd`);
 
         // 如果用户被封禁，更新状态
         if (user.banned) {

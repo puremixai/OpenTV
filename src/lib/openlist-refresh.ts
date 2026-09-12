@@ -181,7 +181,7 @@ async function listRootFolders(
   let currentPage = 1;
   const pageSize = 100;
 
-  while (true) {
+  for (;;) {
     const listResponse = await client.listDirectory(
       rootPath,
       currentPage,

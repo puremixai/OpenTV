@@ -1,16 +1,21 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-
 import * as cheerio from 'cheerio/slim';
 import { nanoid } from 'nanoid';
 
 import { db } from '@/lib/db';
+
+import { assertServerScriptExecutionEnabled, isServerScriptExecutionEnabled } from './server/script-policy';
 
 const SOURCE_SCRIPT_REGISTRY_KEY = 'source-script:registry';
 const DEFAULT_TIMEOUT_MS = 20000;
 
 // 绕过 webpack 静态分析，获取真正的 Node.js require
 // eslint-disable-next-line no-eval
-const _nodeRequire = eval('require') as NodeRequire;
+function getNodeRequire(): NodeRequire {
+  assertServerScriptExecutionEnabled();
+  // eslint-disable-next-line no-eval
+  return eval('require') as NodeRequire;
+}
 
 // ---- 内存缓存 ----
 let _registryCache: { data: SourceScriptRegistry; ts: number } | null = null;
@@ -292,6 +297,7 @@ function createUtils() {
 }
 
 function createScriptFactory(code: string) {
+  assertServerScriptExecutionEnabled();
   return new Function(
     'require',
     `"use strict";\n${code}`
@@ -434,7 +440,7 @@ function getOrCompileScript(script: SourceScriptRecord) {
   if (cached) return cached;
 
   const factory = createScriptFactory(script.code);
-  const compiled = normalizeScript(factory(_nodeRequire));
+  const compiled = normalizeScript(factory(getNodeRequire()));
 
   if (_compiledCache.size >= MAX_COMPILED_CACHE_SIZE) {
     const firstKey = _compiledCache.keys().next().value;
@@ -489,6 +495,7 @@ export async function executeSavedSourceScript(input: {
 }
 
 export async function listEnabledSourceScripts(): Promise<PublicSourceScriptSummary[]> {
+  if (!isServerScriptExecutionEnabled()) return [];
   const registry = await loadRegistry();
   return registry.items
     .filter((item) => item.enabled)
@@ -652,7 +659,7 @@ export async function testSourceScript(input: {
     };
 
     const factory = createScriptFactory(input.code);
-    const compiled = normalizeScript(factory(_nodeRequire));
+    const compiled = normalizeScript(factory(getNodeRequire()));
     const hook = compiled[input.hook];
     if (typeof hook !== 'function') {
       throw new Error(`脚本未实现 ${input.hook} hook`);

@@ -2,14 +2,14 @@
 
 import { NextRequest } from 'next/server';
 
-import { getAuthInfoFromCookie } from '@/lib/auth';
 import { getProgress } from '@/lib/data-migration-progress';
+import { getAuthenticatedUser } from '@/lib/session';
 
 export const runtime = 'nodejs';
 
 export async function GET(req: NextRequest) {
   // 验证身份和权限
-  const authInfo = getAuthInfoFromCookie(req);
+  const authInfo = await getAuthenticatedUser(req);
   if (!authInfo || !authInfo.username) {
     return new Response('Unauthorized', { status: 401 });
   }

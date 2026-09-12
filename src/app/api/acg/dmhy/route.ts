@@ -2,10 +2,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { parseStringPromise } from 'xml2js';
 
-import { getAuthInfoFromCookie } from '@/lib/auth';
 import { getConfig } from '@/lib/config';
 import { getMagnetBaseUrl, universalMagnetFetch } from '@/lib/magnet.client';
 import { hasFeaturePermission } from '@/lib/permissions';
+import { getAuthenticatedUser } from '@/lib/session';
 
 export const runtime = 'nodejs';
 
@@ -27,7 +27,7 @@ const pickText = (value: any): string => {
  */
 export async function POST(req: NextRequest) {
   try {
-    const authInfo = getAuthInfoFromCookie(req);
+    const authInfo = await getAuthenticatedUser(req);
     if (!authInfo?.username || !(await hasFeaturePermission(authInfo.username, 'magnet_search'))) {
       return NextResponse.json(
         { error: '无权限访问' },

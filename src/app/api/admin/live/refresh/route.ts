@@ -2,17 +2,17 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 
-import { getAuthInfoFromCookie } from '@/lib/auth';
 import { getConfig } from '@/lib/config';
 import { db } from '@/lib/db';
 import { refreshLiveChannels } from '@/lib/live';
+import { getAuthenticatedUser } from '@/lib/session';
 
 export const runtime = 'nodejs';
 
 export async function POST(request: NextRequest) {
   try {
     // 权限检查 - 使用v2用户系统
-    const authInfo = getAuthInfoFromCookie(request);
+    const authInfo = await getAuthenticatedUser(request);
     const username = authInfo?.username;
     const config = await getConfig();
     if (username !== process.env.USERNAME) {

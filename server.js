@@ -1,7 +1,10 @@
+const { installSocketAuthentication } = require('./server/socket-auth');
+const { canResumeRoom, roomForList } = require('./server/room-access');
 // Next.js 自定义服务器 + Socket.IO
 const { createServer } = require('http');
 const { parse } = require('url');
 const next = require('next');
+require('./scripts/load-env').loadAppEnv();
 const { Server } = require('socket.io');
 const {
   attachTVRemoteIO,
@@ -75,6 +78,10 @@ class WatchRoomServer {
 
   setupEventHandlers() {
     this.io.on('connection', (socket) => {
+      socket.use(([event, data], next) => {
+        if ((event === 'room:create' || event === 'room:join') && data && typeof data === 'object') data.userName = socket.data.username;
+        next();
+      });
       console.log(`[WatchRoom] Client connected: ${socket.id}`);
 
       // 创建房间
@@ -142,7 +149,7 @@ class WatchRoomServer {
           let isOwner = false;
 
           // 检查是否是房主重连（通过 ownerToken 验证）
-          if (data.ownerToken && data.ownerToken === room.ownerToken) {
+          if (canResumeRoom(room, socket.data.username, data.ownerToken)) {
             isOwner = true;
             // 更新房主的 socket.id
             room.ownerId = userId;
@@ -193,7 +200,8 @@ class WatchRoomServer {
           console.log(`[WatchRoom] User ${data.userName} joined room ${data.roomId}${isOwner ? ' (as owner)' : ''}`);
 
           const members = Array.from(roomMembers?.values() || []);
-          callback({ success: true, room, members });
+          const { ownerToken: _ownerToken, ...memberRoom } = room;
+          callback({ success: true, room: isOwner ? room : memberRoom, members });
         } catch (error) {
           console.error('[WatchRoom] Error joining room:', error);
           callback({ success: false, error: '加入房间失败' });
@@ -208,7 +216,7 @@ class WatchRoomServer {
       // 获取房间列表
       socket.on('room:list', (callback) => {
         const publicRooms = Array.from(this.rooms.values()).filter((room) => room.isPublic);
-        callback(publicRooms);
+        callback(publicRooms.map(roomForList));
       });
 
       // 播放状态更新（任何成员都可以触发同步）
@@ -384,7 +392,7 @@ class WatchRoomServer {
             return;
           }
 
-          if (room.ownerToken !== data.ownerToken) {
+          if (!canResumeRoom(room, socket.data.username, data.ownerToken)) {
             callback({ success: false, error: '房主身份验证失败' });
             return;
           }
@@ -717,41 +725,6 @@ class WatchRoomServer {
   }
 }
 
-function parseCookieHeader(cookieHeader) {
-  if (!cookieHeader) return {};
-  return cookieHeader.split(';').reduce((acc, part) => {
-    const index = part.indexOf('=');
-    if (index <= 0) return acc;
-    const key = part.slice(0, index).trim();
-    const value = part.slice(index + 1).trim();
-    if (key) acc[key] = value;
-    return acc;
-  }, {});
-}
-
-function parseSocketAuth(socket) {
-  const cookies = parseCookieHeader(socket.handshake.headers.cookie || '');
-  const raw = cookies.auth || socket.handshake.auth?.token || '';
-  if (!raw) return null;
-
-  let decoded = raw;
-  try {
-    decoded = decodeURIComponent(decoded);
-  } catch {}
-
-  if (decoded.includes('%')) {
-    try {
-      decoded = decodeURIComponent(decoded);
-    } catch {}
-  }
-
-  try {
-    return JSON.parse(decoded);
-  } catch {
-    return null;
-  }
-}
-
 class TVRemoteServer {
   constructor(io) {
     this.io = io;
@@ -764,7 +737,7 @@ class TVRemoteServer {
   setupEventHandlers() {
     this.io.on('connection', (socket) => {
       socket.on('tv-remote:register-tv', (data, callback) => {
-        const auth = parseSocketAuth(socket);
+        const auth = { username: socket.data.username };
         if (!auth?.username) {
           callback?.({ success: false, error: '未登录' });
           return;
@@ -780,7 +753,7 @@ class TVRemoteServer {
       });
 
       socket.on('tv-remote:tv-state', (data) => {
-        const auth = parseSocketAuth(socket);
+        const auth = { username: socket.data.username };
         if (!auth?.username) return;
         updateTVRemoteDevice(socket.id, auth.username, data);
       });
@@ -840,6 +813,12 @@ app.prepare().then(async () => {
     });
   }
 
+  if (io) {
+    const bindHost = ['0.0.0.0', '::'].includes(hostname) ? '127.0.0.1' : hostname;
+    const localHost = bindHost.includes(':') && !bindHost.startsWith('[') ? '[' + bindHost + ']' : bindHost;
+    installSocketAuthentication(io, { origin: 'http://' + localHost + ':' + port });
+  }
+
   if (tvModeEnabled && io) {
     tvRemoteServer = new TVRemoteServer(io);
     console.log('[TVRemote] Socket.IO remote server initialized');
@@ -864,7 +843,7 @@ app.prepare().then(async () => {
       console.error(err);
       process.exit(1);
     })
-    .listen(port, () => {
+    .listen(port, hostname, () => {
       console.log(`> Ready on http://${hostname}:${port}`);
       if (io) {
         console.log(`> Socket.IO ready on ws://${hostname}:${port}`);

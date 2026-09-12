@@ -11,7 +11,7 @@
  * 注意：此模块仅在服务端使用，通过 webpack 配置排除客户端打包
  */
 
-import { DatabaseAdapter, D1PreparedStatement, D1Result } from './d1-adapter';
+import { D1PreparedStatement, D1Result,DatabaseAdapter } from './d1-adapter';
 
 /**
  * 动态加载 @libsql/client 的 createClient 函数
@@ -23,6 +23,7 @@ import { DatabaseAdapter, D1PreparedStatement, D1Result } from './d1-adapter';
  * 模块和 isomorphic-ws/isomorphic-fetch 等不兼容边缘环境的依赖
  */
 function getLibsqlClient(): any {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires -- Load the runtime adapter only on the server or share the CommonJS server singleton.
   const mod = require('@libsql/client/http');
   return mod.createClient || mod.default?.createClient;
 }

@@ -2,7 +2,6 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 
-import { getAuthInfoFromCookie } from '@/lib/auth';
 import { getConfig, setCachedConfig } from '@/lib/config';
 import { db } from '@/lib/db';
 import { assertBaiduCookieHeaderSafe, normalizeBaiduCookie } from '@/lib/netdisk/baidu.client';
@@ -10,12 +9,12 @@ import {
   assertMobileAuthorizationHeaderSafe,
   normalizeMobileAuthorization,
 } from '@/lib/netdisk/mobile.client';
+import { assertPan115CookieHeaderSafe, normalizePan115Cookie, validatePan115Cookie } from '@/lib/netdisk/pan115.client';
 import {
   normalizePan123Account,
   normalizePan123Password,
   validatePan123Credentials,
 } from '@/lib/netdisk/pan123.client';
-import { assertPan115CookieHeaderSafe, normalizePan115Cookie, validatePan115Cookie } from '@/lib/netdisk/pan115.client';
 import {
   assertQuarkCookieHeaderSafe,
   normalizeQuarkCookie,
@@ -27,6 +26,7 @@ import {
   normalizeUCCookie,
   validateUCCookieReadable,
 } from '@/lib/netdisk/uc.client';
+import { getAuthenticatedUser } from '@/lib/session';
 
 export const runtime = 'nodejs';
 
@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const authInfo = getAuthInfoFromCookie(request);
+    const authInfo = await getAuthenticatedUser(request);
     if (!authInfo?.username) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

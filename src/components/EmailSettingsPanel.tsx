@@ -1,8 +1,8 @@
 'use client';
 
 import { Bell, Info, Mail, MonitorSmartphone, Send, X } from 'lucide-react';
-import { createPortal } from 'react-dom';
 import { useState } from 'react';
+import { createPortal } from 'react-dom';
 
 interface EmailSettingsPanelProps {
   isOpen: boolean;
@@ -97,9 +97,9 @@ export function EmailSettingsPanel({
   statusMessage,
   statusType,
 }: EmailSettingsPanelProps) {
-  if (!isOpen || !mounted) return null;
-
   const [notificationTab, setNotificationTab] = useState<NotificationTab>('email');
+
+  if (!isOpen || !mounted) return null;
 
   const pushDisabled =
     emailSettingsSaving ||

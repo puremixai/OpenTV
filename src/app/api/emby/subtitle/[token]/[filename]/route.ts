@@ -2,9 +2,9 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 
-import { getAuthInfoFromCookie } from '@/lib/auth';
 import { getConfig } from '@/lib/config';
 import { hasFeaturePermission } from '@/lib/permissions';
+import { getAuthenticatedUser } from '@/lib/session';
 
 export const runtime = 'nodejs';
 
@@ -21,7 +21,7 @@ async function getEmbyClient(embyKey?: string) {
 
 async function validateEmbyProxyAccess(request: NextRequest, requestToken: string) {
   const globalToken = process.env.TVBOX_SUBSCRIBE_TOKEN;
-  const authInfo = getAuthInfoFromCookie(request);
+  const authInfo = await getAuthenticatedUser(request);
 
   let hasValidToken = false;
   if (requestToken === 'proxy') {

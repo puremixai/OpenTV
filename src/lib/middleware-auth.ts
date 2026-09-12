@@ -1,5 +1,5 @@
+import { signAuthData } from './auth-signature';
 /* eslint-disable no-console */
-
 import { TOKEN_CONFIG, verifyRefreshToken } from './refresh-token';
 
 // 生成签名
@@ -44,27 +44,11 @@ export async function refreshAccessToken(
 
   const now = Date.now();
 
-  // 生成新的签名
-  const dataToSign = JSON.stringify({
-    username,
-    role,
-    timestamp: now
-  });
-
-  const signature = await generateSignatureForMiddleware(
-    dataToSign,
-    process.env.PASSWORD || ''
-  );
-
   const authData = {
-    username,
-    role,
-    timestamp: now, // 新的 Access Token 时间戳
-    tokenId,
-    refreshToken,
-    refreshExpires,
-    signature
+    version: 2, username, role: role as 'owner' | 'admin' | 'user', timestamp: now,
+    tokenId, refreshToken, refreshExpires, signature: '',
   };
+  authData.signature = await signAuthData(authData);
 
   console.log(`Refreshed access token for ${username}`);
 

@@ -90,7 +90,7 @@ export function getLoginClientIp(req: NextRequest): string | null {
 
   const forwarded = req.headers.get('forwarded');
   if (forwarded) {
-    const match = forwarded.match(/for=(?:"?)([^;,\"]+)/i);
+    const match = forwarded.match(/for=(?:"?)([^;,"]+)/i);
     const forwardedIp = normalizeIp(match?.[1]?.replace(/^\[|\]$/g, '') || '');
     if (forwardedIp) return forwardedIp;
   }

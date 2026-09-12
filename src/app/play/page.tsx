@@ -50,20 +50,22 @@ import {
 } from '@/lib/db.client';
 import { getDoubanDetail } from '@/lib/douban.client';
 import { isEpisodeHiddenByFilter, normalizeEpisodeFilterConfig } from '@/lib/episode-filter';
-import { appendSpecialSourceParam, isSpecialSourcesEnabledOnDevice } from '@/lib/special-source.client';
 import {
   buildEpisodeProgressContentKey,
   loadLocalEpisodeProgress,
   pruneLocalEpisodeProgressStorage,
   saveLocalEpisodeProgress,
 } from '@/lib/episode-progress';
+import { getIndexedDBVideoPlaybackUrl } from '@/lib/indexeddb-video-cache';
+import { getMediaProxyToken } from '@/lib/media-proxy.client';
 import { isNetdiskSource, normalizeNetdiskSource } from '@/lib/netdisk/source';
+import { isLazyDetailSource, isNetdiskMountSource } from '@/lib/player/source';
 import {
   getRecommendationCache,
   recommendationCacheKeys,
   setRecommendationCache,
 } from '@/lib/recommendations/cache';
-import { getIndexedDBVideoPlaybackUrl } from '@/lib/indexeddb-video-cache';
+import { appendSpecialSourceParam, isSpecialSourcesEnabledOnDevice } from '@/lib/special-source.client';
 import {
   convertSubtitleFileToVttObjectUrl,
   CUSTOM_SUBTITLE_ACCEPT,
@@ -207,7 +209,14 @@ function PlayPageClient() {
   const { siteName } = useSite();
 
   // 获取 Proxy M3U8 Token
-  const proxyToken = typeof window !== 'undefined' ? process.env.NEXT_PUBLIC_PROXY_M3U8_TOKEN || '' : '';
+  const [proxyToken, setProxyToken] = useState('');
+  useEffect(() => {
+    let active = true;
+    const refresh = () => getMediaProxyToken().then(token => { if (active) setProxyToken(token); }).catch(() => { /* In-page playback can still use its session cookie. */ });
+    void refresh();
+    const timer = window.setInterval(refresh, 25 * 60 * 1000);
+    return () => { active = false; window.clearInterval(timer); };
+  }, []);
 
   // 获取用户认证信息
   const authInfo = typeof window !== 'undefined' ? getAuthInfoFromBrowserCookie() : null;
@@ -744,32 +753,6 @@ function PlayPageClient() {
     setNetdiskTMDBMeta(null);
     setPendingNetdiskTMDBData(null);
   }, [currentSource, currentId]);
-
-  // 解析 source 参数以获取 embyKey（仅用于 API 调用）
-  const parseSourceForApi = (source: string): { source: string; embyKey?: string } => {
-    source = normalizeNetdiskSource(source);
-    if (source.startsWith('emby_')) {
-      const key = source.substring(5);
-      return { source: 'emby', embyKey: key };
-    }
-    return { source };
-  };
-
-  const isLazyDetailSource = (source?: string) => {
-    if (!source) return false;
-    return (
-      source === 'openlist' ||
-      source === 'emby' ||
-      source.startsWith('emby_') ||
-      source.startsWith('script:')
-    );
-  };
-
-  /** 网盘挂载类源：openlist / xiaoya / netdisk-* 等挂载网盘，视频无广告，可用原生 HLS 直连播放 */
-  const isNetdiskMountSource = (source?: string | null) => {
-    if (!source) return false;
-    return source === 'openlist' || source === 'xiaoya' || isNetdiskSource(source);
-  };
 
   /** 网盘挂载视频是否启用原生 HLS（仅支持原生 HLS 的浏览器且用户开启时生效） */
   const isNetdiskNativeHlsActive = (source?: string | null) =>
@@ -1693,7 +1676,11 @@ function PlayPageClient() {
       return null;
     }
 
-    return buildAbsoluteUrl(urlToUse);
+    const external = new URL(buildAbsoluteUrl(urlToUse), window.location.origin);
+    if (external.origin === window.location.origin && /^\/api\/(proxy-m3u8|proxy\/vod\/|video-proxy)/.test(external.pathname)) {
+      external.searchParams.set('token', await getMediaProxyToken());
+    }
+    return external.href;
   };
 
   const handleCreateTranscodeSession = async () => {
@@ -3136,7 +3123,7 @@ function PlayPageClient() {
   const refreshXiaoyaUrl = async (
     preferredHls?: any,
     preferredVideo?: HTMLVideoElement,
-    isScheduled: boolean = false
+    isScheduled = false
   ) => {
     // 防抖：距离上次刷新不足3秒则不刷新
     const now = Date.now();
@@ -9630,7 +9617,7 @@ function PlayPageClient() {
               try {
                 const playPromise = fallbackVideo.play();
                 if (playPromise && typeof playPromise.catch === 'function') {
-                  playPromise.catch(() => {});
+                  playPromise.catch(() => { /* Autoplay may require a user gesture; the player controls remain available. */ });
                 }
               } catch {
                 // ignore
@@ -10366,7 +10353,7 @@ function PlayPageClient() {
                                   proxyAttemptedRef.current = true;
                                   setVideoUrl(proxyUrl);
                                 }}
-                                className='mt-4 ml-3 px-6 py-2 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-lg hover:from-blue-600 hover:to-indigo-700 transition-all duration-200'
+                                className='mt-4 ml-3 px-6 py-2 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-lg hover:from-blue-600 hover:to-indigo-700 transition-all duration-200' disabled={externalPlayerAdBlock && !proxyToken}
                               >
                                 使用代理播放
                               </button>
@@ -10534,7 +10521,7 @@ function PlayPageClient() {
                             });
                           }}
                           className='group relative flex items-center justify-center gap-1 w-8 h-8 lg:w-auto lg:h-auto lg:px-2 lg:py-1.5 bg-blue-500 hover:bg-blue-600 text-white text-xs font-medium rounded-md transition-all duration-200 shadow-sm hover:shadow-md cursor-pointer overflow-hidden border border-blue-400 flex-shrink-0'
-                          title='复制视频链接'
+                          title='复制视频链接' disabled={externalPlayerAdBlock && !proxyToken}
                         >
                           <svg
                             className='w-4 h-4 flex-shrink-0 text-white'
@@ -10673,7 +10660,7 @@ function PlayPageClient() {
                             window.open(`potplayer://${proxyUrl}`, '_blank');
                           }}
                           className='group relative flex items-center justify-center gap-1 w-8 h-8 lg:w-auto lg:h-auto lg:px-2 lg:py-1.5 bg-white hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-600 text-xs font-medium rounded-md transition-all duration-200 shadow-sm hover:shadow-md cursor-pointer overflow-hidden border border-gray-300 dark:border-gray-600 flex-shrink-0'
-                          title='PotPlayer'
+                          title='PotPlayer' disabled={externalPlayerAdBlock && !proxyToken}
                         >
                           <img
                             src='/players/potplayer.png'
@@ -10703,7 +10690,7 @@ function PlayPageClient() {
                             window.open(`vlc://${proxyUrl}`, '_blank');
                           }}
                           className='group relative flex items-center justify-center gap-1 w-8 h-8 lg:w-auto lg:h-auto lg:px-2 lg:py-1.5 bg-white hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-600 text-xs font-medium rounded-md transition-all duration-200 shadow-sm hover:shadow-md cursor-pointer overflow-hidden border border-gray-300 dark:border-gray-600 flex-shrink-0'
-                          title='VLC'
+                          title='VLC' disabled={externalPlayerAdBlock && !proxyToken}
                         >
                           <img
                             src='/players/vlc.png'
@@ -10733,7 +10720,7 @@ function PlayPageClient() {
                             window.open(`mpv://${proxyUrl}`, '_blank');
                           }}
                           className='group relative flex items-center justify-center gap-1 w-8 h-8 lg:w-auto lg:h-auto lg:px-2 lg:py-1.5 bg-white hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-600 text-xs font-medium rounded-md transition-all duration-200 shadow-sm hover:shadow-md cursor-pointer overflow-hidden border border-gray-300 dark:border-gray-600 flex-shrink-0'
-                          title='MPV'
+                          title='MPV' disabled={externalPlayerAdBlock && !proxyToken}
                         >
                           <img
                             src='/players/mpv.png'
@@ -10767,7 +10754,7 @@ function PlayPageClient() {
                             );
                           }}
                           className='group relative flex items-center justify-center gap-1 w-8 h-8 lg:w-auto lg:h-auto lg:px-2 lg:py-1.5 bg-white hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-600 text-xs font-medium rounded-md transition-all duration-200 shadow-sm hover:shadow-md cursor-pointer overflow-hidden border border-gray-300 dark:border-gray-600 flex-shrink-0'
-                          title='MX Player'
+                          title='MX Player' disabled={externalPlayerAdBlock && !proxyToken}
                         >
                           <img
                             src='/players/mxplayer.png'
@@ -10796,7 +10783,7 @@ function PlayPageClient() {
                             window.open(`nplayer-${proxyUrl}`, '_blank');
                           }}
                           className='group relative flex items-center justify-center gap-1 w-8 h-8 lg:w-auto lg:h-auto lg:px-2 lg:py-1.5 bg-white hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-600 text-xs font-medium rounded-md transition-all duration-200 shadow-sm hover:shadow-md cursor-pointer overflow-hidden border border-gray-300 dark:border-gray-600 flex-shrink-0'
-                          title='nPlayer'
+                          title='nPlayer' disabled={externalPlayerAdBlock && !proxyToken}
                         >
                           <img
                             src='/players/nplayer.png'
@@ -10830,7 +10817,7 @@ function PlayPageClient() {
                             );
                           }}
                           className='group relative flex items-center justify-center gap-1 w-8 h-8 lg:w-auto lg:h-auto lg:px-2 lg:py-1.5 bg-white hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-600 text-xs font-medium rounded-md transition-all duration-200 shadow-sm hover:shadow-md cursor-pointer overflow-hidden border border-gray-300 dark:border-gray-600 flex-shrink-0'
-                          title='IINA'
+                          title='IINA' disabled={externalPlayerAdBlock && !proxyToken}
                         >
                           <img
                             src='/players/iina.png'

@@ -55,7 +55,7 @@ export function extractShareKey123(urlStr) {
     if (pathParts.length > 0 && pathParts[pathParts.length - 1]) {
       return { shareKey: pathParts[pathParts.length - 1], error: null };
     }
-  } catch (_) {}
+  } catch (_) { /* Return the invalid share URL result below. */ }
 
   return { shareKey: '', error: '无法从URL中提取shareKey' };
 }

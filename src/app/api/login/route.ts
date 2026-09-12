@@ -1,7 +1,8 @@
 /* eslint-disable no-console,@typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from 'next/server';
 
-import { parseAuthInfo } from '@/lib/auth';
+import { generateAuthCookie } from '@/lib/auth-cookie';
+import { authResponse, clearAuthCookies, setAuthCookies } from '@/lib/auth-response';
 import { getConfig } from '@/lib/config';
 import { db } from '@/lib/db';
 import {
@@ -10,12 +11,6 @@ import {
   recordLoginFailure,
   recordLoginSuccess,
 } from '@/lib/login-fail2ban';
-import {
-  generateRefreshToken,
-  generateTokenId,
-  storeRefreshToken,
-  TOKEN_CONFIG,
-} from '@/lib/refresh-token';
 
 export const runtime = 'nodejs';
 
@@ -27,105 +22,6 @@ const STORAGE_TYPE =
     | 'upstash'
     | 'kvrocks'
     | undefined) || 'localstorage';
-
-function buildLoginResponse(authToken?: string | null) {
-  const body: Record<string, unknown> = { ok: true };
-
-  if (authToken) {
-    body.token = authToken;
-    const authInfo = parseAuthInfo(authToken);
-    if (authInfo) {
-      const { password, ...rest } = authInfo;
-      body.auth = rest;
-    }
-  }
-
-  return NextResponse.json(body);
-}
-
-// 生成签名
-async function generateSignature(
-  data: string,
-  secret: string
-): Promise<string> {
-  const encoder = new TextEncoder();
-  const keyData = encoder.encode(secret);
-  const messageData = encoder.encode(data);
-
-  // 导入密钥
-  const key = await crypto.subtle.importKey(
-    'raw',
-    keyData,
-    { name: 'HMAC', hash: 'SHA-256' },
-    false,
-    ['sign']
-  );
-
-  // 生成签名
-  const signature = await crypto.subtle.sign('HMAC', key, messageData);
-
-  // 转换为十六进制字符串
-  return Array.from(new Uint8Array(signature))
-    .map((b) => b.toString(16).padStart(2, '0'))
-    .join('');
-}
-
-// 生成认证Cookie（带签名和 Refresh Token）
-async function generateAuthCookie(
-  username?: string,
-  password?: string,
-  role?: 'owner' | 'admin' | 'user',
-  includePassword = false,
-  deviceInfo?: string
-): Promise<string> {
-  const now = Date.now();
-  const authData: any = { role: role || 'user' };
-
-  // 只在需要时包含 password
-  if (includePassword && password) {
-    authData.password = password;
-  }
-
-  if (username && process.env.PASSWORD) {
-    authData.username = username;
-    authData.timestamp = now; // Access Token 时间戳
-
-    // 生成 Refresh Token（仅数据库模式）
-    if (!includePassword && STORAGE_TYPE !== 'localstorage') {
-      const tokenId = generateTokenId();
-      const refreshToken = generateRefreshToken();
-      const refreshExpires = now + TOKEN_CONFIG.REFRESH_TOKEN_AGE;
-
-      authData.tokenId = tokenId;
-      authData.refreshToken = refreshToken;
-      authData.refreshExpires = refreshExpires;
-
-      // 存储到 Redis Hash
-      try {
-        await storeRefreshToken(username, tokenId, {
-          token: refreshToken,
-          deviceInfo: deviceInfo || 'Unknown Device',
-          createdAt: now,
-          expiresAt: refreshExpires,
-          lastUsed: now,
-        });
-      } catch (error) {
-        console.error('Failed to store refresh token:', error);
-      }
-    }
-
-    // 签名所有关键字段（username, role, timestamp）防止篡改
-    const dataToSign = JSON.stringify({
-      username: authData.username,
-      role: authData.role,
-      timestamp: authData.timestamp
-    });
-    const signature = await generateSignature(dataToSign, process.env.PASSWORD);
-    authData.signature = signature;
-  }
-
-  return encodeURIComponent(JSON.stringify(authData));
-}
 
 // 验证Cloudflare Turnstile Token
 async function verifyTurnstileToken(token: string, secretKey: string): Promise<boolean> {
@@ -207,15 +103,10 @@ export async function POST(req: NextRequest) {
 
       // 未配置 PASSWORD 时直接放行
       if (!envPassword) {
-        const response = buildLoginResponse();
+        const response = authResponse(req);
 
         // 清除可能存在的认证cookie
-        response.cookies.set('auth', '', {
-          path: '/',
-          expires: new Date(0),
-          sameSite: 'lax',
-          httpOnly: false,
-        });
+        clearAuthCookies(response);
 
         return response;
       }
@@ -244,18 +135,12 @@ export async function POST(req: NextRequest) {
         'owner',
         true,
         deviceInfo
-      ); // localstorage 模式包含 password
-      const response = buildLoginResponse(cookieValue);
+      ); // localstorage 模式使用签名会话，不保存密码
+      const response = authResponse(req, cookieValue);
       const expires = new Date();
       expires.setDate(expires.getDate() + 60); // 60天过期（Refresh Token 有效期）
 
-      response.cookies.set('auth', cookieValue, {
-        path: '/',
-        expires,
-        sameSite: 'lax',
-        httpOnly: false, // 允许客户端访问
-        secure: false,
-      });
+      setAuthCookies(response, cookieValue, req);
 
       return response;
     }
@@ -313,17 +198,11 @@ export async function POST(req: NextRequest) {
         false,
         deviceInfo
       ); // 数据库模式不包含 password
-      const response = buildLoginResponse(cookieValue);
+      const response = authResponse(req, cookieValue);
       const expires = new Date();
       expires.setDate(expires.getDate() + 60); // 60天过期（Refresh Token 有效期）
 
-      response.cookies.set('auth', cookieValue, {
-        path: '/',
-        expires,
-        sameSite: 'lax',
-        httpOnly: false, // 允许客户端访问
-        secure: false,
-      });
+      setAuthCookies(response, cookieValue, req);
 
       return response;
     } else if (username === process.env.USERNAME) {
@@ -370,16 +249,11 @@ export async function POST(req: NextRequest) {
       false,
       deviceInfo
     ); // 数据库模式不包含 password
-    const response = buildLoginResponse(cookieValue);
+    const response = authResponse(req, cookieValue);
     const expires = new Date();
     expires.setDate(expires.getDate() + 60); // 60天过期（Refresh Token 有效期）
 
-  response.cookies.set('auth', cookieValue, {
-    path: '/',
-    expires,
-    sameSite: 'lax',
-    httpOnly: false, // 允许客户端访问
-  });
+  setAuthCookies(response, cookieValue, req);
 
     console.log(`Cookie已设置`);
 

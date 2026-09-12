@@ -21,6 +21,14 @@ function registerTVRemoteDevice(socketId, username, data) {
   const deviceId = String(data?.deviceId || '').slice(0, 128);
   if (!deviceId) return { success: false, error: '缺少设备 ID' };
 
+  const existing = hub.devices.get(deviceId);
+  if (existing && existing.username !== username) {
+    return { success: false, error: '设备已关联其他用户' };
+  }
+  const previousId = hub.socketToDevice.get(socketId);
+  if (previousId && previousId !== deviceId) removeTVRemoteSocket(socketId);
+  if (existing && existing.socketId !== socketId) hub.socketToDevice.delete(existing.socketId);
+
   const device = {
     deviceId,
     socketId,

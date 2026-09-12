@@ -1,7 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from 'next/server';
 
-import { getAuthInfoFromCookie } from '@/lib/auth';
 import { getConfig } from '@/lib/config';
 import {
   getMagnetHealthConcurrency,
@@ -9,6 +8,7 @@ import {
   probeMagnetHealth,
 } from '@/lib/magnet-health';
 import { hasFeaturePermission } from '@/lib/permissions';
+import { getAuthenticatedUser } from '@/lib/session';
 
 export const runtime = 'nodejs';
 
@@ -20,7 +20,7 @@ export const runtime = 'nodejs';
  */
 export async function POST(req: NextRequest) {
   try {
-    const authInfo = getAuthInfoFromCookie(req);
+    const authInfo = await getAuthenticatedUser(req);
     if (!authInfo?.username) {
       return NextResponse.json({ error: '无权限访问' }, { status: 403 });
     }

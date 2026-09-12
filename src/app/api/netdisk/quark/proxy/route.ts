@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-import { getAuthInfoFromCookie } from '@/lib/auth';
-import { createQuarkMultiThreadStream } from '@/lib/netdisk/quark-multithread-proxy';
 import {
   ensureQuarkPlayFolder,
   getQuarkPlayHeaders,
@@ -9,8 +7,10 @@ import {
   probeQuarkPlayRange,
   saveQuarkShareFile,
 } from '@/lib/netdisk/quark.client';
+import { createQuarkMultiThreadStream } from '@/lib/netdisk/quark-multithread-proxy';
 import { refreshQuarkNetdiskSession } from '@/lib/netdisk/quark-session-cache';
 import { resolveQuarkSession } from '@/lib/netdisk/quark-session-resolver';
+import { getAuthenticatedUser } from '@/lib/session';
 
 export const runtime = 'nodejs';
 
@@ -146,7 +146,7 @@ function buildRangeHeaders(start: number, end: number, total: number) {
 
 export async function GET(request: NextRequest) {
   try {
-    const authInfo = getAuthInfoFromCookie(request);
+    const authInfo = await getAuthenticatedUser(request);
     if (!authInfo?.username) {
       return NextResponse.json({ error: '未授权' }, { status: 401 });
     }

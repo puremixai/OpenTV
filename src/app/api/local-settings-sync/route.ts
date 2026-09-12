@@ -1,13 +1,12 @@
 /* eslint-disable no-console */
 
 import { createHash } from 'crypto';
-
 import { NextRequest, NextResponse } from 'next/server';
 
-import { getAuthInfoFromCookie } from '@/lib/auth';
 import { getConfig } from '@/lib/config';
 import { db } from '@/lib/db';
 import { validateLocalSettingsPayload } from '@/lib/local-settings-sync';
+import { getAuthenticatedUser } from '@/lib/session';
 
 export const runtime = 'nodejs';
 
@@ -36,8 +35,8 @@ async function getSyncMode(): Promise<'off' | 'manual' | 'auto'> {
   return 'off';
 }
 
-function isLoggedIn(request: NextRequest): string | null {
-  const authInfo = getAuthInfoFromCookie(request);
+async function isLoggedIn(request: NextRequest): Promise<string | null> {
+  const authInfo = await getAuthenticatedUser(request);
   if (!authInfo || !authInfo.username) return null;
   return authInfo.username;
 }
@@ -47,7 +46,7 @@ export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
   if (searchParams.get('mode') === 'config') {
     const supported = isSyncStorageSupported();
-    const username = isLoggedIn(request);
+    const username = (await isLoggedIn(request));
     const mode = supported ? await getSyncMode() : 'off';
     return NextResponse.json({
       enabled: supported && Boolean(username),
@@ -63,7 +62,7 @@ export async function GET(request: NextRequest) {
       { status: 400 }
     );
   }
-  const username = isLoggedIn(request);
+  const username = (await isLoggedIn(request));
   if (!username) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
@@ -98,7 +97,7 @@ export async function PUT(request: NextRequest) {
       { status: 400 }
     );
   }
-  const username = isLoggedIn(request);
+  const username = (await isLoggedIn(request));
   if (!username) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }

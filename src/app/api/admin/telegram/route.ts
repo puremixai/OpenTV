@@ -1,16 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import type { AdminConfig } from '@/lib/admin.types';
-import { getAuthInfoFromCookie } from '@/lib/auth';
 import { getConfig } from '@/lib/config';
 import { getStorage } from '@/lib/db';
+import { getAuthenticatedUser } from '@/lib/session';
 import { getTelegramConfig, sendTelegramMessage, setTelegramBotCommands, setTelegramWebhook, TelegramApiError } from '@/lib/telegram';
 
 export const runtime = 'nodejs';
 
 
 async function assertAdmin(request: NextRequest) {
-  const authInfo = getAuthInfoFromCookie(request);
+  const authInfo = await getAuthenticatedUser(request);
   if (!authInfo?.username) return { error: 'Unauthorized', status: 401 } as const;
 
   const storage = getStorage();

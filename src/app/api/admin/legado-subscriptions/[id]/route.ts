@@ -1,14 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-import { getAuthInfoFromCookie } from '@/lib/auth';
 import { getConfig, setCachedConfig } from '@/lib/config';
 import { db } from '@/lib/db';
 import { legadoSubscriptionStore } from '@/lib/legado/subscription-store';
+import { getAuthenticatedUser } from '@/lib/session';
 
 export const runtime = 'nodejs';
 
 async function ensureAdmin(request: NextRequest) {
-  const authInfo = getAuthInfoFromCookie(request);
+  const authInfo = await getAuthenticatedUser(request);
   if (!authInfo?.username) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   if (authInfo.username !== process.env.USERNAME) {
     const userInfo = await db.getUserInfoV2(authInfo.username);

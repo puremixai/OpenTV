@@ -1,10 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from 'next/server';
 
-import { getAuthInfoFromCookie } from '@/lib/auth';
 import { validateKeywordExpr } from '@/lib/anime-keyword-expr';
 import { getConfig } from '@/lib/config';
 import { db } from '@/lib/db';
+import { getAuthenticatedUser } from '@/lib/session';
 
 export const runtime = 'nodejs';
 
@@ -18,7 +18,7 @@ export async function PUT(
 ) {
   try {
     // 权限检查
-    const authInfo = getAuthInfoFromCookie(req);
+    const authInfo = await getAuthenticatedUser(req);
     if (!authInfo || (authInfo.role !== 'admin' && authInfo.role !== 'owner')) {
       return NextResponse.json({ error: '无权限访问' }, { status: 403 });
     }
@@ -131,7 +131,7 @@ export async function DELETE(
 ) {
   try {
     // 权限检查
-    const authInfo = getAuthInfoFromCookie(req);
+    const authInfo = await getAuthenticatedUser(req);
     if (!authInfo || (authInfo.role !== 'admin' && authInfo.role !== 'owner')) {
       return NextResponse.json({ error: '无权限访问' }, { status: 403 });
     }

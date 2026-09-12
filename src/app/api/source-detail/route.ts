@@ -1,12 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-
 import { NextRequest, NextResponse } from 'next/server';
 
-import { getAuthInfoFromCookie } from '@/lib/auth';
 import { getAvailableApiSites, getCacheTime, getConfig } from '@/lib/config';
 import { getDetailFromApiV2 } from '@/lib/downstream';
 import { getProxyToken } from '@/lib/emby-token';
-import { hasFeaturePermission } from '@/lib/permissions';
 import {
   createBaiduNetdiskSession,
   getBaiduNetdiskSession,
@@ -20,17 +17,17 @@ import {
   refreshMobileNetdiskSession,
 } from '@/lib/netdisk/mobile-session-cache';
 import {
-  createPan123NetdiskSession,
-  getPan123NetdiskSession,
-  parsePan123NetdiskId,
-  refreshPan123NetdiskSession,
-} from '@/lib/netdisk/pan123-session-cache';
-import {
   createPan115NetdiskSession,
   getPan115NetdiskSession,
   parsePan115NetdiskId,
   refreshPan115NetdiskSession,
 } from '@/lib/netdisk/pan115-session-cache';
+import {
+  createPan123NetdiskSession,
+  getPan123NetdiskSession,
+  parsePan123NetdiskId,
+  refreshPan123NetdiskSession,
+} from '@/lib/netdisk/pan123-session-cache';
 import {
   createQuarkNetdiskSession,
   getQuarkNetdiskSession,
@@ -38,6 +35,7 @@ import {
   refreshQuarkNetdiskSession,
 } from '@/lib/netdisk/quark-session-cache';
 import {
+  isNetdiskSource,
   LEGACY_QUARK_TEMP_SOURCE,
   NETDISK_115_SOURCE,
   NETDISK_123_SOURCE,
@@ -46,7 +44,6 @@ import {
   NETDISK_QUARK_SOURCE,
   NETDISK_TIANYI_SOURCE,
   NETDISK_UC_SOURCE,
-  isNetdiskSource,
   normalizeNetdiskSource,
 } from '@/lib/netdisk/source';
 import {
@@ -61,6 +58,9 @@ import {
   parseUCNetdiskId,
   refreshUCNetdiskSession,
 } from '@/lib/netdisk/uc-session-cache';
+import { hasFeaturePermission } from '@/lib/permissions';
+import { createMediaProxyToken } from '@/lib/server/media-proxy-auth';
+import { getAuthenticatedUser } from '@/lib/session';
 import {
   executeSavedSourceScript,
   normalizeScriptDetailResult,
@@ -111,12 +111,12 @@ function getRequestSiteOrigin(request: NextRequest): string {
  * MoonTVPlus APP / OrionTV 客户端：对配置的视频源 m3u8 套一层去广告代理。
  * UA 小写包含 "moontvplus app" 或 "oriontv" 时生效（不匹配仅含 moontvplus 的其它客户端）。
  */
-function applyClientAdProxyToEpisodes(
+async function applyClientAdProxyToEpisodes(
   request: NextRequest,
   sourceCode: string,
   episodes: string[] | undefined,
   clientAdSourceApis: string[] | undefined
-): string[] | undefined {
+): Promise<string[] | undefined> {
   if (!episodes || episodes.length === 0) return episodes;
   if (!clientAdSourceApis || !clientAdSourceApis.includes(sourceCode)) {
     return episodes;
@@ -127,6 +127,9 @@ function applyClientAdProxyToEpisodes(
     return episodes;
   }
 
+  const auth = await getAuthenticatedUser(request);
+  if (!auth) return episodes;
+  const token = await createMediaProxyToken(auth);
   const origin = getRequestSiteOrigin(request);
   return episodes.map((episode) => {
     if (!episode || typeof episode !== 'string') return episode;
@@ -138,7 +141,7 @@ function applyClientAdProxyToEpisodes(
     }
     // 仅处理 http(s) 直链 m3u8，站内相对播放地址不改写
     if (!/^https?:\/\//i.test(episode)) return episode;
-    return `${origin}/api/proxy-m3u8?url=${encodeURIComponent(episode)}`;
+    return `${origin}/api/proxy-m3u8?url=${encodeURIComponent(episode)}&token=${encodeURIComponent(token)}`;
   });
 }
 
@@ -168,7 +171,7 @@ function formatNetdiskEpisodeTitle(
  * 这个API专门用于play页面快速获取当前源的详情
  */
 export async function GET(request: NextRequest) {
-  const authInfo = getAuthInfoFromCookie(request);
+  const authInfo = await getAuthenticatedUser(request);
   if (!authInfo || !authInfo.username) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
@@ -1304,7 +1307,7 @@ export async function GET(request: NextRequest) {
       sourceCode
     );
     resultWithProxy.episodes =
-      applyClientAdProxyToEpisodes(
+      await applyClientAdProxyToEpisodes(
         request,
         sourceCode,
         resultWithProxy.episodes,

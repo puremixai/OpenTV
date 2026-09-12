@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-import { getAuthInfoFromCookie } from '@/lib/auth';
 import { getAvailableApiSites, getCacheTime, getConfig } from '@/lib/config';
 import { getDetailFromApi } from '@/lib/downstream';
+import { getAuthenticatedUser } from '@/lib/session';
 import {
   executeSavedSourceScript,
   normalizeScriptDetailResult,
@@ -13,7 +13,7 @@ import {
 export const runtime = 'nodejs';
 
 export async function GET(request: NextRequest) {
-  const authInfo = getAuthInfoFromCookie(request);
+  const authInfo = await getAuthenticatedUser(request);
   if (!authInfo || !authInfo.username) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
@@ -137,7 +137,7 @@ export async function GET(request: NextRequest) {
       const pageSize = 100;
       let total = 0;
 
-      while (true) {
+      for (;;) {
         const listResponse = await client.listDirectory(folderPath, currentPage, pageSize);
 
         if (listResponse.code !== 200) {

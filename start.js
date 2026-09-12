@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 /* eslint-disable no-console,@typescript-eslint/no-var-requires */
+const { getCronSecret } = require('./server/cron-auth');
 const http = require('http');
 const path = require('path');
 
@@ -27,13 +28,16 @@ generateManifest();
 require('./server.js');
 
 // 每 1 秒轮询一次，直到请求成功
-const TARGET_URL = `http://${process.env.HOSTNAME || 'localhost'}:${process.env.PORT || 3000
-  }/login`;
+const bindHost = process.env.HOSTNAME || 'localhost';
+const probeHost = ['0.0.0.0', '::'].includes(bindHost) ? '127.0.0.1' : bindHost;
+const localOrigin = `http://${probeHost.includes(':') ? `[${probeHost}]` : probeHost}:${process.env.PORT || 3000}`;
+const TARGET_URL = `${localOrigin}/login`;
 
 const intervalId = setInterval(() => {
   console.log(`Fetching ${TARGET_URL} ...`);
 
   const req = http.get(TARGET_URL, (res) => {
+    res.resume();
     // 当返回 2xx 状态码时认为成功，然后停止轮询
     if (res.statusCode && res.statusCode >= 200 && res.statusCode < 300) {
       console.log('Server is up, stop polling.');
@@ -51,6 +55,7 @@ const intervalId = setInterval(() => {
     }
   });
 
+  req.on('error', () => { /* The server may still be starting; the next poll retries. */ });
   req.setTimeout(2000, () => {
     req.destroy();
   });
@@ -58,13 +63,13 @@ const intervalId = setInterval(() => {
 
 // 执行 cron 任务的函数
 function executeCronJob() {
-  const cronPassword = process.env.CRON_PASSWORD || 'mtvpls';
-  const cronUrl = `http://${process.env.HOSTNAME || 'localhost'}:${process.env.PORT || 3000
-    }/api/cron/${cronPassword}`;
+  const cronPassword = getCronSecret();
+  if (!cronPassword) return;
+  const cronUrl = `${localOrigin}/api/cron/run`;
 
   console.log(`Executing cron job: ${cronUrl}`);
 
-  const req = http.get(cronUrl, (res) => {
+  const req = http.get(cronUrl, { headers: { Authorization: `Bearer ${cronPassword}` } }, (res) => {
     let data = '';
 
     res.on('data', (chunk) => {

@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import type { AdminConfig } from '@/lib/admin.types';
-import { getAuthInfoFromCookie } from '@/lib/auth';
 import { getConfig } from '@/lib/config';
 import { getStorage } from '@/lib/db';
 import { EmailService } from '@/lib/email.service';
+import { getAuthenticatedUser } from '@/lib/session';
 
 export const runtime = 'nodejs';
 
@@ -12,7 +12,7 @@ export const runtime = 'nodejs';
  * GET - 获取邮件配置
  */
 export async function GET(request: NextRequest) {
-  const authInfo = getAuthInfoFromCookie(request);
+  const authInfo = await getAuthenticatedUser(request);
   if (!authInfo || !authInfo.username) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
@@ -68,7 +68,7 @@ export async function GET(request: NextRequest) {
  * POST - 保存邮件配置或发送测试邮件
  */
 export async function POST(request: NextRequest) {
-  const authInfo = getAuthInfoFromCookie(request);
+  const authInfo = await getAuthenticatedUser(request);
   if (!authInfo || !authInfo.username) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }

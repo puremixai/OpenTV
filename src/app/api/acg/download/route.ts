@@ -1,7 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from 'next/server';
 
-import { getAuthInfoFromCookie } from '@/lib/auth';
 import { getConfig } from '@/lib/config';
 import {
   addOpenListOfflineDownload,
@@ -9,6 +8,7 @@ import {
   joinOpenListPath,
 } from '@/lib/openlist-offline-download';
 import { hasFeaturePermission } from '@/lib/permissions';
+import { getAuthenticatedUser } from '@/lib/session';
 
 export const runtime = 'nodejs';
 
@@ -26,7 +26,7 @@ function isDownloadTool(tool: unknown): tool is DownloadTool {
 export async function POST(req: NextRequest) {
   try {
     // 检查权限
-    const authInfo = getAuthInfoFromCookie(req);
+    const authInfo = await getAuthenticatedUser(req);
     if (!authInfo?.username || !(await hasFeaturePermission(authInfo.username, 'magnet_save_private_library'))) {
       return NextResponse.json(
         { error: '无权限访问' },

@@ -3,13 +3,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import { invalidateDeviceAccessToken } from '@/lib/access-token-invalidation';
-import { getAuthInfoFromCookie } from '@/lib/auth';
 import { getConfig } from '@/lib/config';
 import { db, getStorage } from '@/lib/db';
 import {
   getUserDevices,
   revokeRefreshToken,
 } from '@/lib/refresh-token';
+import { getAuthenticatedUser } from '@/lib/session';
 
 export const runtime = 'nodejs';
 
@@ -53,7 +53,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const authInfo = getAuthInfoFromCookie(request);
+    const authInfo = await getAuthenticatedUser(request);
     if (!authInfo?.username) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -113,7 +113,7 @@ export async function DELETE(request: NextRequest) {
   }
 
   try {
-    const authInfo = getAuthInfoFromCookie(request);
+    const authInfo = await getAuthenticatedUser(request);
     if (!authInfo?.username) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

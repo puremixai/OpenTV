@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-import { getAuthInfoFromCookie } from '@/lib/auth';
 import { getConfig } from '@/lib/config';
 import { getPan123PlayInfo, listPan123ShareVideos } from '@/lib/netdisk/pan123.client';
 import {
@@ -9,12 +8,13 @@ import {
   parsePan123NetdiskId,
   refreshPan123NetdiskSession,
 } from '@/lib/netdisk/pan123-session-cache';
+import { getAuthenticatedUser } from '@/lib/session';
 
 export const runtime = 'nodejs';
 
 export async function GET(request: NextRequest) {
   try {
-    const authInfo = getAuthInfoFromCookie(request);
+    const authInfo = await getAuthenticatedUser(request);
     if (!authInfo?.username) {
       return NextResponse.json({ error: '未授权' }, { status: 401 });
     }

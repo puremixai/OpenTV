@@ -2,15 +2,15 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 
-import { getAuthInfoFromCookie } from '@/lib/auth';
 import { getConfig } from '@/lib/config';
 import { db } from '@/lib/db';
 import { OpenListClient } from '@/lib/openlist.client';
 import {
+  type OpenListPathMetaMap,
   normalizeOpenListPath,
   normalizePathMetaMap,
-  type OpenListPathMetaMap,
 } from '@/lib/openlist-path-meta';
+import { getAuthenticatedUser } from '@/lib/session';
 import { normalizeApiBaseUrl } from '@/lib/url';
 
 export const runtime = 'nodejs';
@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
       PathMeta,
     } = body;
 
-    const authInfo = getAuthInfoFromCookie(request);
+    const authInfo = await getAuthenticatedUser(request);
     if (!authInfo || !authInfo.username) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

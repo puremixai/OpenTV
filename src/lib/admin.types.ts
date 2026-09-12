@@ -1,4 +1,18 @@
+export interface ConfigSubscription {
+  ID: string;
+  Name: string;
+  URL: string;
+  Enabled: boolean;
+  AutoUpdate: boolean;
+  LastCheck: string;
+  LastError?: string;
+  ConfigContent?: string;
+}
+
 export interface AdminConfig {
+  ConfigSubscriptions?: ConfigSubscription[];
+  // Manual configuration is kept separately from the effective merged ConfigFile.
+  ConfigFileLocal?: string;
   ConfigSubscribtion: {
     URL: string;
     AutoUpdate: boolean;

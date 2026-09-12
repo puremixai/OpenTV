@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-import { getAuthInfoFromCookie } from '@/lib/auth';
 import { BookSource, BookSourceCapabilities } from '@/lib/book.types';
 import { db } from '@/lib/db';
 import { legadoClient } from '@/lib/legado.client';
 import { opdsClient } from '@/lib/opds.client';
+import { getAuthenticatedUser } from '@/lib/session';
 
 export const runtime = 'nodejs';
 
@@ -26,7 +26,7 @@ interface TestSourceInput {
 }
 
 async function ensureAdmin(request: NextRequest) {
-  const authInfo = getAuthInfoFromCookie(request);
+  const authInfo = await getAuthenticatedUser(request);
   if (!authInfo?.username) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }

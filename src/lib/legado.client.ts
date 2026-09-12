@@ -1,12 +1,13 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { DOMParser } from '@xmldom/xmldom';
 import * as cheerio from 'cheerio/slim';
 import crypto from 'crypto';
 import he from 'he';
 import vm from 'vm';
-import { DOMParser } from '@xmldom/xmldom';
 import xpath from 'xpath';
 
-import { getConfig } from './config';
+import { validateProxyUrlServerSide } from '@/lib/server/ssrf';
+
 import {
   BookAcquisitionLink,
   BookCatalogResult,
@@ -21,7 +22,7 @@ import {
   LegadoBookSourceRule,
   LegadoRuleSearch,
 } from './book.types';
-import { validateProxyUrlServerSide } from './server/ssrf';
+import { getConfig } from './config';
 import { legadoSubscriptionStore } from './legado/subscription-store';
 
 interface ResolvedLegadoConfig {
@@ -726,7 +727,7 @@ function applyLegadoSelector($: cheerio.CheerioAPI, current: cheerio.Cheerio<any
   if (
     tokens.length > 1
     && tokens.every((token) => !/[>+~]/.test(token))
-    && tokens.some((token) => /(?:\[!?\-?\d+\]|\[-?\d*:|-?\d+\]$|\.-?\d+(?::\-?\d*){0,2})$/.test(token))
+    && tokens.some((token) => /(?:\[!?-?\d+\]|\[-?\d*:|-?\d+\]$|\.-?\d+(?::-?\d*){0,2})$/.test(token))
   ) {
     let next = current;
     for (const token of tokens) {
@@ -1077,7 +1078,7 @@ async function resolveLegadoConfig(): Promise<ResolvedLegadoConfig> {
     try {
       const parsed = JSON.parse(envJson);
       sources = normalizeImportedSources(parsed);
-    } catch {}
+    } catch { /* Invalid environment JSON leaves the source list empty. */ }
   }
 
   try {
@@ -1087,7 +1088,7 @@ async function resolveLegadoConfig(): Promise<ResolvedLegadoConfig> {
       const subscriptionSources = await legadoSubscriptionStore.getSourcesForSubscriptions(config.OPDSConfig.LegadoSubscriptions || []);
       sources = [...sources, ...subscriptionSources];
     }
-  } catch {}
+  } catch { /* Keep the environment settings if stored configuration is unavailable. */ }
 
   return { enabled, cacheTTL, sources: sources.filter((source) => !!source.url && source.enabled !== false) };
 }

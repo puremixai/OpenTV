@@ -2,9 +2,9 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 
-import { getAuthInfoFromCookie } from '@/lib/auth';
 import { getConfig, setCachedConfig } from '@/lib/config';
 import { db } from '@/lib/db';
+import { getAuthenticatedUser } from '@/lib/session';
 import { normalizeApiBaseUrl } from '@/lib/url';
 
 export const runtime = 'nodejs';
@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
 
-    const authInfo = getAuthInfoFromCookie(request);
+    const authInfo = await getAuthenticatedUser(request);
     if (!authInfo || !authInfo.username) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

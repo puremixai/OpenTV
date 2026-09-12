@@ -13,6 +13,7 @@ export function buildProxyStreamHeaders(
 ): Headers {
   const headers = new Headers();
   headers.set('Content-Type', contentType);
+  headers.set('Cache-Control', 'private, no-store');
   headers.set('Access-Control-Allow-Origin', '*');
   headers.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   headers.set('Access-Control-Allow-Headers', 'Content-Type, Range, Origin, Accept');
@@ -33,7 +34,7 @@ export function buildProxyM3u8Headers(contentType?: string): Headers {
   headers.set('Access-Control-Allow-Origin', '*');
   headers.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   headers.set('Access-Control-Allow-Headers', 'Content-Type, Range, Origin, Accept');
-  headers.set('Cache-Control', 'no-cache');
+  headers.set('Cache-Control', 'private, no-store');
   headers.set('Access-Control-Expose-Headers', 'Content-Length, Content-Range');
   return headers;
 }

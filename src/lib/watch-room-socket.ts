@@ -2,6 +2,8 @@
 import type { Socket } from 'socket.io-client';
 import { io } from 'socket.io-client';
 
+import { attachSocketSession } from './socket-session.client';
+
 import type {
   ClientToServerEvents,
   ServerToClientEvents,
@@ -12,6 +14,7 @@ export type WatchRoomSocket = Socket<ServerToClientEvents, ClientToServerEvents>
 
 class WatchRoomSocketManager {
   private socket: WatchRoomSocket | null = null;
+  private disposeSession: (() => void) | null = null;
   private config: WatchRoomConfig | null = null;
   private connectionPromise: Promise<WatchRoomSocket> | null = null;
   private heartbeatInterval: NodeJS.Timeout | null = null;
@@ -92,6 +95,7 @@ class WatchRoomSocketManager {
       });
     }
 
+    if (config.serverType === 'internal') this.disposeSession = attachSocketSession(this.socket);
     // 设置事件监听（包括 heartbeat:pong）
     this.setupEventListeners();
 
@@ -133,6 +137,8 @@ class WatchRoomSocketManager {
   }
 
   disconnect() {
+    this.disposeSession?.();
+    this.disposeSession = null;
     if (this.heartbeatInterval) {
       clearInterval(this.heartbeatInterval);
       this.heartbeatInterval = null;

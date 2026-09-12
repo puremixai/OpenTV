@@ -8,8 +8,8 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import ReactMarkdown from 'react-markdown';
 
-import { getAuthInfoFromBrowserCookie } from '@/lib/auth';
 import { VideoContext } from '@/lib/ai-orchestrator';
+import { getAuthInfoFromBrowserCookie } from '@/lib/auth';
 
 interface ChatMessage {
   role: 'user' | 'assistant';
@@ -650,7 +650,7 @@ export default function AIChatPanel({
         let streamError = '';
         let buffer = ''; // 缓冲区，用于保存不完整的行
 
-        while (true) {
+        for (;;) {
           const { done, value } = await reader.read();
           if (done) break;
 

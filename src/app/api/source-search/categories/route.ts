@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-import { getAuthInfoFromCookie } from '@/lib/auth';
 import { API_CONFIG, getAvailableApiSites, getConfig } from '@/lib/config';
+import { getAuthenticatedUser } from '@/lib/session';
 import { yellowWords } from '@/lib/yellow';
 
 export const runtime = 'nodejs';
@@ -17,7 +17,7 @@ interface CmsClassResponse {
  * 获取指定视频源的分类列表
  */
 export async function GET(request: NextRequest) {
-  const authInfo = getAuthInfoFromCookie(request);
+  const authInfo = await getAuthenticatedUser(request);
   if (!authInfo || !authInfo.username) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }

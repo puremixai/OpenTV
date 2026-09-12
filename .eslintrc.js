@@ -77,6 +77,13 @@ module.exports = {
     ],
     //#endregion  //*======== Import Sort ===========
   },
+  // These imported upstream checkers retain their existing TypeScript suppression.
+  overrides: [
+    {
+      files: ['src/lib/pancheck/vendor/checkers/*.ts'],
+      rules: { '@typescript-eslint/ban-ts-comment': 'off' },
+    },
+  ],
   globals: {
     React: true,
     JSX: true,

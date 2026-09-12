@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import { type Socket,io } from 'socket.io-client';
 
 import { getAuthInfoFromBrowserCookie } from '@/lib/auth';
+import { attachSocketSession } from '@/lib/socket-session.client';
 import {
   applyTVRemoteText,
   fireTVRemoteKey,
@@ -64,7 +65,7 @@ export default function TVRemoteReceiver() {
             detail: { url },
           }));
         }
-      } catch {}
+      } catch { /* Ignore an invalid URL fragment or unavailable local storage. */ }
     };
 
     const onLocalRemoteKey = (event: Event) => {
@@ -112,6 +113,7 @@ export default function TVRemoteReceiver() {
     }
 
     const socket = receiverState.socket;
+    const disposeSession = attachSocketSession(socket);
 
     const register = () => {
       socket.timeout(5000).emit(
@@ -157,6 +159,7 @@ export default function TVRemoteReceiver() {
 
     return () => {
       window.clearInterval(interval);
+      disposeSession();
       document.removeEventListener('visibilitychange', onVisibilityChange);
       window.removeEventListener('focus', updateState);
       window.removeEventListener('hashchange', syncLocalRemoteUrl);

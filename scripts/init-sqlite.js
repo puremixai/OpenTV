@@ -1,17 +1,15 @@
 const Database = require('better-sqlite3');
 const fs = require('fs');
 const path = require('path');
-const crypto = require('crypto');
+const { hashPassword } = require('./password-hash');
 
 const MIGRATIONS_DIR = path.join(__dirname, '../migrations');
 const MIGRATION_BASELINE_CUTOFF = '008_web_push_notifications.sql';
 
-function hashPassword(password) {
-  return crypto.createHash('sha256').update(password).digest('hex');
-}
-
 function getSqliteDbPath() {
-  return process.env.SQLITE_DB_PATH || path.join(process.cwd(), '.data', 'moontv.db');
+  return (
+    process.env.SQLITE_DB_PATH || path.join(process.cwd(), '.data', 'moontv.db')
+  );
 }
 
 function ensureDataDir(dbPath) {
@@ -41,8 +39,8 @@ function getMigrationFiles() {
 function isIgnorableMigrationError(error) {
   const message = error instanceof Error ? error.message : String(error || '');
   return (
-    message.includes('table') && message.includes('already exists') ||
-    message.includes('index') && message.includes('already exists') ||
+    (message.includes('table') && message.includes('already exists')) ||
+    (message.includes('index') && message.includes('already exists')) ||
     message.includes('duplicate column name')
   );
 }
@@ -77,7 +75,10 @@ function ensureMigrationTable(db) {
 
 function getAppliedMigrations(db) {
   return new Set(
-    db.prepare('SELECT filename FROM schema_migrations').all().map((row) => row.filename)
+    db
+      .prepare('SELECT filename FROM schema_migrations')
+      .all()
+      .map((row) => row.filename)
   );
 }
 
@@ -134,7 +135,9 @@ function runMigrations(db) {
 
 function ensureDefaultAdmin(db) {
   const username = process.env.USERNAME || 'admin';
-  const password = process.env.PASSWORD || '123456789';
+  const password = process.env.PASSWORD;
+  if (!password)
+    throw new Error('PASSWORD must be set before creating an administrator');
   const passwordHash = hashPassword(password);
 
   const existingUser = db
@@ -146,13 +149,15 @@ function ensureDefaultAdmin(db) {
     return;
   }
 
-  db.prepare(`
+  db.prepare(
+    `
     INSERT INTO users (
       username, password_hash, role, created_at,
       playrecord_migrated, favorite_migrated, skip_migrated
     )
     VALUES (?, ?, 'owner', ?, 1, 1, 1)
-  `).run(username, passwordHash, Date.now());
+  `
+  ).run(username, passwordHash, Date.now());
 
   console.log(`✅ Default admin user created: ${username}`);
 }
@@ -165,10 +170,18 @@ function initSQLiteDatabase() {
   try {
     db = new Database(dbPath);
   } catch (error) {
-    if (error && typeof error.message === 'string' && error.message.includes('Could not locate the bindings file')) {
-      console.error('❌ better-sqlite3 native binding is missing or incompatible with current Node.js runtime.');
+    if (
+      error &&
+      typeof error.message === 'string' &&
+      error.message.includes('Could not locate the bindings file')
+    ) {
+      console.error(
+        '❌ better-sqlite3 native binding is missing or incompatible with current Node.js runtime.'
+      );
       console.error('💡 Please run: pnpm rebuild better-sqlite3');
-      console.error('💡 If you recently changed Node.js version, reinstall dependencies or rebuild native modules.');
+      console.error(
+        '💡 If you recently changed Node.js version, reinstall dependencies or rebuild native modules.'
+      );
     }
     throw error;
   }
@@ -194,6 +207,7 @@ module.exports = {
 };
 
 if (require.main === module) {
+  require('./load-env').loadAppEnv();
   try {
     initSQLiteDatabase();
   } catch (err) {

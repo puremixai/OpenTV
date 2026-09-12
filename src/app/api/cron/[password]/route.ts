@@ -1,9 +1,10 @@
 /* eslint-disable no-console,@typescript-eslint/no-explicit-any */
-
 import { NextRequest, NextResponse } from 'next/server';
 
 import { checkAnimeSubscriptions } from '@/lib/anime-subscription';
-import { getConfig, refineConfig } from '@/lib/config';
+import { getConfig, refineConfig, setCachedConfig } from '@/lib/config';
+import { applySubscriptionConfig } from '@/lib/config-subscriptions';
+import { refreshSubscriptions } from '@/lib/server/config-subscriptions';
 import { db, getStorage } from '@/lib/db';
 import { EmailService } from '@/lib/email.service';
 import {
@@ -23,6 +24,8 @@ import { MangaChapter, MangaShelfItem } from '@/lib/manga.types';
 import { startOpenListRefresh } from '@/lib/openlist-refresh';
 import { getSuwayomiConfig, loginWithSimpleAuth, SuwayomiClient } from '@/lib/suwayomi.client';
 import { SearchResult } from '@/lib/types';
+
+import { isCronAuthorized } from '../../../../../server/cron-auth';
 
 export const runtime = 'nodejs';
 const MAX_INLINE_MANGA_COVERS = 3;
@@ -154,10 +157,7 @@ export async function GET(
   request: NextRequest,
   { params }: { params: { password: string } }
 ) {
-  console.log(request.url);
-
-  const cronPassword = process.env.CRON_PASSWORD || 'mtvpls';
-  if (params.password !== cronPassword) {
+  if (!isCronAuthorized(request.headers.get('authorization'), params.password)) {
     return NextResponse.json(
       { success: false, message: 'Unauthorized' },
       { status: 401 }
@@ -276,51 +276,25 @@ async function refreshAllLiveChannels() {
 }
 
 async function refreshConfig() {
-  let config = await getConfig();
-  if (config && config.ConfigSubscribtion && config.ConfigSubscribtion.URL && config.ConfigSubscribtion.AutoUpdate) {
-    try {
-      const response = await fetch(config.ConfigSubscribtion.URL);
-
-      if (!response.ok) {
-        throw new Error(`请求失败: ${response.status} ${response.statusText}`);
-      }
-
-      const configContent = await response.text();
-
-      // 对 configContent 进行 base58 解码
-      let decodedContent;
-      try {
-        const bs58 = (await import('bs58')).default;
-        const decodedBytes = bs58.decode(configContent);
-        decodedContent = new TextDecoder().decode(decodedBytes);
-      } catch (decodeError) {
-        console.warn('Base58 解码失败:', decodeError);
-        throw decodeError;
-      }
-
-      try {
-        JSON.parse(decodedContent);
-      } catch (e) {
-        throw new Error('配置文件格式错误，请检查 JSON 语法');
-      }
-      config.ConfigFile = decodedContent;
-      config.ConfigSubscribtion.LastCheck = new Date().toISOString();
-      config = refineConfig(config);
-      await db.saveAdminConfig(config);
-
-      // 清除短剧视频源缓存（因为配置文件可能包含新的视频源）
-      try {
-        await db.deleteGlobalValue('duanju');
-        console.log('已清除短剧视频源缓存');
-      } catch (error) {
-        console.error('清除短剧视频源缓存失败:', error);
-        // 不影响主流程，继续执行
-      }
-    } catch (e) {
-      console.error('刷新配置失败:', e);
-    }
-  } else {
-    console.log('跳过刷新：未配置订阅地址或自动更新');
+  try {
+    const snapshot = structuredClone(await getConfig());
+    const subscriptions = snapshot.ConfigSubscriptions || [];
+    if (!subscriptions.some((sub) => sub.Enabled && sub.AutoUpdate)) return;
+    const updated = await refreshSubscriptions(subscriptions, { automatic: true });
+    // Fetches may take time. Preserve settings saved while a refresh was in flight.
+    let config = structuredClone(await getConfig());
+    const next = (config.ConfigSubscriptions || []).map((sub) => {
+      const result = updated.find((item) => item.ID === sub.ID && item.URL === sub.URL);
+      if (!result || !sub.Enabled || !sub.AutoUpdate) return sub;
+      if (result.LastCheck < sub.LastCheck) return sub;
+      return { ...sub, ConfigContent: result.ConfigContent, LastCheck: result.LastCheck, LastError: result.LastError };
+    });
+    config = refineConfig(applySubscriptionConfig(config, config.ConfigFileLocal || '{}', next));
+    await db.saveAdminConfig(config);
+    await setCachedConfig(config);
+    await db.deleteGlobalValue('duanju');
+  } catch (error) {
+    console.error('刷新配置订阅失败:', error);
   }
 }
 

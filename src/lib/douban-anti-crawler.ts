@@ -51,7 +51,7 @@ function proofOfWork(data: string, difficulty = 4): number {
   let nonce = 0;
   const targetSubStr = '0'.repeat(difficulty);
 
-  while (true) {
+  for (;;) {
     nonce += 1;
     const hash = sha512(data + nonce);
     if (hash.startsWith(targetSubStr)) {

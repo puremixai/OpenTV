@@ -1,14 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-import { getAuthInfoFromCookie } from '@/lib/auth';
 import { getBaiduDirectPlayUrl } from '@/lib/netdisk/baidu.client';
 import { resolveBaiduSession } from '@/lib/netdisk/baidu-session-resolver';
+import { getAuthenticatedUser } from '@/lib/session';
 
 export const runtime = 'nodejs';
 
 export async function GET(request: NextRequest) {
   try {
-    const authInfo = getAuthInfoFromCookie(request);
+    const authInfo = await getAuthenticatedUser(request);
     if (!authInfo?.username) {
       return NextResponse.json({ error: '未授权' }, { status: 401 });
     }

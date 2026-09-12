@@ -64,9 +64,6 @@ const Sidebar = ({ onToggle, activePath = '/' }: SidebarProps) => {
   const searchParams = useSearchParams();
   const watchRoomContext = useWatchRoomContextSafe();
 
-  if (pathname === '/watch-room/screen') {
-    return null;
-  }
   // 若同一次 SPA 会话中已经读取过折叠状态，则直接复用，避免闪烁
   const [isCollapsed, setIsCollapsed] = useState<boolean>(() => {
     if (
@@ -235,6 +232,10 @@ const Sidebar = ({ onToggle, activePath = '/' }: SidebarProps) => {
 
     setMenuItems(items);
   }, [watchRoomContext?.isEnabled]);
+
+  if (pathname === '/watch-room/screen') {
+    return null;
+  }
 
   return (
     <SidebarContext.Provider value={contextValue}>

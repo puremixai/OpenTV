@@ -48,8 +48,7 @@ export async function storeRefreshToken(
   const storage = await loadStorage();
 
   if (!storage || typeof (storage as any).adapter?.hSet !== 'function') {
-    console.warn('Redis Hash not supported, skipping token storage');
-    return;
+    throw new Error('The configured storage does not support persistent sessions');
   }
 
   try {
@@ -69,7 +68,8 @@ export async function storeRefreshToken(
 export async function verifyRefreshToken(
   username: string,
   tokenId: string,
-  refreshToken: string
+  refreshToken: string,
+  updateLastUsed = true
 ): Promise<boolean> {
   const hashKey = `user_tokens:${username}`;
   const storage = await loadStorage();
@@ -89,7 +89,7 @@ export async function verifyRefreshToken(
     const tokenData: TokenData = JSON.parse(dataStr);
 
     // 检查是否过期
-    if (Date.now() > tokenData.expiresAt) {
+    if (!Number.isFinite(tokenData.expiresAt) || Date.now() >= tokenData.expiresAt) {
       // 过期了，删除
       await (storage as any).adapter.hDel(hashKey, tokenId);
       return false;
@@ -101,12 +101,11 @@ export async function verifyRefreshToken(
     }
 
     // 更新最后使用时间
-    tokenData.lastUsed = Date.now();
-    await (storage as any).adapter.hSet(
-      hashKey,
-      tokenId,
-      JSON.stringify(tokenData)
-    );
+    if (updateLastUsed && typeof storage.adapter.hCompareAndSet === 'function') {
+      tokenData.lastUsed = Date.now();
+      // Never recreate a device session deleted while the refresh request was reading it.
+      if (!(await storage.adapter.hCompareAndSet(hashKey, tokenId, dataStr, JSON.stringify(tokenData)))) return false;
+    }
 
     return true;
   } catch (error) {

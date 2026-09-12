@@ -1,15 +1,15 @@
 import { nanoid } from 'nanoid';
 import { NextRequest, NextResponse } from 'next/server';
 
-import { getAuthInfoFromCookie } from '@/lib/auth';
 import { getStorage } from '@/lib/db';
+import { getAuthenticatedUser } from '@/lib/session';
 import { MovieRequest } from '@/lib/types';
 
 export const runtime = 'nodejs';
 
 // GET: 获取求片列表
 export async function GET(request: NextRequest) {
-  const authInfo = getAuthInfoFromCookie(request);
+  const authInfo = await getAuthenticatedUser(request);
   if (!authInfo || !authInfo.username) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
@@ -65,7 +65,7 @@ export async function GET(request: NextRequest) {
 
 // POST: 创建或加入求片
 export async function POST(request: NextRequest) {
-  const authInfo = getAuthInfoFromCookie(request);
+  const authInfo = await getAuthenticatedUser(request);
   if (!authInfo || !authInfo.username) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }

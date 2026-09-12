@@ -2,9 +2,9 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 
-import { getAuthInfoFromCookie } from '@/lib/auth';
 import { getConfig } from '@/lib/config';
 import { requireFeaturePermission } from '@/lib/permissions';
+import { getAuthenticatedUser } from '@/lib/session';
 
 export const runtime = 'nodejs';
 
@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
   try {
     const authResult = await requireFeaturePermission(request, 'xiaoya', '无权限访问小雅');
     if (authResult instanceof NextResponse) return authResult;
-    const authInfo = getAuthInfoFromCookie(request);
+    const authInfo = await getAuthenticatedUser(request);
     if (!authInfo || !authInfo.username) {
       return NextResponse.json({ error: '未授权' }, { status: 401 });
     }

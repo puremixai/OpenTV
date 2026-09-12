@@ -6,7 +6,7 @@ import * as fs from 'fs';
 import { NextRequest, NextResponse } from 'next/server';
 import * as path from 'path';
 
-import { getAuthInfoFromCookie } from '@/lib/auth';
+import { getAuthenticatedUser } from '@/lib/session';
 
 // 检查是否启用离线下载功能
 const OFFLINE_DOWNLOAD_ENABLED = process.env.NEXT_PUBLIC_ENABLE_OFFLINE_DOWNLOAD === 'true';
@@ -15,12 +15,12 @@ const OFFLINE_DOWNLOAD_DIR = process.env.OFFLINE_DOWNLOAD_DIR || '/data';
 /**
  * 检查用户权限（仅管理员和站长）
  */
-function checkPermission(request: NextRequest): boolean {
+async function checkPermission(request: NextRequest): Promise<boolean> {
   if (!OFFLINE_DOWNLOAD_ENABLED) {
     return false;
   }
 
-  const authInfo = getAuthInfoFromCookie(request);
+  const authInfo = await getAuthenticatedUser(request);
   if (!authInfo || !authInfo.username) {
     return false;
   }
@@ -33,7 +33,7 @@ function checkPermission(request: NextRequest): boolean {
  * GET - 代理本地视频文件
  */
 export async function GET(request: NextRequest) {
-  if (!checkPermission(request)) {
+  if (!(await checkPermission(request))) {
     return NextResponse.json({ error: '无权限' }, { status: 403 });
   }
 

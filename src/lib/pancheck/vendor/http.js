@@ -1,5 +1,8 @@
+// eslint-disable-next-line @typescript-eslint/no-var-requires -- Vendored CommonJS module keeps its upstream loading format.
 const https = require('https');
+// eslint-disable-next-line @typescript-eslint/no-var-requires -- Vendored CommonJS module keeps its upstream loading format.
 const http = require('http');
+// eslint-disable-next-line @typescript-eslint/no-var-requires -- Vendored CommonJS module keeps its upstream loading format.
 const { URL } = require('url');
 
 const DEFAULT_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36';

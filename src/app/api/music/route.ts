@@ -3,8 +3,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import { getConfig } from '@/lib/config';
-import { requireFeaturePermission } from '@/lib/permissions';
 import { OpenListClient } from '@/lib/openlist.client';
+import { requireFeaturePermission } from '@/lib/permissions';
 
 export const runtime = 'nodejs';
 
@@ -260,7 +260,7 @@ async function executeMethod(
             const expr = expression.trim();
 
             // 检查是否是单个变量（没有运算符）
-            if (evalContext.hasOwnProperty(expr)) {
+            if (Object.prototype.hasOwnProperty.call(evalContext, expr)) {
               // 直接返回变量值
               return String(evalContext[expr]);
             }

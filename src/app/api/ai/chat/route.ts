@@ -14,9 +14,9 @@ import {
   runToolAgent,
   ToolDataSources,
 } from '@/lib/ai-tool-agent';
-import { getAuthInfoFromCookie } from '@/lib/auth';
 import { getConfig } from '@/lib/config';
 import { hasFeaturePermission } from '@/lib/permissions';
+import { getAuthenticatedUser } from '@/lib/session';
 
 export const runtime = 'nodejs';
 
@@ -91,7 +91,7 @@ function transformToSSE(
       let inThinkingBlock = false; // 是否在thinking块内
 
       try {
-        while (true) {
+        for (;;) {
           const { done, value } = await reader.read();
           if (done) break;
 
@@ -344,7 +344,7 @@ async function handleNewMode(
 export async function POST(request: NextRequest) {
   try {
     // 1. 验证用户登录
-    const authInfo = getAuthInfoFromCookie(request);
+    const authInfo = await getAuthenticatedUser(request);
     if (!authInfo || !authInfo.username) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

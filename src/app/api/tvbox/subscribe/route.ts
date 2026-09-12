@@ -151,7 +151,7 @@ export async function GET(request: NextRequest) {
           type: 1,
           // 开启去广告或黄色过滤时使用 CMS 代理
           api: (adFilter || yellowFilter)
-            ? `${baseUrl}/api/cms-proxy?api=${encodeURIComponent(site.api)}${adFilter ? '&adFilter=true' : ''}${yellowFilter ? '&yellowFilter=true' : ''}`
+            ? `${baseUrl}/api/cms-proxy?api=${encodeURIComponent(site.api)}&token=${encodeURIComponent(token)}${adFilter ? '&adFilter=true' : ''}${yellowFilter ? '&yellowFilter=true' : ''}`
             : site.api,
           searchable: 1,
           quickSearch: 1,

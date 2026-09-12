@@ -1,13 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
-import { usePathname, useRouter } from 'next/navigation';
-import { useEffect, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
 import {
+  type DragEndEvent,
   closestCenter,
   DndContext,
-  type DragEndEvent,
   PointerSensor,
   TouchSensor,
   useSensor,
@@ -25,13 +22,19 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { GripVertical, SlidersHorizontal } from 'lucide-react';
-import AddToPlaylistModal from '@/components/AddToPlaylistModal';
-import Toast, { ToastProps } from '@/components/Toast';
-import LyricsPiPWindow from '@/components/LyricsPiPWindow';
-import MusicSidebarDrawer from '@/components/music/MusicSidebarDrawer';
-import { useWatchRoomContextSafe } from '@/components/WatchRoomProvider';
+import { usePathname, useRouter } from 'next/navigation';
+import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
+
 import { getSourceDisplayLabel, normalizeSource, SourcePill } from '@/lib/music/shared';
 import type { MusicQuality, MusicSource, Song } from '@/lib/music/types';
+
+import AddToPlaylistModal from '@/components/AddToPlaylistModal';
+import LyricsPiPWindow from '@/components/LyricsPiPWindow';
+import MusicSidebarDrawer from '@/components/music/MusicSidebarDrawer';
+import Toast, { ToastProps } from '@/components/Toast';
+import { useWatchRoomContextSafe } from '@/components/WatchRoomProvider';
+
 import type { MusicQueueItem, MusicSyncState } from '@/types/watch-room';
 
 const SPECTRUM_BIN_COUNT = 96;
@@ -441,8 +444,8 @@ export default function MusicClient({ children: _children }: { children?: React.
     isOpen: false,
     title: '',
     message: '',
-    onConfirm: () => {},
-    onCancel: () => {},
+    onConfirm: () => { /* No confirmation action is selected before opening a dialog. */ },
+    onCancel: () => { /* No cancellation action is selected before opening a dialog. */ },
   });
 
   // PiP 相关状态
@@ -473,7 +476,7 @@ export default function MusicClient({ children: _children }: { children?: React.
       setSurroundEnabled(localStorage.getItem('musicSurroundEnabled') === '1');
       setSurroundSpeed(Math.max(5, Math.min(60, Number(localStorage.getItem('musicSurroundSpeed')) || 25)));
       setSurroundDistance(Math.max(1, Math.min(10, Number(localStorage.getItem('musicSurroundDistance')) || 5)));
-    } catch {}
+    } catch { /* Keep default audio settings if persisted settings cannot be read. */ }
   }, []);
 
   useEffect(() => {
@@ -1540,8 +1543,8 @@ export default function MusicClient({ children: _children }: { children?: React.
             isOpen: false,
             title: '',
             message: '',
-            onConfirm: () => {},
-            onCancel: () => {},
+            onConfirm: () => { /* Closing this notice needs no additional action. */ },
+            onCancel: () => { /* Closing this notice needs no additional action. */ },
           });
         }
       },
@@ -1550,8 +1553,8 @@ export default function MusicClient({ children: _children }: { children?: React.
           isOpen: false,
           title: '',
           message: '',
-          onConfirm: () => {},
-          onCancel: () => {},
+          onConfirm: () => { /* Closing this notice needs no additional action. */ },
+          onCancel: () => { /* Closing this notice needs no additional action. */ },
         });
       },
     });

@@ -4,6 +4,7 @@ import { db } from '@/lib/db';
 import { normalizeApiBaseUrl } from '@/lib/url';
 
 import { AdminConfig } from './admin.types';
+import { migrateConfigSubscriptions } from './config-subscriptions';
 import { setServerTmdbImageBaseUrl } from './tmdb-image-base';
 
 const BUILTIN_DANMAKU_API_BASE = 'https://mtvpls-danmu.netlify.app/87654321';
@@ -95,6 +96,9 @@ export function refineConfig(adminConfig: AdminConfig): AdminConfig {
 
   apiSitesFromFile.forEach(([key, site]) => {
     const existingSource = currentApiSites.get(key);
+    if (existingSource?.from === 'custom' && adminConfig.ConfigSubscriptions !== undefined) {
+      return;
+    }
     if (existingSource) {
       // 如果已存在，只覆盖 name、api、detail 和 from
       existingSource.name = site.name;
@@ -233,6 +237,7 @@ async function getInitConfig(
   const envSubUrl = process.env.CONFIG_SUBSCRIPTION_URL || '';
 
   if (envSubUrl) {
+    subConfig = { ...subConfig, URL: envSubUrl };
     try {
       const response = await fetch(envSubUrl);
       if (response.ok) {
@@ -471,11 +476,12 @@ export async function getConfig(): Promise<AdminConfig> {
       adminConfig.EmbyConfig.ServerURL &&
       !adminConfig.EmbyConfig.Sources;
 
+    const needsSubscriptionMigration = !Array.isArray(adminConfig.ConfigSubscriptions);
     adminConfig = configSelfCheck(adminConfig);
     cachedConfig = adminConfig;
 
     // 如果进行了Emby配置迁移，保存到数据库
-    if (!dbReadFailed && needsEmbyMigration) {
+    if (!dbReadFailed && (needsEmbyMigration || needsSubscriptionMigration)) {
       try {
         await db.saveAdminConfig(adminConfig);
         console.log('[Config] Emby配置迁移已保存到数据库');
@@ -517,6 +523,7 @@ export async function getConfig(): Promise<AdminConfig> {
 }
 
 export function configSelfCheck(adminConfig: AdminConfig): AdminConfig {
+  migrateConfigSubscriptions(adminConfig);
   // 确保必要的属性存在和初始化
   if (!adminConfig.SiteConfig) {
     adminConfig.SiteConfig = {
@@ -1211,6 +1218,10 @@ export async function resetConfig() {
     originConfig.ConfigFile,
     originConfig.ConfigSubscribtion
   );
+  if (originConfig.ConfigSubscriptions) {
+    adminConfig.ConfigSubscriptions = originConfig.ConfigSubscriptions;
+    adminConfig.ConfigFileLocal = originConfig.ConfigFileLocal;
+  }
   cachedConfig = adminConfig;
   await db.saveAdminConfig(adminConfig);
 

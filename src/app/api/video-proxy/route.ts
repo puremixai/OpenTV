@@ -1,10 +1,13 @@
-import { NextResponse } from 'next/server';
-import { validateProxyUrlServerSide } from '@/lib/server/ssrf';
+import { NextRequest, NextResponse } from 'next/server';
+
+import { isMediaProxyAuthorized } from '@/lib/server/media-proxy-auth';
+import { fetchPublicUrl } from '@/lib/server/public-fetch';
 
 export const runtime = 'nodejs';
 
 // 视频代理接口，支持Range请求
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
+  if (!(await isMediaProxyAuthorized(request))) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   const { searchParams } = new URL(request.url);
   const videoUrl = searchParams.get('url');
 
@@ -13,10 +16,6 @@ export async function GET(request: Request) {
   }
 
   // 安全校验：防 SSRF，只允许合法的公网 URL
-  const isSafeUrl = await validateProxyUrlServerSide(videoUrl);
-  if (!isSafeUrl) {
-    return NextResponse.json({ error: 'Proxy request to local or invalid network is forbidden' }, { status: 403 });
-  }
 
   try {
     // 获取客户端的Range请求头
@@ -34,7 +33,8 @@ export async function GET(request: Request) {
       fetchHeaders['Range'] = range;
     }
 
-    const videoResponse = await fetch(videoUrl, {
+    const videoResponse = await fetchPublicUrl(videoUrl, {
+      signal: request.signal,
       headers: fetchHeaders,
     });
 
@@ -77,9 +77,9 @@ export async function GET(request: Request) {
     }
 
     // 设置缓存头
-    headers.set('Cache-Control', 'public, max-age=31536000, s-maxage=31536000'); // 缓存1年
-    headers.set('CDN-Cache-Control', 'public, s-maxage=31536000');
-    headers.set('Vercel-CDN-Cache-Control', 'public, s-maxage=31536000');
+    headers.set('Cache-Control', 'private, no-store'); // 缓存1年
+    headers.set('CDN-Cache-Control', 'no-store');
+    headers.set('Vercel-CDN-Cache-Control', 'no-store');
 
     // 返回视频流，状态码根据是否有Range请求决定
     const status = range && contentRange ? 206 : 200;

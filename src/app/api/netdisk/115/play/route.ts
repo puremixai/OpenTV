@@ -1,15 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-import { getAuthInfoFromCookie } from '@/lib/auth';
 import { getPan115PlayUrl } from '@/lib/netdisk/pan115.client';
 import { getPan115NetdiskSession, refreshPan115NetdiskSession } from '@/lib/netdisk/pan115-session-cache';
 import { resolvePan115Session } from '@/lib/netdisk/pan115-session-resolver';
+import { getAuthenticatedUser } from '@/lib/session';
 
 export const runtime = 'nodejs';
 
 export async function GET(request: NextRequest) {
   try {
-    const authInfo = getAuthInfoFromCookie(request);
+    const authInfo = await getAuthenticatedUser(request);
     if (!authInfo?.username) {
       return NextResponse.json({ error: '未授权' }, { status: 401 });
     }
