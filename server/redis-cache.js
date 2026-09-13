@@ -93,4 +93,33 @@ async function closeCache() {
   if (client?.isOpen) await client.disconnect();
 }
 
-module.exports = { readCache, writeCache, cacheHealth, closeCache };
+async function consumeSearchRateLimit(userDigest, cost) {
+  const result = await command([
+    'EVAL',
+    `
+    local count=tonumber(redis.call('GET',KEYS[1]) or '0')
+    if count+tonumber(ARGV[1])>120 then
+      return {0,math.max(1,redis.call('TTL',KEYS[1]))}
+    end
+    local next=redis.call('INCRBY',KEYS[1],ARGV[1])
+    if next==tonumber(ARGV[1]) then redis.call('EXPIRE',KEYS[1],60) end
+    return {1,math.max(1,redis.call('TTL',KEYS[1]))}
+  `,
+    '1',
+    `${
+      process.env.CACHE_KEY_PREFIX || 'moontvplus:cache'
+    }:search-rate:v1:${userDigest}`,
+    String(cost),
+  ]);
+  return Array.isArray(result)
+    ? { allowed: Number(result[0]) === 1, retryAfter: Number(result[1]) }
+    : null;
+}
+
+module.exports = {
+  readCache,
+  writeCache,
+  cacheHealth,
+  closeCache,
+  consumeSearchRateLimit,
+};

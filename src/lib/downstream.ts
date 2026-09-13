@@ -2,6 +2,7 @@
 
 import { API_CONFIG, ApiSite, getConfig } from '@/lib/config';
 import { getCachedSearchPage, setCachedSearchPage } from '@/lib/search-cache';
+import { checkSearchSignal, fetchSearchResponse, mapSearchTasks, searchScope } from '@/lib/server/search-control';
 import { SearchResult } from '@/lib/types';
 import { cleanHtmlTags } from '@/lib/utils';
 
@@ -27,12 +28,14 @@ async function searchWithCache(
   query: string,
   page: number,
   url: string,
-  timeoutMs = 8000
+  timeoutMs = 8000,
+  signal?: AbortSignal
 ): Promise<{ results: SearchResult[]; pageCount?: number }> {
   // 先查缓存
   // Source changes must not reuse results from an old endpoint or proxy mode.
   const cacheSource = JSON.stringify([apiSite.key, apiSite.api, apiSite.name, apiSite.proxyMode]);
   const cached = await getCachedSearchPage(cacheSource, query, page);
+  checkSearchSignal(signal);
   if (cached) {
     if (cached.status === 'ok') {
       return { results: cached.data, pageCount: cached.pageCount };
@@ -42,16 +45,11 @@ async function searchWithCache(
   }
 
   // 缓存未命中，发起网络请求
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
-
   try {
-    const response = await fetch(url, {
+    const response = await fetchSearchResponse(url, {
       headers: API_CONFIG.search.headers,
-      signal: controller.signal,
-    });
-
-    clearTimeout(timeoutId);
+      signal,
+    }, timeoutMs);
 
     if (!response.ok) {
       if (response.status === 403) {
@@ -131,9 +129,10 @@ async function searchWithCache(
     await setCachedSearchPage(cacheSource, query, page, 'ok', results, pageCount);
     return { results, pageCount };
   } catch (error: any) {
-    clearTimeout(timeoutId);
+    // User cancellation must not poison the shared cache with a timeout entry.
+    checkSearchSignal(signal);
     // 识别被 AbortController 中止（超时）
-    const aborted = error?.name === 'AbortError' || error?.code === 20 || error?.message?.includes('aborted');
+    const aborted = error?.name === 'AbortError' || error?.name === 'TimeoutError';
     if (aborted) {
       await setCachedSearchPage(cacheSource, query, page, 'timeout', []);
     }
@@ -143,20 +142,33 @@ async function searchWithCache(
 
 export async function searchFromApi(
   apiSite: ApiSite,
-  query: string
+  query: string,
+  signal?: AbortSignal
 ): Promise<SearchResult[]> {
+  const scope = searchScope(signal, 20000);
   try {
+    checkSearchSignal(scope.signal);
     const apiBaseUrl = apiSite.api;
     const apiUrl =
       apiBaseUrl + API_CONFIG.search.path + encodeURIComponent(query);
 
     // 使用新的缓存搜索函数处理第一页
-    const firstPageResult = await searchWithCache(apiSite, query, 1, apiUrl, 8000);
+    const firstPageResult = await searchWithCache(
+      apiSite,
+      query,
+      1,
+      apiUrl,
+      8000,
+      scope.signal
+    );
     const results = [...firstPageResult.results];
     const pageCountFromFirst = firstPageResult.pageCount;
 
     const config = await getConfig();
-    const MAX_SEARCH_PAGES: number = config.SiteConfig.SearchDownstreamMaxPage;
+    const MAX_SEARCH_PAGES = Math.max(
+      1,
+      Math.min(20, Number(config.SiteConfig.SearchDownstreamMaxPage) || 1)
+    );
 
     // 获取总页数
     const pageCount = pageCountFromFirst || 1;
@@ -165,26 +177,32 @@ export async function searchFromApi(
 
     // 如果有额外页数，获取更多页的结果
     if (pagesToFetch > 0) {
-      const additionalPagePromises = [];
+      const pages = Array.from(
+        { length: pagesToFetch },
+        (_, index) => index + 2
+      );
+      const additionalResults = await mapSearchTasks(
+        pages,
+        scope.signal,
+        async (page) => {
+          const pageUrl =
+            apiBaseUrl +
+            API_CONFIG.search.pagePath
+              .replace('{query}', encodeURIComponent(query))
+              .replace('{page}', page.toString());
 
-      for (let page = 2; page <= pagesToFetch + 1; page++) {
-        const pageUrl =
-          apiBaseUrl +
-          API_CONFIG.search.pagePath
-            .replace('{query}', encodeURIComponent(query))
-            .replace('{page}', page.toString());
-
-        const pagePromise = (async () => {
-          // 使用新的缓存搜索函数处理分页
-          const pageResult = await searchWithCache(apiSite, query, page, pageUrl, 8000);
+          const pageResult = await searchWithCache(
+            apiSite,
+            query,
+            page,
+            pageUrl,
+            8000,
+            scope.signal
+          );
           return pageResult.results;
-        })();
-
-        additionalPagePromises.push(pagePromise);
-      }
-
-      // 等待所有额外页的结果
-      const additionalResults = await Promise.all(additionalPagePromises);
+        },
+        2
+      );
 
       // 合并所有页的结果
       additionalResults.forEach((pageResults) => {
@@ -196,7 +214,10 @@ export async function searchFromApi(
 
     return results;
   } catch (error) {
+    checkSearchSignal(signal);
     return [];
+  } finally {
+    scope.dispose();
   }
 }
 

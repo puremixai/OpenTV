@@ -5,6 +5,7 @@ import { nanoid } from 'nanoid';
 import { db } from '@/lib/db';
 
 import { assertServerScriptExecutionEnabled, isServerScriptExecutionEnabled } from './server/script-policy';
+import { checkSearchSignal, fetchSearchResponse, searchScope } from './server/search-control';
 
 const SOURCE_SCRIPT_REGISTRY_KEY = 'source-script:registry';
 const DEFAULT_TIMEOUT_MS = 20000;
@@ -228,13 +229,37 @@ function createLogCollector() {
   };
 }
 
-function withTimeout<T>(promise: Promise<T>, timeoutMs = DEFAULT_TIMEOUT_MS) {
-  return Promise.race([
-    promise,
-    new Promise<T>((_, reject) => {
-      setTimeout(() => reject(new Error(`执行超时(${timeoutMs}ms)`)), timeoutMs);
-    }),
-  ]);
+function withTimeout<T>(
+  promise: Promise<T>,
+  timeoutMs = DEFAULT_TIMEOUT_MS,
+  signal?: AbortSignal
+) {
+  return new Promise<T>((resolve, reject) => {
+    const cleanup = () => {
+      clearTimeout(timer);
+      signal?.removeEventListener('abort', abort);
+    };
+    const abort = () => {
+      cleanup();
+      reject(signal?.reason || new Error('脚本已取消'));
+    };
+    const timer = setTimeout(() => {
+      cleanup();
+      reject(new Error('脚本执行超时'));
+    }, timeoutMs);
+    if (signal?.aborted) abort();
+    else signal?.addEventListener('abort', abort, { once: true });
+    promise.then(
+      (value) => {
+        cleanup();
+        resolve(value);
+      },
+      (error) => {
+        cleanup();
+        reject(error);
+      }
+    );
+  });
 }
 
 function createCacheHelpers(scriptId: string) {
@@ -304,7 +329,7 @@ function createScriptFactory(code: string) {
   ) as (req: NodeRequire) => any;
 }
 
-async function createScriptContext(script: SourceScriptRecord, configValues?: Record<string, string>) {
+async function createScriptContext(script: SourceScriptRecord, configValues?: Record<string, string>, signal?: AbortSignal) {
   const { logs, log } = createLogCollector();
   const cache = createCacheHelpers(script.id);
 
@@ -333,20 +358,23 @@ async function createScriptContext(script: SourceScriptRecord, configValues?: Re
     );
 
     try {
-      const response = await fetch(url.toString(), {
+      const init = {
         method: input.method || 'GET',
         headers: {
           ...(input.json ? { 'Content-Type': 'application/json' } : {}),
           ...(input.headers || {}),
         },
         body: input.json !== undefined ? JSON.stringify(input.json) : input.body,
-        signal: controller.signal,
-      });
+        signal: signal || controller.signal,
+      };
+      const response = signal
+        ? await fetchSearchResponse(url, init, Math.min(input.timeoutMs || DEFAULT_TIMEOUT_MS, DEFAULT_TIMEOUT_MS))
+        : await fetch(url, init);
 
       return {
         status: response.status,
         ok: response.ok,
-        url: response.url,
+        url: response.url || url.toString(),
         headers: Object.fromEntries(response.headers.entries()),
         text: () => response.text(),
         json: <T = any>() => response.json() as Promise<T>,
@@ -452,10 +480,11 @@ function getOrCompileScript(script: SourceScriptRecord) {
 
 async function compileSourceScript(
   script: SourceScriptRecord,
-  configValues?: Record<string, string>
+  configValues?: Record<string, string>,
+  signal?: AbortSignal
 ) {
   const compiled = getOrCompileScript(script);
-  const context = await createScriptContext(script, configValues);
+  const context = await createScriptContext(script, configValues, signal);
   return {
     compiled,
     ...context,
@@ -467,31 +496,43 @@ export async function executeSavedSourceScript(input: {
   hook: SourceScriptHook;
   payload?: Record<string, any>;
   configValues?: Record<string, string>;
+  signal?: AbortSignal;
 }): Promise<SourceScriptTestResult> {
-  const startedAt = Date.now();
-  const script = await getEnabledSourceScriptByKey(input.key);
-  const { compiled, ctx, logs } = await compileSourceScript(
-    script,
-    input.configValues
-  );
+  const scope = searchScope(input.signal, DEFAULT_TIMEOUT_MS);
+  try {
+    checkSearchSignal(scope.signal);
+    const startedAt = Date.now();
+    const script = await getEnabledSourceScriptByKey(input.key);
+    checkSearchSignal(scope.signal);
+    const { compiled, ctx, logs } = await compileSourceScript(
+      script,
+      input.configValues,
+      scope.signal
+    );
 
-  const hook = compiled[input.hook];
-  if (typeof hook !== 'function') {
-    throw new Error(`脚本未实现 ${input.hook} hook`);
+    const hook = compiled[input.hook];
+    checkSearchSignal(scope.signal);
+    if (typeof hook !== 'function') {
+      throw new Error(`脚本未实现 ${input.hook} hook`);
+    }
+
+    const result = await withTimeout(
+      Promise.resolve(hook(ctx, input.payload || {})),
+      DEFAULT_TIMEOUT_MS,
+      scope.signal
+    );
+
+    return {
+      ok: true,
+      durationMs: Date.now() - startedAt,
+      logs,
+      meta: compiled.meta,
+      result,
+    };
+  } finally {
+    scope.abort();
+    scope.dispose();
   }
-
-  const result = await withTimeout(
-    Promise.resolve(hook(ctx, input.payload || {})),
-    DEFAULT_TIMEOUT_MS
-  );
-
-  return {
-    ok: true,
-    durationMs: Date.now() - startedAt,
-    logs,
-    meta: compiled.meta,
-    result,
-  };
 }
 
 export async function listEnabledSourceScripts(): Promise<PublicSourceScriptSummary[]> {

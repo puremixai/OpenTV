@@ -1,25 +1,26 @@
-/* eslint-disable no-console */
-
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 
 import { getAvailableApiSites } from '@/lib/config';
+import { searchJson, startSearch } from '@/lib/server/search-response';
 import { listEnabledSourceScripts } from '@/lib/source-script';
 
 export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
 
-// OrionTV 兼容接口
 export async function GET(request: NextRequest) {
-  console.log('request', request.url);
+  const session = await startSearch(request, 0);
+  if (session instanceof Response) return session;
   try {
-    const apiSites = await getAvailableApiSites();
-    const scriptSites = (await listEnabledSourceScripts()).map((item) => ({
+    const sites = await getAvailableApiSites(session.username);
+    const scripts = (await listEnabledSourceScripts()).map((item) => ({
       key: item.key,
       name: item.name,
       script: true,
     }));
-
-    return NextResponse.json([...apiSites, ...scriptSites]);
-  } catch (error) {
-    return NextResponse.json({ error: '获取资源失败' }, { status: 500 });
+    return searchJson([...sites, ...scripts]);
+  } catch {
+    return searchJson({ error: '获取资源失败' }, 503);
+  } finally {
+    session.scope.dispose();
   }
 }

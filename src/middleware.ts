@@ -22,7 +22,9 @@ export async function middleware(request: NextRequest) {
   if (!process.env.PASSWORD) {
     // 如果未配置密码，重定向到警告页面
     const warningUrl = new URL('/warning', request.url);
-    return warningUrl.pathname === pathname ? NextResponse.next() : NextResponse.redirect(warningUrl);
+    return warningUrl.pathname === pathname
+      ? NextResponse.next()
+      : NextResponse.redirect(warningUrl);
   }
 
   // 从cookie获取认证信息
@@ -36,7 +38,8 @@ export async function middleware(request: NextRequest) {
     // The client can refresh an expired access token after the page shell loads.
     allowExpiredAccessToken: !pathname.startsWith('/api'),
   });
-  if (!valid || isAccessTokenInvalidated(authInfo)) return handleAuthFailure(request, pathname);
+  if (!valid || isAccessTokenInvalidated(authInfo))
+    return handleAuthFailure(request, pathname);
   return NextResponse.next();
 }
 
@@ -47,7 +50,14 @@ function handleAuthFailure(
 ): NextResponse {
   // 如果是 API 路由，返回 401 状态码
   if (pathname.startsWith('/api')) {
-    return new NextResponse('Unauthorized', { status: 401 });
+    return new NextResponse('Unauthorized', {
+      status: 401,
+      headers: {
+        'Cache-Control': 'private, no-store',
+        'CDN-Cache-Control': 'no-store',
+        Vary: 'Cookie, Authorization',
+      },
+    });
   }
 
   // TV 端页面未授权时进入电视扫码登录页
@@ -76,7 +86,11 @@ function shouldSkipAuth(pathname: string): boolean {
 }
 
 function isTVModePath(pathname: string): boolean {
-  return pathname === '/tv' || pathname.startsWith('/tv/') || pathname.startsWith('/api/tv-remote/');
+  return (
+    pathname === '/tv' ||
+    pathname.startsWith('/tv/') ||
+    pathname.startsWith('/api/tv-remote/')
+  );
 }
 
 // 配置middleware匹配规则

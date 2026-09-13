@@ -439,15 +439,22 @@ export class PostgresStorage implements IStorage {
       if (!user || !user.password_hash) return false;
 
       // 验证旧格式并在成功登录后升级
-      const result = await verifyPassword(password, user.password_hash as string);
+      const result = await verifyPassword(
+        password,
+        user.password_hash as string
+      );
       if (result.valid && result.needsUpgrade) {
-        await this.db.prepare('UPDATE users SET password_hash = $1 WHERE username = $2 AND password_hash = $3')
-          .bind(await hashPassword(password), userName, user.password_hash).run();
+        await this.db
+          .prepare(
+            'UPDATE users SET password_hash = $1 WHERE username = $2 AND password_hash = $3'
+          )
+          .bind(await hashPassword(password), userName, user.password_hash)
+          .run();
       }
       return result.valid;
     } catch (err) {
       console.error('PostgresStorage.verifyUser error:', err);
-      return false;
+      throw err;
     }
   }
 
@@ -466,7 +473,7 @@ export class PostgresStorage implements IStorage {
       return result !== null;
     } catch (err) {
       console.error('PostgresStorage.checkUserExist error:', err);
-      return false;
+      throw err;
     }
   }
 
@@ -507,7 +514,7 @@ export class PostgresStorage implements IStorage {
       return results.results.map((row) => row.username as string);
     } catch (err) {
       console.error('PostgresStorage.getAllUsers error:', err);
-      return [];
+      throw err;
     }
   }
 
@@ -597,7 +604,7 @@ export class PostgresStorage implements IStorage {
       return null;
     } catch (err) {
       console.error('PostgresStorage.getUserInfoV2 error:', err);
-      return null;
+      throw err;
     }
   }
 
@@ -774,28 +781,37 @@ export class PostgresStorage implements IStorage {
       return { users, total };
     } catch (err) {
       console.error('PostgresStorage.getUserListV2 error:', err);
-      return { users: [], total: 0 };
+      throw err;
     }
   }
 
   async verifyUserV2(userName: string, password: string): Promise<boolean> {
     try {
       const user = await this.db
-        .prepare('SELECT password_hash FROM users WHERE username = $1 AND banned = 0')
+        .prepare(
+          'SELECT password_hash FROM users WHERE username = $1 AND banned = 0'
+        )
         .bind(userName)
         .first();
 
       if (!user) return false;
 
-      const result = await verifyPassword(password, user.password_hash as string);
+      const result = await verifyPassword(
+        password,
+        user.password_hash as string
+      );
       if (result.valid && result.needsUpgrade) {
-        await this.db.prepare('UPDATE users SET password_hash = $1 WHERE username = $2 AND password_hash = $3')
-          .bind(await hashPassword(password), userName, user.password_hash).run();
+        await this.db
+          .prepare(
+            'UPDATE users SET password_hash = $1 WHERE username = $2 AND password_hash = $3'
+          )
+          .bind(await hashPassword(password), userName, user.password_hash)
+          .run();
       }
       return result.valid;
     } catch (err) {
       console.error('PostgresStorage.verifyUserV2 error:', err);
-      return false;
+      throw err;
     }
   }
 
@@ -881,7 +897,7 @@ export class PostgresStorage implements IStorage {
       return !!user;
     } catch (err) {
       console.error('PostgresStorage.checkUserExistV2 error:', err);
-      return false;
+      throw err;
     }
   }
 
@@ -895,7 +911,7 @@ export class PostgresStorage implements IStorage {
       return user ? (user.username as string) : null;
     } catch (err) {
       console.error('PostgresStorage.getUserByOidcSub error:', err);
-      return null;
+      throw err;
     }
   }
 
@@ -934,21 +950,23 @@ export class PostgresStorage implements IStorage {
       return result.results.map((row: any) => row.username as string);
     } catch (err) {
       console.error('PostgresStorage.getUsersByTag error:', err);
-      return [];
+      throw err;
     }
   }
 
   async getUserPasswordHash(userName: string): Promise<string | null> {
     try {
       const user = await this.db
-        .prepare('SELECT password_hash FROM users WHERE username = $1 AND banned = 0')
+        .prepare(
+          'SELECT password_hash FROM users WHERE username = $1 AND banned = 0'
+        )
         .bind(userName)
         .first();
 
       return user ? (user.password_hash as string) : null;
     } catch (err) {
       console.error('PostgresStorage.getUserPasswordHash error:', err);
-      return null;
+      throw err;
     }
   }
 
@@ -1016,7 +1034,7 @@ export class PostgresStorage implements IStorage {
       return result?.email as string | null;
     } catch (err) {
       console.error('PostgresStorage.getUserEmail error:', err);
-      return null;
+      throw err;
     }
   }
 
@@ -1077,14 +1095,14 @@ export class PostgresStorage implements IStorage {
     }
   }
 
-
   async upsertPushSubscription(
     userName: string,
     subscription: PushSubscriptionRecord
   ): Promise<void> {
     try {
       await this.db
-        .prepare(`
+        .prepare(
+          `
           INSERT INTO notification_push_subscriptions (
             id, username, token_id, endpoint, p256dh, auth, user_agent, enabled,
             created_at, updated_at, last_success_at, last_failure_at, failure_count
@@ -1097,7 +1115,8 @@ export class PostgresStorage implements IStorage {
             user_agent = excluded.user_agent,
             enabled = 1,
             updated_at = excluded.updated_at
-        `)
+        `
+        )
         .bind(
           subscription.id,
           userName,
@@ -1117,10 +1136,14 @@ export class PostgresStorage implements IStorage {
     }
   }
 
-  async getEnabledPushSubscriptions(userName: string): Promise<PushSubscriptionRecord[]> {
+  async getEnabledPushSubscriptions(
+    userName: string
+  ): Promise<PushSubscriptionRecord[]> {
     try {
       const results = await this.db
-        .prepare('SELECT * FROM notification_push_subscriptions WHERE username = $1 AND enabled = 1')
+        .prepare(
+          'SELECT * FROM notification_push_subscriptions WHERE username = $1 AND enabled = 1'
+        )
         .bind(userName)
         .all();
 
@@ -1141,36 +1164,54 @@ export class PostgresStorage implements IStorage {
       }));
     } catch (err) {
       console.error('PostgresStorage.getEnabledPushSubscriptions error:', err);
-      return [];
+      throw err;
     }
   }
 
-  async deletePushSubscriptionByEndpoint(userName: string, endpoint: string): Promise<void> {
+  async deletePushSubscriptionByEndpoint(
+    userName: string,
+    endpoint: string
+  ): Promise<void> {
     try {
       await this.db
-        .prepare('DELETE FROM notification_push_subscriptions WHERE username = $1 AND endpoint = $2')
+        .prepare(
+          'DELETE FROM notification_push_subscriptions WHERE username = $1 AND endpoint = $2'
+        )
         .bind(userName, endpoint)
         .run();
     } catch (err) {
-      console.error('PostgresStorage.deletePushSubscriptionByEndpoint error:', err);
+      console.error(
+        'PostgresStorage.deletePushSubscriptionByEndpoint error:',
+        err
+      );
     }
   }
 
-  async deletePushSubscriptionsByTokenId(userName: string, tokenId: string): Promise<void> {
+  async deletePushSubscriptionsByTokenId(
+    userName: string,
+    tokenId: string
+  ): Promise<void> {
     try {
       await this.db
-        .prepare('DELETE FROM notification_push_subscriptions WHERE username = $1 AND token_id = $2')
+        .prepare(
+          'DELETE FROM notification_push_subscriptions WHERE username = $1 AND token_id = $2'
+        )
         .bind(userName, tokenId)
         .run();
     } catch (err) {
-      console.error('PostgresStorage.deletePushSubscriptionsByTokenId error:', err);
+      console.error(
+        'PostgresStorage.deletePushSubscriptionsByTokenId error:',
+        err
+      );
     }
   }
 
   async deleteAllPushSubscriptions(userName: string): Promise<void> {
     try {
       await this.db
-        .prepare('DELETE FROM notification_push_subscriptions WHERE username = $1')
+        .prepare(
+          'DELETE FROM notification_push_subscriptions WHERE username = $1'
+        )
         .bind(userName)
         .run();
     } catch (err) {
@@ -1187,17 +1228,24 @@ export class PostgresStorage implements IStorage {
       const now = Date.now();
       if (success) {
         await this.db
-          .prepare('UPDATE notification_push_subscriptions SET last_success_at = $1, failure_count = 0, updated_at = $2 WHERE username = $3 AND endpoint = $4')
+          .prepare(
+            'UPDATE notification_push_subscriptions SET last_success_at = $1, failure_count = 0, updated_at = $2 WHERE username = $3 AND endpoint = $4'
+          )
           .bind(now, now, userName, endpoint)
           .run();
       } else {
         await this.db
-          .prepare('UPDATE notification_push_subscriptions SET last_failure_at = $1, failure_count = failure_count + 1, updated_at = $2 WHERE username = $3 AND endpoint = $4')
+          .prepare(
+            'UPDATE notification_push_subscriptions SET last_failure_at = $1, failure_count = failure_count + 1, updated_at = $2 WHERE username = $3 AND endpoint = $4'
+          )
           .bind(now, now, userName, endpoint)
           .run();
       }
     } catch (err) {
-      console.error('PostgresStorage.updatePushSubscriptionDeliveryStats error:', err);
+      console.error(
+        'PostgresStorage.updatePushSubscriptionDeliveryStats error:',
+        err
+      );
     }
   }
 
@@ -1206,16 +1254,14 @@ export class PostgresStorage implements IStorage {
   async getTvboxSubscribeToken(userName: string): Promise<string | null> {
     try {
       const result = await this.db
-        .prepare(
-          'SELECT tvbox_subscribe_token FROM users WHERE username = $1'
-        )
+        .prepare('SELECT tvbox_subscribe_token FROM users WHERE username = $1')
         .bind(userName)
         .first();
 
       return result?.tvbox_subscribe_token || null;
     } catch (err) {
       console.error('PostgresStorage.getTvboxSubscribeToken error:', err);
-      return null;
+      throw err;
     }
   }
 
@@ -1240,16 +1286,14 @@ export class PostgresStorage implements IStorage {
   async getUsernameByTvboxToken(token: string): Promise<string | null> {
     try {
       const result = await this.db
-        .prepare(
-          'SELECT username FROM users WHERE tvbox_subscribe_token = $1'
-        )
+        .prepare('SELECT username FROM users WHERE tvbox_subscribe_token = $1')
         .bind(token)
         .first();
 
       return result?.username || null;
     } catch (err) {
       console.error('PostgresStorage.getUsernameByTvboxToken error:', err);
-      return null;
+      throw err;
     }
   }
 
@@ -1279,7 +1323,7 @@ export class PostgresStorage implements IStorage {
       };
     } catch (err) {
       console.error('PostgresStorage.getMusicPlayRecord error:', err);
-      return null;
+      throw err;
     }
   }
 
@@ -1490,7 +1534,7 @@ export class PostgresStorage implements IStorage {
       };
     } catch (err) {
       console.error('PostgresStorage.getMusicPlaylist error:', err);
-      return null;
+      throw err;
     }
   }
 
@@ -1516,7 +1560,7 @@ export class PostgresStorage implements IStorage {
       }));
     } catch (err) {
       console.error('PostgresStorage.getUserMusicPlaylists error:', err);
-      return [];
+      throw err;
     }
   }
 
@@ -1690,7 +1734,7 @@ export class PostgresStorage implements IStorage {
       }));
     } catch (err) {
       console.error('PostgresStorage.getPlaylistSongs error:', err);
-      return [];
+      throw err;
     }
   }
 
@@ -1756,7 +1800,7 @@ export class PostgresStorage implements IStorage {
       }));
     } catch (err) {
       console.error('PostgresStorage.listMusicV2History error:', err);
-      return [];
+      throw err;
     }
   }
 
@@ -2099,7 +2143,7 @@ export class PostgresStorage implements IStorage {
       return results.results.map((row) => row.keyword as string);
     } catch (err) {
       console.error('PostgresStorage.getSearchHistory error:', err);
-      return [];
+      throw err;
     }
   }
 
@@ -2882,7 +2926,7 @@ export class PostgresStorage implements IStorage {
       };
     } catch (err) {
       console.error('PostgresStorage.getSkipConfig error:', err);
-      return null;
+      throw err;
     }
   }
 
@@ -2958,7 +3002,7 @@ export class PostgresStorage implements IStorage {
       return configs;
     } catch (err) {
       console.error('PostgresStorage.getAllSkipConfigs error:', err);
-      return {};
+      throw err;
     }
   }
 
@@ -2988,7 +3032,7 @@ export class PostgresStorage implements IStorage {
       return JSON.parse(result.rules as string);
     } catch (err) {
       console.error('PostgresStorage.getDanmakuFilterConfig error:', err);
-      return null;
+      throw err;
     }
   }
 
@@ -3048,7 +3092,7 @@ export class PostgresStorage implements IStorage {
       }));
     } catch (err) {
       console.error('PostgresStorage.getNotifications error:', err);
-      return [];
+      throw err;
     }
   }
 
@@ -3139,7 +3183,7 @@ export class PostgresStorage implements IStorage {
       return (result?.count as number) || 0;
     } catch (err) {
       console.error('PostgresStorage.getUnreadNotificationCount error:', err);
-      return 0;
+      throw err;
     }
   }
 
@@ -3155,7 +3199,7 @@ export class PostgresStorage implements IStorage {
       return results.results.map((row) => this.rowToMovieRequest(row));
     } catch (err) {
       console.error('PostgresStorage.getAllMovieRequests error:', err);
-      return [];
+      throw err;
     }
   }
 
@@ -3170,7 +3214,7 @@ export class PostgresStorage implements IStorage {
       return this.rowToMovieRequest(result);
     } catch (err) {
       console.error('PostgresStorage.getMovieRequest error:', err);
-      return null;
+      throw err;
     }
   }
 
@@ -3290,7 +3334,7 @@ export class PostgresStorage implements IStorage {
       return results.results.map((row) => row.request_id as string);
     } catch (err) {
       console.error('PostgresStorage.getUserMovieRequests error:', err);
-      return [];
+      throw err;
     }
   }
 
@@ -3361,26 +3405,46 @@ export class PostgresStorage implements IStorage {
       return JSON.parse(result.config as string);
     } catch (err) {
       console.error('PostgresStorage.getAdminConfig error:', err);
-      return null;
+      throw err;
     }
   }
 
-  async compareAndSetAdminConfig(expectedVersion: number, config: AdminConfig): Promise<boolean> {
-    const result = await this.db.prepare(`
+  async compareAndSetAdminConfig(
+    expectedVersion: number,
+    config: AdminConfig
+  ): Promise<boolean> {
+    const result = await this.db
+      .prepare(
+        `
       INSERT INTO admin_config (id, config, updated_at)
       SELECT 1, $1, $2 WHERE $3 = 0
       ON CONFLICT(id) DO UPDATE SET config = excluded.config, updated_at = excluded.updated_at
       WHERE COALESCE((admin_config.config::jsonb->>'ConfigVersion')::bigint, 0) = $4
-    `).bind(JSON.stringify(config), Date.now(), expectedVersion, expectedVersion).run();
+    `
+      )
+      .bind(
+        JSON.stringify(config),
+        Date.now(),
+        expectedVersion,
+        expectedVersion
+      )
+      .run();
     // An existing row must also be updated for nonzero revisions.
-    if (!result.success) throw new Error(result.error || 'Configuration storage failed');
+    if (!result.success)
+      throw new Error(result.error || 'Configuration storage failed');
     if (Number(result.meta?.changes) > 0) return true;
     if (expectedVersion === 0) return false;
-    const updated = await this.db.prepare(`
+    const updated = await this.db
+      .prepare(
+        `
       UPDATE admin_config SET config = $1, updated_at = $2
       WHERE id = 1 AND COALESCE((config::jsonb->>'ConfigVersion')::bigint, 0) = $3
-    `).bind(JSON.stringify(config), Date.now(), expectedVersion).run();
-    if (!updated.success) throw new Error(updated.error || 'Configuration storage failed');
+    `
+      )
+      .bind(JSON.stringify(config), Date.now(), expectedVersion)
+      .run();
+    if (!updated.success)
+      throw new Error(updated.error || 'Configuration storage failed');
     return Number(updated.meta?.changes) > 0;
   }
 
@@ -3425,7 +3489,7 @@ export class PostgresStorage implements IStorage {
       };
     } catch (err) {
       console.error('PostgresStorage.getUserLocalSettings error:', err);
-      return null;
+      throw err;
     }
   }
 
@@ -3436,43 +3500,59 @@ export class PostgresStorage implements IStorage {
   ): Promise<SetLocalSettingsSyncResult> {
     try {
       const now = Date.now();
-      let version = 1;
-
-      // 乐观锁：仅当期望版本匹配时才覆盖（无 expectedVersion 时无条件覆盖）
-      if (opts.expectedVersion !== undefined) {
-        const current = await this.getUserLocalSettings(userName);
-        if (current && current.version !== opts.expectedVersion) {
-          return { ok: false, version: current.version, updatedAt: current.updatedAt };
-        }
-        version = current ? current.version + 1 : 1;
-      } else {
-        const current = await this.getUserLocalSettings(userName);
-        version = current ? current.version + 1 : 1;
-      }
-
-      await this.db
-        .prepare(
-          `INSERT INTO user_local_settings
-             (username, payload, payload_md5, payload_size, version, updated_at)
-           VALUES ($1, $2, $3, $4, $5, $6)
-           ON CONFLICT (username) DO UPDATE SET
-             payload = EXCLUDED.payload,
-             payload_md5 = EXCLUDED.payload_md5,
-             payload_size = EXCLUDED.payload_size,
-             version = EXCLUDED.version,
-             updated_at = EXCLUDED.updated_at`
-        )
-        .bind(
-          userName,
-          payload,
-          opts.payloadMd5,
-          opts.payloadSize,
-          version,
-          now
-        )
-        .run();
-
-      return { ok: true, version, updatedAt: now };
+      const expected = opts.expectedVersion;
+      if (
+        expected !== undefined &&
+        (!Number.isSafeInteger(expected) || expected < 0)
+      )
+        throw new Error('Invalid settings version');
+      const values = [
+        userName,
+        payload,
+        opts.payloadMd5,
+        opts.payloadSize,
+        now,
+      ];
+      // Compare and write in one SQL statement; version 0 means create-only.
+      const statement =
+        expected !== undefined && expected > 0
+          ? this.db
+              .prepare(
+                `UPDATE user_local_settings SET payload=$2, payload_md5=$3,
+            payload_size=$4, version=version+1, updated_at=$5
+            WHERE username=$1 AND version=$6 RETURNING version, updated_at`
+              )
+              .bind(...values, expected)
+          : this.db
+              .prepare(
+                `INSERT INTO user_local_settings
+            (username,payload,payload_md5,payload_size,version,updated_at)
+            VALUES ($1,$2,$3,$4,1,$5) ON CONFLICT (username) ${
+              expected === 0
+                ? 'DO NOTHING'
+                : `DO UPDATE SET payload=EXCLUDED.payload, payload_md5=EXCLUDED.payload_md5,
+                 payload_size=EXCLUDED.payload_size, version=user_local_settings.version+1,
+                 updated_at=EXCLUDED.updated_at`
+            }
+            RETURNING version, updated_at`
+              )
+              .bind(...values);
+      const saved = await statement.first<{
+        version: number;
+        updated_at: number;
+      }>();
+      if (saved)
+        return {
+          ok: true,
+          version: Number(saved.version),
+          updatedAt: Number(saved.updated_at),
+        };
+      const current = await this.getUserLocalSettings(userName);
+      return {
+        ok: false,
+        version: current?.version ?? 0,
+        updatedAt: current?.updatedAt ?? 0,
+      };
     } catch (err) {
       console.error('PostgresStorage.setUserLocalSettings error:', err);
       throw err;
@@ -3537,7 +3617,7 @@ export class PostgresStorage implements IStorage {
       return result ? (result.value as string) : null;
     } catch (err) {
       console.error('PostgresStorage.getGlobalValue error:', err);
-      return null;
+      throw err;
     }
   }
 
@@ -3571,8 +3651,9 @@ export class PostgresStorage implements IStorage {
     }
   }
 
-
-  private mapTelegramBinding(row: any): import('./types').TelegramBindingRecord {
+  private mapTelegramBinding(
+    row: any
+  ): import('./types').TelegramBindingRecord {
     return {
       username: row.username as string,
       telegramUserId: String(row.telegram_user_id),
@@ -3580,13 +3661,16 @@ export class PostgresStorage implements IStorage {
       telegramUsername: (row.telegram_username as string | null) || null,
       firstName: (row.first_name as string | null) || null,
       lastName: (row.last_name as string | null) || null,
-      notificationsEnabled: row.notifications_enabled === 1 || row.notifications_enabled === true,
+      notificationsEnabled:
+        row.notifications_enabled === 1 || row.notifications_enabled === true,
       boundAt: Number(row.bound_at),
       updatedAt: Number(row.updated_at),
     };
   }
 
-  async getTelegramBinding(userName: string): Promise<import('./types').TelegramBindingRecord | null> {
+  async getTelegramBinding(
+    userName: string
+  ): Promise<import('./types').TelegramBindingRecord | null> {
     try {
       const row = await this.db
         .prepare('SELECT * FROM telegram_bindings WHERE username = $1')
@@ -3595,11 +3679,13 @@ export class PostgresStorage implements IStorage {
       return row ? this.mapTelegramBinding(row) : null;
     } catch (err) {
       console.error('PostgresStorage.getTelegramBinding error:', err);
-      return null;
+      throw err;
     }
   }
 
-  async getTelegramBindingByTelegramUserId(telegramUserId: string): Promise<import('./types').TelegramBindingRecord | null> {
+  async getTelegramBindingByTelegramUserId(
+    telegramUserId: string
+  ): Promise<import('./types').TelegramBindingRecord | null> {
     try {
       const row = await this.db
         .prepare('SELECT * FROM telegram_bindings WHERE telegram_user_id = $1')
@@ -3607,15 +3693,21 @@ export class PostgresStorage implements IStorage {
         .first();
       return row ? this.mapTelegramBinding(row) : null;
     } catch (err) {
-      console.error('PostgresStorage.getTelegramBindingByTelegramUserId error:', err);
-      return null;
+      console.error(
+        'PostgresStorage.getTelegramBindingByTelegramUserId error:',
+        err
+      );
+      throw err;
     }
   }
 
-  async upsertTelegramBinding(binding: import('./types').TelegramBindingRecord): Promise<void> {
+  async upsertTelegramBinding(
+    binding: import('./types').TelegramBindingRecord
+  ): Promise<void> {
     try {
       await this.db
-        .prepare(`
+        .prepare(
+          `
           INSERT INTO telegram_bindings (
             username, telegram_user_id, chat_id, telegram_username, first_name, last_name,
             notifications_enabled, bound_at, updated_at
@@ -3629,7 +3721,8 @@ export class PostgresStorage implements IStorage {
             notifications_enabled = EXCLUDED.notifications_enabled,
             bound_at = EXCLUDED.bound_at,
             updated_at = EXCLUDED.updated_at
-        `)
+        `
+        )
         .bind(
           binding.username,
           binding.telegramUserId,
@@ -3649,14 +3742,24 @@ export class PostgresStorage implements IStorage {
   }
 
   async deleteTelegramBindingByUsername(userName: string): Promise<void> {
-    await this.db.prepare('DELETE FROM telegram_bindings WHERE username = $1').bind(userName).run();
+    await this.db
+      .prepare('DELETE FROM telegram_bindings WHERE username = $1')
+      .bind(userName)
+      .run();
   }
 
-  async deleteTelegramBindingByTelegramUserId(telegramUserId: string): Promise<void> {
-    await this.db.prepare('DELETE FROM telegram_bindings WHERE telegram_user_id = $1').bind(telegramUserId).run();
+  async deleteTelegramBindingByTelegramUserId(
+    telegramUserId: string
+  ): Promise<void> {
+    await this.db
+      .prepare('DELETE FROM telegram_bindings WHERE telegram_user_id = $1')
+      .bind(telegramUserId)
+      .run();
   }
 
-  async getTelegramBindSession(code: string): Promise<import('./types').TelegramBindSessionRecord | null> {
+  async getTelegramBindSession(
+    code: string
+  ): Promise<import('./types').TelegramBindSessionRecord | null> {
     try {
       const row = await this.db
         .prepare('SELECT * FROM telegram_bind_sessions WHERE code = $1')
@@ -3672,14 +3775,17 @@ export class PostgresStorage implements IStorage {
       };
     } catch (err) {
       console.error('PostgresStorage.getTelegramBindSession error:', err);
-      return null;
+      throw err;
     }
   }
 
-  async upsertTelegramBindSession(session: import('./types').TelegramBindSessionRecord): Promise<void> {
+  async upsertTelegramBindSession(
+    session: import('./types').TelegramBindSessionRecord
+  ): Promise<void> {
     try {
       await this.db
-        .prepare(`
+        .prepare(
+          `
           INSERT INTO telegram_bind_sessions (code, username, created_at, expires_at, used)
           VALUES ($1, $2, $3, $4, $5)
           ON CONFLICT(code) DO UPDATE SET
@@ -3687,8 +3793,15 @@ export class PostgresStorage implements IStorage {
             created_at = EXCLUDED.created_at,
             expires_at = EXCLUDED.expires_at,
             used = EXCLUDED.used
-        `)
-        .bind(session.code, session.username, session.createdAt, session.expiresAt, session.used ? 1 : 0)
+        `
+        )
+        .bind(
+          session.code,
+          session.username,
+          session.createdAt,
+          session.expiresAt,
+          session.used ? 1 : 0
+        )
         .run();
     } catch (err) {
       console.error('PostgresStorage.upsertTelegramBindSession error:', err);
@@ -3715,7 +3828,7 @@ export class PostgresStorage implements IStorage {
       return (result?.last_check_time as number) || 0;
     } catch (err) {
       console.error('PostgresStorage.getLastFavoriteCheckTime error:', err);
-      return 0;
+      throw err;
     }
   }
 

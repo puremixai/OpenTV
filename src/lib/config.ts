@@ -445,32 +445,17 @@ export async function getConfig(fresh = false): Promise<AdminConfig> {
       console.log('localStorage 模式：从环境变量初始化配置');
       const adminConfig = await getInitConfig('');
       cachedConfig = configSelfCheck(adminConfig);
-      configInitPromise = null;
       return cachedConfig;
     }
 
     // 读 db
-    let adminConfig: AdminConfig | null = null;
-    let dbReadFailed = false;
-    try {
-      adminConfig = await db.getAdminConfig();
-    } catch (e) {
-      console.error('获取管理员配置失败:', e);
-      dbReadFailed = true;
-    }
+    // A failed read must not be mistaken for a new installation.
+    let adminConfig = await db.getAdminConfig();
 
     // db 中无配置，执行一次初始化
     if (!adminConfig) {
-      if (dbReadFailed) {
-        // 数据库读取失败，使用默认配置但不保存，避免覆盖数据库
-        console.warn('数据库读取失败，使用临时默认配置（不会保存到数据库）');
-        adminConfig = await getInitConfig('');
-      } else {
-        // 数据库中确实没有配置，首次初始化并保存
-        console.log('首次初始化配置');
-        adminConfig = await getInitConfig('');
-        await db.saveAdminConfig(adminConfig);
-      }
+      adminConfig = await getInitConfig('');
+      await db.saveAdminConfig(adminConfig);
     }
 
     // 检查是否有旧格式Emby配置需要迁移
@@ -484,7 +469,7 @@ export async function getConfig(fresh = false): Promise<AdminConfig> {
     cachedConfig = adminConfig;
 
     // 如果进行了Emby配置迁移，保存到数据库
-    if (!dbReadFailed && (needsEmbyMigration || needsSubscriptionMigration)) {
+    if (needsEmbyMigration || needsSubscriptionMigration) {
       try {
         await db.saveAdminConfig(adminConfig);
         console.log('[Config] Emby配置迁移已保存到数据库');
@@ -498,7 +483,7 @@ export async function getConfig(fresh = false): Promise<AdminConfig> {
     const nonOwnerUsers = adminConfig.UserConfig.Users.filter(
       (u) => u.username !== process.env.USERNAME
     );
-    if (!dbReadFailed && nonOwnerUsers.length > 0) {
+    if (nonOwnerUsers.length > 0) {
       try {
         // 检查是否支持V2存储
         const storage = (db as any).storage;
@@ -517,10 +502,11 @@ export async function getConfig(fresh = false): Promise<AdminConfig> {
       }
     }
 
-    // 清除初始化 Promise
-    configInitPromise = null;
     return cachedConfig;
-  })();
+  })().finally(() => {
+    // Allow the next request to recover after a transient database failure.
+    configInitPromise = null;
+  });
 
   return JSON.parse(JSON.stringify(await configInitPromise));
 }

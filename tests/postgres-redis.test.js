@@ -305,6 +305,58 @@ integration('real PostgreSQL and Redis', () => {
     ).toBeGreaterThan(0);
   });
 
+  test('concurrent settings creation and updates atomically enforce the expected version', async () => {
+    const user = 'pg-test-owner';
+    const save = (payload, expectedVersion) =>
+      storage.setUserLocalSettings(user, payload, {
+        expectedVersion,
+        payloadMd5: payload,
+        payloadSize: payload.length,
+      });
+    const created = await Promise.all([save('first', 0), save('second', 0)]);
+    expect(created.filter((result) => result.ok)).toHaveLength(1);
+    expect(created.every((result) => result.version === 1)).toBe(true);
+    const updates = await Promise.all([save('third', 1), save('fourth', 1)]);
+    expect(updates.filter((result) => result.ok)).toHaveLength(1);
+    expect(updates.every((result) => result.version === 2)).toBe(true);
+    expect((await storage.getUserLocalSettings(user)).payload).toBe(
+      updates[0].ok ? 'third' : 'fourth'
+    );
+    const unconditional = await Promise.all([save('fifth'), save('sixth')]);
+    expect(unconditional.map((result) => result.version).sort()).toEqual([
+      3, 4,
+    ]);
+    const missing = user + '-missing';
+    expect(
+      await storage.setUserLocalSettings(missing, '{}', {
+        expectedVersion: 8,
+        payloadMd5: 'x',
+        payloadSize: 2,
+      })
+    ).toMatchObject({ ok: false, version: 0 });
+    expect(await storage.getUserLocalSettings(missing)).toBeNull();
+    await pool.query('DELETE FROM user_local_settings WHERE username=$1', [
+      user,
+    ]);
+  });
+
+  test('Redis search budgets are atomic under concurrency and isolated by account', async () => {
+    const { consumeSearchRateLimit } = require('../server/redis-cache');
+    const user = randomUUID();
+    const results = await Promise.all(
+      Array.from({ length: 30 }, () => consumeSearchRateLimit(user, 6))
+    );
+    expect(results.filter((result) => result?.allowed)).toHaveLength(20);
+    expect(
+      results
+        .filter((result) => !result?.allowed)
+        .every((result) => result.retryAfter > 0)
+    ).toBe(true);
+    expect((await consumeSearchRateLimit(user + '-other', 6)).allowed).toBe(
+      true
+    );
+  });
+
   test('Redis loss falls back to bounded local cache without breaking PostgreSQL', async () => {
     process.env.NEXT_PUBLIC_STORAGE_TYPE = 'postgres';
     expect(await getHealth()).toEqual({

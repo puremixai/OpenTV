@@ -9,11 +9,13 @@ import {
   saveDanmakuDisplayState,
   saveDanmakuSettings,
 } from '@/lib/danmaku/api';
+import { isDanmakuEnabled } from '@/lib/danmaku/enabled';
 import type { DanmakuSettings } from '@/lib/danmaku/types';
 import { generateStorageKey, getAllPlayRecords } from '@/lib/db.client';
 import { isLazyDetailSource, isNetdiskMountSource } from '@/lib/player/source';
 import { DanmakuFilterConfig, SearchResult } from '@/lib/types';
 
+import { loadPlayerPlugins } from './load-player-plugins';
 import {
   HarmonyHlsPlaybackMode,
   NetdiskHlsPlaybackMode,
@@ -435,18 +437,17 @@ export function usePlayerEngine({
         }
 
         // 动态导入播放器库
-        const [ArtplayerModule, HlsModule, DanmukuPlugin, AutoThumbnailPlugin] =
+        const [ArtplayerModule, HlsModule, optionalPlugins] =
           await Promise.all([
             import('artplayer'),
             import('hls.js'),
-            import('artplayer-plugin-danmuku'),
-            import('@/lib/artplayer-plugin-auto-thumbnail'),
+            loadPlayerPlugins({ danmaku: isDanmakuEnabled(), thumbnails: !isPlaybackThumbnailDisabled() }),
           ]);
 
         const Artplayer = ArtplayerModule.default;
         const Hls = HlsModule.default;
-        const artplayerPluginDanmuku = DanmukuPlugin.default as any;
-        const artplayerPluginAutoThumbnail = AutoThumbnailPlugin.default as any;
+        const artplayerPluginDanmuku = optionalPlugins.danmaku;
+        const artplayerPluginAutoThumbnail = optionalPlugins.thumbnails;
         const playerTimeouts = new Set<number>();
         const clearTrackedTimeout = (timeoutId: number | null) => {
           if (timeoutId == null) {
@@ -944,7 +945,7 @@ export function usePlayerEngine({
             },
           },
           plugins: [
-            ...(isPlaybackThumbnailDisabled()
+            ...(!artplayerPluginAutoThumbnail
               ? []
               : [
                   artplayerPluginAutoThumbnail({
@@ -953,7 +954,7 @@ export function usePlayerEngine({
                     scale: 1,
                   }),
                 ]),
-            artplayerPluginDanmuku({
+            ...(artplayerPluginDanmuku ? [artplayerPluginDanmuku({
               danmuku: [],
               speed: danmakuSettingsRef.current.speed,
               opacity: danmakuSettingsRef.current.opacity,
@@ -962,7 +963,9 @@ export function usePlayerEngine({
               mode: 0,
               margin: [
                 danmakuSettingsRef.current.marginTop,
-                danmakuSettingsRef.current.marginBottom,
+                typeof danmakuSettingsRef.current.marginBottom === 'number'
+                  ? danmakuSettingsRef.current.marginBottom
+                  : `${Math.max(0, Math.min(100, parseFloat(danmakuSettingsRef.current.marginBottom) || 0))}%`,
               ],
               antiOverlap: true,
               synchronousPlayback:
@@ -1000,7 +1003,7 @@ export function usePlayerEngine({
                 }
                 return true;
               },
-            }),
+            })] : []),
           ],
           icons: {
             loading:

@@ -5,7 +5,18 @@ self.addEventListener('install', (event) => {
 });
 
 self.addEventListener('activate', (event) => {
-  event.waitUntil(self.clients.claim());
+  event.waitUntil((async () => {
+    // Remove API entries created by the previous NetworkFirst runtime policy.
+    for (const name of await caches.keys()) {
+      const cache = await caches.open(name);
+      const requests = await cache.keys();
+      await Promise.all(requests.filter(request => {
+        const url = new URL(request.url);
+        return url.origin === self.location.origin && url.pathname.startsWith('/api/');
+      }).map(request => cache.delete(request)));
+    }
+    await self.clients.claim();
+  })());
 });
 
 self.addEventListener('push', (event) => {

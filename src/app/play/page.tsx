@@ -81,6 +81,7 @@ import {
   recommendationCacheKeys,
   setRecommendationCache,
 } from '@/lib/recommendations/cache';
+import { SEARCH_CACHE_MAX_AGE, searchCacheKey } from '@/lib/search-cache.client';
 import {
   appendSpecialSourceParam,
   isSpecialSourcesEnabledOnDevice,
@@ -174,6 +175,7 @@ declare global {
 }
 
 function PlayPageClient() {
+  const searchCacheUser = getAuthInfoFromBrowserCookie()?.username;
   const LOCAL_TRANSCODER_BASE_URL = 'http://localhost:19080';
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -5206,15 +5208,15 @@ function PlayPageClient() {
       }
 
       try {
-        const cacheKey = `search_cache_${query.trim()}${
-          isSpecialSourcesEnabledOnDevice() ? '_special' : ''
-        }`;
+        const cacheKey = searchCacheKey(searchCacheUser, query, isSpecialSourcesEnabledOnDevice());
+        if (!cacheKey) return null;
         const cached = sessionStorage.getItem(cacheKey);
         if (!cached) return null;
 
         const parsed = JSON.parse(cached) as SearchCachePayload;
         if (
           (parsed?.status === 'complete' || parsed?.status === 'partial') &&
+          Date.now() - parsed.updatedAt < SEARCH_CACHE_MAX_AGE &&
           Array.isArray(parsed.results)
         ) {
           return parsed;
@@ -5232,9 +5234,8 @@ function PlayPageClient() {
       if (typeof window === 'undefined' || !query.trim()) return;
 
       try {
-        const cacheKey = `search_cache_${query.trim()}${
-          isSpecialSourcesEnabledOnDevice() ? '_special' : ''
-        }`;
+        const cacheKey = searchCacheKey(searchCacheUser, query, isSpecialSourcesEnabledOnDevice());
+        if (!cacheKey) return;
         const payload: SearchCachePayload = {
           status: 'complete',
           results,
@@ -5309,8 +5310,8 @@ function PlayPageClient() {
         const data = await response.json();
         const allResults = (data.results || []) as SearchResult[];
 
-        writeCompleteSearchCache(query, allResults);
-        setHasCompletedSearchRequest(true);
+        if (!data.partial) writeCompleteSearchCache(query, allResults);
+        setHasCompletedSearchRequest(!data.partial);
         setFallbackRecommendations(
           buildFallbackRecommendations(allResults, query)
         );

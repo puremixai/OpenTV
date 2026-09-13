@@ -221,6 +221,16 @@ const createNextConfig = (phase) => {
     register: true,
     skipWaiting: true,
     importScripts: ['/push-sw.js'],
+    runtimeCaching: [
+      {
+        // API data can depend on cookies, permissions and short-lived proxy tokens.
+        // Workbox CacheStorage does not honor HTTP Cache-Control automatically.
+        urlPattern: ({ url, sameOrigin }) => sameOrigin && url.pathname.startsWith('/api/'),
+        handler: 'NetworkOnly',
+        method: 'GET',
+      },
+      ...require('next-pwa/cache'),
+    ],
   });
 
   return withPWA(nextConfig);

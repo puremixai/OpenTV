@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
+import { checkSearchSignal, fetchSearchResponse } from '@/lib/server/search-control';
 import { normalizeApiBaseUrl } from '@/lib/url';
 
 interface EmbyConfig {
@@ -128,7 +129,8 @@ export class EmbyClient {
     this.password = config.Password;
   }
 
-  private async ensureAuthenticated(): Promise<void> {
+  private async ensureAuthenticated(signal?: AbortSignal): Promise<void> {
+    checkSearchSignal(signal);
     // 如果有 ApiKey，不需要认证
     if (this.apiKey) return;
 
@@ -137,7 +139,7 @@ export class EmbyClient {
 
     // 如果有用户名，自动认证（密码可选）
     if (this.username) {
-      const authResult = await this.authenticate(this.username, this.password || '');
+      const authResult = await this.authenticate(this.username, this.password || '', signal);
       this.authToken = authResult.AccessToken;
       this.userId = authResult.User.Id;
     }
@@ -162,7 +164,7 @@ export class EmbyClient {
     return headers;
   }
 
-  async authenticate(username: string, password: string): Promise<{ AccessToken: string; User: { Id: string } }> {
+  async authenticate(username: string, password: string, signal?: AbortSignal): Promise<{ AccessToken: string; User: { Id: string } }> {
     const url = `${this.serverUrl}/Users/AuthenticateByName`;
 
     const body = JSON.stringify({
@@ -170,7 +172,8 @@ export class EmbyClient {
       Pw: password,
     });
 
-    const response = await fetch(url, {
+    const request = signal ? fetchSearchResponse : fetch;
+    const response = await request(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -178,6 +181,7 @@ export class EmbyClient {
         'User-Agent': this.customUserAgent,
       },
       body: body,
+      signal,
     });
 
     if (!response.ok) {
@@ -246,8 +250,8 @@ export class EmbyClient {
     return data.Items || [];
   }
 
-  async getItems(params: GetItemsParams): Promise<EmbyItemsResult> {
-    await this.ensureAuthenticated();
+  async getItems(params: GetItemsParams, signal?: AbortSignal): Promise<EmbyItemsResult> {
+    await this.ensureAuthenticated(signal);
 
     if (!this.userId) {
       throw new Error('未配置 Emby 用户 ID，请在管理面板重新保存 Emby 配置');
@@ -273,18 +277,19 @@ export class EmbyClient {
 
     const url = `${this.serverUrl}/Users/${this.userId}/Items?${searchParams.toString()}`;
 
-    const response = await fetch(url);
+    const request = signal ? fetchSearchResponse : fetch;
+    const response = await request(url, { signal });
 
     // 如果是 401 错误且有用户名密码，尝试重新认证
     if (response.status === 401 && this.username && !this.apiKey) {
-      const authResult = await this.authenticate(this.username, this.password || '');
+      const authResult = await this.authenticate(this.username, this.password || '', signal);
       this.authToken = authResult.AccessToken;
       this.userId = authResult.User.Id;
 
       // 重试请求
       searchParams.set('api_key', this.authToken);
       const retryUrl = `${this.serverUrl}/Users/${this.userId}/Items?${searchParams.toString()}`;
-      const retryResponse = await fetch(retryUrl);
+      const retryResponse = await request(retryUrl, { signal });
 
       if (!retryResponse.ok) {
         const errorText = await retryResponse.text();

@@ -8,3 +8,6 @@ export async function writeCache(
 ): Promise<void> {
   /* Local cache only on edge. */
 }
+export async function consumeSearchRateLimit(_userDigest: string, _cost: number): Promise<{ allowed: boolean; retryAfter: number } | null> {
+  return null;
+}

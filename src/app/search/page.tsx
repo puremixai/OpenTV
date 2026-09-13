@@ -34,6 +34,7 @@ import {
   subscribeToDataUpdates,
 } from '@/lib/db.client';
 import { logger } from '@/lib/logger';
+import { SEARCH_CACHE_MAX_AGE, searchCacheKey } from '@/lib/search-cache.client';
 import { appendSpecialSourceParam, isSpecialSourcesEnabledOnDevice } from '@/lib/special-source.client';
 import { SearchResult } from '@/lib/types';
 import { processImageUrl } from '@/lib/utils';
@@ -63,6 +64,7 @@ type SearchCachePayload = {
 };
 
 function SearchPageClient() {
+  const searchCacheUser = getAuthInfoFromBrowserCookie()?.username;
   // 搜索历史
   const [searchHistory, setSearchHistory] = useState<string[]>([]);
   // 返回顶部按钮显示状态
@@ -110,6 +112,7 @@ function SearchPageClient() {
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const eventSourceRef = useRef<EventSource | null>(null);
+  const searchAbortRef = useRef<AbortController | null>(null);
   const [totalSources, setTotalSources] = useState(0);
   const [completedSources, setCompletedSources] = useState(0);
   const pendingResultsRef = useRef<SearchResult[]>([]);
@@ -140,12 +143,7 @@ function SearchPageClient() {
 
   // 生成缓存键
   const getCacheKey = (query: string) => {
-    const suffixParts = [
-      isSpecialSourcesEnabledOnDevice() ? 'special' : '',
-      privateLibraryOnly ? 'private' : '',
-    ].filter(Boolean);
-    const suffix = suffixParts.length > 0 ? `_${suffixParts.join('_')}` : '';
-    return `search_cache_${query.trim()}${suffix}`;
+    return searchCacheKey(searchCacheUser, query, isSpecialSourcesEnabledOnDevice(), privateLibraryOnly);
   };
 
   // 从 sessionStorage 获取完整缓存的搜索结果（partial 只给播放页快速启动使用）
@@ -153,11 +151,12 @@ function SearchPageClient() {
     if (typeof window === 'undefined') return null;
     try {
       const cacheKey = getCacheKey(query);
+      if (!cacheKey) return null;
       const cached = sessionStorage.getItem(cacheKey);
       if (!cached) return null;
 
       const parsed = JSON.parse(cached) as SearchCachePayload;
-      if (parsed?.status === 'complete' && Array.isArray(parsed.results)) {
+      if (parsed?.status === 'complete' && Array.isArray(parsed.results) && Date.now() - parsed.updatedAt < SEARCH_CACHE_MAX_AGE) {
         return parsed.results;
       }
     } catch (error) {
@@ -175,6 +174,7 @@ function SearchPageClient() {
     if (typeof window === 'undefined') return;
     try {
       const cacheKey = getCacheKey(query);
+      if (!cacheKey) return;
       const payload: SearchCachePayload = {
         status,
         results,
@@ -202,6 +202,7 @@ function SearchPageClient() {
     if (typeof window === 'undefined') return;
     try {
       const cacheKey = getCacheKey(query);
+      if (!cacheKey) return;
       sessionStorage.removeItem(cacheKey);
     } catch (error) {
       logger.error('Failed to clear cached results:', error);
@@ -1404,14 +1405,14 @@ function SearchPageClient() {
                     setSearchResults((prev) => {
                       const newResults = prev.concat(toAppend);
                       // 缓存完整的搜索结果
-                      setCachedResults(trimmed, newResults);
+                      setCachedResults(trimmed, newResults, payload.partial ? 'partial' : 'complete');
                       return newResults;
                     });
                   });
                 } else {
                   // 即使没有待写入的缓冲，也缓存当前结果
                   setSearchResults((prev) => {
-                    setCachedResults(trimmed, prev);
+                    setCachedResults(trimmed, prev, payload.partial ? 'partial' : 'complete');
                     return prev;
                   });
                 }
@@ -1453,10 +1454,12 @@ function SearchPageClient() {
         const searchUrl = `/api/search?q=${encodeURIComponent(trimmed)}${
           privateLibraryOnly ? '&privateOnly=1' : ''
         }`;
-        fetch(appendSpecialSourceParam(searchUrl))
-          .then((response) => response.json())
+        const abort = new AbortController();
+        searchAbortRef.current = abort;
+        fetch(appendSpecialSourceParam(searchUrl), { signal: abort.signal })
+          .then((response) => { if (!response.ok) throw new Error('搜索失败'); return response.json(); })
           .then((data) => {
-            if (currentQueryRef.current !== trimmed) return;
+            if (abort.signal.aborted || currentQueryRef.current !== trimmed) return;
 
             if (data.results && Array.isArray(data.results)) {
               const activeYearOrder =
@@ -1468,13 +1471,14 @@ function SearchPageClient() {
 
               setSearchResults(results);
               // 缓存搜索结果
-              setCachedResults(trimmed, results);
+              setCachedResults(trimmed, results, data.partial ? 'partial' : 'complete');
               setTotalSources(1);
               setCompletedSources(1);
             }
             setIsLoading(false);
           })
           .catch(() => {
+            if (abort.signal.aborted) return;
             setIsLoading(false);
           });
       }
@@ -1486,6 +1490,15 @@ function SearchPageClient() {
       setShowResults(false);
       setShowSuggestions(false);
     }
+    return () => {
+      searchAbortRef.current?.abort();
+      searchAbortRef.current = null;
+      eventSourceRef.current?.close();
+      eventSourceRef.current = null;
+      if (flushTimerRef.current) clearTimeout(flushTimerRef.current);
+      flushTimerRef.current = null;
+      pendingResultsRef.current = [];
+    };
   }, [
     searchParams,
     forceRefresh,
