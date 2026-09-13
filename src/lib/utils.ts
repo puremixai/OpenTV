@@ -12,7 +12,7 @@ export type DoubanImageProxyType =
   | 'cmliussss-cdn-ali'
   | 'custom';
 
-function normalizeDoubanImageProxyConfig(
+export function normalizeDoubanImageProxyConfig(
   proxyType: DoubanImageProxyType,
   proxyUrl: string
 ): {
@@ -34,7 +34,7 @@ function normalizeDoubanImageProxyConfig(
   };
 }
 
-function buildDoubanImageUrl(
+export function buildDoubanImageUrl(
   originalUrl: string,
   proxyType: DoubanImageProxyType,
   proxyUrl: string

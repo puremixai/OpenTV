@@ -16,8 +16,9 @@ export const runtime = 'nodejs';
  */
 export const POST = withConfigMutation(async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params: paramsPromise }: { params: Promise<{ id: string }> }
 ) {
+  const params = await paramsPromise;
   try {
     // 权限检查
     const authInfo = await getAuthenticatedUser(req);

@@ -2,6 +2,27 @@
 
 当前本地部署已切换为 **PostgreSQL + Redis**，配置、迁移、备份与回退步骤见 [PostgreSQL + Redis 部署说明](POSTGRES-REDIS.md)。下方带日期的 SQLite 升级记录属于历史操作，不能用于当前部署的数据回退。
 
+## 2026-09-13 Next.js 16 更新
+
+- 当前应用镜像：`moontvplus:local`，镜像 ID `f65af2033f32`；Next.js 16.3.5、React 19.3.0、Node.js 24.21.0。
+- 仅重建并替换 `moontvplus` 应用容器。PostgreSQL、Redis 及原有数据卷保留；三个容器健康，`/api/health` 返回应用、数据库和缓存均正常。
+- 核对保留 2 个订阅、34 个视频源、2 个用户、3 条播放记录，订阅 ID/URL 与视频源 key/API 的升级前后摘要一致。
+- 验证已有登录会话继续访问与刷新、新登录和退出、首页/搜索/管理页 SSR、匿名 API 拦截、媒体鉴权、PWA 公共资源及 Socket.IO 连接。独立 PostgreSQL / Redis 测试环境中的 53 套、478 项测试全部通过。
+- 升级前 PostgreSQL 备份：`D:\bbs\xtv-before-next16-20260913-211434.dump`，已用 `pg_restore --list` 验证归档可读取。备份包含业务数据，存于仓库外，未提交。
+- 升级前应用镜像：`moontvplus:before-next16-20260913-211434`，镜像 ID `0430f77a3d34`，使用相同 PostgreSQL 存储；保留用于应用版本回退。
+
+需要回退本次应用升级时，使用保存的 PostgreSQL 版本镜像，只替换应用容器，继续使用当前数据库：
+
+```powershell
+docker tag moontvplus:before-next16-20260913-211434 moontvplus:local
+docker compose -f compose.local.yaml up -d --no-build --no-deps moontvplus
+docker compose -f compose.local.yaml ps
+```
+
+完整升级说明见 [Next.js 16 升级与前端优化](NEXT16-UPGRADE.md)。
+
+## 日常运行
+
 从 `D:\bbs\MoonTVPlus` 执行，使用当前工作区源码构建完整版。
 
 ```powershell
@@ -68,6 +89,7 @@ docker compose -f compose.local.yaml up -d --no-build
 ```
 
 数据库不会随镜像回退。新版管理入口为 <http://localhost:3000/admin>，已有页面请 Ctrl+F5 刷新。
+
 ## 关闭弹幕获取
 
 当前 `compose.local.yaml` 配置了 `DANMAKU_ENABLED: "false"`，停止弹幕搜索、匹配、下载和自动预加载。此开关优先于浏览器中的旧偏好；旧页面仍调用接口时，服务器直接返回空结果，不请求上游弹幕服务。更新后刷新播放页生效。

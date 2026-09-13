@@ -13,16 +13,20 @@ import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { getDoubanDetail } from '@/lib/douban.client';
-import { logger } from '@/lib/logger';
 import {
-  type TMDBItem,
-  getGenreNames,
-  getTMDBImageUrl,
-} from '@/lib/tmdb.client';
+  type InitialBannerArtwork,
+  getBannerArtworkKey,
+  getBannerArtworkProps,
+} from '@/lib/home/banner-artwork';
+import type { BannerData, BannerItem } from '@/lib/home/banner-types';
+import { logger } from '@/lib/logger';
+import { getGenreNames } from '@/lib/tmdb.client';
 
 import ProxyImage from '@/components/ProxyImage';
 
 interface BannerCarouselProps {
+  initialArtwork?: InitialBannerArtwork;
+  initialData?: BannerData | null;
   autoPlayInterval?: number; // 自动播放间隔（毫秒）
   delayLoad?: boolean; // 是否延迟加载（等页面加载完毕后再加载）
 }
@@ -36,27 +40,32 @@ const getSavedBannerHeightScale = (): HomeBannerHeightScale => {
   return saved === '1.5' || saved === '2' ? saved : '1';
 };
 
-// 扩展TMDBItem类型以支持TX数据源的额外字段
-interface BannerItem extends TMDBItem {
-  subtitle?: string; // TX数据源的子标题
-  tags?: string[]; // TX数据源的标签
-  trailer_url?: string | null; // 豆瓣预告片直链
-  genres?: string[]; // 豆瓣数据源的类型标签
-}
-
 export default function BannerCarousel({
+  initialData,
+  initialArtwork,
   autoPlayInterval = 5000,
   delayLoad = false,
 }: BannerCarouselProps) {
   const router = useRouter();
-  const [items, setItems] = useState<BannerItem[]>([]);
+  const [imagesReady, setImagesReady] = useState(false);
+  useEffect(() => setImagesReady(true), []);
+  const artworkFor = (
+    item: BannerItem,
+    placement: 'hero' | 'poster' | 'thumbnail'
+  ) =>
+    (!imagesReady &&
+      initialArtwork?.[getBannerArtworkKey(item)]?.[placement]) ||
+    getBannerArtworkProps(item, placement);
+  const [items, setItems] = useState<BannerItem[]>(initialData?.list || []);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(!initialData);
   const [shouldLoad, setShouldLoad] = useState(!delayLoad); // 是否应该开始加载数据
   const [autoPlayReset, setAutoPlayReset] = useState(0);
   const [isYouTubeAccessible, setIsYouTubeAccessible] = useState(false); // YouTube连通性（默认false，检查后再决定）
   const [enableTrailers, setEnableTrailers] = useState(false); // 是否启用预告片（默认关闭）
-  const [dataSource, setDataSource] = useState<string>(''); // 当前数据源
+  const [dataSource, setDataSource] = useState<string>(
+    initialData?.source || ''
+  ); // 当前数据源
   const [trailersLoaded, setTrailersLoaded] = useState(false); // 预告片是否已加载
   const [isMuted, setIsMuted] = useState(true); // 视频是否静音（默认静音）
   const [bannerHeightScale, setBannerHeightScale] =
@@ -100,17 +109,6 @@ export default function BannerCarousel({
     if (currentVideo) {
       currentVideo.muted = newMutedState;
     }
-  };
-
-  // 获取图片原始URL（处理TX完整URL和TMDB路径）
-  const getImageUrl = (path: string | null | undefined) => {
-    if (!path) return '';
-    // 如果是完整URL（TX数据源或豆瓣），直接返回原始地址
-    if (path.startsWith('http://') || path.startsWith('https://')) {
-      return path;
-    }
-    // 否则使用TMDB的URL拼接原始地址
-    return getTMDBImageUrl(path, 'original');
   };
 
   // 获取视频URL（处理豆瓣视频代理）
@@ -229,8 +227,19 @@ export default function BannerCarousel({
 
   // 获取热门内容
   useEffect(() => {
+    // The server seed is newer than browser caches and already contains the first artwork.
+    if (initialData) {
+      setItems(initialData.list);
+      setCurrentIndex(0);
+      setDataSource(initialData.source);
+      setTrailersLoaded(false);
+      setIsLoading(false);
+      return;
+    }
     // 如果不应该加载，直接返回
     if (!shouldLoad) return;
+    const controller = new AbortController();
+    let cancelled = false;
 
     const fetchTrending = async () => {
       try {
@@ -266,6 +275,7 @@ export default function BannerCarousel({
         // 乐观缓存：如果有缓存（无论是否过期），先显示缓存数据
         if (cachedData) {
           setItems(cachedData);
+          setCurrentIndex(0);
           setDataSource(validSource || ''); // 设置数据源
           setIsLoading(false);
           setTrailersLoaded(false); // 重置预告片加载状态
@@ -273,14 +283,18 @@ export default function BannerCarousel({
 
         // 如果缓存过期或没有缓存，后台更新数据
         if (!cachedData || cacheExpired) {
-          const response = await fetch('/api/tmdb/trending');
+          const response = await fetch('/api/tmdb/trending', {
+            signal: controller.signal,
+          });
           const result = await response.json();
+          if (cancelled) return;
 
           if (result.code === 200 && result.list.length > 0) {
             const newDataSource = result.source || 'TMDB'; // 获取数据源标识
             const cacheKey = getLocalStorageKey(newDataSource);
 
             setItems(result.list);
+            setCurrentIndex(0);
             setDataSource(newDataSource); // 设置数据源
             setTrailersLoaded(false); // 重置预告片加载状态
 
@@ -300,14 +314,18 @@ export default function BannerCarousel({
           }
         }
       } catch (error) {
-        logger.error('获取热门内容失败:', error);
+        if (!cancelled) logger.error('获取热门内容失败:', error);
       } finally {
-        setIsLoading(false);
+        if (!cancelled) setIsLoading(false);
       }
     };
 
     fetchTrending();
-  }, [shouldLoad]);
+    return () => {
+      cancelled = true;
+      controller.abort();
+    };
+  }, [shouldLoad, initialData]);
 
   // 前端获取豆瓣预告片
   useEffect(() => {
@@ -321,6 +339,7 @@ export default function BannerCarousel({
       return;
     }
 
+    let cancelled = false;
     const fetchDoubanTrailers = async () => {
       try {
         // 为每个项目获取预告片
@@ -341,21 +360,41 @@ export default function BannerCarousel({
                 trailer_url: trailerUrl,
               };
             } catch (error) {
-              logger.error(`获取豆瓣电影 ${item.id} 预告片失败:`, error);
+              if (!cancelled)
+                logger.error(`获取豆瓣电影 ${item.id} 预告片失败:`, error);
               return item;
             }
           })
         );
 
-        setItems(itemsWithTrailers);
+        if (cancelled) return;
+        const trailersByItem = new Map(
+          itemsWithTrailers.map((item) => [
+            getBannerArtworkKey(item),
+            item.trailer_url,
+          ])
+        );
+        setItems((currentItems) =>
+          currentItems.map((item) =>
+            trailersByItem.has(getBannerArtworkKey(item))
+              ? {
+                  ...item,
+                  trailer_url: trailersByItem.get(getBannerArtworkKey(item)),
+                }
+              : item
+          )
+        );
         setTrailersLoaded(true);
       } catch (error) {
-        logger.error('获取豆瓣预告片失败:', error);
+        if (!cancelled) logger.error('获取豆瓣预告片失败:', error);
       }
     };
 
     fetchDoubanTrailers();
-  }, [enableTrailers, dataSource, items.length, trailersLoaded]);
+    return () => {
+      cancelled = true;
+    };
+  }, [enableTrailers, dataSource, items, trailersLoaded]);
 
   // 切换轮播图时重置静音状态
   useEffect(() => {
@@ -381,12 +420,7 @@ export default function BannerCarousel({
 
   // 自动播放
   useEffect(() => {
-    if (
-      items.length < 2 ||
-      rotationPaused ||
-      isFocusWithin ||
-      !pageVisible
-    )
+    if (items.length < 2 || rotationPaused || isFocusWithin || !pageVisible)
       return;
 
     const timer = setTimeout(() => {
@@ -426,10 +460,13 @@ export default function BannerCarousel({
     setCurrentIndex((prev) => (prev + 1) % items.length);
   }, [items.length, markManualChange]);
 
-  const goToSlide = useCallback((index: number) => {
-    markManualChange();
-    setCurrentIndex(index);
-  }, [markManualChange]);
+  const goToSlide = useCallback(
+    (index: number) => {
+      markManualChange();
+      setCurrentIndex(index);
+    },
+    [markManualChange]
+  );
 
   const toggleRotation = () => {
     setRotationEnabled(rotationPaused);
@@ -530,7 +567,7 @@ export default function BannerCarousel({
       currentItem.trailer_url || (currentItem.video_key && isYouTubeAccessible)
     );
   const showPoster =
-    portraitArtwork[currentItem.id] ??
+    portraitArtwork[getBannerArtworkKey(currentItem)] ??
     currentItem.backdrop_path === currentItem.poster_path;
 
   return (
@@ -561,14 +598,12 @@ export default function BannerCarousel({
               return null;
             return (
               <div
-                key={item.id}
+                key={getBannerArtworkKey(item)}
                 className='cinema-hero-slide'
                 data-active={active}
               >
                 <ProxyImage
-                  originalSrc={getImageUrl(
-                    item.backdrop_path || item.poster_path
-                  )}
+                  {...artworkFor(item, 'hero')}
                   alt=''
                   className='cinema-backdrop'
                   loading={active ? 'eager' : 'lazy'}
@@ -578,9 +613,9 @@ export default function BannerCarousel({
                     const portrait =
                       image.naturalWidth / image.naturalHeight < 1.35;
                     setPortraitArtwork((previous) =>
-                      previous[item.id] === portrait
+                      previous[getBannerArtworkKey(item)] === portrait
                         ? previous
-                        : { ...previous, [item.id]: portrait }
+                        : { ...previous, [getBannerArtworkKey(item)]: portrait }
                     );
                   }}
                 />
@@ -624,9 +659,7 @@ export default function BannerCarousel({
         {showPoster && !renderingTrailer && (
           <div className='cinema-hero-poster' aria-hidden='true'>
             <ProxyImage
-              originalSrc={getImageUrl(
-                currentItem.poster_path || currentItem.backdrop_path
-              )}
+              {...artworkFor(currentItem, 'poster')}
               alt=''
               loading='eager'
             />
@@ -636,7 +669,7 @@ export default function BannerCarousel({
           <p className='cinema-eyebrow'>
             <span /> 今晚，值得一看
           </p>
-          <h1 key={currentItem.id}>{currentItem.title}</h1>
+          <h1 key={getBannerArtworkKey(currentItem)}>{currentItem.title}</h1>
           <div className='cinema-meta'>
             {currentItem.vote_average > 0 && (
               <span className='cinema-score'>
@@ -684,7 +717,7 @@ export default function BannerCarousel({
           <div className='cinema-slide-dots'>
             {items.map((item, index) => (
               <button
-                key={item.id}
+                key={getBannerArtworkKey(item)}
                 onClick={() => goToSlide(index)}
                 aria-label={'查看推荐：' + item.title}
                 aria-pressed={index === currentIndex}
@@ -732,16 +765,13 @@ export default function BannerCarousel({
       >
         {items.map((item, index) => (
           <button
-            key={item.id}
+            key={getBannerArtworkKey(item)}
             className='cinema-feature-pick'
             onClick={() => goToSlide(index)}
             aria-label={`选择精选影片：${item.title}`}
             aria-pressed={index === currentIndex}
           >
-            <ProxyImage
-              originalSrc={getImageUrl(item.backdrop_path || item.poster_path)}
-              alt=''
-            />
+            <ProxyImage {...artworkFor(item, 'thumbnail')} alt='' />
             <span>
               <span className='cinema-feature-index'>
                 {String(index + 1).padStart(2, '0')} /{' '}

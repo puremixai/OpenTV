@@ -14,6 +14,7 @@ import {
   Youtube,
 } from 'lucide-react';
 import Image from 'next/image';
+import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import React, {
   forwardRef,
@@ -50,13 +51,26 @@ import {
 } from '@/lib/utils';
 import { useLongPress } from '@/hooks/useLongPress';
 
-import AIChatPanel from '@/components/AIChatPanel';
-import AnimeSubscribeModal from '@/components/AnimeSubscribeModal';
-import DetailPanel from '@/components/DetailPanel';
 import { ImagePlaceholder } from '@/components/ImagePlaceholder';
-import ImageViewer from '@/components/ImageViewer';
 import MobileActionSheet from '@/components/MobileActionSheet';
-import TrailerPickerDialog from '@/components/TrailerPickerDialog';
+
+const AIChatPanel = dynamic(() => import('@/components/AIChatPanel'), {
+  ssr: false,
+});
+const AnimeSubscribeModal = dynamic(
+  () => import('@/components/AnimeSubscribeModal'),
+  { ssr: false }
+);
+const DetailPanel = dynamic(() => import('@/components/DetailPanel'), {
+  ssr: false,
+});
+const ImageViewer = dynamic(() => import('@/components/ImageViewer'), {
+  ssr: false,
+});
+const TrailerPickerDialog = dynamic(
+  () => import('@/components/TrailerPickerDialog'),
+  { ssr: false }
+);
 
 export interface VideoCardProps {
   id?: string;
@@ -149,6 +163,7 @@ const VideoCard = forwardRef<VideoCardHandle, VideoCardProps>(
     }: VideoCardProps,
     ref
   ) {
+    'use memo';
     const router = useRouter();
     const [showAnimeSubscribe, setShowAnimeSubscribe] = useState(false);
     const [animeSubscribeToast, setAnimeSubscribeToast] = useState('');
@@ -157,8 +172,7 @@ const VideoCard = forwardRef<VideoCardHandle, VideoCardProps>(
       return auth?.role === 'admin' || auth?.role === 'owner';
     }, []);
     const resolvedIsAnime = useMemo(
-      () =>
-        Boolean(isBangumi || isAnime || isAnimeCategoryText(typeName)),
+      () => Boolean(isBangumi || isAnime || isAnimeCategoryText(typeName)),
       [isBangumi, isAnime, typeName]
     );
     const actualTitle = title;
@@ -450,7 +464,9 @@ const VideoCard = forwardRef<VideoCardHandle, VideoCardProps>(
           isAggregate ? '&prefer=true' : ''
         }${
           actualQuery ? `&stitle=${encodeURIComponent(actualQuery.trim())}` : ''
-        }${actualSearchType ? `&stype=${actualSearchType}` : ''}${isDuanju ? '&duanju=1' : ''}`;
+        }${actualSearchType ? `&stype=${actualSearchType}` : ''}${
+          isDuanju ? '&duanju=1' : ''
+        }`;
 
         if (isCurrentlyOnPlayPage) {
           // 在 play 页面内，添加 _reload 参数强制刷新
@@ -513,7 +529,9 @@ const VideoCard = forwardRef<VideoCardHandle, VideoCardProps>(
           isAggregate ? '&prefer=true' : ''
         }${
           actualQuery ? `&stitle=${encodeURIComponent(actualQuery.trim())}` : ''
-        }${actualSearchType ? `&stype=${actualSearchType}` : ''}${isDuanju ? '&duanju=1' : ''}`;
+        }${actualSearchType ? `&stype=${actualSearchType}` : ''}${
+          isDuanju ? '&duanju=1' : ''
+        }`;
         window.open(url, '_blank');
       }
     }, [
@@ -682,7 +700,6 @@ const VideoCard = forwardRef<VideoCardHandle, VideoCardProps>(
       if (daysUntilRelease === 0) return '今日上映';
       return '已上映';
     }, [isUpcoming, daysUntilRelease]);
-
 
     const openTrailerPicker = useCallback(async () => {
       if (!actualTitle) return;
@@ -891,12 +908,7 @@ const VideoCard = forwardRef<VideoCardHandle, VideoCardProps>(
       }
 
       // 添加追番订阅（仅管理员 + 判定为动漫）
-      if (
-        isAdminUser &&
-        resolvedIsAnime &&
-        origin !== 'live' &&
-        actualTitle
-      ) {
+      if (isAdminUser && resolvedIsAnime && origin !== 'live' && actualTitle) {
         actions.push({
           id: 'anime-subscribe',
           label: '添加追番订阅',
@@ -2069,24 +2081,25 @@ const VideoCard = forwardRef<VideoCardHandle, VideoCardProps>(
           }}
         />
 
-
-        <TrailerPickerDialog
-          isOpen={showTrailerPicker}
-          title={actualTitle}
-          loading={trailerLoading}
-          error={trailerError}
-          videos={trailerVideos}
-          onClose={() => setShowTrailerPicker(false)}
-          onRetry={openTrailerPicker}
-          onSelect={(video) => {
-            window.open(
-              `https://www.youtube.com/watch?v=${video.key}`,
-              '_blank',
-              'noopener,noreferrer'
-            );
-            setShowTrailerPicker(false);
-          }}
-        />
+        {showTrailerPicker && (
+          <TrailerPickerDialog
+            isOpen={showTrailerPicker}
+            title={actualTitle}
+            loading={trailerLoading}
+            error={trailerError}
+            videos={trailerVideos}
+            onClose={() => setShowTrailerPicker(false)}
+            onRetry={openTrailerPicker}
+            onSelect={(video) => {
+              window.open(
+                `https://www.youtube.com/watch?v=${video.key}`,
+                '_blank',
+                'noopener,noreferrer'
+              );
+              setShowTrailerPicker(false);
+            }}
+          />
+        )}
 
         {/* AI问片面板 - 只在打开或正在流式响应时渲染 */}
         {aiEnabled && (showAIChat || isAIStreaming) && (
@@ -2134,18 +2147,20 @@ const VideoCard = forwardRef<VideoCardHandle, VideoCardProps>(
         )}
 
         {/* 添加追番订阅（管理员） */}
-        <AnimeSubscribeModal
-          isOpen={showAnimeSubscribe}
-          onClose={() => setShowAnimeSubscribe(false)}
-          initialTitle={actualTitle}
-          initialLastEpisode={
-            from === 'playrecord' && currentEpisode ? currentEpisode : 0
-          }
-          onSuccess={() => {
-            setAnimeSubscribeToast('已添加追番订阅');
-            window.setTimeout(() => setAnimeSubscribeToast(''), 2500);
-          }}
-        />
+        {showAnimeSubscribe && (
+          <AnimeSubscribeModal
+            isOpen={showAnimeSubscribe}
+            onClose={() => setShowAnimeSubscribe(false)}
+            initialTitle={actualTitle}
+            initialLastEpisode={
+              from === 'playrecord' && currentEpisode ? currentEpisode : 0
+            }
+            onSuccess={() => {
+              setAnimeSubscribeToast('已添加追番订阅');
+              window.setTimeout(() => setAnimeSubscribeToast(''), 2500);
+            }}
+          />
+        )}
         {animeSubscribeToast ? (
           <div className='fixed bottom-24 left-1/2 z-[10001] -translate-x-1/2 rounded-full bg-green-600 px-4 py-2 text-sm text-white shadow-lg'>
             {animeSubscribeToast}

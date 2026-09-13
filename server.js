@@ -44,7 +44,14 @@ const dev = process.env.NODE_ENV !== 'production';
 const hostname = process.env.HOSTNAME || '0.0.0.0';
 const port = parseInt(process.env.PORT || '3000', 10);
 
-const app = next({ dev, hostname, port });
+const edgeRuntime =
+  process.env.CF_PAGES === '1' || process.env.EDGEONE_PAGES === '1' ||
+  ['cloudflare', 'edgeone'].includes(process.env.BUILD_TARGET);
+const useTurbopack = !edgeRuntime && process.env.XTV_BUNDLER === 'turbopack';
+const app = next({
+  dev, hostname, port,
+  ...(useTurbopack ? { turbopack: true } : { webpack: true }),
+});
 const handle = app.getRequestHandler();
 
 // 读取观影室配置的辅助函数

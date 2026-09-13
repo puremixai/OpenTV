@@ -10,6 +10,17 @@ const isCloudflare =
 const isEdgeOne =
   process.env.EDGEONE_PAGES === '1' || process.env.BUILD_TARGET === 'edgeone';
 const isEdgeBuild = isCloudflare || isEdgeOne;
+const useTurbopack = !isEdgeBuild && process.env.XTV_BUNDLER === 'turbopack';
+const browserNodeFiles = [
+  'src/lib/d1.db.ts',
+  'src/lib/d1-adapter.ts',
+  'src/lib/postgres.db.ts',
+  'src/lib/postgres-adapter.ts',
+  'src/lib/turso-adapter.ts',
+];
+const browserEmptyLoader = require.resolve(
+  './scripts/browser-empty-loader.cjs'
+);
 
 const optimizedPackageImports = [
   '@dnd-kit/core',
@@ -32,14 +43,62 @@ const createNextConfig = (phase) => {
     output:
       isEdgeBuild || process.platform === 'win32' ? undefined : 'standalone',
     distDir: isDevelopment ? '.next-dev' : '.next',
-    eslint: {
-      dirs: ['src'],
-      // 在生产构建时执行 ESLint 检查
-      ignoreDuringBuilds: false,
-    },
-
     reactStrictMode: false,
-    swcMinify: true,
+    reactCompiler: { compilationMode: 'annotation' },
+    turbopack: useTurbopack
+      ? {
+          root: __dirname,
+          resolveAlias: Object.fromEntries(
+            [
+              'net',
+              'tls',
+              'crypto',
+              'node:net',
+              'node:tls',
+              'node:crypto',
+              'better-sqlite3',
+              '@vercel/postgres',
+              'pg',
+              '@libsql/client',
+            ].map((name) => [name, { browser: './scripts/browser-empty.cjs' }])
+          ),
+          rules: {
+            '*.svg': [
+              {
+                condition: {
+                  all: [{ not: 'foreign' }, { query: /[?&]url(?:&|$)/ }],
+                },
+                type: 'asset',
+              },
+              {
+                condition: {
+                  all: [
+                    { not: 'foreign' },
+                    { not: { query: /[?&]url(?:&|$)/ } },
+                  ],
+                },
+                loaders: [
+                  {
+                    loader: '@svgr/webpack',
+                    options: { dimensions: false, titleProp: true },
+                  },
+                ],
+                as: '*.js',
+              },
+            ],
+            ...Object.fromEntries(
+              browserNodeFiles.map((filename) => [
+                filename,
+                {
+                  condition: { all: ['browser', { not: 'foreign' }] },
+                  loaders: [browserEmptyLoader],
+                  as: '*.js',
+                },
+              ])
+            ),
+          },
+        }
+      : undefined,
 
     // OpenNext/esbuild 使用 workerd condition 解析依赖。
     // @libsql/* 等包有 workerd 专用入口（如 web.cjs），Next NFT 默认只追踪 node 入口，
@@ -47,19 +106,16 @@ const createNextConfig = (phase) => {
     // 声明为 server external 后，OpenNext 会完整拷贝这些包并应用 workerd 导出。
     // 参见: https://opennext.js.org/cloudflare/howtos/workerd
 
+    serverExternalPackages: [
+      '@libsql/client',
+      '@libsql/hrana-client',
+      '@libsql/isomorphic-ws',
+      '@libsql/isomorphic-fetch',
+      'libsql',
+    ],
     experimental: {
-      instrumentationHook:
-        process.env.NODE_ENV === 'production' && !isEdgeBuild,
       optimizePackageImports: optimizedPackageImports,
       webpackBuildWorker: !isEdgeBuild,
-      // Next 14.2 仍可能读取此字段；与 serverExternalPackages 保持一致
-      serverComponentsExternalPackages: [
-        '@libsql/client',
-        '@libsql/hrana-client',
-        '@libsql/isomorphic-ws',
-        '@libsql/isomorphic-fetch',
-        'libsql',
-      ],
     },
 
     // Uncoment to add domain whitelist
@@ -78,6 +134,23 @@ const createNextConfig = (phase) => {
     },
 
     webpack(config, { isServer }) {
+      // Next's default cache fingerprint omits environment-dependent aliases.
+      // Keep each deployment target's native/edge module graph in its own pack.
+      if (config.cache && config.cache.type === 'filesystem') {
+        const target = isCloudflare
+          ? 'cloudflare'
+          : isEdgeOne
+          ? 'edgeone'
+          : 'node';
+        config.cache = {
+          ...config.cache,
+          name: `${
+            config.cache.name || `${config.name}-${config.mode}`
+          }-xtv-${target}`,
+          version: `${config.cache.version || ''}|xtv-build-target=${target}`,
+        };
+      }
+
       // Grab the existing rule that handles SVG imports
       const fileLoaderRule = config.module.rules.find((rule) =>
         rule.test?.test?.('.svg')
@@ -104,7 +177,7 @@ const createNextConfig = (phase) => {
       );
 
       // Modify the file loader rule to ignore *.svg, since we have it handled now.
-      fileLoaderRule.exclude = /\.svg$/i;
+      if (fileLoaderRule) fileLoaderRule.exclude = /\.svg$/i;
 
       config.resolve.fallback = {
         ...config.resolve.fallback,
@@ -117,7 +190,10 @@ const createNextConfig = (phase) => {
       if (isEdgeBuild) {
         config.resolve.alias = {
           ...config.resolve.alias,
-          '@/lib/cache-backend': path.resolve(__dirname, 'src/lib/cloudflare-shims/cache-backend.ts'),
+          '@/lib/cache-backend': path.resolve(
+            __dirname,
+            'src/lib/cloudflare-shims/cache-backend.ts'
+          ),
           '@/lib/server/public-fetch': path.resolve(
             __dirname,
             'src/lib/server/edge-public-fetch.ts'
@@ -186,6 +262,14 @@ const createNextConfig = (phase) => {
 
       // Exclude better-sqlite3, D1, Postgres, and Turso modules from client-side bundle
       if (!isServer) {
+        // Match relative imports as well as the aliases below. The browser
+        // facade must not traverse native database drivers under either bundler.
+        config.module.rules.push({
+          include: browserNodeFiles.map((filename) =>
+            path.resolve(__dirname, filename)
+          ),
+          loader: browserEmptyLoader,
+        });
         config.externals = config.externals || [];
         config.externals.push({
           'better-sqlite3': 'commonjs better-sqlite3',
@@ -209,31 +293,9 @@ const createNextConfig = (phase) => {
     },
   };
 
-  // next-pwa runs an additional webpack pass that is not needed for the
-  // Cloudflare/OpenNext worker bundle and can make Cloudflare builds fail with
-  // a generic "Build failed because of webpack errors" message.
-  if (isDevelopment || isEdgeBuild) {
-    return nextConfig;
-  }
-
-  const withPWA = require('next-pwa')({
-    dest: 'public',
-    register: true,
-    skipWaiting: true,
-    importScripts: ['/push-sw.js'],
-    runtimeCaching: [
-      {
-        // API data can depend on cookies, permissions and short-lived proxy tokens.
-        // Workbox CacheStorage does not honor HTTP Cache-Control automatically.
-        urlPattern: ({ url, sameOrigin }) => sameOrigin && url.pathname.startsWith('/api/'),
-        handler: 'NetworkOnly',
-        method: 'GET',
-      },
-      ...require('next-pwa/cache'),
-    ],
-  });
-
-  return withPWA(nextConfig);
+  // Both bundlers generate PWA assets once, after a successful build, through
+  // scripts/generate-pwa.cjs. Edge output continues to skip PWA generation.
+  return nextConfig;
 };
 
 module.exports = createNextConfig;

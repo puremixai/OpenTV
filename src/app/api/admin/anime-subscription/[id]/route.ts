@@ -16,8 +16,9 @@ export const runtime = 'nodejs';
  */
 export const PUT = withConfigMutation(async function PUT(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params: paramsPromise }: { params: Promise<{ id: string }> }
 ) {
+  const params = await paramsPromise;
   try {
     // 权限检查
     const authInfo = await getAuthenticatedUser(req);
@@ -130,8 +131,9 @@ export const PUT = withConfigMutation(async function PUT(
  */
 export const DELETE = withConfigMutation(async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params: paramsPromise }: { params: Promise<{ id: string }> }
 ) {
+  const params = await paramsPromise;
   try {
     // 权限检查
     const authInfo = await getAuthenticatedUser(req);

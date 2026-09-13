@@ -1,7 +1,18 @@
 #!/usr/bin/env node
 import { spawn } from 'node:child_process';
-import { copyFileSync, existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
+import {
+  copyFileSync,
+  existsSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
+import { join, resolve } from 'node:path';
+import { pathToFileURL } from 'node:url';
+import {
+  patchMiddlewareCode,
+  readMiddlewareMatchers,
+} from './edgeone-middleware-patch.mjs';
 
 function loadLocalEnvFile() {
   const envPath = join(process.cwd(), '.env');
@@ -27,7 +38,10 @@ function loadLocalEnvFile() {
       value = value.slice(1, -1);
     }
     if (quote === '"') {
-      value = value.replace(/\\n/g, '\n').replace(/\\"/g, '"').replace(/\\\\/g, '\\');
+      value = value
+        .replace(/\\n/g, '\n')
+        .replace(/\\"/g, '"')
+        .replace(/\\\\/g, '\\');
     }
 
     process.env[match[1]] = value;
@@ -39,6 +53,7 @@ loadLocalEnvFile();
 const runtimeEnvKeys = [
   'USERNAME',
   'PASSWORD',
+  'AUTH_SECRET',
   'NEXT_PUBLIC_STORAGE_TYPE',
   'UPSTASH_URL',
   'UPSTASH_TOKEN',
@@ -81,169 +96,6 @@ const runtimeEnvKeys = [
   'WEB_PUSH_BASEURL',
   'NEXT_PUBLIC_BASE_PATH',
 ];
-
-/**
- * Read Next.js middleware matcher sources (originalSource strings).
- * Prefer build manifest, then compiled edge function, then source middleware.ts.
- */
-function getMiddlewareMatcherSources() {
-  const sources = [];
-
-  const manifestPath = join(process.cwd(), '.next', 'server', 'middleware-manifest.json');
-  try {
-    const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
-    const middlewareEntries = manifest?.middleware || {};
-    for (const entry of Object.values(middlewareEntries)) {
-      for (const matcher of entry?.matchers || []) {
-        if (typeof matcher?.originalSource === 'string' && matcher.originalSource) {
-          sources.push(matcher.originalSource);
-        } else if (typeof matcher?.regexp === 'string' && matcher.regexp) {
-          sources.push(matcher.regexp);
-        }
-      }
-    }
-    if (sources.length > 0) {
-      return [...new Set(sources)];
-    }
-  } catch {
-    // fall through
-  }
-
-  const edgeFunctionPath = join(process.cwd(), '.edgeone', 'edge-functions', 'index.js');
-  try {
-    const code = readFileSync(edgeFunctionPath, 'utf8');
-    // compiled form: matcher:["/((?!...).*)"] or matcher:["..."]
-    const matcherArrayMatch = code.match(/matcher:\s*(\[(?:[^\[\]"']|"[^"]*"|'[^']*')*\])/);
-    if (matcherArrayMatch) {
-      try {
-        const parsed = JSON.parse(matcherArrayMatch[1].replace(/'/g, '"'));
-        if (Array.isArray(parsed)) {
-          for (const item of parsed) {
-            if (typeof item === 'string' && item) {
-              sources.push(item);
-            }
-          }
-        }
-      } catch {
-        // ignore parse errors
-      }
-    }
-    if (sources.length > 0) {
-      return [...new Set(sources)];
-    }
-  } catch {
-    // fall through
-  }
-
-  const middlewareSourcePath = join(process.cwd(), 'src', 'middleware.ts');
-  try {
-    const source = readFileSync(middlewareSourcePath, 'utf8');
-    // export const config = { matcher: [ '...' ] } or matcher: '...'
-    const blockMatch = source.match(
-      /export\s+const\s+config\s*=\s*\{[\s\S]*?matcher\s*:\s*(\[[\s\S]*?\]|['"`][^'"`]+['"`])/
-    );
-    if (blockMatch) {
-      const raw = blockMatch[1].trim();
-      if (raw.startsWith('[')) {
-        const stringLiterals = [...raw.matchAll(/['"`]([^'"`]+)['"`]/g)].map((m) => m[1]);
-        sources.push(...stringLiterals);
-      } else {
-        const single = raw.slice(1, -1);
-        if (single) {
-          sources.push(single);
-        }
-      }
-    }
-  } catch {
-    // ignore
-  }
-
-  return [...new Set(sources.filter(Boolean))];
-}
-
-/**
- * Convert Next.js middleware matcher originalSource exclusions into path prefixes.
- * Supports the common form: /((?!a|b|c/).*)
- */
-function extractSkipPathsFromMatcherSource(matcherSource) {
-  if (typeof matcherSource !== 'string' || !matcherSource) {
-    return [];
-  }
-
-  const skipPaths = new Set();
-
-  // Negative-lookahead exclusion list inside /((?!... ).*)
-  const negativeLookahead = matcherSource.match(/\(\?\!([^)]+)\)/);
-  if (negativeLookahead) {
-    for (const part of negativeLookahead[1].split('|')) {
-      const token = part.trim();
-      if (!token) {
-        continue;
-      }
-      // Keep trailing slash semantics (api/cron/, tvbox/) for prefix matching.
-      const normalized = token.startsWith('/') ? token : `/${token}`;
-      skipPaths.add(normalized);
-    }
-  }
-
-  return [...skipPaths];
-}
-
-function resolveEdgeOneMiddlewareSkipPaths() {
-  const matcherSources = getMiddlewareMatcherSources();
-  const skipPaths = new Set();
-
-  for (const source of matcherSources) {
-    for (const path of extractSkipPathsFromMatcherSource(source)) {
-      skipPaths.add(path);
-    }
-  }
-
-  const resolved = [...skipPaths].sort((a, b) => a.localeCompare(b));
-  if (resolved.length === 0) {
-    console.warn(
-      '[edgeone-build] Unable to derive middleware skip paths from matcher; edge function will rely on compiled config.matcher only'
-    );
-  } else {
-    console.log(
-      `[edgeone-build] Derived ${resolved.length} middleware skip path(s) from matcher: ${resolved.join(', ')}`
-    );
-  }
-  return resolved;
-}
-
-function isNextStyleComplexMatcher(source) {
-  return (
-    typeof source === 'string' &&
-    (source.includes('(?') ||
-      source.includes('[^') ||
-      source.includes('.*') ||
-      source.includes('|') ||
-      source.endsWith('$'))
-  );
-}
-
-/**
- * EdgeOne platform-level middleware.matcher uses path-to-regexp style sources
- * (e.g. /:path*, /api/:path*). Next.js negative-lookahead matchers are only safe
- * inside the compiled edge function (matchesPath). For complex Next matchers we
- * keep a catch-all outer intercept and rely on runtime matcher + derived skip paths.
- */
-function resolveEdgeOneMiddlewareMatchers() {
-  const matcherSources = getMiddlewareMatcherSources();
-  if (matcherSources.length === 0) {
-    return [{ source: '/:path*' }];
-  }
-
-  if (matcherSources.some((source) => isNextStyleComplexMatcher(source))) {
-    console.log(
-      '[edgeone-build] Next.js complex middleware matcher detected; edge-functions config keeps /:path* and enforces exclusions at runtime'
-    );
-    return [{ source: '/:path*' }];
-  }
-
-  return matcherSources.map((source) => ({ source }));
-}
 
 function getRuntimeEnvLiteral() {
   const env = {};
@@ -301,9 +153,7 @@ function replaceEnvLiterals(code, envLiteral) {
     }
 
     if (depth !== 0) {
-      console.warn('[edgeone-build] Unable to replace an env literal: malformed object');
-      output += code.slice(cursor);
-      break;
+      throw new Error('Required middleware environment literal is malformed');
     }
 
     output += code.slice(cursor, start) + `env: ${envLiteral}`;
@@ -311,118 +161,60 @@ function replaceEnvLiterals(code, envLiteral) {
     replaced += 1;
   }
 
+  if (replaced === 0)
+    throw new Error('Required edge-function environment literal was not found');
   if (replaced > 0) {
-    console.log(`[edgeone-build] Replaced ${replaced} generated env literal(s) with filtered runtime env`);
+    console.log(
+      `[edgeone-build] Replaced ${replaced} generated env literal(s) with filtered runtime env`
+    );
   }
 
   return output;
 }
 
-function buildMatcherFallbackSnippet(skipPaths) {
-  const matcherFallbackMarker = '/* edgeone-middleware-matcher-fallback */';
-  // Mirrors Next negative-lookahead tokens as pathname prefixes (e.g. /login, /api/cron/).
-  return `${matcherFallbackMarker}
-  const edgeOneMiddlewareSkipPaths = ${JSON.stringify(skipPaths)};
-  if (edgeOneMiddlewareSkipPaths.some((path) => pathname === path || pathname.startsWith(path))) {
-    return null;
-  }`;
-}
-
 function patchEdgeFunctionEnvInjection() {
-  const edgeFunctionPath = join(process.cwd(), '.edgeone', 'edge-functions', 'index.js');
-  let code;
-  try {
-    code = readFileSync(edgeFunctionPath, 'utf8');
-  } catch {
-    return;
-  }
-
-  const marker = '/* edgeone-process-env-injected */';
-  const envLiteral = getRuntimeEnvLiteral();
-  const edgeOneMiddlewareSkipPaths = resolveEdgeOneMiddlewareSkipPaths();
-
-  code = replaceEnvLiterals(code, envLiteral);
-
-  const target = 'let request = context.request;';
-  if (!code.includes(marker) && !code.includes(target)) {
-    console.warn('[edgeone-build] Unable to patch edge function env injection: target not found');
-  } else if (!code.includes(marker)) {
-    code = code.replace(
-      target,
-      `${target}\n          ${marker}\n          if (typeof globalThis !== 'undefined' && globalThis.process?.env && context?.env) {\n            Object.assign(globalThis.process.env, context.env);\n          }`
-    );
-  }
-
-  const middlewareSignature = 'async function executeMiddleware({request}) {';
-  const middlewareMarker = '/* edgeone-middleware-env-injected */';
-  if (!code.includes(middlewareMarker) && !code.includes(middlewareSignature)) {
-    if (!code.includes('async function executeMiddleware({request, env})')) {
-      console.warn('[edgeone-build] Unable to patch middleware env injection: target not found');
-    }
-  } else if (!code.includes(middlewareMarker)) {
-    code = code.replace(
-      middlewareSignature,
-      `async function executeMiddleware({request, env}) {\n  ${middlewareMarker}\n  if (typeof globalThis !== 'undefined' && globalThis.process?.env && env) {\n    Object.assign(globalThis.process.env, env);\n  }`
-    );
-  }
-
-  const matcherFallbackMarker = '/* edgeone-middleware-matcher-fallback */';
-  const matcherFallbackTarget = `  if (!matchesPath(pathname, config.matcher)) {
-    return null;
-  }`;
-  const fallbackSnippet = buildMatcherFallbackSnippet(edgeOneMiddlewareSkipPaths);
-
-  // Replace an existing dynamic/static fallback block so rebuilds stay in sync with middleware.
-  const existingFallbackRe =
-    /\/\* edgeone-middleware-matcher-fallback \*\/[\s\S]*?if \(edgeOneMiddlewareSkipPaths\.some\([\s\S]*?\) \{\s*return null;\s*\}/;
-
-  if (existingFallbackRe.test(code)) {
-    code = code.replace(existingFallbackRe, fallbackSnippet);
-  } else if (code.includes(matcherFallbackTarget)) {
-    code = code.replace(matcherFallbackTarget, `${matcherFallbackTarget}\n\n  ${fallbackSnippet}`);
-  } else if (!code.includes(matcherFallbackMarker)) {
-    console.warn('[edgeone-build] Unable to patch middleware matcher fallback: target not found');
-  }
-
+  const edgeFunctionPath = join(
+    process.cwd(),
+    '.edgeone',
+    'edge-functions',
+    'index.js'
+  );
+  const original = readFileSync(edgeFunctionPath, 'utf8');
+  const matchers = readMiddlewareMatchers(process.cwd());
+  const patched = patchMiddlewareCode(original, matchers);
+  const code = replaceEnvLiterals(patched, getRuntimeEnvLiteral());
   writeFileSync(edgeFunctionPath, code);
-  console.log('[edgeone-build] Patched edge function process.env injection');
+  console.log(
+    '[edgeone-build] Patched required middleware environment and manifest matcher'
+  );
 }
 
-/**
- * Write EdgeOne edge-function route interception matcher from Next.js middleware config.
- * EdgeOne outer matcher decides when the edge function is invoked; keep it aligned with
- * middleware originalSource so exclusions are not a hardcoded catch-all forever.
- */
 function patchEdgeFunctionMiddlewareConfig() {
-  const configPath = join(process.cwd(), '.edgeone', 'edge-functions', 'config.json');
-  let raw;
-  try {
-    raw = readFileSync(configPath, 'utf8');
-  } catch {
-    console.warn('[edgeone-build] edge-functions config.json not found, skip middleware matcher patch');
-    return;
-  }
-
-  let config;
-  try {
-    config = JSON.parse(raw);
-  } catch (error) {
-    console.warn('[edgeone-build] Failed to parse edge-functions config.json:', error);
-    return;
-  }
-
-  const matchers = resolveEdgeOneMiddlewareMatchers();
-  config.routes = Array.isArray(config.routes) ? config.routes : [];
-  config.middleware = {
-    ...(config.middleware && typeof config.middleware === 'object' ? config.middleware : {}),
-    runtime: config.middleware?.runtime || 'edge',
-    matcher: matchers,
-  };
-
-  writeFileSync(configPath, `${JSON.stringify(config, null, 2)}\n`);
-  console.log(
-    `[edgeone-build] Patched edge-functions middleware matcher from Next.js middleware (${matchers.length} rule(s))`
+  const configPath = join(
+    process.cwd(),
+    '.edgeone',
+    'edge-functions',
+    'config.json'
   );
+  const config = JSON.parse(readFileSync(configPath, 'utf8'));
+  readMiddlewareMatchers(process.cwd());
+  if (config.middleware?.runtime && config.middleware.runtime !== 'edge') {
+    throw new Error(
+      'Unsupported edge-function middleware runtime: ' +
+        config.middleware.runtime
+    );
+  }
+  config.routes = Array.isArray(config.routes) ? config.routes : [];
+  // Intercept all requests on the platform; exact manifest regexps run inside
+  // the edge function before authentication. Complex Next regexps cannot be
+  // represented by the platform path-to-regexp matcher without broadening them.
+  config.middleware = {
+    ...config.middleware,
+    runtime: 'edge',
+    matcher: [{ source: '/:path*' }],
+  };
+  writeFileSync(configPath, JSON.stringify(config, null, 2) + '\n');
+  console.log('[edgeone-build] Patched edge-functions middleware interception');
 }
 
 /**
@@ -472,21 +264,7 @@ function patchSsrNodeRoutes() {
     'config.json'
   );
 
-  let raw;
-  try {
-    raw = readFileSync(configPath, 'utf8');
-  } catch {
-    console.warn('[edgeone-build] ssr-node config.json not found, skip API route patch');
-    return;
-  }
-
-  let config;
-  try {
-    config = JSON.parse(raw);
-  } catch (error) {
-    console.warn('[edgeone-build] Failed to parse ssr-node config.json:', error);
-    return;
-  }
+  const config = JSON.parse(readFileSync(configPath, 'utf8'));
 
   const originalRoutes = Array.isArray(config.routes) ? config.routes : [];
   // Drop previous patches / weak API rules; keep other generated rules.
@@ -494,15 +272,21 @@ function patchSsrNodeRoutes() {
     (route) => !isApiRouteRule(route) && !isCatchAllRoute(route)
   );
 
-  let filesystemIdx = routes.findIndex((route) => route && route.handle === 'filesystem');
+  let filesystemIdx = routes.findIndex(
+    (route) => route && route.handle === 'filesystem'
+  );
   if (filesystemIdx === -1) {
     routes.push({ handle: 'filesystem' });
     filesystemIdx = routes.length - 1;
-    console.log('[edgeone-build] Inserted missing { handle: "filesystem" } into ssr-node routes');
+    console.log(
+      '[edgeone-build] Inserted missing { handle: "filesystem" } into ssr-node routes'
+    );
   }
 
   const before = routes.slice(0, filesystemIdx + 1);
-  const after = routes.slice(filesystemIdx + 1).filter((route) => !isCatchAllRoute(route));
+  const after = routes
+    .slice(filesystemIdx + 1)
+    .filter((route) => !isCatchAllRoute(route));
 
   // Official full-stack pattern: API + catch-all AFTER filesystem → Node SSR handler.
   // Do not write private fields into config.json — EdgeOne may reject unknown keys.
@@ -525,7 +309,9 @@ function patchSsrNodeRoutes() {
     dest: '/api',
   };
 
-  const preFilesystem = before.slice(0, -1).filter((route) => !isApiRouteRule(route));
+  const preFilesystem = before
+    .slice(0, -1)
+    .filter((route) => !isApiRouteRule(route));
   const filesystemRule = before[before.length - 1];
 
   config.version = config.version || 3;
@@ -552,7 +338,9 @@ function patchSsrNodeRoutes() {
 function patchHandlerFile(handlerPath, code) {
   const marker = '/* edgeone-api-status-guard */';
   if (code.includes(marker)) {
-    console.log('[edgeone-build] ssr-node handler status guard already present');
+    console.log(
+      '[edgeone-build] ssr-node handler status guard already present'
+    );
     return;
   }
 
@@ -610,75 +398,116 @@ function __edgeoneWrapHandler(fn) {
   }
 
   if (!applied) {
-    console.warn(
-      '[edgeone-build] Unable to wrap ssr-node handler export (unknown module shape); route patch still applied'
+    throw new Error(
+      'Required ssr-node handler export has an unknown module shape'
     );
-    return;
   }
 
   writeFileSync(handlerPath, patched);
-  console.log(`[edgeone-build] Patched ssr-node handler status guard: ${handlerPath}`);
+  console.log(
+    `[edgeone-build] Patched ssr-node handler status guard: ${handlerPath}`
+  );
 }
 
 function patchSsrNodeHandlerStatus() {
   const candidates = [
-    join(process.cwd(), '.edgeone', 'cloud-functions', 'ssr-node', 'handler.js'),
+    join(
+      process.cwd(),
+      '.edgeone',
+      'cloud-functions',
+      'ssr-node',
+      'handler.js'
+    ),
     join(process.cwd(), '.edgeone', 'cloud-functions', 'ssr-node', 'index.js'),
     join(process.cwd(), '.edgeone', 'cloud-functions', 'ssr-node', 'index.mjs'),
-    join(process.cwd(), '.edgeone', 'cloud-functions', 'ssr-node', 'handler.mjs'),
+    join(
+      process.cwd(),
+      '.edgeone',
+      'cloud-functions',
+      'ssr-node',
+      'handler.mjs'
+    ),
   ];
 
-  for (const handlerPath of candidates) {
-    try {
-      const code = readFileSync(handlerPath, 'utf8');
-      patchHandlerFile(handlerPath, code);
-      return;
-    } catch {
-      // try next
-    }
-  }
-
-  console.warn('[edgeone-build] ssr-node handler not found, skip status patch');
+  const handlerPath = candidates.find((candidate) => existsSync(candidate));
+  if (!handlerPath) throw new Error('Required ssr-node handler was not found');
+  patchHandlerFile(handlerPath, readFileSync(handlerPath, 'utf8'));
 }
 
-const isInsideEdgeOneBuilder = process.env.NEXT_PRIVATE_STANDALONE === 'true';
-
-const command = isInsideEdgeOneBuilder
-  ? 'BUILD_TARGET=edgeone EDGEONE_PAGES=1 pnpm build'
-  : 'BUILD_TARGET=edgeone EDGEONE_PAGES=1 edgeone makers build';
-
-const child = spawn(command, {
-  stdio: 'inherit',
-  shell: true,
-  env: {
-    ...process.env,
-    BUILD_TARGET: 'edgeone',
-    EDGEONE_PAGES: '1',
-  },
-});
-
-child.on('exit', (code, signal) => {
-  if (!signal && code === 0) {
-    for (const file of ['edgeone.json', 'package.json']) {
-      copyFileSync(join(process.cwd(), file), join(process.cwd(), '.edgeone', file));
-    }
-
-    patchEdgeFunctionEnvInjection();
-    patchEdgeFunctionMiddlewareConfig();
-    patchSsrNodeRoutes();
-    patchSsrNodeHandlerStatus();
-
-    for (const envPath of [
-      join(process.cwd(), '.edgeone', '.env'),
-      join(process.cwd(), '.edgeone', 'cloud-functions', 'ssr-node', '.env'),
-    ]) {
-      rmSync(envPath, { force: true });
-    }
+export function patchEdgeOneOutput() {
+  for (const file of ['edgeone.json', 'package.json']) {
+    copyFileSync(
+      join(process.cwd(), file),
+      join(process.cwd(), '.edgeone', file)
+    );
   }
+  patchEdgeFunctionEnvInjection();
+  patchEdgeFunctionMiddlewareConfig();
+  patchSsrNodeRoutes();
+  patchSsrNodeHandlerStatus();
+  for (const envPath of [
+    join(process.cwd(), '.edgeone', '.env'),
+    join(process.cwd(), '.edgeone', 'cloud-functions', 'ssr-node', '.env'),
+  ])
+    rmSync(envPath, { force: true });
+}
 
+function finishBuild(code, signal, patchOutput = true) {
   if (signal) {
     process.kill(process.pid, signal);
     return;
   }
-  process.exit(code ?? 1);
-});
+  if (code !== 0 || !patchOutput) {
+    process.exitCode = code ?? 1;
+    return;
+  }
+  try {
+    patchEdgeOneOutput();
+  } catch (error) {
+    console.error('[edgeone-build]', error.message);
+    process.exitCode = 1;
+  }
+}
+
+if (
+  process.argv[1] &&
+  import.meta.url === pathToFileURL(resolve(process.argv[1])).href
+) {
+  if (process.argv.includes('--patch-only')) {
+    finishBuild(0);
+  } else {
+    const tsconfigPath = join(process.cwd(), 'tsconfig.json');
+    const originalTsconfig = existsSync(tsconfigPath)
+      ? readFileSync(tsconfigPath)
+      : null;
+    const isInsideEdgeOneBuilder =
+      process.env.NEXT_PRIVATE_STANDALONE === 'true';
+    const command = isInsideEdgeOneBuilder
+      ? 'pnpm build'
+      : 'edgeone makers build';
+    let result;
+    try {
+      result = await new Promise((resolve, reject) => {
+        const child = spawn(command, {
+          stdio: 'inherit',
+          shell: true,
+          env: { ...process.env, BUILD_TARGET: 'edgeone', EDGEONE_PAGES: '1' },
+        });
+        child.once('error', reject);
+        child.once('close', (code, signal) => resolve({ code, signal }));
+      });
+    } catch (error) {
+      console.error('[edgeone-build]', error.message);
+      process.exitCode = 1;
+    } finally {
+      // EdgeOne rewrites tsconfig in place. Preserve its exact original bytes
+      // on both successful and failed nested builds or artifact generation.
+      if (originalTsconfig !== null)
+        writeFileSync(tsconfigPath, originalTsconfig);
+    }
+    // The adapter invokes the nested Next build before it emits .edgeone.
+    // Only the outer adapter process can validate and patch those artifacts.
+    if (result)
+      finishBuild(result.code, result.signal, !isInsideEdgeOneBuilder);
+  }
+}

@@ -36,8 +36,9 @@ async function checkPermission(request: NextRequest): Promise<boolean> {
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { source: string; videoId: string; episodeIndex: string; file: string[] } }
+  { params: paramsPromise }: { params: Promise<{ source: string; videoId: string; episodeIndex: string; file: string[] }> }
 ) {
+  const params = await paramsPromise;
   if (!(await checkPermission(request))) {
     return NextResponse.json({ error: '无权限' }, { status: 403 });
   }

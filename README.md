@@ -12,9 +12,9 @@
 
 <div align="center">
 
-![Next.js](https://img.shields.io/badge/Next.js-14-000?logo=nextdotjs)
+![Next.js](https://img.shields.io/badge/Next.js-16.3.5-000?logo=nextdotjs)
 ![TailwindCSS](https://img.shields.io/badge/TailwindCSS-3-38bdf8?logo=tailwindcss)
-![TypeScript](https://img.shields.io/badge/TypeScript-4.x-3178c6?logo=typescript)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.8-3178c6?logo=typescript)
 ![License](https://img.shields.io/badge/License-CC_BY--NC--SA_4.0-green)
 ![Docker Ready](https://img.shields.io/badge/Docker-ready-blue?logo=docker)
 
@@ -111,12 +111,26 @@ XTV 主仓库使用 [puremixai/xtv](https://github.com/puremixai/xtv)。上游�
 
 | 分类      | 主要依赖                                                     |
 | --------- | ------------------------------------------------------------ |
-| 前端框架  | [Next.js 14](https://nextjs.org/) · App Router               |
+| 前端框架  | [Next.js 16.3.5](https://nextjs.org/) · App Router · React 19.3 |
 | UI & 样式 | [Tailwind&nbsp;CSS 3](https://tailwindcss.com/)              |
-| 语言      | TypeScript 4                                                 |
+| 语言      | TypeScript 5.8                                               |
 | 播放器    | [ArtPlayer](https://github.com/zhw2590582/ArtPlayer) · [HLS.js](https://github.com/video-dev/hls.js/) |
-| 代码质量  | ESLint · Prettier · Jest                                     |
+| 代码质量  | ESLint 9（Flat Config） · Prettier · Jest                    |
 | 部署      | Docker · Vercel · Netlify · Cloudflare Workers · EdgeOne Pages |
+
+本地开发使用 **Node.js 24** 和 **pnpm 10.14.0**；Next.js 16 的最低 Node.js 要求为 20.9。依赖版本以 `pnpm-lock.yaml` 为准。
+
+```powershell
+pnpm install --frozen-lockfile
+pnpm dev
+pnpm check
+pnpm build
+pnpm start
+```
+
+默认开发和生产构建使用 Webpack。`pnpm dev:turbo`、`pnpm build:turbo` 提供 Turbopack 入口；Cloudflare 与 EdgeOne 保留 Webpack 适配。PWA 在生产构建后由独立 Workbox 脚本生成，缓存静态资源，登录态相关的页面、RSC 与 API 始终走网络，保留 IndexedDB 离线视频支持。
+
+首页采用按模块加载与缓存、服务端轮播数据种子和响应式图片；隐藏的详情、图片查看与 AI 面板按需加载。React Compiler 以注解模式用于选定的卡片与片单组件。Cache Components 保持关闭，待拆分个性化根配置并验证各部署平台后再启用。迁移和验证记录见 [Next.js 16 升级说明](docs/NEXT16-UPGRADE.md)。
 
 ## 部署
 

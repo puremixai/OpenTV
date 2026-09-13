@@ -10,6 +10,7 @@ const {
 jest.mock('next/navigation', () => ({
   useRouter: () => ({ push: jest.fn() }),
 }));
+jest.mock('@/lib/douban.client', () => ({ getDoubanDetail: jest.fn() }));
 
 // Keep carousel state and timing real; image loading is outside this regression.
 jest.mock('@/components/ProxyImage', () => ({
@@ -19,6 +20,7 @@ jest.mock('@/components/ProxyImage', () => ({
 }));
 
 const BannerCarousel = require('../src/components/BannerCarousel').default;
+const { renderToString } = require('react-dom/server.node');
 
 const INTERVAL = 9000;
 const TITLES = ['第一部测试影片', '第二部测试影片', '第三部测试影片'];
@@ -42,6 +44,7 @@ const originalHidden = Object.getOwnPropertyDescriptor(document, 'hidden');
 let hidden;
 let reducedMotion;
 let motionListeners;
+let expectedFetches;
 
 function advance(milliseconds) {
   act(() => jest.advanceTimersByTime(milliseconds));
@@ -87,7 +90,113 @@ function renderCarousel({ count = 3, reduce = false } = {}) {
   );
 }
 
+test('server data includes the first title and artwork before hydration', () => {
+  const html = renderToString(
+    React.createElement(BannerCarousel, {
+      initialData: { code: 200, list: ITEMS, source: 'TX' },
+    })
+  );
+  expect(html).toContain(TITLES[0]);
+  expect(html).toContain('https://images.example.test/banner-1.jpg');
+});
+
+test('server data takes precedence over old browser artwork without a second request', () => {
+  localStorage.setItem(
+    'banner_trending_cache_TX',
+    JSON.stringify({
+      data: [{ ...ITEMS[0], title: '旧轮播内容' }],
+      timestamp: Date.now(),
+    })
+  );
+  render(
+    React.createElement(BannerCarousel, {
+      initialData: { code: 200, list: ITEMS, source: 'TX' },
+    })
+  );
+  expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(
+    TITLES[0]
+  );
+});
+
+test('a late client fetch cannot replace a newer server seed or write its stale cache', async () => {
+  expectedFetches = 1;
+  let complete;
+  global.fetch = jest.fn(
+    () =>
+      new Promise((resolve) => {
+        complete = resolve;
+      })
+  );
+  const view = render(React.createElement(BannerCarousel));
+  const requestSignal = global.fetch.mock.calls[0][1]?.signal;
+  view.rerender(
+    React.createElement(BannerCarousel, {
+      initialData: { code: 200, source: 'TX', list: ITEMS },
+    })
+  );
+  await act(async () =>
+    complete({
+      json: async () => ({
+        code: 200,
+        source: 'TX',
+        list: [{ ...ITEMS[0], title: '过期请求的影片' }],
+      }),
+    })
+  );
+  expectSlide(0);
+  expect(localStorage.getItem('banner_trending_cache_TX')).toBeNull();
+  expect(requestSignal?.aborted).toBe(true);
+});
+
+test('late Douban trailers cannot replace a newer same-length server seed', async () => {
+  localStorage.setItem('enableTrailers', 'true');
+  const { getDoubanDetail } = require('../src/lib/douban.client');
+  let finishOldTrailers;
+  getDoubanDetail.mockImplementation(
+    (id) =>
+      new Promise((resolve) => {
+        if (id === String(ITEMS[0].id)) finishOldTrailers = resolve;
+      })
+  );
+  const view = render(
+    React.createElement(BannerCarousel, {
+      initialData: { code: 200, source: 'Douban', list: [ITEMS[0]] },
+    })
+  );
+  view.rerender(
+    React.createElement(BannerCarousel, {
+      initialData: { code: 200, source: 'Douban', list: [ITEMS[1]] },
+    })
+  );
+  await act(async () => finishOldTrailers({ trailers: [] }));
+  expectSlide(1);
+  expect(getDoubanDetail).toHaveBeenCalledTimes(2);
+});
+
+test('a shorter refreshed seed still has a selected backdrop', () => {
+  const view = render(
+    React.createElement(BannerCarousel, {
+      initialData: { code: 200, source: 'TX', list: ITEMS },
+      autoPlayInterval: INTERVAL,
+    })
+  );
+  advance(INTERVAL);
+  advance(INTERVAL);
+  expectSlide(2);
+  view.rerender(
+    React.createElement(BannerCarousel, {
+      initialData: { code: 200, source: 'TX', list: [ITEMS[0]] },
+    })
+  );
+  expectSlide(0);
+  expect(
+    view.container.querySelector('.cinema-hero-slide[data-active="true"] img')
+  ).toHaveAttribute('src', ITEMS[0].backdrop_path);
+});
+
 beforeEach(() => {
+  require('../src/lib/douban.client').getDoubanDetail.mockReset();
+  expectedFetches = 0;
   jest.useFakeTimers('modern');
   jest.setSystemTime(new Date('2026-09-13T08:00:00Z'));
   localStorage.clear();
@@ -120,7 +229,7 @@ beforeEach(() => {
 
 afterEach(() => {
   cleanup();
-  expect(global.fetch).not.toHaveBeenCalled();
+  expect(global.fetch).toHaveBeenCalledTimes(expectedFetches);
   jest.clearAllTimers();
   jest.useRealTimers();
   localStorage.clear();
@@ -149,13 +258,19 @@ test('rotates cached homepage slides every nine seconds and wraps to the first',
 
 test.each([
   ['hero', () => screen.getByRole('region', { name: '精选推荐' })],
-  ['film picker', () => screen.getByRole('navigation', { name: '切换精选影片' })],
-])('a pointer resting over the %s does not disable automatic rotation', (_name, getArea) => {
-  renderCarousel();
-  fireEvent.mouseEnter(getArea());
-  advance(INTERVAL);
-  expectSlide(1);
-});
+  [
+    'film picker',
+    () => screen.getByRole('navigation', { name: '切换精选影片' }),
+  ],
+])(
+  'a pointer resting over the %s does not disable automatic rotation',
+  (_name, getArea) => {
+    renderCarousel();
+    fireEvent.mouseEnter(getArea());
+    advance(INTERVAL);
+    expectSlide(1);
+  }
+);
 
 test('a pointer click on next keeps focus without preventing the following automatic slide', () => {
   renderCarousel();
@@ -173,7 +288,9 @@ test('a pointer click on next keeps focus without preventing the following autom
 test('manual selection restarts one full interval without skipping an extra cycle', () => {
   renderCarousel();
   advance(INTERVAL / 2);
-  pointerClick(screen.getByRole('button', { name: `选择精选影片：${TITLES[1]}` }));
+  pointerClick(
+    screen.getByRole('button', { name: `选择精选影片：${TITLES[1]}` })
+  );
   focus(screen.getByRole('button', { name: '轮播外的按钮' }));
   expectSlide(1);
   advance(INTERVAL - 1);
@@ -250,8 +367,12 @@ test('a single cached slide stays selected without automatic rotation controls',
   renderCarousel({ count: 1 });
   advance(INTERVAL * 3);
   expectSlide(0);
-  expect(screen.queryByRole('button', { name: '下一部推荐' })).not.toBeInTheDocument();
-  expect(screen.queryByRole('button', { name: '暂停自动轮播' })).not.toBeInTheDocument();
+  expect(
+    screen.queryByRole('button', { name: '下一部推荐' })
+  ).not.toBeInTheDocument();
+  expect(
+    screen.queryByRole('button', { name: '暂停自动轮播' })
+  ).not.toBeInTheDocument();
 });
 
 test('unmounting clears both rotation and pending manual-interaction timers', () => {

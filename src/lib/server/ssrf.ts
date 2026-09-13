@@ -107,8 +107,10 @@ async function resolveRealAddresses(hostname: string) {
         addresses.some((item) => isPrivateIP(item.address))
       )
         throw new Error('Non-public DNS answer');
-      if (realDnsCache.size >= 500)
-        realDnsCache.delete(realDnsCache.keys().next().value);
+      if (realDnsCache.size >= 500) {
+        const oldestHostname = realDnsCache.keys().next().value;
+        if (oldestHostname !== undefined) realDnsCache.delete(oldestHostname);
+      }
       const ttl = Math.max(
         0,
         Math.min(60, ...records.map((record) => record.TTL || 0))

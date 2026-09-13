@@ -1,8 +1,17 @@
 'use client';
 
-import React, { createContext, useCallback, useContext, useEffect,useState } from 'react';
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 
 import { downloadDB } from '@/lib/download-db';
+import { createDownloadUpdates } from '@/lib/download-updates';
 import {
   buildIndexedDBVideoCacheKey,
   getBrowserStorageEstimate,
@@ -38,158 +47,156 @@ interface DownloadContextType {
   setShowDownloadPanel: (show: boolean) => void;
 }
 
-const DownloadContext = createContext<DownloadContextType | undefined>(undefined);
+type DownloadProgress = Pick<
+  DownloadContextType,
+  'tasks' | 'downloadingCount' | 'showDownloadPanel'
+>;
+type DownloadActions = Omit<DownloadContextType, keyof DownloadProgress>;
+const DownloadActionsContext = createContext<DownloadActions | undefined>(
+  undefined
+);
+const DownloadProgressContext = createContext<DownloadProgress | undefined>(
+  undefined
+);
 
 export function DownloadProvider({ children }: { children: React.ReactNode }) {
   const [tasks, setTasks] = useState<M3U8DownloadTask[]>([]);
   const [showDownloadPanel, setShowDownloadPanel] = useState(false);
-  const [startingTaskIds, setStartingTaskIds] = useState<Set<string>>(new Set());
+  const [, setStartingTaskIds] = useState<Set<string>>(new Set());
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
+  const restoreStarted = useRef(false);
+  const [{ downloader, updates, saveTaskNow, startNextPendingTask }] = useState(() => {
+    const updates: ReturnType<typeof createDownloadUpdates> = createDownloadUpdates({
+      getTasks: () => downloader.getAllTasks(),
+      publish: setTasks,
+      persist: (changedTasks, deletedIds) => downloadDB.updateActiveTasks(changedTasks, deletedIds),
+      onError: (error) => logger.error('保存任务失败:', error),
+    });
 
-  // 自动启动下一个等待的任务
-  const startNextPendingTask = useCallback((currentDownloader: M3U8Downloader) => {
-    // 从localStorage读取最大同时下载限制，默认6个
-    const maxConcurrentDownloads = typeof window !== 'undefined'
-      ? Number(localStorage.getItem('maxConcurrentDownloads') || 6)
-      : 6;
+    const saveTaskNow = (task: M3U8DownloadTask | undefined) => {
+      if (task) updates.progress(task);
+      return updates.flush();
+    };
 
-    const allTasks = currentDownloader.getAllTasks();
-    const downloadingCount = allTasks.filter(t => t.status === 'downloading').length;
+    // 自动启动下一个等待的任务
+    const startNextPendingTask = (currentDownloader: M3U8Downloader) => {
+      // 从localStorage读取最大同时下载限制，默认6个
+      const maxConcurrentDownloads = typeof window !== 'undefined'
+        ? Number(localStorage.getItem('maxConcurrentDownloads') || 6)
+        : 6;
 
-    // 如果当前下载数量小于限制，启动下一个ready任务
-    if (downloadingCount < maxConcurrentDownloads) {
-      const readyTask = allTasks.find(t => t.status === 'ready');
-      if (readyTask) {
-        currentDownloader.startTask(readyTask.id);
-        setTasks(currentDownloader.getAllTasks());
-      }
-    }
-  }, []);
+      const allTasks = currentDownloader.getAllTasks();
+      const downloadingCount = allTasks.filter(t => t.status === 'downloading').length;
 
-  const [downloader] = useState(() => new M3U8Downloader({
-    onProgress: (task) => {
-      setTasks(downloader.getAllTasks());
-      // 保存任务状态
-      saveTasks(downloader.getAllTasks());
-    },
-    onComplete: async (task) => {
-      setTasks(downloader.getAllTasks());
-
-      // File System / IndexedDB 模式保存到已完成任务表，用于本地播放命中和下载管理
-      if (
-        (task.downloadMode === 'filesystem' || task.downloadMode === 'indexeddb') &&
-        task.source &&
-        task.videoId &&
-        task.episodeIndex !== undefined
-      ) {
-        try {
-          // 计算文件大小
-          let fileSize: number | undefined;
-          if (task.downloadMode === 'filesystem' && task.filesystemDirHandle) {
-            try {
-              const sourceDirHandle = await task.filesystemDirHandle.getDirectoryHandle(task.source, { create: false });
-              const videoIdDirHandle = await sourceDirHandle.getDirectoryHandle(task.videoId, { create: false });
-              const epDirHandle = await videoIdDirHandle.getDirectoryHandle(`ep${task.episodeIndex + 1}`, { create: false });
-
-              let totalSize = 0;
-              for await (const entry of epDirHandle.values()) {
-                if (entry.kind === 'file') {
-                  const fileHandle = entry as FileSystemFileHandle;
-                  const file = await fileHandle.getFile();
-                  totalSize += file.size;
-                }
-              }
-              fileSize = totalSize;
-            } catch (error) {
-              logger.error('计算文件大小失败:', error);
-            }
-          } else if (task.downloadMode === 'indexeddb') {
-            try {
-              const cacheKey = task.indexedDBCacheKey || buildIndexedDBVideoCacheKey(
-                task.source,
-                task.videoId,
-                task.episodeIndex
-              );
-              fileSize = await getIndexedDBVideoCacheSize(cacheKey);
-            } catch (error) {
-              logger.error('计算 IndexedDB 缓存大小失败:', error);
-            }
-          }
-
-          await downloadDB.saveCompletedTask({
-            id: task.id,
-            title: task.title,
-            source: task.source,
-            videoId: task.videoId,
-            episodeIndex: task.episodeIndex,
-            completedAt: Date.now(),
-            downloadMode: task.downloadMode,
-            fileSize,
-          });
-        } catch (error) {
-          logger.error('保存已完成任务失败:', error);
+      // 如果当前下载数量小于限制，启动下一个ready任务
+      if (downloadingCount < maxConcurrentDownloads) {
+        const readyTask = allTasks.find(t => t.status === 'ready');
+        if (readyTask) {
+          currentDownloader.startTask(readyTask.id).then(() => saveTaskNow(readyTask)).catch((error) => logger.error('启动任务失败:', error));
+          void saveTaskNow(readyTask);
         }
       }
+    };
 
-      // 保存任务状态
-      saveTasks(downloader.getAllTasks());
-      // 任务完成后，尝试启动下一个等待的任务
-      startNextPendingTask(downloader);
-    },
-    onError: (task, error) => {
-      logger.error('下载错误:', error);
-      setTasks(downloader.getAllTasks());
-      // 保存任务状态
-      saveTasks(downloader.getAllTasks());
-      // 任务出错后，尝试启动下一个等待的任务
-      startNextPendingTask(downloader);
-    },
-  }));
+    const downloader: M3U8Downloader = new M3U8Downloader({
+      onProgress: (task) => {
+        if (downloader.getTask(task.id) !== task) return;
+        updates.progress(task);
+      },
+      onComplete: async (task) => {
+        if (downloader.getTask(task.id) !== task) return;
+        void saveTaskNow(task);
 
-  // 保存任务到 IndexedDB
-  const saveTasks = useCallback(async (tasks: M3U8DownloadTask[]) => {
-    if (typeof window === 'undefined') return;
+        // File System / IndexedDB 模式保存到已完成任务表，用于本地播放命中和下载管理
+        if (
+          (task.downloadMode === 'filesystem' || task.downloadMode === 'indexeddb') &&
+          task.source &&
+          task.videoId &&
+          task.episodeIndex !== undefined
+        ) {
+          try {
+            // 计算文件大小
+            let fileSize: number | undefined;
+            if (task.downloadMode === 'filesystem' && task.filesystemDirHandle) {
+              try {
+                const sourceDirHandle = await task.filesystemDirHandle.getDirectoryHandle(task.source, { create: false });
+                const videoIdDirHandle = await sourceDirHandle.getDirectoryHandle(task.videoId, { create: false });
+                const epDirHandle = await videoIdDirHandle.getDirectoryHandle(`ep${task.episodeIndex + 1}`, { create: false });
 
-    try {
-      // 只保存必要的信息，不保存 ArrayBuffer 等无法序列化的数据
-      // browser 模式的已完成任务不需要保存
-      const tasksToSave = tasks
-        .filter(task => {
-          // 过滤掉 browser 模式的已完成任务
-          if (task.downloadMode === 'browser' && task.status === 'done') {
-            return false;
+                let totalSize = 0;
+                for await (const entry of epDirHandle.values()) {
+                  if (entry.kind === 'file') {
+                    const fileHandle = entry as FileSystemFileHandle;
+                    const file = await fileHandle.getFile();
+                    totalSize += file.size;
+                  }
+                }
+                fileSize = totalSize;
+              } catch (error) {
+                logger.error('计算文件大小失败:', error);
+              }
+            } else if (task.downloadMode === 'indexeddb') {
+              try {
+                const cacheKey = task.indexedDBCacheKey || buildIndexedDBVideoCacheKey(
+                  task.source,
+                  task.videoId,
+                  task.episodeIndex
+                );
+                fileSize = await getIndexedDBVideoCacheSize(cacheKey);
+              } catch (error) {
+                logger.error('计算 IndexedDB 缓存大小失败:', error);
+              }
+            }
+
+            await downloadDB.saveCompletedTask({
+              id: task.id,
+              title: task.title,
+              source: task.source,
+              videoId: task.videoId,
+              episodeIndex: task.episodeIndex,
+              completedAt: Date.now(),
+              downloadMode: task.downloadMode,
+              fileSize,
+            });
+          } catch (error) {
+            logger.error('保存已完成任务失败:', error);
           }
-          return true;
-        })
-        .map(task => ({
-          id: task.id,
-          url: task.url,
-          title: task.title,
-          type: task.type,
-          status: task.status,
-          finishList: task.finishList,
-          downloadIndex: task.downloadIndex,
-          finishNum: task.finishNum,
-          errorNum: task.errorNum,
-          source: task.source,
-          videoId: task.videoId,
-          episodeIndex: task.episodeIndex,
-          downloadMode: task.downloadMode,
-          rangeDownload: task.rangeDownload,
-          m3u8Content: task.m3u8Content,
-          createdAt: task.createdAt || Date.now(),
-          segmentLogs: task.segmentLogs,
-        }));
+        }
 
-      await downloadDB.saveActiveTasks(tasksToSave);
-    } catch (error) {
-      logger.error('保存任务失败:', error);
-    }
-  }, []);
+        // 任务完成后，尝试启动下一个等待的任务
+        startNextPendingTask(downloader);
+      },
+      onError: (task, error) => {
+        if (downloader.getTask(task.id) !== task) return;
+        logger.error('下载错误:', error);
+        void saveTaskNow(task);
+        // 任务出错后，尝试启动下一个等待的任务
+        startNextPendingTask(downloader);
+      },
+    });
+    return { downloader, updates, saveTaskNow, startNextPendingTask };
+  });
+
+  useEffect(() => {
+    const flush = () => {
+      void updates.flush();
+    };
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') flush();
+    };
+    window.addEventListener('pagehide', flush);
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    return () => {
+      window.removeEventListener('pagehide', flush);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+      void updates.flush(false);
+    };
+  }, [updates]);
 
   // 从 IndexedDB 恢复任务
   useEffect(() => {
-    if (typeof window === 'undefined') return;
+    if (typeof window === 'undefined' || restoreStarted.current) return;
+    restoreStarted.current = true;
 
     const restoreTasks = async () => {
       try {
@@ -242,6 +249,7 @@ export function DownloadProvider({ children }: { children: React.ReactNode }) {
 
         // 收集需要删除的任务 ID
         const tasksToDelete: string[] = [];
+        const restoredTasks: M3U8DownloadTask[] = [];
 
         // 恢复任务
         for (const savedTask of savedTasks) {
@@ -288,6 +296,7 @@ export function DownloadProvider({ children }: { children: React.ReactNode }) {
                 task.downloadMode = savedTask.downloadMode;
                 task.rangeDownload = savedTask.rangeDownload;
                 task.segmentLogs = savedTask.segmentLogs || [];
+                task.createdAt = savedTask.createdAt;
 
                 if (savedTask.downloadMode === 'indexeddb' && savedTask.source && savedTask.videoId && savedTask.episodeIndex !== undefined) {
                   task.indexedDBCacheKey = buildIndexedDBVideoCacheKey(
@@ -300,6 +309,10 @@ export function DownloadProvider({ children }: { children: React.ReactNode }) {
                 if (savedTask.downloadMode === 'filesystem' && dirHandle) {
                   task.filesystemDirHandle = dirHandle;
                 }
+                // createTask generates a new id. Replace the previous record in
+                // the same serialized batch so a reload cannot duplicate it.
+                restoredTasks.push(task);
+                tasksToDelete.push(savedTask.id);
               }
             } catch (error) {
               logger.error('恢复任务失败:', savedTask.title, error);
@@ -312,20 +325,21 @@ export function DownloadProvider({ children }: { children: React.ReactNode }) {
           }
         }
 
+        restoredTasks.forEach((task) => updates.progress(task));
         // 批量删除无效任务
         if (tasksToDelete.length > 0) {
           logger.debug('清理无效任务:', tasksToDelete.length, '个');
-          await downloadDB.deleteActiveTasks(tasksToDelete);
+          tasksToDelete.forEach((id) => updates.remove(id));
         }
 
-        setTasks(downloader.getAllTasks());
+        await updates.flush();
       } catch (error) {
         logger.error('恢复任务失败:', error);
       }
     };
 
     restoreTasks();
-  }, [downloader]);
+  }, [downloader, updates]);
 
   const addDownloadTask = useCallback(async (
     url: string,
@@ -539,7 +553,7 @@ export function DownloadProvider({ children }: { children: React.ReactNode }) {
         }
       }
 
-      setTasks(downloader.getAllTasks());
+      void saveTaskNow(downloader.getTask(taskId));
 
       // 从localStorage读取最大同时下载限制，默认6个
       const maxConcurrentDownloads = typeof window !== 'undefined'
@@ -559,7 +573,7 @@ export function DownloadProvider({ children }: { children: React.ReactNode }) {
 
           // 异步启动任务
           downloader.startTask(taskId).then(() => {
-            setTasks(downloader.getAllTasks());
+            void saveTaskNow(downloader.getTask(taskId));
             // 启动完成后，从正在启动列表中移除
             setStartingTaskIds(current => {
               const updated = new Set(current);
@@ -578,7 +592,7 @@ export function DownloadProvider({ children }: { children: React.ReactNode }) {
       logger.error('添加下载任务失败:', error);
       throw error;
     }
-  }, [downloader]);
+  }, [downloader, saveTaskNow]);
 
   const startTask = useCallback((taskId: string) => {
     // 从localStorage读取最大同时下载限制，默认6个
@@ -590,70 +604,80 @@ export function DownloadProvider({ children }: { children: React.ReactNode }) {
 
     // 如果未超过限制，启动任务
     if (currentDownloadingCount < maxConcurrentDownloads) {
-      downloader.startTask(taskId);
-      setTasks(downloader.getAllTasks());
+      downloader.startTask(taskId).then(() => saveTaskNow(downloader.getTask(taskId))).catch((error) => logger.error('启动任务失败:', error));
+      void saveTaskNow(downloader.getTask(taskId));
     }
-  }, [downloader]);
+  }, [downloader, saveTaskNow]);
 
   const pauseTask = useCallback((taskId: string) => {
     downloader.pauseTask(taskId);
-    setTasks(downloader.getAllTasks());
+    void saveTaskNow(downloader.getTask(taskId));
     // 暂停任务后，尝试启动下一个等待的任务
     startNextPendingTask(downloader);
-  }, [downloader, startNextPendingTask]);
+  }, [downloader, startNextPendingTask, saveTaskNow]);
 
   const cancelTask = useCallback(async (taskId: string) => {
     await downloader.cancelTask(taskId);
-    setTasks(downloader.getAllTasks());
-    // 保存任务状态到 IndexedDB（删除被取消的任务）
-    saveTasks(downloader.getAllTasks());
+    updates.remove(taskId);
+    await updates.flush();
     // 取消任务后，尝试启动下一个等待的任务
     startNextPendingTask(downloader);
-  }, [downloader, startNextPendingTask, saveTasks]);
+  }, [downloader, startNextPendingTask, updates]);
 
   const retryFailedSegments = useCallback((taskId: string) => {
     downloader.retryFailedSegments(taskId);
-    setTasks(downloader.getAllTasks());
-  }, [downloader]);
+    void saveTaskNow(downloader.getTask(taskId));
+  }, [downloader, saveTaskNow]);
 
   const getProgress = useCallback((taskId: string) => {
     return downloader.getProgress(taskId);
   }, [downloader]);
 
   const downloadingCount = tasks.filter(t => t.status === 'downloading').length;
+  const actions = useMemo<DownloadActions>(() => ({
+    downloader,
+    addDownloadTask,
+    startTask,
+    pauseTask,
+    cancelTask,
+    retryFailedSegments,
+    getProgress,
+    setShowDownloadPanel,
+  }), [downloader, addDownloadTask, startTask, pauseTask, cancelTask, retryFailedSegments, getProgress]);
+  const progress = useMemo(() => ({ tasks, downloadingCount, showDownloadPanel }), [tasks, downloadingCount, showDownloadPanel]);
 
   return (
-    <DownloadContext.Provider
-      value={{
-        downloader,
-        tasks,
-        addDownloadTask,
-        startTask,
-        pauseTask,
-        cancelTask,
-        retryFailedSegments,
-        getProgress,
-        downloadingCount,
-        showDownloadPanel,
-        setShowDownloadPanel,
-      }}
-    >
-      {children}
-      {toast && (
-        <Toast
-          message={toast.message}
-          type={toast.type}
-          onClose={() => setToast(null)}
-        />
-      )}
-    </DownloadContext.Provider>
+    <DownloadActionsContext.Provider value={actions}>
+      <DownloadProgressContext.Provider value={progress}>
+        {children}
+        {toast && (
+          <Toast
+            message={toast.message}
+            type={toast.type}
+            onClose={() => setToast(null)}
+          />
+        )}
+      </DownloadProgressContext.Provider>
+    </DownloadActionsContext.Provider>
   );
 }
 
 export function useDownload() {
-  const context = useContext(DownloadContext);
+  return { ...useDownloadActions(), ...useDownloadProgress() };
+}
+
+export function useDownloadActions() {
+  const context = useContext(DownloadActionsContext);
   if (context === undefined) {
-    throw new Error('useDownload must be used within a DownloadProvider');
+    throw new Error('useDownloadActions must be used within a DownloadProvider');
+  }
+  return context;
+}
+
+export function useDownloadProgress() {
+  const context = useContext(DownloadProgressContext);
+  if (context === undefined) {
+    throw new Error('useDownloadProgress must be used within a DownloadProvider');
   }
   return context;
 }

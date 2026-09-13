@@ -181,8 +181,9 @@ async function resolveFinalPlayUrl(
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { token: string; filename: string } }
+  { params: paramsPromise }: { params: Promise<{ token: string; filename: string }> }
 ) {
+  const params = await paramsPromise;
   try {
     const { searchParams } = new URL(request.url);
 

@@ -359,6 +359,20 @@ export const UserMenu: React.FC<UserMenuProps> = ({
           'https://image.tmdb.org'
       : 'https://image.tmdb.org'
   );
+  useEffect(() => {
+    if (!isSettingsOpen || !isDoubanSectionOpen || bangumiProxyScript) return;
+    const controller = new AbortController();
+    fetch('/scripts/bangumi-proxy.worker.js', { signal: controller.signal })
+      .then((response) => response.ok ? response.text() : '')
+      .then((script) => {
+        if (!controller.signal.aborted) setBangumiProxyScript(script);
+      })
+      .catch((error) => {
+        if (!controller.signal.aborted) console.error('加载 Bangumi Workers 脚本失败:', error);
+      });
+    return () => controller.abort();
+  }, [isSettingsOpen, isDoubanSectionOpen, bangumiProxyScript]);
+
   const [isUsageSectionOpen, setIsUsageSectionOpen] = useState(false);
   const [isDownloadSectionOpen, setIsDownloadSectionOpen] = useState(false);
   const [isBufferSectionOpen, setIsBufferSectionOpen] = useState(false);
@@ -761,13 +775,6 @@ export const UserMenu: React.FC<UserMenuProps> = ({
 
       const savedAnimeImageBaseUrl = localStorage.getItem('animeImageBaseUrl');
       setAnimeImageBaseUrl(savedAnimeImageBaseUrl || '');
-
-      fetch('/scripts/bangumi-proxy.worker.js')
-        .then((response) => (response.ok ? response.text() : ''))
-        .then(setBangumiProxyScript)
-        .catch((error) => {
-          console.error('加载 Bangumi Workers 脚本失败:', error);
-        });
 
       const savedDoubanImageProxyType = localStorage.getItem(
         'doubanImageProxyType'

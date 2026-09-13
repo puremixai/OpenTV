@@ -277,7 +277,7 @@ function hkdf(secret: Buffer, salt: Buffer, info: Buffer | string, length: numbe
   const prk = crypto.createHmac('sha256', salt).update(secret).digest();
   const infoBuffer = Buffer.isBuffer(info) ? info : Buffer.from(info);
   const blocks: Buffer[] = [];
-  let previous = Buffer.alloc(0);
+  let previous: Buffer = Buffer.alloc(0);
   let counter = 1;
 
   while (Buffer.concat(blocks).length < length) {

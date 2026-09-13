@@ -165,7 +165,7 @@ const SmartRecommendations = dynamic(
 import Toast, { ToastProps } from '@/components/Toast';
 import VideoCard from '@/components/VideoCard';
 
-import { useDownload } from '@/contexts/DownloadContext';
+import { useDownloadActions } from '@/contexts/DownloadContext';
 
 // 扩展 HTMLVideoElement 类型以支持 hls 属性
 declare global {
@@ -181,7 +181,7 @@ function PlayPageClient() {
   const searchParams = useSearchParams();
   const enableComments = useEnableComments();
   const enableAIComments = useEnableAIComments();
-  const { addDownloadTask } = useDownload();
+  const { addDownloadTask } = useDownloadActions();
   const { siteName } = useSite();
 
   // 获取 Proxy M3U8 Token

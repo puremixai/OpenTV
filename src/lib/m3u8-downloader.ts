@@ -844,7 +844,7 @@ export class M3U8Downloader {
     }
 
     try {
-      return task.aesConf.decryption.decrypt(data, 0, iv.buffer, true);
+      return task.aesConf.decryption.decrypt(data, 0, new Uint8Array(iv).buffer, true);
     } catch (error) {
       logger.error('AES 解密失败:', error);
       return data;

@@ -3,7 +3,7 @@
 'use client';
 import type { ReadonlyURLSearchParams } from 'next/navigation';
 import type { Dispatch, MutableRefObject, SetStateAction } from 'react';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 
 import {
   saveDanmakuDisplayState,
@@ -256,7 +256,11 @@ export function usePlayerEngine({
   nextEpisodeDanmakuPreloadTriggeredRef,
   preloadNextEpisodeDanmaku,
 }: PlayerEngineContext) {
+  const initializationRef = useRef(0);
+  const hlsRequestRef = useRef(0);
   useEffect(() => {
+    const initialization = ++initializationRef.current;
+    hlsRequestRef.current++;
     if (
       !videoUrl ||
       loading ||
@@ -419,33 +423,56 @@ export function usePlayerEngine({
         // 先清理旧播放器实例
         if (artPlayerRef.current) {
           await cleanupPlayer();
+          if (initialization !== initializationRef.current) return;
+          // Rebuilds retain the DOM cleanup grace period; first playback has
+          // no previous player or MediaSource to release.
+          await new Promise((resolve) => setTimeout(resolve, 100));
         }
-
-        // iOS需要等待DOM完全清理
-        await new Promise((resolve) => setTimeout(resolve, 100));
+        if (initialization !== initializationRef.current) return;
 
         // 双重检查：如果旧播放器仍然存在，再次清理
         if (artPlayerRef.current) {
           console.warn('旧播放器仍存在，再次清理');
           await cleanupPlayer();
+          if (initialization !== initializationRef.current) return;
           await new Promise((resolve) => setTimeout(resolve, 100));
         }
+        if (initialization !== initializationRef.current || !artRef.current) return;
 
         // 再次确保容器为空
         if (artRef.current) {
           artRef.current.innerHTML = '';
         }
 
-        // 动态导入播放器库
+        // Native/file playback can create ArtPlayer without downloading HLS.js.
+        // Known HLS sources still load both libraries in parallel.
+        let hlsModulePromise: Promise<typeof import('hls.js')> | undefined;
+        const loadHls = () => {
+          if (!hlsModulePromise) {
+            hlsModulePromise = import('hls.js').catch((error) => {
+              hlsModulePromise = undefined;
+              throw error;
+            });
+          }
+          return hlsModulePromise;
+        };
+        const needsHlsInitially =
+          !isNetdiskNativeHlsActive(currentSourceRef.current) &&
+          !(isHarmonyOS && harmonyHlsPlaybackMode === 'native') &&
+          videoMediaTypeRef.current !== 'file' &&
+          (videoMediaTypeRef.current === 'hls' ||
+            getVideoType(videoUrl) === 'm3u8' ||
+            /\.m3u8?(?:[?#]|$)/i.test(videoUrl));
         const [ArtplayerModule, HlsModule, optionalPlugins] =
           await Promise.all([
             import('artplayer'),
-            import('hls.js'),
+            needsHlsInitially ? loadHls() : undefined,
             loadPlayerPlugins({ danmaku: isDanmakuEnabled(), thumbnails: !isPlaybackThumbnailDisabled() }),
           ]);
+        if (initialization !== initializationRef.current || !artRef.current) return;
 
         const Artplayer = ArtplayerModule.default;
-        const Hls = HlsModule.default;
+        const initialHls = HlsModule?.default;
         const artplayerPluginDanmuku = optionalPlugins.danmaku;
         const artplayerPluginAutoThumbnail = optionalPlugins.thumbnails;
         const playerTimeouts = new Set<number>();
@@ -577,9 +604,6 @@ export function usePlayerEngine({
           });
         };
 
-        // 创建自定义 HLS loader
-        const CustomHlsJsLoader = createCustomHlsLoader(Hls);
-
         // 创建新的播放器实例
         Artplayer.PLAYBACK_RATE = PLAYBACK_RATE_OPTIONS;
         Artplayer.USE_RAF = true;
@@ -665,7 +689,8 @@ export function usePlayerEngine({
           } as any,
           // HLS 支持配置
           customType: {
-            m3u8: function (video: HTMLVideoElement, url: string) {
+            m3u8: async function (video: HTMLVideoElement, url: string) {
+              const hlsRequest = ++hlsRequestRef.current;
               // 网盘挂载原生 HLS：直接把 m3u8 交给浏览器原生播放器（Edge/Safari），
               // 直连网盘 CDN，无需代理与去广告。此时 video 已乐观带上 crossOrigin
               // （配合扩展注入 ACAO 供 Anime4K 读帧）；无 ACAO 时首次播放 error
@@ -697,9 +722,24 @@ export function usePlayerEngine({
                 return;
               }
 
+              // A file/native session may later switch to HLS on this player.
+              let Hls = initialHls;
               if (!Hls) {
-                console.error('HLS.js 未加载');
-                return;
+                try {
+                  Hls = (await loadHls()).default;
+                } catch (error) {
+                  if (hlsRequest === hlsRequestRef.current) {
+                    console.error('HLS.js 加载失败:', error);
+                    setVideoError('播放器加载失败，请重试');
+                  }
+                  return;
+                }
+                if (
+                  hlsRequest !== hlsRequestRef.current ||
+                  artPlayerRef.current?.video !== video
+                ) {
+                  return;
+                }
               }
 
               if (video.hls) {
@@ -708,6 +748,7 @@ export function usePlayerEngine({
 
               // 每次创建HLS实例时，都读取最新的blockAdEnabled状态
               const shouldUseCustomLoader = blockAdEnabledRef.current;
+              const CustomHlsJsLoader = createCustomHlsLoader(Hls);
 
               // 从localStorage读取缓冲策略
               const bufferStrategy =
@@ -3466,6 +3507,7 @@ export function usePlayerEngine({
           );
         }
       } catch (err) {
+        if (initialization !== initializationRef.current) return;
         console.error('创建播放器失败:', err);
         setError('播放器初始化失败');
       }
@@ -3473,6 +3515,10 @@ export function usePlayerEngine({
 
     // 调用异步初始化函数
     initPlayer();
+    return () => {
+      initializationRef.current++;
+      hlsRequestRef.current++;
+    };
   }, [
     videoUrl,
     loading,

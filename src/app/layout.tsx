@@ -18,6 +18,7 @@ import { StartupCacheCleanup } from '../components/DanmakuCacheCleanup';
 import { DownloadBubble } from '../components/DownloadBubble';
 import { DownloadPanel } from '../components/DownloadPanel';
 import { GlobalErrorIndicator } from '../components/GlobalErrorIndicator';
+import PwaRegistration from '../components/PwaRegistration';
 import RouteScrollReset from '../components/RouteScrollReset';
 import { SiteProvider } from '../components/SiteProvider';
 import { ThemeProvider } from '../components/ThemeProvider';
@@ -428,6 +429,15 @@ export default async function RootLayout({
           <TopProgressBar />
           <RouteScrollReset />
           <TokenRefreshManager />
+          <PwaRegistration
+            enabled={
+              process.env.NODE_ENV === 'production' &&
+              !isCloudflare &&
+              process.env.BUILD_TARGET !== 'edgeone' &&
+              process.env.EDGEONE_PAGES !== '1'
+            }
+            scope={process.env.NEXT_PUBLIC_BASE_PATH || '/'}
+          />
           <SiteProvider
             siteName={siteName}
             announcement={announcement}

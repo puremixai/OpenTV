@@ -10,8 +10,9 @@ export const dynamic = 'force-dynamic';
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { secret: string } }
+  { params: paramsPromise }: { params: Promise<{ secret: string }> }
 ) {
+  const params = await paramsPromise;
   if (!(await validateTelegramWebhookRequest(request, params.secret))) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }

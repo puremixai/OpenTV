@@ -92,7 +92,7 @@ async function fetchMangaCoverAsDataUri(coverUrl?: string): Promise<string | und
       return undefined;
     }
 
-    let buffer = Buffer.from(await response.arrayBuffer());
+    let buffer: Buffer = Buffer.from(await response.arrayBuffer());
     if (!buffer.length) {
       return undefined;
     }
@@ -157,8 +157,9 @@ const COOLDOWN_MS = 10 * 60 * 1000; // 10分钟冷却时间
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { password: string } }
+  { params: paramsPromise }: { params: Promise<{ password: string }> }
 ) {
+  const params = await paramsPromise;
   if (!isCronAuthorized(request.headers.get('authorization'), params.password)) {
     return NextResponse.json(
       { success: false, message: 'Unauthorized' },
@@ -823,4 +824,3 @@ async function refreshOpenList() {
     console.error('OpenList 定时扫描失败:', err);
   }
 }
-

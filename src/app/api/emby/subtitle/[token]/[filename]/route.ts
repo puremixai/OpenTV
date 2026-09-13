@@ -68,8 +68,9 @@ function getSubtitleContentType(format: string, fallback?: string | null) {
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { token: string; filename: string } }
+  { params: paramsPromise }: { params: Promise<{ token: string; filename: string }> }
 ) {
+  const params = await paramsPromise;
   try {
     const allowed = await validateEmbyProxyAccess(request, params.token);
     if (!allowed) {

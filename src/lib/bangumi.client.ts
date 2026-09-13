@@ -2,6 +2,20 @@
 
 import { logger } from '@/lib/logger';
 
+function throwIfCancelled(signal?: AbortSignal) {
+  if (signal?.aborted) {
+    throw signal.reason || new DOMException('Request cancelled', 'AbortError');
+  }
+}
+
+function readBrowserSetting(key: string): string | null {
+  try {
+    return localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
 export type AnimeDataSource =
   | 'direct'
   | 'server-proxy'
@@ -125,7 +139,7 @@ function getRuntimeConfig() {
 function getPrimaryAnimeDataSource(): AnimeDataSource {
   if (typeof window === 'undefined') return 'direct';
 
-  const saved = localStorage.getItem(
+  const saved = readBrowserSetting(
     'animeDataSource'
   ) as AnimeDataSource | null;
   if (isValidAnimeDataSource(saved)) {
@@ -148,7 +162,7 @@ function getBackupAnimeDataSource(
   if (typeof window === 'undefined')
     return primary === 'server-proxy' ? null : 'server-proxy';
 
-  const saved = localStorage.getItem(
+  const saved = readBrowserSetting(
     'animeDataSourceBackup'
   ) as AnimeDataSource | null;
   const backup = isValidAnimeDataSource(saved) ? saved : 'server-proxy';
@@ -158,7 +172,7 @@ function getBackupAnimeDataSource(
 
 function getCustomAnimeBaseUrl(): string {
   if (typeof window === 'undefined') return '';
-  return localStorage.getItem('animeCustomBaseUrl') || '';
+  return readBrowserSetting('animeCustomBaseUrl') || '';
 }
 
 function buildBangumiUrl(source: AnimeDataSource, path: string): string {
@@ -193,31 +207,42 @@ export function getBangumiSubjectUrl(id: string | number): string {
 
 async function fetchBangumiJson<T>(
   source: AnimeDataSource,
-  path: string
+  path: string,
+  signal?: AbortSignal
 ): Promise<T> {
-  const response = await fetch(buildBangumiUrl(source, path), {
-    signal: AbortSignal.timeout(15000),
-  });
-
-  if (!response.ok) {
-    throw new Error(`Bangumi 请求失败: ${response.status}`);
+  throwIfCancelled(signal);
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 15000);
+  const cancel = () => controller.abort(signal?.reason);
+  signal?.addEventListener('abort', cancel, { once: true });
+  try {
+    const response = await fetch(buildBangumiUrl(source, path), {
+      signal: controller.signal,
+    });
+    if (!response.ok) {
+      throw new Error(`Bangumi 请求失败: ${response.status}`);
+    }
+    return await response.json() as T;
+  } finally {
+    clearTimeout(timeout);
+    signal?.removeEventListener('abort', cancel);
   }
-
-  return response.json() as Promise<T>;
 }
 
-async function requestWithFallback<T>(path: string): Promise<T> {
+async function requestWithFallback<T>(path: string, signal?: AbortSignal): Promise<T> {
   const primary = getPrimaryAnimeDataSource();
   const backup = getBackupAnimeDataSource(primary);
 
   try {
-    return await fetchBangumiJson<T>(primary, path);
+    return await fetchBangumiJson<T>(primary, path, signal);
   } catch (primaryError) {
+    throwIfCancelled(signal);
     if (!backup) throw primaryError;
 
     try {
-      return await fetchBangumiJson<T>(backup, path);
+      return await fetchBangumiJson<T>(backup, path, signal);
     } catch (backupError) {
+      throwIfCancelled(signal);
       logger.error('Bangumi 主源与备用源均请求失败:', {
         primary,
         backup,
@@ -262,11 +287,15 @@ function writeBangumiCalendarCache(data: BangumiCalendarData[]): void {
 }
 
 /** 获取 BGM 日历（首页新番放送 / tv 每日放送 / 豆瓣每日放送共用），带 1 小时 localStorage 缓存 */
-export async function GetBangumiCalendarData(): Promise<BangumiCalendarData[]> {
+export async function GetBangumiCalendarData(signal?: AbortSignal): Promise<BangumiCalendarData[]> {
+  throwIfCancelled(signal);
   const cached = readBangumiCalendarCache();
   if (cached) return cached;
 
-  const data = await requestWithFallback<BangumiCalendarData[]>('/calendar');
+  // Requests are consumer-owned; aborting a homepage request never cancels
+  // another caller. Only successful, still-current results populate the cache.
+  const data = await requestWithFallback<BangumiCalendarData[]>('/calendar', signal);
+  throwIfCancelled(signal);
   writeBangumiCalendarCache(data);
   return data;
 }

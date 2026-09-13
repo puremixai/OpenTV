@@ -17,6 +17,7 @@ export default function CinemaShelf({
   variant?: 'poster' | 'ranked' | 'landscape';
   children: ReactNode;
 }) {
+  'use memo';
   const row = useRef<HTMLDivElement>(null);
   const id = useId();
   const [edges, setEdges] = useState({ start: true, end: true });

@@ -70,6 +70,14 @@ function handleAuthFailure(
 
 // 判断是否需要跳过认证的路径
 function shouldSkipAuth(pathname: string): boolean {
+  // The login page must be able to register the worker and its push extension.
+  if (pathname === '/sw.js' || pathname === '/push-sw.js') return true;
+  // These public player assets are also requested by worker/runtime loading.
+  if (
+    pathname.startsWith('/players/') ||
+    pathname.startsWith('/assets/jassub/') ||
+    pathname === '/scripts/bangumi-proxy.worker.js'
+  ) return true;
   // The internal worker route validates a process-local secret, never a browser cookie.
   if (pathname === '/api/ai-comments/worker') return true;
   const skipPaths = [
