@@ -154,7 +154,7 @@ export const VersionPanel: React.FC<VersionPanelProps> = ({
                     key={index}
                     className='text-sm text-gray-700 dark:text-gray-300 flex items-start gap-2'
                   >
-                    <span className='w-1.5 h-1.5 bg-green-500 rounded-full mt-2 flex-shrink-0'></span>
+                    <span className='w-1.5 h-1.5 bg-green-500 rounded-full mt-2 shrink-0'></span>
                     {item}
                   </li>
                 ))}
@@ -174,7 +174,7 @@ export const VersionPanel: React.FC<VersionPanelProps> = ({
                     key={index}
                     className='text-sm text-gray-700 dark:text-gray-300 flex items-start gap-2'
                   >
-                    <span className='w-1.5 h-1.5 bg-blue-500 rounded-full mt-2 flex-shrink-0'></span>
+                    <span className='w-1.5 h-1.5 bg-blue-500 rounded-full mt-2 shrink-0'></span>
                     {item}
                   </li>
                 ))}
@@ -194,7 +194,7 @@ export const VersionPanel: React.FC<VersionPanelProps> = ({
                     key={index}
                     className='text-sm text-gray-700 dark:text-gray-300 flex items-start gap-2'
                   >
-                    <span className='w-1.5 h-1.5 bg-purple-500 rounded-full mt-2 flex-shrink-0'></span>
+                    <span className='w-1.5 h-1.5 bg-purple-500 rounded-full mt-2 shrink-0'></span>
                     {item}
                   </li>
                 ))}
@@ -211,7 +211,7 @@ export const VersionPanel: React.FC<VersionPanelProps> = ({
     <>
       {/* 背景遮罩 */}
       <div
-        className='fixed inset-0 bg-black/50 backdrop-blur-sm z-[1000]'
+        className='fixed inset-0 bg-black/50 backdrop-blur-xs z-1000'
         onClick={onClose}
         onTouchMove={(e) => {
           // 只阻止滚动，允许其他触摸事件
@@ -228,7 +228,7 @@ export const VersionPanel: React.FC<VersionPanelProps> = ({
 
       {/* 版本面板 */}
       <div
-        className='fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-xl max-h-[90vh] bg-white dark:bg-gray-900 rounded-xl shadow-xl z-[1001] overflow-hidden'
+        className='fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-xl max-h-[90vh] bg-white dark:bg-gray-900 rounded-xl shadow-xl z-1001 overflow-hidden'
         onTouchMove={(e) => {
           // 允许版本面板内部滚动，阻止事件冒泡到外层
           e.stopPropagation();
@@ -270,10 +270,10 @@ export const VersionPanel: React.FC<VersionPanelProps> = ({
           <div className='space-y-3 sm:space-y-6'>
             {/* 远程更新信息 */}
             {hasUpdate && (
-              <div className='bg-gradient-to-r from-yellow-50 to-amber-50 dark:from-yellow-900/20 dark:to-amber-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3 sm:p-4'>
+              <div className='bg-linear-to-r from-yellow-50 to-amber-50 dark:from-yellow-900/20 dark:to-amber-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3 sm:p-4'>
                 <div className='flex flex-col gap-3'>
                   <div className='flex items-center gap-2 sm:gap-3'>
-                    <div className='w-8 h-8 sm:w-10 sm:h-10 bg-yellow-100 dark:bg-yellow-800/40 rounded-full flex items-center justify-center flex-shrink-0'>
+                    <div className='w-8 h-8 sm:w-10 sm:h-10 bg-yellow-100 dark:bg-yellow-800/40 rounded-full flex items-center justify-center shrink-0'>
                       <Download className='w-4 h-4 sm:w-5 sm:h-5 text-yellow-600 dark:text-yellow-400' />
                     </div>
                     <div className='min-w-0 flex-1'>
@@ -289,7 +289,7 @@ export const VersionPanel: React.FC<VersionPanelProps> = ({
                     href={PROJECT_REPOSITORY_URL}
                     target='_blank'
                     rel='noopener noreferrer'
-                    className='inline-flex items-center justify-center gap-2 px-3 py-2 bg-yellow-600 hover:bg-yellow-700 text-white text-xs sm:text-sm rounded-lg transition-colors shadow-sm w-full'
+                    className='inline-flex items-center justify-center gap-2 px-3 py-2 bg-yellow-600 hover:bg-yellow-700 text-white text-xs sm:text-sm rounded-lg transition-colors shadow-xs w-full'
                   >
                     <Download className='w-3 h-3 sm:w-4 sm:h-4' />
                     前往 {PROJECT_NAME} 仓库
@@ -303,7 +303,7 @@ export const VersionPanel: React.FC<VersionPanelProps> = ({
               <div className='bg-gray-50 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700 rounded-lg p-3 sm:p-4'>
                 <div className='flex flex-col gap-3'>
                   <div className='flex items-center gap-2 sm:gap-3'>
-                    <div className='w-8 h-8 sm:w-10 sm:h-10 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center flex-shrink-0'>
+                    <div className='w-8 h-8 sm:w-10 sm:h-10 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center shrink-0'>
                       {updateStatus === null ? (
                         <RefreshCw className='w-4 h-4 sm:w-5 sm:h-5 animate-spin text-gray-500' />
                       ) : updateStatus === UpdateStatus.FETCH_FAILED ? (
@@ -329,7 +329,7 @@ export const VersionPanel: React.FC<VersionPanelProps> = ({
                     href={PROJECT_REPOSITORY_URL}
                     target='_blank'
                     rel='noopener noreferrer'
-                    className='inline-flex items-center justify-center gap-2 px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-xs sm:text-sm rounded-lg transition-colors shadow-sm w-full'
+                    className='inline-flex items-center justify-center gap-2 px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-xs sm:text-sm rounded-lg transition-colors shadow-xs w-full'
                   >
                     <CheckCircle className='w-3 h-3 sm:w-4 sm:h-4' />
                     前往 {PROJECT_NAME} 仓库
@@ -410,7 +410,7 @@ export const VersionPanel: React.FC<VersionPanelProps> = ({
                                     key={itemIndex}
                                     className='text-sm text-gray-700 dark:text-gray-300 flex items-start gap-2'
                                   >
-                                    <span className='w-1.5 h-1.5 bg-green-400 rounded-full mt-2 flex-shrink-0'></span>
+                                    <span className='w-1.5 h-1.5 bg-green-400 rounded-full mt-2 shrink-0'></span>
                                     {item}
                                   </li>
                                 ))}
@@ -430,7 +430,7 @@ export const VersionPanel: React.FC<VersionPanelProps> = ({
                                     key={itemIndex}
                                     className='text-sm text-gray-700 dark:text-gray-300 flex items-start gap-2'
                                   >
-                                    <span className='w-1.5 h-1.5 bg-blue-400 rounded-full mt-2 flex-shrink-0'></span>
+                                    <span className='w-1.5 h-1.5 bg-blue-400 rounded-full mt-2 shrink-0'></span>
                                     {item}
                                   </li>
                                 ))}
@@ -450,7 +450,7 @@ export const VersionPanel: React.FC<VersionPanelProps> = ({
                                     key={itemIndex}
                                     className='text-sm text-gray-700 dark:text-gray-300 flex items-start gap-2'
                                   >
-                                    <span className='w-1.5 h-1.5 bg-purple-500 rounded-full mt-2 flex-shrink-0'></span>
+                                    <span className='w-1.5 h-1.5 bg-purple-500 rounded-full mt-2 shrink-0'></span>
                                     {item}
                                   </li>
                                 ))}

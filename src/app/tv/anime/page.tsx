@@ -104,13 +104,13 @@ export default function TVAnimePage() {
           </div>
         </div>
 
-        <div className='mt-8 flex justify-center gap-3 overflow-x-auto px-4 py-4 [scrollbar-width:none]'>
+        <div className='mt-8 flex justify-center gap-3 overflow-x-auto px-4 py-4 scrollbar-none'>
           {calendar.map((day) => (
             <button
               key={day.weekday.en}
               type='button'
               onClick={() => setActiveDay(day.weekday.en)}
-              className={`tv-focusable cursor-pointer rounded-2xl px-7 py-4 text-2xl font-black outline-none transition ${
+              className={`tv-focusable cursor-pointer rounded-2xl px-7 py-4 text-2xl font-black outline-hidden transition ${
                 activeDay === day.weekday.en
                   ? 'bg-rose-600 text-white'
                   : 'bg-white/8 text-slate-200 hover:bg-white/12'
@@ -139,11 +139,11 @@ export default function TVAnimePage() {
               </div>
             </div>
             {activeItems.length > 0 ? (
-              <div className='flex gap-5 overflow-x-auto px-5 py-6 [scrollbar-width:none]'>
+              <div className='flex gap-5 overflow-x-auto px-5 py-6 scrollbar-none'>
                 {activeItems.map((item) => <TVCard key={item.id} item={item} />)}
               </div>
             ) : (
-              <div className='rounded-3xl border border-white/10 bg-white/[0.04] p-8 text-2xl text-slate-300'>暂无更新时间表数据</div>
+              <div className='rounded-3xl border border-white/10 bg-white/4 p-8 text-2xl text-slate-300'>暂无更新时间表数据</div>
             )}
           </section>
           {rows.map((section) => <TVRow key={section.title} section={section} />)}

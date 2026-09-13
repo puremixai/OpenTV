@@ -50,7 +50,7 @@ export default function MusicRankingsPage() {
           <button
             type="button"
             onClick={() => setShowSourceMenu((open) => !open)}
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded-[6px] bg-[rgba(0,0,0,0.04)] dark:bg-[rgba(255,255,255,0.08)] hover:bg-[rgba(0,0,0,0.08)] dark:hover:bg-[rgba(255,255,255,0.12)] border border-[rgba(0,0,0,0.04)] dark:border-[rgba(255,255,255,0.04)] shadow-sm transition-all"
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-[6px] bg-[rgba(0,0,0,0.04)] dark:bg-[rgba(255,255,255,0.08)] hover:bg-[rgba(0,0,0,0.08)] dark:hover:bg-[rgba(255,255,255,0.12)] border border-[rgba(0,0,0,0.04)] dark:border-[rgba(255,255,255,0.04)] shadow-xs transition-all"
             aria-haspopup="listbox"
             aria-expanded={showSourceMenu}
           >
@@ -103,7 +103,7 @@ export default function MusicRankingsPage() {
             <button
               key={playlist.id}
               onClick={() => router.push(`/music/rankings/${playlist.source || currentSource}/${encodeURIComponent(playlist.id)}?name=${encodeURIComponent(playlist.name)}`)}
-              className="group relative w-full text-left overflow-hidden rounded-2xl border border-white/5 bg-white/5 hover:bg-white/10 transition-all duration-300 p-4 hover:-translate-y-1 hover:shadow-xl backdrop-blur-sm"
+              className="group relative w-full text-left overflow-hidden rounded-2xl border border-white/5 bg-white/5 hover:bg-white/10 transition-all duration-300 p-4 hover:-translate-y-1 hover:shadow-xl backdrop-blur-xs"
             >
               <div className="absolute top-0 right-0 -mt-2 -mr-2 w-16 h-16 bg-white/5 rounded-full blur-xl group-hover:bg-green-500/20 transition-colors duration-500"></div>
               <div className="flex items-center gap-4 relative z-10">

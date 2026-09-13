@@ -126,12 +126,12 @@ export const FavoritesPanel: React.FC<FavoritesPanelProps> = ({
     <>
       {/* 背景遮罩 */}
       <div
-        className='fixed inset-0 bg-black/50 backdrop-blur-sm z-[1000]'
+        className='fixed inset-0 bg-black/50 backdrop-blur-xs z-1000'
         onClick={onClose}
       />
 
       {/* 收藏面板 */}
-      <div className='fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-4xl max-h-[85vh] bg-white dark:bg-gray-900 rounded-xl shadow-xl z-[1001] flex flex-col overflow-hidden'>
+      <div className='fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-4xl max-h-[85vh] bg-white dark:bg-gray-900 rounded-xl shadow-xl z-1001 flex flex-col overflow-hidden'>
         {/* 标题栏 */}
         <div className='flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700'>
           <div className='flex items-center gap-2'>
@@ -176,7 +176,7 @@ export const FavoritesPanel: React.FC<FavoritesPanelProps> = ({
               <p className='text-sm'>暂无收藏内容</p>
             </div>
           ) : (
-            <div className='grid grid-cols-3 gap-x-2 gap-y-14 sm:gap-y-20 px-0 sm:px-2 sm:grid-cols-[repeat(auto-fill,_minmax(11rem,_1fr))] sm:gap-x-8'>
+            <div className='grid grid-cols-3 gap-x-2 gap-y-14 sm:gap-y-20 px-0 sm:px-2 sm:grid-cols-[repeat(auto-fill,minmax(11rem,1fr))] sm:gap-x-8'>
               {favoriteItems.map((item) => (
                 <div key={item.id + item.source} className='w-full'>
                   <VideoCard
@@ -195,7 +195,7 @@ export const FavoritesPanel: React.FC<FavoritesPanelProps> = ({
       {/* 确认对话框 */}
       {showConfirmDialog && createPortal(
         <div
-          className='fixed inset-0 bg-black bg-opacity-50 z-[9999] flex items-center justify-center p-4 transition-opacity duration-300'
+          className='fixed inset-0 bg-black/50 z-9999 flex items-center justify-center p-4 transition-opacity duration-300'
           onClick={() => setShowConfirmDialog(false)}
         >
           <div
@@ -205,7 +205,7 @@ export const FavoritesPanel: React.FC<FavoritesPanelProps> = ({
             <div className="p-6">
               {/* 图标和标题 */}
               <div className="flex items-start gap-4 mb-4">
-                <div className="flex-shrink-0">
+                <div className="shrink-0">
                   <AlertTriangle className="w-8 h-8 text-red-500" />
                 </div>
                 <div className="flex-1">

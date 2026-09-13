@@ -63,7 +63,7 @@ function MangaReadSkeleton({ readMode, pageGap }: { readMode: ReadMode; pageGap:
   return (
     <div className='flex flex-col' style={{ gap: `${pageGap}px` }}>
       {Array.from({ length: 4 }).map((_, index) => (
-        <div key={index} className='aspect-[3/4] animate-pulse bg-gray-100 dark:bg-gray-900' />
+        <div key={index} className='aspect-3/4 animate-pulse bg-gray-100 dark:bg-gray-900' />
       ))}
     </div>
   );
@@ -825,7 +825,7 @@ export default function MangaReadPage() {
                       onClick={() => setChapterListOpen(false)}
                     >
                       <span className='block truncate'>{chapter.name}</span>
-                      <div className='absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-800 dark:bg-gray-900 text-white text-sm rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 ease-out whitespace-nowrap z-[100] pointer-events-none'>
+                      <div className='absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-800 dark:bg-gray-900 text-white text-sm rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 ease-out whitespace-nowrap z-100 pointer-events-none'>
                         <div className='text-sm'>{chapter.name}</div>
                       </div>
                     </Link>
@@ -884,7 +884,7 @@ export default function MangaReadPage() {
         </div>
 
         {pages.length > 0 && (
-          <div className='pointer-events-none fixed bottom-4 left-1/2 z-20 -translate-x-1/2 rounded-full bg-black/15 px-2 py-0.5 text-sm font-medium text-white/90 backdrop-blur-sm dark:bg-white/10 dark:text-white/85'>
+          <div className='pointer-events-none fixed bottom-4 left-1/2 z-20 -translate-x-1/2 rounded-full bg-black/15 px-2 py-0.5 text-sm font-medium text-white/90 backdrop-blur-xs dark:bg-white/10 dark:text-white/85'>
             {Math.min(activePage + 1, pages.length)}/{pages.length}
           </div>
         )}
@@ -902,7 +902,7 @@ export default function MangaReadPage() {
                   verticalPageRefs.current[index] = node;
                 }}
                 data-index={index}
-                className='overflow-hidden bg-gray-100 shadow-sm dark:bg-gray-900'
+                className='overflow-hidden bg-gray-100 shadow-xs dark:bg-gray-900'
               >
                 <ProxyImage
                   originalSrc={page}
@@ -922,7 +922,7 @@ export default function MangaReadPage() {
           >
             {pages.map((page, index) => (
                 <div key={`${page}-${index}`} className='flex min-w-full snap-center items-center justify-center px-1'>
-                  <div className='w-full overflow-hidden bg-gray-100 shadow-sm dark:bg-gray-900'>
+                  <div className='w-full overflow-hidden bg-gray-100 shadow-xs dark:bg-gray-900'>
                   <ProxyImage
                     originalSrc={page}
                     alt={`${chapterName}-${index + 1}`}
@@ -939,7 +939,7 @@ export default function MangaReadPage() {
               {pagedItems.map((page, index) => (
                 <div
                   key={`${page}-${index}`}
-                  className='overflow-hidden bg-gray-100 shadow-sm dark:bg-gray-900'
+                  className='overflow-hidden bg-gray-100 shadow-xs dark:bg-gray-900'
                 >
                   <ProxyImage
                     originalSrc={page}

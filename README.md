@@ -13,7 +13,7 @@
 <div align="center">
 
 ![Next.js](https://img.shields.io/badge/Next.js-16.3.5-000?logo=nextdotjs)
-![TailwindCSS](https://img.shields.io/badge/TailwindCSS-3-38bdf8?logo=tailwindcss)
+![TailwindCSS](https://img.shields.io/badge/TailwindCSS-4.3.3-38bdf8?logo=tailwindcss)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.8-3178c6?logo=typescript)
 ![License](https://img.shields.io/badge/License-CC_BY--NC--SA_4.0-green)
 ![Docker Ready](https://img.shields.io/badge/Docker-ready-blue?logo=docker)
@@ -112,7 +112,7 @@ XTV 主仓库使用 [puremixai/xtv](https://github.com/puremixai/xtv)。上游�
 | 分类      | 主要依赖                                                     |
 | --------- | ------------------------------------------------------------ |
 | 前端框架  | [Next.js 16.3.5](https://nextjs.org/) · App Router · React 19.3 |
-| UI & 样式 | [Tailwind&nbsp;CSS 3](https://tailwindcss.com/)              |
+| UI & 样式 | [Tailwind&nbsp;CSS 4.3.3](https://tailwindcss.com/)              |
 | 语言      | TypeScript 5.8                                               |
 | 播放器    | [ArtPlayer](https://github.com/zhw2590582/ArtPlayer) · [HLS.js](https://github.com/video-dev/hls.js/) |
 | 代码质量  | ESLint 9（Flat Config） · Prettier · Jest                    |
@@ -131,6 +131,10 @@ pnpm start
 默认开发和生产构建使用 Webpack。`pnpm dev:turbo`、`pnpm build:turbo` 提供 Turbopack 入口；Cloudflare 与 EdgeOne 保留 Webpack 适配。PWA 在生产构建后由独立 Workbox 脚本生成，缓存静态资源，登录态相关的页面、RSC 与 API 始终走网络，保留 IndexedDB 离线视频支持。
 
 首页采用按模块加载与缓存、服务端轮播数据种子和响应式图片；隐藏的详情、图片查看与 AI 面板按需加载。React Compiler 以注解模式用于选定的卡片与片单组件。Cache Components 保持关闭，待拆分个性化根配置并验证各部署平台后再启用。迁移和验证记录见 [Next.js 16 升级说明](docs/NEXT16-UPGRADE.md)。
+
+Tailwind 4 的主题、变体和插件集中配置在 [src/styles/tailwind.css](src/styles/tailwind.css)。样式迁移范围、浏览器要求和验证命令见 [Tailwind 4 升级说明](docs/TAILWIND4-UPGRADE.md)。
+
+首页与详情弹层加入 Apple TV 风格海报动效：图片氛围、柔化转场、缓慢缩放和滚动视差，支持暂停与减少动态效果。实现与验证入口见 [电影海报动效说明](docs/CINEMATIC-HERO.md)。
 
 ## 部署
 

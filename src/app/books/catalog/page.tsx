@@ -48,9 +48,9 @@ function CatalogSkeleton() {
       <div className='grid grid-cols-2 gap-4 md:grid-cols-4 xl:grid-cols-6'>
         {Array.from({ length: 12 }).map((_, index) => (
           <div key={index} className='space-y-3'>
-            <div className='aspect-[3/4] rounded-2xl bg-gray-200 dark:bg-gray-800' />
-            <div className='h-4 w-3/4 rounded bg-gray-200 dark:bg-gray-800' />
-            <div className='h-3 w-1/2 rounded bg-gray-200 dark:bg-gray-800' />
+            <div className='aspect-3/4 rounded-2xl bg-gray-200 dark:bg-gray-800' />
+            <div className='h-4 w-3/4 rounded-sm bg-gray-200 dark:bg-gray-800' />
+            <div className='h-3 w-1/2 rounded-sm bg-gray-200 dark:bg-gray-800' />
           </div>
         ))}
       </div>
@@ -63,9 +63,9 @@ function LoadingMoreSkeleton() {
     <div className='grid grid-cols-2 gap-4 md:grid-cols-4 xl:grid-cols-6'>
       {Array.from({ length: 6 }).map((_, index) => (
         <div key={index} className='space-y-3 animate-pulse'>
-          <div className='aspect-[3/4] rounded-2xl bg-gray-200 dark:bg-gray-800' />
-          <div className='h-4 w-3/4 rounded bg-gray-200 dark:bg-gray-800' />
-          <div className='h-3 w-1/2 rounded bg-gray-200 dark:bg-gray-800' />
+          <div className='aspect-3/4 rounded-2xl bg-gray-200 dark:bg-gray-800' />
+          <div className='h-4 w-3/4 rounded-sm bg-gray-200 dark:bg-gray-800' />
+          <div className='h-3 w-1/2 rounded-sm bg-gray-200 dark:bg-gray-800' />
         </div>
       ))}
     </div>
@@ -537,9 +537,9 @@ export default function BooksCatalogPage() {
               setSelectedHref('');
               showImmediateContentLoading();
             }}
-            className={`shrink-0 cursor-pointer whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
+            className={`shrink-0 cursor-pointer whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium transition-colors duration-200 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 ${
               source.id === selectedSourceId
-                ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-600/20'
+                ? 'bg-emerald-600 text-white shadow-xs shadow-emerald-600/20'
                 : 'border border-emerald-100 bg-white/70 text-slate-600 hover:bg-emerald-50 hover:text-emerald-700 dark:border-emerald-500/10 dark:bg-gray-950/50 dark:text-gray-300 dark:hover:bg-emerald-500/10 dark:hover:text-emerald-200'
             }`}
           >
@@ -580,9 +580,9 @@ export default function BooksCatalogPage() {
                     setSelectedHref(item.href);
                     showImmediateContentLoading();
                   }}
-                  className={`shrink-0 cursor-pointer whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
+                  className={`shrink-0 cursor-pointer whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium transition-colors duration-200 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 ${
                     item.href === selectedHref
-                      ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-600/20'
+                      ? 'bg-emerald-600 text-white shadow-xs shadow-emerald-600/20'
                       : 'border border-emerald-100 bg-white/70 text-slate-600 hover:bg-emerald-50 hover:text-emerald-700 dark:border-emerald-500/10 dark:bg-gray-950/50 dark:text-gray-300 dark:hover:bg-emerald-500/10 dark:hover:text-emerald-200'
                   }`}
                 >
@@ -593,7 +593,7 @@ export default function BooksCatalogPage() {
           ) : null}
           {error ? (
             <div className='flex min-h-[45vh] items-center justify-center px-4'>
-              <div className='w-full max-w-md rounded-[2rem] border border-red-200 bg-white/85 p-6 text-center shadow-xl shadow-red-950/10 backdrop-blur dark:border-red-500/20 dark:bg-gray-950/75'>
+              <div className='w-full max-w-md rounded-4xl border border-red-200 bg-white/85 p-6 text-center shadow-xl shadow-red-950/10 backdrop-blur-sm dark:border-red-500/20 dark:bg-gray-950/75'>
                 <div className='mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-red-50 text-red-600 dark:bg-red-500/10 dark:text-red-300'>
                   <AlertCircle className='h-6 w-6' />
                 </div>

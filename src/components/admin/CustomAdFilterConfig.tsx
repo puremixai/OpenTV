@@ -219,7 +219,7 @@ export const CustomAdFilterConfig = ({
           </p>
           <p>
             • 函数签名必须为:{' '}
-            <code className='bg-blue-100 dark:bg-blue-900/40 px-1 rounded'>
+            <code className='bg-blue-100 dark:bg-blue-900/40 px-1 rounded-sm'>
               filterAdsFromM3U8(type, m3u8Content)
             </code>
           </p>

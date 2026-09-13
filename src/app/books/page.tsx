@@ -20,9 +20,9 @@ function BooksHomeSkeleton() {
       {Array.from({ length: 6 }).map((_, index) => (
         <div
           key={index}
-          className='rounded-[2rem] border border-emerald-100/80 bg-white/80 p-5 shadow-sm dark:border-emerald-500/10 dark:bg-gray-950/70'
+          className='rounded-4xl border border-emerald-100/80 bg-white/80 p-5 shadow-xs dark:border-emerald-500/10 dark:bg-gray-950/70'
         >
-          <div className='h-5 w-32 rounded bg-emerald-100 dark:bg-gray-800' />
+          <div className='h-5 w-32 rounded-sm bg-emerald-100 dark:bg-gray-800' />
           <div className='mt-3 flex gap-2'>
             <div className='h-6 w-16 rounded-full bg-emerald-100 dark:bg-gray-800' />
             <div className='h-6 w-16 rounded-full bg-emerald-100 dark:bg-gray-800' />
@@ -99,7 +99,7 @@ export default function BooksHomePage() {
       <section className='cinema-library-intro relative overflow-hidden p-6 sm:p-8'>
         <div className='relative grid gap-8 lg:grid-cols-[1.25fr_0.75fr] lg:items-end'>
           <div>
-            <div className='inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-white/70 px-3 py-1 text-xs font-medium text-emerald-700 shadow-sm backdrop-blur dark:border-emerald-500/20 dark:bg-gray-950/50 dark:text-emerald-200'>
+            <div className='inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-white/70 px-3 py-1 text-xs font-medium text-emerald-700 shadow-xs backdrop-blur-sm dark:border-emerald-500/20 dark:bg-gray-950/50 dark:text-emerald-200'>
               <Sparkles className='h-3.5 w-3.5' />
               文字里的世界
             </div>
@@ -109,14 +109,14 @@ export default function BooksHomePage() {
             <div className='mt-6 flex flex-wrap gap-3'>
               <Link
                 href='/books/search'
-                className='inline-flex cursor-pointer items-center gap-2 rounded-2xl bg-emerald-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald-600/20 transition-colors duration-200 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 dark:focus:ring-offset-gray-950'
+                className='inline-flex cursor-pointer items-center gap-2 rounded-2xl bg-emerald-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald-600/20 transition-colors duration-200 hover:bg-emerald-700 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 dark:focus:ring-offset-gray-950'
               >
                 <Search className='h-4 w-4' />
                 搜索书籍
               </Link>
               <Link
                 href='/books/shelf'
-                className='inline-flex cursor-pointer items-center gap-2 rounded-2xl border border-emerald-200 bg-white/70 px-5 py-3 text-sm font-semibold text-emerald-900 transition-colors duration-200 hover:bg-emerald-50 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 dark:border-emerald-500/20 dark:bg-gray-950/50 dark:text-emerald-100 dark:hover:bg-emerald-950/30 dark:focus:ring-offset-gray-950'
+                className='inline-flex cursor-pointer items-center gap-2 rounded-2xl border border-emerald-200 bg-white/70 px-5 py-3 text-sm font-semibold text-emerald-900 transition-colors duration-200 hover:bg-emerald-50 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 dark:border-emerald-500/20 dark:bg-gray-950/50 dark:text-emerald-100 dark:hover:bg-emerald-950/30 dark:focus:ring-offset-gray-950'
               >
                 <BookOpen className='h-4 w-4' />
                 我的书架
@@ -127,7 +127,7 @@ export default function BooksHomePage() {
             {stats.map((stat) => (
               <div
                 key={stat.label}
-                className='rounded-3xl border border-white/80 bg-white/75 p-4 text-center shadow-sm backdrop-blur dark:border-white/10 dark:bg-white/5'
+                className='rounded-3xl border border-white/80 bg-white/75 p-4 text-center shadow-xs backdrop-blur-sm dark:border-white/10 dark:bg-white/5'
               >
                 <div className='text-2xl font-black text-emerald-700 dark:text-emerald-200'>
                   {stat.value}
@@ -193,7 +193,7 @@ export default function BooksHomePage() {
                   href={`/books/catalog?sourceId=${encodeURIComponent(
                     source.id
                   )}`}
-                  className='inline-flex cursor-pointer items-center gap-2 rounded-2xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors duration-200 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 dark:focus:ring-offset-gray-950'
+                  className='inline-flex cursor-pointer items-center gap-2 rounded-2xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors duration-200 hover:bg-emerald-700 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 dark:focus:ring-offset-gray-950'
                 >
                   浏览目录
                 </Link>
@@ -203,7 +203,7 @@ export default function BooksHomePage() {
                   href={`/books/search?sourceId=${encodeURIComponent(
                     source.id
                   )}`}
-                  className='inline-flex cursor-pointer items-center gap-2 rounded-2xl border border-emerald-200 px-4 py-2.5 text-sm font-semibold text-emerald-800 transition-colors duration-200 hover:bg-emerald-50 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 dark:border-emerald-500/20 dark:text-emerald-100 dark:hover:bg-emerald-950/30 dark:focus:ring-offset-gray-950'
+                  className='inline-flex cursor-pointer items-center gap-2 rounded-2xl border border-emerald-200 px-4 py-2.5 text-sm font-semibold text-emerald-800 transition-colors duration-200 hover:bg-emerald-50 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 dark:border-emerald-500/20 dark:text-emerald-100 dark:hover:bg-emerald-950/30 dark:focus:ring-offset-gray-950'
                 >
                   搜索书籍
                 </Link>

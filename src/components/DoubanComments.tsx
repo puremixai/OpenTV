@@ -204,7 +204,7 @@ export default function DoubanComments({ doubanId }: DoubanCommentsProps) {
                 href={comment.userUrl}
                 target='_blank'
                 rel='noopener noreferrer'
-                className='flex-shrink-0'
+                className='shrink-0'
               >
                 <img
                   src={comment.userAvatar}

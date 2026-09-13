@@ -563,7 +563,7 @@ export const EmbyConfigComponent = ({
                       }
                       setSelectedSources(newSelected);
                     }}
-                    className='w-4 h-4 text-blue-600 rounded border-gray-300 dark:border-gray-600'
+                    className='w-4 h-4 text-blue-600 rounded-sm border-gray-300 dark:border-gray-600'
                   />
                   <div className='flex-1'>
                     <div className='flex items-center gap-3 flex-wrap'>
@@ -571,7 +571,7 @@ export const EmbyConfigComponent = ({
                         {source.name}
                       </h4>
                       {source.isDefault && (
-                        <span className='px-2 py-0.5 text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-200 rounded'>
+                        <span className='px-2 py-0.5 text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-200 rounded-sm'>
                           默认
                         </span>
                       )}
@@ -990,7 +990,7 @@ export const EmbyConfigComponent = ({
                     })
                   }
                   placeholder='留空使用默认浏览器UA'
-                  className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white text-sm'
+                  className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-xs focus:outline-hidden focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white text-sm'
                 />
                 <p className='text-xs text-gray-500 dark:text-gray-400 mt-1'>
                   用于登录、获取影片和代理视频时的User-Agent，留空则使用默认浏览器UA
@@ -1012,7 +1012,7 @@ export const EmbyConfigComponent = ({
                     })
                   }
                   placeholder='留空使用默认 XTV 认证头'
-                  className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white text-sm'
+                  className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-xs focus:outline-hidden focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white text-sm'
                 />
                 <p className='text-xs text-gray-500 dark:text-gray-400 mt-1'>
                   仅用于账号认证登录请求，示例：MediaBrowser

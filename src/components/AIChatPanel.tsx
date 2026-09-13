@@ -428,12 +428,12 @@ export default function AIChatPanel({
       return (
         <div
           key={segmentIndex}
-          className='not-prose overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm ring-1 ring-black/5 dark:border-gray-700 dark:bg-gray-900 dark:ring-white/10'
+          className='not-prose overflow-hidden rounded-xl border border-gray-200 bg-white shadow-xs ring-1 ring-black/5 dark:border-gray-700 dark:bg-gray-900 dark:ring-white/10'
         >
           <div className='overflow-x-auto'>
             <table className='m-0 min-w-full border-separate border-spacing-0 text-left text-sm'>
               <thead>
-                <tr className='bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-950/40 dark:to-blue-950/40'>
+                <tr className='bg-linear-to-r from-purple-50 to-blue-50 dark:from-purple-950/40 dark:to-blue-950/40'>
                 {segment.header.map((cell, cellIndex) => (
                   <th
                     key={cellIndex}
@@ -865,7 +865,7 @@ export default function AIChatPanel({
   const modalContent = useDrawer ? (
     // 抽屉模式
     <div
-      className={`fixed inset-0 z-[1002] flex items-center justify-end transition-opacity duration-200 pointer-events-none ${
+      className={`fixed inset-0 z-1002 flex items-center justify-end transition-opacity duration-200 pointer-events-none ${
         isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
       }`}
     >
@@ -877,7 +877,7 @@ export default function AIChatPanel({
         {/* 头部 */}
         <div className='flex items-center justify-between border-b border-gray-200 p-4 dark:border-gray-700'>
           <div className='flex items-center gap-3 min-w-0 flex-1'>
-            <div className='flex h-10 w-10 items-center justify-center rounded-full bg-purple-500 flex-shrink-0'>
+            <div className='flex h-10 w-10 items-center justify-center rounded-full bg-purple-500 shrink-0'>
               <Sparkles size={20} className='text-white' />
             </div>
             <div className='min-w-0 flex-1'>
@@ -894,7 +894,7 @@ export default function AIChatPanel({
           </div>
           <button
             onClick={onClose}
-            className='rounded-lg p-2 text-gray-500 transition-colors hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800 flex-shrink-0'
+            className='rounded-lg p-2 text-gray-500 transition-colors hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800 shrink-0'
           >
             <X size={20} />
           </button>
@@ -941,7 +941,7 @@ export default function AIChatPanel({
                     }`}
                   >
                     {message.role === 'user' ? (
-                      <p className='whitespace-pre-wrap break-words text-sm leading-relaxed'>
+                      <p className='whitespace-pre-wrap wrap-break-word text-sm leading-relaxed'>
                         {message.content}
                       </p>
                     ) : (
@@ -959,7 +959,7 @@ export default function AIChatPanel({
                         {isStreaming &&
                           index === messages.length - 1 &&
                           renderToolChain(toolChain, true)}
-                        <div className='prose prose-sm max-w-none dark:prose-invert prose-p:my-2 prose-p:leading-relaxed prose-pre:bg-gray-800 prose-pre:text-gray-100 dark:prose-pre:bg-gray-900 prose-code:text-purple-600 dark:prose-code:text-purple-400 prose-code:bg-purple-50 dark:prose-code:bg-purple-900/20 prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:before:content-none prose-code:after:content-none prose-a:text-inherit dark:prose-a:text-inherit prose-a:no-underline hover:prose-a:underline prose-strong:text-gray-900 dark:prose-strong:text-white prose-ul:my-2 prose-ol:my-2 prose-li:my-1'>
+                        <div className='prose prose-sm max-w-none dark:prose-invert prose-p:my-2 prose-p:leading-relaxed prose-pre:bg-gray-800 prose-pre:text-gray-100 dark:prose-pre:bg-gray-900 prose-code:text-purple-600 dark:prose-code:text-purple-400 prose-code:bg-purple-50 dark:prose-code:bg-purple-900/20 prose-code:px-1 prose-code:py-0.5 prose-code:rounded-sm prose-code:before:content-none prose-code:after:content-none prose-a:text-inherit dark:prose-a:text-inherit prose-a:no-underline prose-a:hover:underline prose-strong:text-gray-900 dark:prose-strong:text-white prose-ul:my-2 prose-ol:my-2 prose-li:my-1'>
                           {renderAssistantContent(message.content)}
                         </div>
                         {message.error &&
@@ -1017,7 +1017,7 @@ export default function AIChatPanel({
               placeholder={isMobile ? '输入你的问题...' : '输入你的问题... (Shift+Enter换行)'}
               disabled={isStreaming}
               rows={1}
-              className='flex-1 resize-none rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 placeholder-gray-400 transition-colors focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/20 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-600 dark:bg-gray-800 dark:text-white dark:placeholder-gray-500 dark:focus:border-purple-400'
+              className='flex-1 resize-none rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 placeholder-gray-400 transition-colors focus:border-purple-500 focus:outline-hidden focus:ring-2 focus:ring-purple-500/20 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-600 dark:bg-gray-800 dark:text-white dark:placeholder-gray-500 dark:focus:border-purple-400'
               style={{
                 minHeight: '48px',
                 maxHeight: '120px',
@@ -1074,7 +1074,7 @@ export default function AIChatPanel({
   ) : (
     // 原有的居中弹窗模式
     <div
-      className={`fixed inset-0 z-[1002] flex items-center justify-center bg-black/50 backdrop-blur-sm overflow-hidden transition-opacity duration-200 ${
+      className={`fixed inset-0 z-1002 flex items-center justify-center bg-black/50 backdrop-blur-xs overflow-hidden transition-opacity duration-200 ${
         isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
       }`}
       onClick={(e) => {
@@ -1088,7 +1088,7 @@ export default function AIChatPanel({
         {/* 头部 */}
         <div className='flex items-center justify-between border-b border-gray-200 p-4 dark:border-gray-700'>
           <div className='flex items-center gap-3 min-w-0 flex-1'>
-            <div className='flex h-10 w-10 items-center justify-center rounded-full bg-purple-500 flex-shrink-0'>
+            <div className='flex h-10 w-10 items-center justify-center rounded-full bg-purple-500 shrink-0'>
               <Sparkles size={20} className='text-white' />
             </div>
             <div className='min-w-0 flex-1'>
@@ -1105,7 +1105,7 @@ export default function AIChatPanel({
           </div>
           <button
             onClick={onClose}
-            className='rounded-lg p-2 text-gray-500 transition-colors hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800 flex-shrink-0'
+            className='rounded-lg p-2 text-gray-500 transition-colors hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800 shrink-0'
           >
          <X size={20} />
           </button>
@@ -1152,7 +1152,7 @@ export default function AIChatPanel({
                     }`}
                   >
                     {message.role === 'user' ? (
-                      <p className='whitespace-pre-wrap break-words text-sm leading-relaxed'>
+                      <p className='whitespace-pre-wrap wrap-break-word text-sm leading-relaxed'>
                         {message.content}
                       </p>
                     ) : (
@@ -1170,7 +1170,7 @@ export default function AIChatPanel({
                         {isStreaming &&
                           index === messages.length - 1 &&
                           renderToolChain(toolChain, true)}
-                        <div className='prose prose-sm max-w-none dark:prose-invert prose-p:my-2 prose-p:leading-relaxed prose-pre:bg-gray-800 prose-pre:text-gray-100 dark:prose-pre:bg-gray-900 prose-code:text-purple-600 dark:prose-code:text-purple-400 prose-code:bg-purple-50 dark:prose-code:bg-purple-900/20 prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:before:content-none prose-code:after:content-none prose-a:text-inherit dark:prose-a:text-inherit prose-a:no-underline hover:prose-a:underline prose-strong:text-gray-900 dark:prose-strong:text-white prose-ul:my-2 prose-ol:my-2 prose-li:my-1'>
+                        <div className='prose prose-sm max-w-none dark:prose-invert prose-p:my-2 prose-p:leading-relaxed prose-pre:bg-gray-800 prose-pre:text-gray-100 dark:prose-pre:bg-gray-900 prose-code:text-purple-600 dark:prose-code:text-purple-400 prose-code:bg-purple-50 dark:prose-code:bg-purple-900/20 prose-code:px-1 prose-code:py-0.5 prose-code:rounded-sm prose-code:before:content-none prose-code:after:content-none prose-a:text-inherit dark:prose-a:text-inherit prose-a:no-underline prose-a:hover:underline prose-strong:text-gray-900 dark:prose-strong:text-white prose-ul:my-2 prose-ol:my-2 prose-li:my-1'>
                           {renderAssistantContent(message.content)}
                         </div>
                         {message.error &&
@@ -1228,7 +1228,7 @@ export default function AIChatPanel({
               placeholder={isMobile ? '输入你的问题...' : '输入你的问题... (Shift+Enter换行)'}
               disabled={isStreaming}
               rows={1}
-              className='flex-1 resize-none rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 placeholder-gray-400 transition-colors focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/20 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-600 dark:bg-gray-800 dark:text-white dark:placeholder-gray-500 dark:focus:border-purple-400'
+              className='flex-1 resize-none rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 placeholder-gray-400 transition-colors focus:border-purple-500 focus:outline-hidden focus:ring-2 focus:ring-purple-500/20 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-600 dark:bg-gray-800 dark:text-white dark:placeholder-gray-500 dark:focus:border-purple-400'
               style={{
                 minHeight: '48px',
                 maxHeight: '120px',

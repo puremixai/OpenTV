@@ -97,7 +97,7 @@ const AlertModal = ({
   };
 
   return createPortal(
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center">
+    <div className="fixed inset-0 z-9999 flex items-center justify-center">
       <div
         className={`absolute inset-0 bg-black transition-opacity duration-300 ${
           isVisible ? 'opacity-50' : 'opacity-0'
@@ -506,7 +506,7 @@ export default function AnimeSubscriptionComponent({
               value={downloadTool}
               onChange={(e) => handleDownloadToolChange(e.target.value as AnimeSubscriptionDownloadTool)}
               disabled={loading}
-              className='min-w-40 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-green-500 disabled:opacity-50'
+              className='min-w-40 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-gray-100 focus:outline-hidden focus:ring-2 focus:ring-green-500 disabled:opacity-50'
             >
               {downloadToolOptions.map((option) => (
                 <option key={option.value} value={option.value}>
@@ -529,7 +529,7 @@ export default function AnimeSubscriptionComponent({
       {/* 说明 */}
       <div className='bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4'>
         <div className='flex gap-2'>
-          <AlertCircle className='w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5' />
+          <AlertCircle className='w-5 h-5 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5' />
           <div className='text-sm text-blue-800 dark:text-blue-200 space-y-1'>
             <p>• 定时任务会自动检查订阅更新</p>
             <p>• 下载路径：OpenList离线下载根目录/番剧名称/</p>
@@ -569,7 +569,7 @@ export default function AnimeSubscriptionComponent({
                 value={formData.title}
                 onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                 placeholder='葬送的芙莉莲'
-                className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-green-500'
+                className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-hidden focus:ring-2 focus:ring-green-500'
               />
               <p className='mt-1 text-xs text-gray-500 dark:text-gray-400'>
                 用作 ACG 源搜索词
@@ -584,7 +584,7 @@ export default function AnimeSubscriptionComponent({
                 value={formData.filterText}
                 onChange={(e) => setFormData({ ...formData, filterText: e.target.value })}
                 placeholder='喵萌奶茶屋&(简日双语|简日内嵌)'
-                className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-green-500'
+                className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-hidden focus:ring-2 focus:ring-green-500'
               />
               <p className='mt-1 text-xs text-gray-500 dark:text-gray-400'>
                 支持 &amp; | ()
@@ -617,7 +617,7 @@ export default function AnimeSubscriptionComponent({
                 value={formData.excludeText}
                 onChange={(e) => setFormData({ ...formData, excludeText: e.target.value })}
                 placeholder='先行|预告|PV'
-                className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-green-500'
+                className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-hidden focus:ring-2 focus:ring-green-500'
               />
               <p className='mt-1 text-xs text-gray-500 dark:text-gray-400'>
                 可选；支持 &amp; | ()
@@ -644,7 +644,7 @@ export default function AnimeSubscriptionComponent({
                 <select
                   value={formData.source}
                   onChange={(e) => setFormData({ ...formData, source: e.target.value as any })}
-                  className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-green-500'
+                  className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-hidden focus:ring-2 focus:ring-green-500'
                 >
                   <option value='mikan'>蜜柑 (Mikan)</option>
                   <option value='acgrip'>ACG.RIP</option>
@@ -661,7 +661,7 @@ export default function AnimeSubscriptionComponent({
                   min='0'
                   value={formData.lastEpisode}
                   onChange={(e) => setFormData({ ...formData, lastEpisode: parseInt(e.target.value) || 0 })}
-                  className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-green-500'
+                  className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-hidden focus:ring-2 focus:ring-green-500'
                 />
                 <p className='mt-1 text-xs text-gray-500 dark:text-gray-400'>
                   已看到第几集

@@ -137,11 +137,11 @@ export default function ContinueWatching({ className }: ContinueWatchingProps) {
                 key={index}
                 className='min-w-[180px] w-48 sm:min-w-[200px] sm:w-52'
               >
-                <div className='relative aspect-[3/2] w-full overflow-hidden rounded-lg bg-gray-200 animate-pulse dark:bg-gray-800'>
+                <div className='relative aspect-3/2 w-full overflow-hidden rounded-lg bg-gray-200 animate-pulse dark:bg-gray-800'>
                   <div className='absolute inset-0 bg-gray-300 dark:bg-gray-700' />
                 </div>
-                <div className='mt-1 h-1 rounded bg-gray-200 animate-pulse dark:bg-gray-800' />
-                <div className='mt-2 h-4 w-3/4 rounded bg-gray-200 animate-pulse dark:bg-gray-800' />
+                <div className='mt-1 h-1 rounded-sm bg-gray-200 animate-pulse dark:bg-gray-800' />
+                <div className='mt-2 h-4 w-3/4 rounded-sm bg-gray-200 animate-pulse dark:bg-gray-800' />
               </div>
             ))}
           </div>
@@ -245,7 +245,7 @@ export default function ContinueWatching({ className }: ContinueWatchingProps) {
       {showConfirmDialog &&
         createPortal(
           <div
-            className='fixed inset-0 z-[9999] flex items-center justify-center bg-black bg-opacity-50 p-4 transition-opacity duration-300'
+            className='fixed inset-0 z-9999 flex items-center justify-center bg-black/50 p-4 transition-opacity duration-300'
             onClick={() => setShowConfirmDialog(false)}
           >
             <div
@@ -254,7 +254,7 @@ export default function ContinueWatching({ className }: ContinueWatchingProps) {
             >
               <div className='p-6'>
                 <div className='mb-4 flex items-start gap-4'>
-                  <div className='flex-shrink-0'>
+                  <div className='shrink-0'>
                     <AlertTriangle className='h-8 w-8 text-red-500' />
                   </div>
                   <div className='flex-1'>

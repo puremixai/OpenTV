@@ -193,7 +193,7 @@ export default function SmartRecommendations({
 
   return (
     <div className='mt-6 -mx-3 md:mx-0 md:px-4'>
-      <div className='bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm rounded-xl border border-gray-200/50 dark:border-gray-700/50 overflow-hidden'>
+      <div className='bg-white/50 dark:bg-gray-800/50 backdrop-blur-xs rounded-xl border border-gray-200/50 dark:border-gray-700/50 overflow-hidden'>
         {/* 标题 */}
         <div className='px-3 md:px-6 py-4 border-b border-gray-200 dark:border-gray-700'>
           <h3 className='text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2'>

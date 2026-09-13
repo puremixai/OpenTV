@@ -33,7 +33,7 @@ export default function MusicRankingDetailPage() {
       <div className="flex items-center justify-between mb-6 border-b border-white/5 pb-2">
         <div className="flex items-center gap-3 min-w-0">
           <h2 className="text-xl font-bold text-white/80 tracking-tight truncate max-w-md">{title}</h2>
-          <span className="text-[10px] font-bold bg-white/10 px-2 py-0.5 rounded text-white shrink-0">{songs.length} 首歌曲</span>
+          <span className="text-[10px] font-bold bg-white/10 px-2 py-0.5 rounded-sm text-white shrink-0">{songs.length} 首歌曲</span>
         </div>
         <button
           onClick={() => playMusicList(songs, title)}

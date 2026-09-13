@@ -2,7 +2,8 @@
   --cinema-bg: #090b0f;
   --cinema-gutter: clamp(28px, 5vw, 88px);
   color: #f5f5f7;
-  background: radial-gradient(ellipse at 75% 30%, #151a22 0, transparent 45%),
+  background:
+    radial-gradient(ellipse at 75% 30%, #151a22 0, transparent 45%),
     var(--cinema-bg);
   color-scheme: dark;
 }
@@ -194,6 +195,29 @@
 .cinema-hero-slide[data-active='true'] {
   opacity: 1;
 }
+.cinema-hero-slide .cinematic-artwork {
+  inset: -6% 0;
+}
+.cinema-hero-enter {
+  animation: cinema-copy-enter 650ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.cinema-hero h1.cinema-hero-enter {
+  animation-duration: 850ms;
+}
+.cinema-meta.cinema-hero-enter,
+.cinema-synopsis.cinema-hero-enter {
+  animation-duration: 1050ms;
+}
+@keyframes cinema-copy-enter {
+  from {
+    opacity: 0.35;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
 .cinema-backdrop {
   width: 100%;
   height: 100%;
@@ -218,7 +242,8 @@
   position: absolute;
   z-index: 1;
   inset: 0;
-  background: linear-gradient(
+  background:
+    linear-gradient(
       0deg,
       var(--cinema-bg) 0%,
       rgba(9, 11, 15, 0.4) 28%,
@@ -322,7 +347,9 @@
   border-radius: 7px;
   font-size: 13px;
   font-weight: 600;
-  transition: background 0.2s, transform 0.2s;
+  transition:
+    background 0.2s,
+    transform 0.2s;
 }
 .cinema-primary {
   background: #f5f5f7;
@@ -340,6 +367,24 @@
 }
 .cinema-secondary:hover {
   background: rgba(255, 255, 255, 0.16);
+}
+.cinema-detail-trigger {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 46px;
+  height: 46px;
+  border: 1px solid #ffffff30;
+  border-radius: 50%;
+  background: #ffffff0d;
+  color: #fff;
+  transition:
+    background-color 200ms,
+    transform 200ms;
+}
+.cinema-detail-trigger:hover {
+  background: #ffffff24;
+  transform: translateY(-1px);
 }
 .cinema-hero-pagination {
   position: absolute;
@@ -377,13 +422,35 @@
   height: 36px;
 }
 .cinema-slide-dots button > span {
+  position: relative;
+  overflow: hidden;
   height: 2px;
   width: 24px;
   background: #ffffff38;
   transition: background 0.3s;
 }
 .cinema-slide-dots button > span[data-active='true'] {
+  width: 48px;
+  background: #ffffff38;
+}
+.cinema-slide-progress {
+  display: block;
+  width: 100%;
+  height: 100%;
   background: #f5f5f7;
+  transform-origin: left;
+}
+.cinema-hero[data-rotating='true'] .cinema-slide-progress {
+  animation: cinema-slide-progress var(--cinema-rotation-duration, 5000ms)
+    linear both;
+}
+@keyframes cinema-slide-progress {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
 }
 .cinema-slide-controls {
   display: flex;
@@ -410,7 +477,8 @@
 .cinema-hero-loading {
   display: grid;
   place-items: center;
-  background: radial-gradient(ellipse at 70% 15%, #27333c, transparent 65%),
+  background:
+    radial-gradient(ellipse at 70% 15%, #27333c, transparent 65%),
     linear-gradient(0deg, #090b0f, #11171f);
 }
 .cinema-hero-loading-mark {
@@ -423,8 +491,8 @@
   letter-spacing: 0.2em;
 }
 .cinema-hero-empty {
-  background: radial-gradient(ellipse at 75% 20%, #263740, transparent 65%),
-    #090b0f;
+  background:
+    radial-gradient(ellipse at 75% 20%, #263740, transparent 65%), #090b0f;
 }
 .cinema-hero-empty .cinema-primary {
   margin-top: 28px;
@@ -544,7 +612,9 @@
   border: 1px solid #ffffff1a;
   border-radius: 50%;
   color: #b6bac3;
-  transition: color 0.2s, background 0.2s;
+  transition:
+    color 0.2s,
+    background 0.2s;
 }
 .cinema-shelf-arrows button:disabled {
   opacity: 0.28;
@@ -572,6 +642,8 @@
   border-radius: 8px;
 }
 .cinema-layout .cinema-poster [data-video-card]:hover {
+  /* Tailwind 4 uses an independent scale property; keep this shelf's zoom. */
+  scale: 1;
   transform: translateY(-5px) scale(1.015);
 }
 .cinema-layout .cinema-content [data-video-card] .text-gray-800,
@@ -654,6 +726,7 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
+  animation: cinema-copy-enter 900ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 .cinema-feature-picker {
   position: relative;
@@ -678,7 +751,9 @@
   border: 1px solid #ffffff0d;
   background: #1a1d23;
   scroll-snap-align: start;
-  transition: border-color 0.2s, background 0.2s;
+  transition:
+    border-color 0.2s,
+    background 0.2s;
 }
 .cinema-feature-pick[aria-pressed='true'] {
   border-color: #ffffff8a;
@@ -1026,5 +1101,12 @@
     scroll-behavior: auto !important;
     animation: none !important;
     transition: none !important;
+  }
+  .cinema-layout .cinema-poster [data-video-card]:hover,
+  .cinema-detail-trigger:hover,
+  .cinema-primary:hover,
+  .cinema-secondary:hover {
+    transform: none;
+    scale: 1;
   }
 }

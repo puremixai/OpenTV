@@ -21,6 +21,7 @@ import { getTMDBImageUrl } from '@/lib/tmdb-image-base';
 import { processImageUrl } from '@/lib/utils';
 
 import { createCinemaPortal as createPortal } from '@/components/CinemaPortal';
+import DetailHero from '@/components/hero/DetailHero';
 import ImageViewer from '@/components/ImageViewer';
 import ProxyImage from '@/components/ProxyImage';
 
@@ -29,6 +30,7 @@ interface DetailPanelProps {
   onClose: () => void;
   title: string;
   poster?: string;
+  backdrop?: string;
   doubanId?: number;
   bangumiId?: number;
   isBangumi?: boolean;
@@ -49,9 +51,11 @@ interface DetailPanelProps {
 
 interface DetailData {
   title: string;
+  requestGeneration?: number;
   originalTitle?: string;
   year?: string;
   poster?: string;
+  backdrop?: string;
   rating?: {
     value: number;
     count: number;
@@ -99,6 +103,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
   onClose,
   title,
   poster,
+  backdrop,
   doubanId,
   bangumiId,
   isBangumi,
@@ -139,6 +144,9 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
   const [galleryViewportHeight, setGalleryViewportHeight] = useState(0);
   const [galleryViewportWidth, setGalleryViewportWidth] = useState(0);
   const galleryScrollRef = React.useRef<HTMLDivElement>(null);
+  const detailScrollRef = React.useRef<HTMLDivElement>(null);
+  const dialogRef = React.useRef<HTMLDivElement>(null);
+  const detailRequestRef = React.useRef(0);
 
   // 数据源状态管理
   const [currentSource, setCurrentSource] = useState<
@@ -302,8 +310,23 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
   useEffect(() => {
     if (!isOpen) {
       setShowGallery(false);
+      setShowImageViewer(false);
+      setSelectedImage('');
+      detailRequestRef.current += 1;
     }
   }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen || !isVisible) return;
+    const opener = document.activeElement instanceof HTMLElement
+      ? document.activeElement
+      : null;
+    const dialog = dialogRef.current;
+    (dialog?.querySelector<HTMLElement>('button[aria-label="关闭"]') || dialog)?.focus({ preventScroll: true });
+    return () => {
+      if (opener?.isConnected) opener.focus({ preventScroll: true });
+    };
+  }, [isOpen, isVisible, useDrawer]);
 
   // 阻止背景滚动（仅在非抽屉模式下）
   useEffect(() => {
@@ -358,22 +381,27 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
   // ESC键关闭
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        onClose();
-      }
+      if (e.key !== 'Escape' || e.defaultPrevented || showImageViewer) return;
+      e.preventDefault();
+      if (showGallery) setShowGallery(false);
+      else onClose();
     };
 
     if (isVisible) {
       document.addEventListener('keydown', handleEsc);
       return () => document.removeEventListener('keydown', handleEsc);
     }
-  }, [isVisible, onClose]);
+  }, [isVisible, onClose, showGallery, showImageViewer]);
 
   // 获取详情数据
   useEffect(() => {
     if (!isOpen) {
       return;
     }
+
+    let cancelled = false;
+    const requestId = ++detailRequestRef.current;
+    const isCurrentRequest = () => !cancelled && requestId === detailRequestRef.current;
 
     const fetchDetail = async () => {
       setLoading(true);
@@ -417,6 +445,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
               );
               if (response.ok) {
                 const data = await response.json();
+                if (!isCurrentRequest()) return;
                 const detailData = {
                   title: data.title || title,
                   intro: data.desc || '',
@@ -431,12 +460,14 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
                 return;
               }
             } catch (err) {
+              if (!isCurrentRequest()) return;
               logger.error('获取source-detail失败:', err);
               // 继续执行后续逻辑
             }
           }
         }
 
+        if (!isCurrentRequest()) return;
         // 优先使用 Bangumi ID（因为 isBangumi 为 true 时，doubanId 实际上是 bangumiId）
         if (bangumiId || (isBangumi && doubanId)) {
           setCurrentSource('bangumi');
@@ -446,6 +477,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
             throw new Error('Bangumi ID 缺失');
           }
           const data = await getBangumiSubject(actualBangumiId);
+          if (!isCurrentRequest()) return;
 
           const detailData = {
             title: data.name_cn || data.name,
@@ -477,6 +509,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
             throw new Error('获取豆瓣详情失败');
           }
           const data = await response.json();
+          if (!isCurrentRequest()) return;
 
           const detailData = {
             title: data.title,
@@ -513,10 +546,11 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
 
         throw new Error('缺少必要的查询参数');
       } catch (err) {
+        if (!isCurrentRequest()) return;
         logger.error('获取详情失败:', err);
         setError(err instanceof Error ? err.message : '获取详情失败');
       } finally {
-        setLoading(false);
+        if (isCurrentRequest()) setLoading(false);
       }
     };
 
@@ -568,6 +602,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
         throw new Error('搜索失败');
       }
       const searchData = await searchResponse.json();
+      if (!isCurrentRequest()) return;
 
       if (searchData.results && searchData.results.length > 0) {
         const result = searchData.results[0];
@@ -582,6 +617,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
           throw new Error('获取TMDB详情失败');
         }
         const detailResult = await detailResponse.json();
+        if (!isCurrentRequest()) return;
 
         // 如果有季度信息,尝试获取季度详情
         let seasonData = null;
@@ -598,6 +634,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
           }
         }
 
+        if (!isCurrentRequest()) return;
         setDetailData({
           title:
             mediaType === 'movie'
@@ -623,6 +660,9 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
                   )
                 )
               : poster,
+          backdrop: detailResult.backdrop_path
+            ? processImageUrl(getTMDBImageUrl(detailResult.backdrop_path, 'w1280'))
+            : undefined,
           rating: detailResult.vote_average
             ? {
                 value: detailResult.vote_average,
@@ -646,6 +686,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
           tagline: detailResult.tagline,
           seasons: detailResult.number_of_seasons,
           overview: detailResult.overview,
+          requestGeneration: requestId,
           tmdbId: detailId,
           mediaType: mediaType,
           seasonNumber: extractedSeasonNumber,
@@ -658,6 +699,10 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
     };
 
     fetchDetail();
+    return () => {
+      cancelled = true;
+      detailRequestRef.current += 1;
+    };
   }, [
     isOpen,
     doubanId,
@@ -676,6 +721,8 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
 
   // 切换数据源的函数
   const handleToggleSource = async () => {
+    const requestId = ++detailRequestRef.current;
+    const isCurrentRequest = () => requestId === detailRequestRef.current;
     if (currentSource === 'tmdb') {
       // 切换回原始数据源
       if (originalDetailData) {
@@ -693,20 +740,24 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
       setLoading(true);
       setError(null);
       try {
-        await fetchTmdbDataForToggle();
+        await fetchTmdbDataForToggle(isCurrentRequest, requestId);
       } catch (err) {
+        if (!isCurrentRequest()) return;
         logger.error('切换到TMDB失败:', err);
         setError(err instanceof Error ? err.message : '切换到TMDB失败');
         // 切换失败，但保持 currentSource 为 tmdb，这样可以显示切换回按钮
         setCurrentSource('tmdb');
       } finally {
-        setLoading(false);
+        if (isCurrentRequest()) setLoading(false);
       }
     }
   };
 
   // 用于切换时获取 TMDB 数据
-  const fetchTmdbDataForToggle = async () => {
+  const fetchTmdbDataForToggle = async (
+    isCurrentRequest: () => boolean,
+    requestId: number
+  ) => {
     // 移除季度信息进行搜索
     let searchTitle = title;
     let extractedSeasonNumber = seasonNumber;
@@ -752,6 +803,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
       throw new Error('搜索失败');
     }
     const searchData = await searchResponse.json();
+    if (!isCurrentRequest()) return;
 
     if (searchData.results && searchData.results.length > 0) {
       const result = searchData.results[0];
@@ -766,6 +818,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
         throw new Error('获取TMDB详情失败');
       }
       const detailResult = await detailResponse.json();
+      if (!isCurrentRequest()) return;
 
       // 如果有季度信息,尝试获取季度详情
       let seasonData = null;
@@ -782,6 +835,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
         }
       }
 
+      if (!isCurrentRequest()) return;
       setDetailData({
         title:
           mediaType === 'movie'
@@ -807,6 +861,9 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
                 )
               )
             : poster,
+        backdrop: detailResult.backdrop_path
+          ? processImageUrl(getTMDBImageUrl(detailResult.backdrop_path, 'w1280'))
+          : undefined,
         rating: detailResult.vote_average
           ? {
               value: detailResult.vote_average,
@@ -830,6 +887,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
         tagline: detailResult.tagline,
         seasons: detailResult.number_of_seasons,
         overview: detailResult.overview,
+        requestGeneration: requestId,
         tmdbId: detailId,
         mediaType: mediaType,
         seasonNumber: extractedSeasonNumber,
@@ -928,6 +986,8 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
   // 异步获取演职人员信息（仅TMDB）
   useEffect(() => {
     if (
+      !isOpen ||
+      detailData?.requestGeneration !== detailRequestRef.current ||
       !detailData?.tmdbId ||
       !detailData?.mediaType ||
       currentSource !== 'tmdb'
@@ -936,10 +996,12 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
     }
 
     // 如果已经有演员信息，不重复获取
-    if (detailData.actors && detailData.actors.length > 0) {
+    if (detailData.actors !== undefined) {
       return;
     }
 
+    let cancelled = false;
+    const requestId = detailRequestRef.current;
     const fetchCredits = async () => {
       try {
         const creditsResponse = await fetch(
@@ -947,6 +1009,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
         );
         if (!creditsResponse.ok) return;
         const creditsData = await creditsResponse.json();
+        if (cancelled || requestId !== detailRequestRef.current) return;
 
         // 更新演员和导演信息
         setDetailData((prev) =>
@@ -976,7 +1039,10 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
     };
 
     fetchCredits();
+    return () => { cancelled = true; };
   }, [
+    isOpen,
+    detailData?.requestGeneration,
     detailData?.tmdbId,
     detailData?.mediaType,
     currentSource,
@@ -1326,7 +1392,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
 
   const galleryModal = showGallery ? (
     useDrawer ? (
-      <div className='fixed inset-0 z-[10000] flex items-center justify-end pointer-events-none'>
+      <div className='fixed inset-0 z-10000 flex items-center justify-end pointer-events-none'>
         <div
           className={`relative ${drawerWidth} h-full bg-white dark:bg-gray-900 shadow-2xl overflow-hidden flex flex-col pointer-events-auto`}
         >
@@ -1335,7 +1401,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
         </div>
       </div>
     ) : (
-      <div className='fixed inset-0 z-[10000] flex items-center justify-center p-4'>
+      <div className='fixed inset-0 z-10000 flex items-center justify-center p-4'>
         <div
           className='absolute inset-0 bg-black/60'
           onClick={() => setShowGallery(false)}
@@ -1350,10 +1416,31 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
 
   if (!isVisible || !mounted) return null;
 
+  const useCallerArtwork = loading || !!error;
+  const hero = (
+    <DetailHero
+      title={useCallerArtwork ? title : detailData?.title || title}
+      poster={(useCallerArtwork ? poster : detailData?.poster) || poster}
+      backdrop={(useCallerArtwork ? backdrop : detailData?.backdrop) || backdrop}
+      year={useCallerArtwork ? undefined : detailData?.year}
+      rating={useCallerArtwork ? undefined : detailData?.rating?.value}
+      compact={useDrawer}
+      active={isOpen}
+      paused={!isAnimating || showImageViewer || showGallery}
+      scrollRef={detailScrollRef}
+      onImageClick={handleImageClick}
+    />
+  );
+
   const content = useDrawer ? (
-    <div className='fixed inset-0 z-[9999] flex items-center justify-end pointer-events-none'>
+    <div className='fixed inset-0 z-9999 flex items-center justify-end pointer-events-none'>
       {/* 详情面板 - 抽屉模式 */}
       <div
+        ref={dialogRef}
+        role='dialog'
+        aria-modal='false'
+        aria-label={`${title}详情`}
+        tabIndex={-1}
         className={`relative ${drawerWidth} h-full bg-white dark:bg-gray-900 shadow-2xl overflow-hidden flex flex-col transition-transform duration-300 ease-out pointer-events-auto ${
           isAnimating ? 'translate-x-0' : 'translate-x-full'
         }`}
@@ -1391,7 +1478,8 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
         </div>
 
         {/* 内容区域 */}
-        <div className='overflow-y-auto max-h-[calc(90vh-4rem)]'>
+        <div ref={detailScrollRef} className='min-h-0 flex-1 overflow-y-auto'>
+          {hero}
           {loading && (
             <div className='flex items-center justify-center py-20'>
               <div className='animate-spin rounded-full h-12 w-12 border-b-2 border-green-500'></div>
@@ -1453,28 +1541,10 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
 
           {!loading && !error && detailData && (
             <div className='p-6'>
-              {/* 海报和基本信息 */}
-              <div className='flex gap-6 mb-6'>
-                {detailData.poster && (
-                  <div className='flex flex-col items-start gap-3 flex-shrink-0'>
-                    <div
-                      className='relative w-32 h-48 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-800 cursor-pointer hover:opacity-90 transition-opacity'
-                      onClick={() => handleImageClick(detailData.poster!)}
-                    >
-                      <ProxyImage
-                        originalSrc={detailData.poster}
-                        alt={detailData.title}
-                        className='absolute inset-0 w-full h-full object-cover'
-                        draggable={false}
-                      />
-                    </div>
-                    {galleryEntryButton}
-                  </div>
-                )}
-                <div className='flex-1 min-w-0'>
-                  <h3 className='text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2'>
-                    {detailData.title}
-                  </h3>
+              {/* 基本信息与照片墙；片名和海报由 Hero 展示 */}
+              {galleryEntryButton && <div className='mb-4'>{galleryEntryButton}</div>}
+              <div className='mb-6'>
+                <div className='min-w-0'>
                   {detailData.originalTitle &&
                     detailData.originalTitle !== detailData.title && (
                       <p className='text-sm text-gray-500 dark:text-gray-400 mb-3'>
@@ -1506,7 +1576,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
                       {detailData.genres.map((genre, index) => (
                         <span
                           key={index}
-                          className='px-2 py-1 text-xs rounded bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300'
+                          className='px-2 py-1 text-xs rounded-sm bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300'
                         >
                           {genre}
                         </span>
@@ -1586,7 +1656,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
                         {detailData.actors.map((actor, index) => (
                           <div
                             key={index}
-                            className='flex flex-col items-center flex-shrink-0'
+                            className='flex flex-col items-center shrink-0'
                             style={{
                               pointerEvents: isActorsDragging ? 'none' : 'auto',
                             }}
@@ -1731,7 +1801,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
                               >
                                 {season.poster_path && (
                                   <div
-                                    className='relative w-12 h-16 rounded overflow-hidden bg-gray-200 dark:bg-gray-700 flex-shrink-0 hover:opacity-80 transition-opacity'
+                                    className='relative w-12 h-16 rounded-sm overflow-hidden bg-gray-200 dark:bg-gray-700 shrink-0 hover:opacity-80 transition-opacity'
                                     onClick={(e) => {
                                       e.stopPropagation();
                                       handleImageClick(
@@ -1798,7 +1868,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
                                   <div
                                     key={episode.id}
                                     id={`episode-${episode.episode_number}`}
-                                    className={`flex-shrink-0 w-64 p-3 rounded ${
+                                    className={`shrink-0 w-64 p-3 rounded ${
                                       isCurrentEpisode
                                         ? 'bg-green-100 dark:bg-green-900/30 ring-2 ring-green-500'
                                         : 'bg-gray-50 dark:bg-gray-800'
@@ -1811,7 +1881,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
                                   >
                                     {episode.still_path && (
                                       <div
-                                        className='relative w-full h-36 rounded overflow-hidden bg-gray-200 dark:bg-gray-700 mb-2 cursor-pointer hover:opacity-90 transition-opacity'
+                                        className='relative w-full h-36 rounded-sm overflow-hidden bg-gray-200 dark:bg-gray-700 mb-2 cursor-pointer hover:opacity-90 transition-opacity'
                                         onClick={() =>
                                           handleImageClick(
                                             getTMDBImageUrl(
@@ -1934,7 +2004,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
       )}
     </div>
   ) : (
-    <div className='fixed inset-0 z-[9999] flex items-center justify-center p-4'>
+    <div className='fixed inset-0 z-9999 flex items-center justify-center p-4'>
       {/* 背景遮罩 */}
       <div
         className={`absolute inset-0 bg-black/50 transition-opacity duration-200 ease-out ${
@@ -1949,7 +2019,12 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
 
       {/* 详情面板 - 居中模式 */}
       <div
-        className='relative w-full max-w-2xl max-h-[90vh] bg-white dark:bg-gray-900 rounded-2xl shadow-2xl overflow-hidden transition-all duration-200 ease-out'
+        ref={dialogRef}
+        role='dialog'
+        aria-modal='true'
+        aria-label={`${title}详情`}
+        tabIndex={-1}
+        className='relative w-full max-w-[880px] max-h-[90vh] bg-white dark:bg-gray-900 rounded-2xl shadow-2xl overflow-hidden flex flex-col transition-all duration-200 ease-out'
         style={{
           willChange: 'transform, opacity',
           backfaceVisibility: 'hidden',
@@ -1992,7 +2067,8 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
         </div>
 
         {/* 内容区域 */}
-        <div className='overflow-y-auto max-h-[calc(90vh-4rem)]'>
+        <div ref={detailScrollRef} className='min-h-0 flex-1 overflow-y-auto'>
+          {hero}
           {loading && (
             <div className='flex items-center justify-center py-20'>
               <div className='animate-spin rounded-full h-12 w-12 border-b-2 border-green-500'></div>
@@ -2051,28 +2127,10 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
 
           {!loading && !error && detailData && (
             <div className='p-6'>
-              {/* 海报和基本信息 */}
-              <div className='flex gap-6 mb-6'>
-                {detailData.poster && (
-                  <div className='flex flex-col items-start gap-3 flex-shrink-0'>
-                    <div
-                      className='relative w-32 h-48 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-800 cursor-pointer hover:opacity-90 transition-opacity'
-                      onClick={() => handleImageClick(detailData.poster!)}
-                    >
-                      <ProxyImage
-                        originalSrc={detailData.poster}
-                        alt={detailData.title}
-                        className='absolute inset-0 w-full h-full object-cover'
-                        draggable={false}
-                      />
-                    </div>
-                    {galleryEntryButton}
-                  </div>
-                )}
-                <div className='flex-1 min-w-0'>
-                  <h3 className='text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2'>
-                    {detailData.title}
-                  </h3>
+              {/* 基本信息与照片墙；片名和海报由 Hero 展示 */}
+              {galleryEntryButton && <div className='mb-4'>{galleryEntryButton}</div>}
+              <div className='mb-6'>
+                <div className='min-w-0'>
                   {detailData.originalTitle &&
                     detailData.originalTitle !== detailData.title && (
                       <p className='text-sm text-gray-500 dark:text-gray-400 mb-3'>
@@ -2104,7 +2162,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
                       {detailData.genres.map((genre, index) => (
                         <span
                           key={index}
-                          className='px-2 py-1 text-xs rounded bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300'
+                          className='px-2 py-1 text-xs rounded-sm bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300'
                         >
                           {genre}
                         </span>
@@ -2184,7 +2242,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
                         {detailData.actors.map((actor, index) => (
                           <div
                             key={index}
-                            className='flex flex-col items-center flex-shrink-0'
+                            className='flex flex-col items-center shrink-0'
                             style={{
                               pointerEvents: isActorsDragging ? 'none' : 'auto',
                             }}
@@ -2329,7 +2387,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
                               >
                                 {season.poster_path && (
                                   <div
-                                    className='relative w-12 h-16 rounded overflow-hidden bg-gray-200 dark:bg-gray-700 flex-shrink-0 hover:opacity-80 transition-opacity'
+                                    className='relative w-12 h-16 rounded-sm overflow-hidden bg-gray-200 dark:bg-gray-700 shrink-0 hover:opacity-80 transition-opacity'
                                     onClick={(e) => {
                                       e.stopPropagation();
                                       handleImageClick(
@@ -2396,7 +2454,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
                                   <div
                                     key={episode.id}
                                     id={`episode-${episode.episode_number}`}
-                                    className={`flex-shrink-0 w-64 p-3 rounded ${
+                                    className={`shrink-0 w-64 p-3 rounded ${
                                       isCurrentEpisode
                                         ? 'bg-green-100 dark:bg-green-900/30 ring-2 ring-green-500'
                                         : 'bg-gray-50 dark:bg-gray-800'
@@ -2409,7 +2467,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
                                   >
                                     {episode.still_path && (
                                       <div
-                                        className='relative w-full h-36 rounded overflow-hidden bg-gray-200 dark:bg-gray-700 mb-2 cursor-pointer hover:opacity-90 transition-opacity'
+                                        className='relative w-full h-36 rounded-sm overflow-hidden bg-gray-200 dark:bg-gray-700 mb-2 cursor-pointer hover:opacity-90 transition-opacity'
                                         onClick={() =>
                                           handleImageClick(
                                             getTMDBImageUrl(

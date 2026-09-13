@@ -1305,7 +1305,7 @@ function LivePageClient() {
   };
 
   const testButtonClassName = (disabled: boolean) => (
-    `text-xs px-2 py-1 rounded border flex-shrink-0 ${disabled
+    `text-xs px-2 py-1 rounded border shrink-0 ${disabled
       ? 'border-gray-200 dark:border-gray-700 text-gray-400 dark:text-gray-600 cursor-not-allowed opacity-60'
       : 'border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:border-green-500 hover:text-green-600 dark:hover:text-green-400'
     }`
@@ -2199,10 +2199,10 @@ function LivePageClient() {
           <div className='text-center max-w-md mx-auto px-6'>
             {/* 动画直播图标 */}
             <div className='relative mb-8'>
-              <div className='relative mx-auto w-24 h-24 bg-gradient-to-r from-green-500 to-emerald-600 rounded-2xl shadow-2xl flex items-center justify-center transform hover:scale-105 transition-transform duration-300'>
+              <div className='relative mx-auto w-24 h-24 bg-linear-to-r from-green-500 to-emerald-600 rounded-2xl shadow-2xl flex items-center justify-center transform hover:scale-105 transition-transform duration-300'>
                 <div className='text-white text-4xl'>📺</div>
                 {/* 旋转光环 */}
-                <div className='absolute -inset-2 bg-gradient-to-r from-green-500 to-emerald-600 rounded-2xl opacity-20 animate-spin'></div>
+                <div className='absolute -inset-2 bg-linear-to-r from-green-500 to-emerald-600 rounded-2xl opacity-20 animate-spin'></div>
               </div>
 
               {/* 浮动粒子效果 */}
@@ -2239,7 +2239,7 @@ function LivePageClient() {
               {/* 进度条 */}
               <div className='w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 overflow-hidden'>
                 <div
-                  className='h-full bg-gradient-to-r from-green-500 to-emerald-600 rounded-full transition-all duration-1000 ease-out'
+                  className='h-full bg-linear-to-r from-green-500 to-emerald-600 rounded-full transition-all duration-1000 ease-out'
                   style={{
                     width:
                       loadingStage === 'loading' ? '33%' : loadingStage === 'fetching' ? '66%' : '100%',
@@ -2267,10 +2267,10 @@ function LivePageClient() {
           <div className='text-center max-w-md mx-auto px-6'>
             {/* 错误图标 */}
             <div className='relative mb-8'>
-              <div className='relative mx-auto w-24 h-24 bg-gradient-to-r from-red-500 to-orange-500 rounded-2xl shadow-2xl flex items-center justify-center transform hover:scale-105 transition-transform duration-300'>
+              <div className='relative mx-auto w-24 h-24 bg-linear-to-r from-red-500 to-orange-500 rounded-2xl shadow-2xl flex items-center justify-center transform hover:scale-105 transition-transform duration-300'>
                 <div className='text-white text-4xl'>😵</div>
                 {/* 脉冲效果 */}
-                <div className='absolute -inset-2 bg-gradient-to-r from-red-500 to-orange-500 rounded-2xl opacity-20 animate-pulse'></div>
+                <div className='absolute -inset-2 bg-linear-to-r from-red-500 to-orange-500 rounded-2xl opacity-20 animate-pulse'></div>
               </div>
             </div>
 
@@ -2293,7 +2293,7 @@ function LivePageClient() {
             <div className='space-y-3'>
               <button
                 onClick={() => window.location.reload()}
-                className='w-full px-6 py-3 bg-gradient-to-r from-blue-500 to-cyan-600 text-white rounded-xl font-medium hover:from-blue-600 hover:to-cyan-700 transform hover:scale-105 transition-all duration-200 shadow-lg hover:shadow-xl'
+                className='w-full px-6 py-3 bg-linear-to-r from-blue-500 to-cyan-600 text-white rounded-xl font-medium hover:from-blue-600 hover:to-cyan-700 transform hover:scale-105 transition-all duration-200 shadow-lg hover:shadow-xl'
               >
                 🔄 重新尝试
               </button>
@@ -2306,11 +2306,11 @@ function LivePageClient() {
 
   return (
     <PageLayout activePath='/live'>
-      <div className='flex flex-col gap-3 py-4 px-5 lg:px-[3rem] 2xl:px-20'>
+      <div className='flex flex-col gap-3 py-4 px-5 lg:px-12 2xl:px-20'>
         {/* 第一行：页面标题 */}
         <div className='py-1'>
           <h1 className='text-xl font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2 max-w-[80%]'>
-            <Radio className='w-5 h-5 text-blue-500 flex-shrink-0' />
+            <Radio className='w-5 h-5 text-blue-500 shrink-0' />
             <div className='min-w-0 flex-1'>
               <div className='truncate'>
                 {currentSource?.name}
@@ -2337,7 +2337,7 @@ function LivePageClient() {
               onClick={() =>
                 setIsChannelListCollapsed(!isChannelListCollapsed)
               }
-              className='group relative flex items-center space-x-1.5 px-3 py-1.5 rounded-full bg-white/80 hover:bg-white dark:bg-gray-800/80 dark:hover:bg-gray-800 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-all duration-200'
+              className='group relative flex items-center space-x-1.5 px-3 py-1.5 rounded-full bg-white/80 hover:bg-white dark:bg-gray-800/80 dark:hover:bg-gray-800 backdrop-blur-xs border border-gray-200/50 dark:border-gray-700/50 shadow-xs hover:shadow-md transition-all duration-200'
               title={
                 isChannelListCollapsed ? '显示频道列表' : '隐藏频道列表'
               }
@@ -2384,12 +2384,12 @@ function LivePageClient() {
 
                 {/* 不支持的直播类型提示 */}
                 {unsupportedType && (
-                  <div className='absolute inset-0 bg-black/90 backdrop-blur-sm rounded-xl overflow-hidden shadow-lg border border-white/0 dark:border-white/30 flex items-center justify-center z-[600] transition-all duration-300'>
+                  <div className='absolute inset-0 bg-black/90 backdrop-blur-xs rounded-xl overflow-hidden shadow-lg border border-white/0 dark:border-white/30 flex items-center justify-center z-600 transition-all duration-300'>
                     <div className='text-center max-w-md mx-auto px-6'>
                       <div className='relative mb-8'>
-                        <div className='relative mx-auto w-24 h-24 bg-gradient-to-r from-orange-500 to-red-600 rounded-2xl shadow-2xl flex items-center justify-center transform hover:scale-105 transition-transform duration-300'>
+                        <div className='relative mx-auto w-24 h-24 bg-linear-to-r from-orange-500 to-red-600 rounded-2xl shadow-2xl flex items-center justify-center transform hover:scale-105 transition-transform duration-300'>
                           <div className='text-white text-4xl'>⚠️</div>
-                          <div className='absolute -inset-2 bg-gradient-to-r from-orange-500 to-red-600 rounded-2xl opacity-20 animate-pulse'></div>
+                          <div className='absolute -inset-2 bg-linear-to-r from-orange-500 to-red-600 rounded-2xl opacity-20 animate-pulse'></div>
                         </div>
                       </div>
                       <div className='space-y-4'>
@@ -2414,12 +2414,12 @@ function LivePageClient() {
 
                 {/* 视频加载蒙层 */}
                 {isVideoLoading && (
-                  <div className='absolute inset-0 bg-black/85 backdrop-blur-sm rounded-xl overflow-hidden shadow-lg border border-white/0 dark:border-white/30 flex items-center justify-center z-[500] transition-all duration-300'>
+                  <div className='absolute inset-0 bg-black/85 backdrop-blur-xs rounded-xl overflow-hidden shadow-lg border border-white/0 dark:border-white/30 flex items-center justify-center z-500 transition-all duration-300'>
                     <div className='text-center max-w-md mx-auto px-6'>
                       <div className='relative mb-8'>
-                        <div className='relative mx-auto w-24 h-24 bg-gradient-to-r from-green-500 to-emerald-600 rounded-2xl shadow-2xl flex items-center justify-center transform hover:scale-105 transition-transform duration-300'>
+                        <div className='relative mx-auto w-24 h-24 bg-linear-to-r from-green-500 to-emerald-600 rounded-2xl shadow-2xl flex items-center justify-center transform hover:scale-105 transition-transform duration-300'>
                           <div className='text-white text-4xl'>📺</div>
-                          <div className='absolute -inset-2 bg-gradient-to-r from-green-500 to-emerald-600 rounded-2xl opacity-20 animate-spin'></div>
+                          <div className='absolute -inset-2 bg-linear-to-r from-green-500 to-emerald-600 rounded-2xl opacity-20 animate-spin'></div>
                         </div>
                       </div>
                       <div className='space-y-2'>
@@ -2434,8 +2434,8 @@ function LivePageClient() {
 
               {/* 外部播放器按钮 - 观影室同步状态下隐藏 */}
               {videoUrl && !liveSync.isInRoom && (
-                <div className='mt-3 px-2 lg:flex-shrink-0 flex justify-end'>
-                  <div className='bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm rounded-lg p-2 border border-gray-200/50 dark:border-gray-700/50 w-full lg:w-auto overflow-x-auto'>
+                <div className='mt-3 px-2 lg:shrink-0 flex justify-end'>
+                  <div className='bg-white/50 dark:bg-gray-800/50 backdrop-blur-xs rounded-lg p-2 border border-gray-200/50 dark:border-gray-700/50 w-full lg:w-auto overflow-x-auto'>
                     <div className='flex gap-1.5 justify-end lg:flex-wrap items-center'>
                       {/* 网页播放 */}
                       <button
@@ -2444,11 +2444,11 @@ function LivePageClient() {
                           // 在新标签页打开视频URL
                           window.open(videoUrl, '_blank');
                         }}
-                        className='group relative flex items-center justify-center gap-1 w-8 h-8 lg:w-auto lg:h-auto lg:px-2 lg:py-1.5 bg-white hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-600 text-xs font-medium rounded-md transition-all duration-200 shadow-sm hover:shadow-md cursor-pointer overflow-hidden border border-gray-300 dark:border-gray-600 flex-shrink-0'
+                        className='group relative flex items-center justify-center gap-1 w-8 h-8 lg:w-auto lg:h-auto lg:px-2 lg:py-1.5 bg-white hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-600 text-xs font-medium rounded-md transition-all duration-200 shadow-xs hover:shadow-md cursor-pointer overflow-hidden border border-gray-300 dark:border-gray-600 shrink-0'
                         title='网页播放'
                       >
                         <svg
-                          className='w-4 h-4 flex-shrink-0 text-gray-700 dark:text-gray-200'
+                          className='w-4 h-4 shrink-0 text-gray-700 dark:text-gray-200'
                           fill='none'
                           stroke='currentColor'
                           viewBox='0 0 24 24'
@@ -2479,13 +2479,13 @@ function LivePageClient() {
                           // 直接使用原始 URL,不使用代理
                           window.open(`potplayer://${videoUrl}`, '_blank');
                         }}
-                        className='group relative flex items-center justify-center gap-1 w-8 h-8 lg:w-auto lg:h-auto lg:px-2 lg:py-1.5 bg-white hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-600 text-xs font-medium rounded-md transition-all duration-200 shadow-sm hover:shadow-md cursor-pointer overflow-hidden border border-gray-300 dark:border-gray-600 flex-shrink-0'
+                        className='group relative flex items-center justify-center gap-1 w-8 h-8 lg:w-auto lg:h-auto lg:px-2 lg:py-1.5 bg-white hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-600 text-xs font-medium rounded-md transition-all duration-200 shadow-xs hover:shadow-md cursor-pointer overflow-hidden border border-gray-300 dark:border-gray-600 shrink-0'
                         title='PotPlayer'
                       >
                         <img
                           src='/players/potplayer.png'
                           alt='PotPlayer'
-                          className='w-4 h-4 flex-shrink-0'
+                          className='w-4 h-4 shrink-0'
                         />
                         <span className='hidden lg:inline max-w-0 group-hover:max-w-[100px] overflow-hidden whitespace-nowrap transition-all duration-200 ease-in-out text-gray-700 dark:text-gray-200'>
                           PotPlayer
@@ -2499,13 +2499,13 @@ function LivePageClient() {
                           // 直接使用原始 URL,不使用代理
                           window.open(`vlc://${videoUrl}`, '_blank');
                         }}
-                        className='group relative flex items-center justify-center gap-1 w-8 h-8 lg:w-auto lg:h-auto lg:px-2 lg:py-1.5 bg-white hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-600 text-xs font-medium rounded-md transition-all duration-200 shadow-sm hover:shadow-md cursor-pointer overflow-hidden border border-gray-300 dark:border-gray-600 flex-shrink-0'
+                        className='group relative flex items-center justify-center gap-1 w-8 h-8 lg:w-auto lg:h-auto lg:px-2 lg:py-1.5 bg-white hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-600 text-xs font-medium rounded-md transition-all duration-200 shadow-xs hover:shadow-md cursor-pointer overflow-hidden border border-gray-300 dark:border-gray-600 shrink-0'
                         title='VLC'
                       >
                         <img
                           src='/players/vlc.png'
                           alt='VLC'
-                          className='w-4 h-4 flex-shrink-0'
+                          className='w-4 h-4 shrink-0'
                         />
                         <span className='hidden lg:inline max-w-0 group-hover:max-w-[100px] overflow-hidden whitespace-nowrap transition-all duration-200 ease-in-out text-gray-700 dark:text-gray-200'>
                           VLC
@@ -2519,13 +2519,13 @@ function LivePageClient() {
                           // 直接使用原始 URL,不使用代理
                           window.open(`mpv://${videoUrl}`, '_blank');
                         }}
-                        className='group relative flex items-center justify-center gap-1 w-8 h-8 lg:w-auto lg:h-auto lg:px-2 lg:py-1.5 bg-white hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-600 text-xs font-medium rounded-md transition-all duration-200 shadow-sm hover:shadow-md cursor-pointer overflow-hidden border border-gray-300 dark:border-gray-600 flex-shrink-0'
+                        className='group relative flex items-center justify-center gap-1 w-8 h-8 lg:w-auto lg:h-auto lg:px-2 lg:py-1.5 bg-white hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-600 text-xs font-medium rounded-md transition-all duration-200 shadow-xs hover:shadow-md cursor-pointer overflow-hidden border border-gray-300 dark:border-gray-600 shrink-0'
                         title='MPV'
                       >
                         <img
                           src='/players/mpv.png'
                           alt='MPV'
-                          className='w-4 h-4 flex-shrink-0'
+                          className='w-4 h-4 shrink-0'
                         />
                         <span className='hidden lg:inline max-w-0 group-hover:max-w-[100px] overflow-hidden whitespace-nowrap transition-all duration-200 ease-in-out text-gray-700 dark:text-gray-200'>
                           MPV
@@ -2544,13 +2544,13 @@ function LivePageClient() {
                             '_blank'
                           );
                         }}
-                        className='group relative flex items-center justify-center gap-1 w-8 h-8 lg:w-auto lg:h-auto lg:px-2 lg:py-1.5 bg-white hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-600 text-xs font-medium rounded-md transition-all duration-200 shadow-sm hover:shadow-md cursor-pointer overflow-hidden border border-gray-300 dark:border-gray-600 flex-shrink-0'
+                        className='group relative flex items-center justify-center gap-1 w-8 h-8 lg:w-auto lg:h-auto lg:px-2 lg:py-1.5 bg-white hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-600 text-xs font-medium rounded-md transition-all duration-200 shadow-xs hover:shadow-md cursor-pointer overflow-hidden border border-gray-300 dark:border-gray-600 shrink-0'
                         title='MX Player'
                       >
                         <img
                           src='/players/mxplayer.png'
                           alt='MX Player'
-                          className='w-4 h-4 flex-shrink-0'
+                          className='w-4 h-4 shrink-0'
                         />
                         <span className='hidden lg:inline max-w-0 group-hover:max-w-[100px] overflow-hidden whitespace-nowrap transition-all duration-200 ease-in-out text-gray-700 dark:text-gray-200'>
                           MX Player
@@ -2564,13 +2564,13 @@ function LivePageClient() {
                           // 直接使用原始 URL,不使用代理
                           window.open(`nplayer-${videoUrl}`, '_blank');
                         }}
-                        className='group relative flex items-center justify-center gap-1 w-8 h-8 lg:w-auto lg:h-auto lg:px-2 lg:py-1.5 bg-white hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-600 text-xs font-medium rounded-md transition-all duration-200 shadow-sm hover:shadow-md cursor-pointer overflow-hidden border border-gray-300 dark:border-gray-600 flex-shrink-0'
+                        className='group relative flex items-center justify-center gap-1 w-8 h-8 lg:w-auto lg:h-auto lg:px-2 lg:py-1.5 bg-white hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-600 text-xs font-medium rounded-md transition-all duration-200 shadow-xs hover:shadow-md cursor-pointer overflow-hidden border border-gray-300 dark:border-gray-600 shrink-0'
                         title='nPlayer'
                       >
                         <img
                           src='/players/nplayer.png'
                           alt='nPlayer'
-                          className='w-4 h-4 flex-shrink-0'
+                          className='w-4 h-4 shrink-0'
                         />
                         <span className='hidden lg:inline max-w-0 group-hover:max-w-[100px] overflow-hidden whitespace-nowrap transition-all duration-200 ease-in-out text-gray-700 dark:text-gray-200'>
                           nPlayer
@@ -2587,13 +2587,13 @@ function LivePageClient() {
                             '_blank'
                           );
                         }}
-                        className='group relative flex items-center justify-center gap-1 w-8 h-8 lg:w-auto lg:h-auto lg:px-2 lg:py-1.5 bg-white hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-600 text-xs font-medium rounded-md transition-all duration-200 shadow-sm hover:shadow-md cursor-pointer overflow-hidden border border-gray-300 dark:border-gray-600 flex-shrink-0'
+                        className='group relative flex items-center justify-center gap-1 w-8 h-8 lg:w-auto lg:h-auto lg:px-2 lg:py-1.5 bg-white hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-600 text-xs font-medium rounded-md transition-all duration-200 shadow-xs hover:shadow-md cursor-pointer overflow-hidden border border-gray-300 dark:border-gray-600 shrink-0'
                         title='IINA'
                       >
                         <img
                           src='/players/iina.png'
                           alt='IINA'
-                          className='w-4 h-4 flex-shrink-0'
+                          className='w-4 h-4 shrink-0'
                         />
                         <span className='hidden lg:inline max-w-0 group-hover:max-w-[100px] overflow-hidden whitespace-nowrap transition-all duration-200 ease-in-out text-gray-700 dark:text-gray-200'>
                           IINA
@@ -2612,7 +2612,7 @@ function LivePageClient() {
               }`}>
               <div className='md:ml-2 px-4 py-0 h-full rounded-xl bg-black/10 dark:bg-white/5 flex flex-col border border-white/0 dark:border-white/30 overflow-hidden'>
                 {/* 主要的 Tab 切换 */}
-                <div className='flex mb-1 -mx-6 flex-shrink-0'>
+                <div className='flex mb-1 -mx-6 shrink-0'>
                   <div
                     onClick={() => setActiveTab('channels')}
                     className={`flex-1 py-3 px-6 text-center cursor-pointer transition-all duration-200 font-medium
@@ -2641,7 +2641,7 @@ function LivePageClient() {
                 {activeTab === 'channels' && (
                   <>
                     {/* 搜索框 */}
-                    <div className='mb-3 -mx-6 px-6 flex-shrink-0'>
+                    <div className='mb-3 -mx-6 px-6 shrink-0'>
                       <div className='relative'>
                         <input
                           type='text'
@@ -2649,7 +2649,7 @@ function LivePageClient() {
                           onChange={(e) => handleSearch(e.target.value)}
                           placeholder='搜索频道...'
                           disabled={isSwitchingSource}
-                          className={`w-full px-3 py-2 pl-9 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all ${
+                          className={`w-full px-3 py-2 pl-9 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all ${
                             isSwitchingSource ? 'opacity-50 cursor-not-allowed' : ''
                           }`}
                         />
@@ -2690,7 +2690,7 @@ function LivePageClient() {
                     </div>
 
                     {/* 分组标签 */}
-                    <div className='flex items-center gap-4 mb-4 border-b border-gray-300 dark:border-gray-700 -mx-6 px-6 flex-shrink-0'>
+                    <div className='flex items-center gap-4 mb-4 border-b border-gray-300 dark:border-gray-700 -mx-6 px-6 shrink-0'>
                       {/* 切换状态提示 */}
                       {isSwitchingSource && (
                         <div className='flex items-center gap-2 text-sm text-amber-600 dark:text-amber-400'>
@@ -2736,7 +2736,7 @@ function LivePageClient() {
                               }}
                               onClick={() => handleGroupChange(group)}
                               disabled={isSwitchingSource}
-                              className={`w-20 relative py-2 text-sm font-medium transition-colors flex-shrink-0 text-center overflow-hidden
+                              className={`w-20 relative py-2 text-sm font-medium transition-colors shrink-0 text-center overflow-hidden
                                  ${isSwitchingSource
                                   ? 'text-gray-400 dark:text-gray-600 cursor-not-allowed opacity-50'
                                   : selectedGroup === group
@@ -2781,12 +2781,12 @@ function LivePageClient() {
                                   }`}
                               >
                                 <div className='flex items-center gap-3'>
-                                  <div className='w-10 h-10 bg-gray-300 dark:bg-gray-700 rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden'>
+                                  <div className='w-10 h-10 bg-gray-300 dark:bg-gray-700 rounded-lg flex items-center justify-center shrink-0 overflow-hidden'>
                                     {channel.logo ? (
                                       <img
                                         src={getLogoUrl(channel.logo, currentSource?.key || '')}
                                         alt={channel.name}
-                                        className='w-full h-full rounded object-contain'
+                                        className='w-full h-full rounded-sm object-contain'
                                         loading="lazy"
                                       />
                                     ) : (
@@ -2855,12 +2855,12 @@ function LivePageClient() {
                                   }`}
                               >
                                 <div className='flex items-center gap-3'>
-                                  <div className='w-10 h-10 bg-gray-300 dark:bg-gray-700 rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden'>
+                                  <div className='w-10 h-10 bg-gray-300 dark:bg-gray-700 rounded-lg flex items-center justify-center shrink-0 overflow-hidden'>
                                     {item.logo ? (
                                       <img
                                         src={getLogoUrl(item.logo, currentSource?.key || '')}
                                         alt={item.name}
-                                        className='w-full h-full rounded object-contain'
+                                        className='w-full h-full rounded-sm object-contain'
                                         loading='lazy'
                                       />
                                     ) : (
@@ -2895,7 +2895,7 @@ function LivePageClient() {
                                       )}
                                     </div>
                                   </div>
-                                  <div className='flex flex-col items-end gap-2 flex-shrink-0'>
+                                  <div className='flex flex-col items-end gap-2 shrink-0'>
                                     <span
                                       role='button'
                                       aria-disabled={isTestingLines}
@@ -2909,7 +2909,7 @@ function LivePageClient() {
                                         e.stopPropagation();
                                         toggleMergedChannel(item.key);
                                       }}
-                                      className='text-xs px-2 py-1 rounded border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300'
+                                      className='text-xs px-2 py-1 rounded-sm border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300'
                                     >
                                       {isExpanded ? '收起' : '展开'}
                                     </span>
@@ -2957,7 +2957,7 @@ function LivePageClient() {
                                               </span>
                                             )}
                                             {isBestLine && (
-                                              <span className='rounded bg-green-100 px-2 py-0.5 text-green-700 dark:bg-green-900/40 dark:text-green-300'>
+                                              <span className='rounded-sm bg-green-100 px-2 py-0.5 text-green-700 dark:bg-green-900/40 dark:text-green-300'>
                                                 推荐
                                               </span>
                                             )}
@@ -3027,7 +3027,7 @@ function LivePageClient() {
                                 }`.trim()}
                             >
                               {/* 图标 */}
-                              <div className='w-12 h-12 bg-gray-200 dark:bg-gray-600 rounded-lg flex items-center justify-center flex-shrink-0'>
+                              <div className='w-12 h-12 bg-gray-200 dark:bg-gray-600 rounded-lg flex items-center justify-center shrink-0'>
                                 <Radio className='w-6 h-6 text-gray-500' />
                               </div>
 
@@ -3074,14 +3074,14 @@ function LivePageClient() {
           <div className='pt-4'>
             <div className='flex flex-col lg:flex-row gap-4'>
               {/* 频道图标+名称 - 在小屏幕上占100%，大屏幕占20% */}
-              <div className='w-full flex-shrink-0'>
+              <div className='w-full shrink-0'>
                 <div className='flex items-center gap-4'>
-                  <div className='w-20 h-20 bg-gray-300 dark:bg-gray-700 rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden'>
+                  <div className='w-20 h-20 bg-gray-300 dark:bg-gray-700 rounded-lg flex items-center justify-center shrink-0 overflow-hidden'>
                     {currentChannel.logo ? (
                       <img
                         src={getLogoUrl(currentChannel.logo, currentSource?.key || '')}
                         alt={currentChannel.name}
-                        className='w-full h-full rounded object-contain'
+                        className='w-full h-full rounded-sm object-contain'
                         loading="lazy"
                       />
                     ) : (
@@ -3098,7 +3098,7 @@ function LivePageClient() {
                           e.stopPropagation();
                           handleToggleFavorite();
                         }}
-                        className='flex-shrink-0 hover:opacity-80 transition-opacity'
+                        className='shrink-0 hover:opacity-80 transition-opacity'
                         title={favorited ? '取消收藏' : '收藏'}
                       >
                         <FavoriteIcon filled={favorited} />
@@ -3146,7 +3146,7 @@ const FavoriteIcon = ({ filled }: { filled: boolean }) => {
     );
   }
   return (
-    <Heart className='h-6 w-6 stroke-[1] text-gray-600 dark:text-gray-300' />
+    <Heart className='h-6 w-6 stroke-1 text-gray-600 dark:text-gray-300' />
   );
 };
 

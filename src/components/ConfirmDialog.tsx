@@ -45,7 +45,7 @@ export function ConfirmDialog({
   const styles = variantStyles[variant];
 
   return createPortal(
-    <div className='fixed inset-0 z-[10000] flex items-center justify-center p-4'>
+    <div className='fixed inset-0 z-10000 flex items-center justify-center p-4'>
       <div
         className='absolute inset-0 bg-black/50'
         onClick={onCancel}
@@ -61,7 +61,7 @@ export function ConfirmDialog({
           </div>
           <button
             onClick={onCancel}
-            className='p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors'
+            className='p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-sm transition-colors'
           >
             <X className='w-5 h-5 text-gray-600 dark:text-gray-400' />
           </button>
@@ -78,13 +78,13 @@ export function ConfirmDialog({
         <div className='flex items-center justify-end gap-3 p-4 border-t border-gray-200 dark:border-gray-700'>
           <button
             onClick={onCancel}
-            className='px-4 py-2 text-sm text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-colors'
+            className='px-4 py-2 text-sm text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-sm transition-colors'
           >
             {cancelText}
           </button>
           <button
             onClick={onConfirm}
-            className={`px-4 py-2 text-sm text-white rounded transition-colors ${styles.button}`}
+            className={`px-4 py-2 text-sm text-white rounded-sm transition-colors ${styles.button}`}
           >
             {confirmText}
           </button>

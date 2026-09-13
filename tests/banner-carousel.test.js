@@ -7,8 +7,30 @@ const {
   screen,
 } = require('@testing-library/react');
 
+const mockRouterPush = jest.fn();
+const mockDetailProps = jest.fn();
+
 jest.mock('next/navigation', () => ({
-  useRouter: () => ({ push: jest.fn() }),
+  useRouter: () => ({ push: mockRouterPush }),
+}));
+// The lazy detail boundary owns its own network and close animation tests.
+// Here its public props and close callback exercise the real banner state.
+jest.mock('next/dynamic', () => ({
+  __esModule: true,
+  default: () => (props) => {
+    mockDetailProps(props);
+    return props.isOpen
+      ? React.createElement(
+          'section',
+          { role: 'dialog', 'aria-label': props.title },
+          React.createElement(
+            'button',
+            { onClick: props.onClose },
+            '关闭影片详情',
+          ),
+        )
+      : null;
+  },
 }));
 jest.mock('@/lib/douban.client', () => ({ getDoubanDetail: jest.fn() }));
 
@@ -52,7 +74,7 @@ function advance(milliseconds) {
 
 function expectSlide(index) {
   expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(
-    TITLES[index]
+    TITLES[index],
   );
 }
 
@@ -78,15 +100,15 @@ function renderCarousel({ count = 3, reduce = false } = {}) {
   reducedMotion = reduce;
   localStorage.setItem(
     'banner_trending_cache_TX',
-    JSON.stringify({ data: ITEMS.slice(0, count), timestamp: Date.now() })
+    JSON.stringify({ data: ITEMS.slice(0, count), timestamp: Date.now() }),
   );
   return render(
     React.createElement(
       React.Fragment,
       null,
       React.createElement(BannerCarousel, { autoPlayInterval: INTERVAL }),
-      React.createElement('button', null, '轮播外的按钮')
-    )
+      React.createElement('button', null, '轮播外的按钮'),
+    ),
   );
 }
 
@@ -94,7 +116,7 @@ test('server data includes the first title and artwork before hydration', () => 
   const html = renderToString(
     React.createElement(BannerCarousel, {
       initialData: { code: 200, list: ITEMS, source: 'TX' },
-    })
+    }),
   );
   expect(html).toContain(TITLES[0]);
   expect(html).toContain('https://images.example.test/banner-1.jpg');
@@ -106,15 +128,15 @@ test('server data takes precedence over old browser artwork without a second req
     JSON.stringify({
       data: [{ ...ITEMS[0], title: '旧轮播内容' }],
       timestamp: Date.now(),
-    })
+    }),
   );
   render(
     React.createElement(BannerCarousel, {
       initialData: { code: 200, list: ITEMS, source: 'TX' },
-    })
+    }),
   );
   expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(
-    TITLES[0]
+    TITLES[0],
   );
 });
 
@@ -125,14 +147,14 @@ test('a late client fetch cannot replace a newer server seed or write its stale 
     () =>
       new Promise((resolve) => {
         complete = resolve;
-      })
+      }),
   );
   const view = render(React.createElement(BannerCarousel));
   const requestSignal = global.fetch.mock.calls[0][1]?.signal;
   view.rerender(
     React.createElement(BannerCarousel, {
       initialData: { code: 200, source: 'TX', list: ITEMS },
-    })
+    }),
   );
   await act(async () =>
     complete({
@@ -141,7 +163,7 @@ test('a late client fetch cannot replace a newer server seed or write its stale 
         source: 'TX',
         list: [{ ...ITEMS[0], title: '过期请求的影片' }],
       }),
-    })
+    }),
   );
   expectSlide(0);
   expect(localStorage.getItem('banner_trending_cache_TX')).toBeNull();
@@ -156,17 +178,17 @@ test('late Douban trailers cannot replace a newer same-length server seed', asyn
     (id) =>
       new Promise((resolve) => {
         if (id === String(ITEMS[0].id)) finishOldTrailers = resolve;
-      })
+      }),
   );
   const view = render(
     React.createElement(BannerCarousel, {
       initialData: { code: 200, source: 'Douban', list: [ITEMS[0]] },
-    })
+    }),
   );
   view.rerender(
     React.createElement(BannerCarousel, {
       initialData: { code: 200, source: 'Douban', list: [ITEMS[1]] },
-    })
+    }),
   );
   await act(async () => finishOldTrailers({ trailers: [] }));
   expectSlide(1);
@@ -178,7 +200,7 @@ test('a shorter refreshed seed still has a selected backdrop', () => {
     React.createElement(BannerCarousel, {
       initialData: { code: 200, source: 'TX', list: ITEMS },
       autoPlayInterval: INTERVAL,
-    })
+    }),
   );
   advance(INTERVAL);
   advance(INTERVAL);
@@ -186,15 +208,17 @@ test('a shorter refreshed seed still has a selected backdrop', () => {
   view.rerender(
     React.createElement(BannerCarousel, {
       initialData: { code: 200, source: 'TX', list: [ITEMS[0]] },
-    })
+    }),
   );
   expectSlide(0);
   expect(
-    view.container.querySelector('.cinema-hero-slide[data-active="true"] img')
+    view.container.querySelector('.cinema-hero-slide[data-active="true"] img'),
   ).toHaveAttribute('src', ITEMS[0].backdrop_path);
 });
 
 beforeEach(() => {
+  mockRouterPush.mockReset();
+  mockDetailProps.mockReset();
   require('../src/lib/douban.client').getDoubanDetail.mockReset();
   expectedFetches = 0;
   jest.useFakeTimers('modern');
@@ -269,7 +293,7 @@ test.each([
     fireEvent.mouseEnter(getArea());
     advance(INTERVAL);
     expectSlide(1);
-  }
+  },
 );
 
 test('a pointer click on next keeps focus without preventing the following automatic slide', () => {
@@ -289,7 +313,7 @@ test('manual selection restarts one full interval without skipping an extra cycl
   renderCarousel();
   advance(INTERVAL / 2);
   pointerClick(
-    screen.getByRole('button', { name: `选择精选影片：${TITLES[1]}` })
+    screen.getByRole('button', { name: `选择精选影片：${TITLES[1]}` }),
   );
   focus(screen.getByRole('button', { name: '轮播外的按钮' }));
   expectSlide(1);
@@ -368,10 +392,10 @@ test('a single cached slide stays selected without automatic rotation controls',
   advance(INTERVAL * 3);
   expectSlide(0);
   expect(
-    screen.queryByRole('button', { name: '下一部推荐' })
+    screen.queryByRole('button', { name: '下一部推荐' }),
   ).not.toBeInTheDocument();
   expect(
-    screen.queryByRole('button', { name: '暂停自动轮播' })
+    screen.queryByRole('button', { name: '暂停自动轮播' }),
   ).not.toBeInTheDocument();
 });
 
@@ -381,4 +405,109 @@ test('unmounting clears both rotation and pending manual-interaction timers', ()
   view.unmount();
   expect(jest.getTimerCount()).toBe(0);
   expect(motionListeners.size).toBe(0);
+});
+
+test('the info action opens the selected film, pauses rotation, and closing restarts a full interval', () => {
+  renderCarousel();
+  pointerClick(screen.getByRole('button', { name: '下一部推荐' }));
+  advance(INTERVAL / 2);
+  pointerClick(
+    screen.getByRole('button', { name: `查看影片详情：${TITLES[1]}` }),
+  );
+  expect(screen.getByRole('dialog', { name: TITLES[1] })).toBeInTheDocument();
+  expect(mockDetailProps).toHaveBeenLastCalledWith(
+    expect.objectContaining({
+      isOpen: true,
+      title: TITLES[1],
+      poster: ITEMS[1].poster_path,
+      type: 'movie',
+      cmsData: { desc: ITEMS[1].overview },
+    }),
+  );
+  advance(INTERVAL * 2);
+  expectSlide(1);
+  pointerClick(screen.getByRole('button', { name: '关闭影片详情' }));
+  expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  advance(INTERVAL - 1);
+  expectSlide(1);
+  advance(1);
+  expectSlide(2);
+
+  pointerClick(screen.getByRole('button', { name: '立即观看' }));
+  expect(mockRouterPush).toHaveBeenLastCalledWith(
+    `/play?title=${encodeURIComponent(TITLES[2])}`,
+  );
+  pointerClick(screen.getByRole('button', { name: '搜索片源' }));
+  expect(mockRouterPush).toHaveBeenLastCalledWith(
+    `/search?q=${encodeURIComponent(TITLES[2])}`,
+  );
+});
+
+test('TMDB details receive the series identity and closing them preserves an explicit rotation pause', () => {
+  render(
+    React.createElement(BannerCarousel, {
+      autoPlayInterval: INTERVAL,
+      initialData: {
+        code: 200,
+        source: 'TMDB',
+        list: [{ ...ITEMS[0], id: '42', media_type: 'tv' }, ITEMS[1]],
+      },
+    }),
+  );
+  pointerClick(screen.getByRole('button', { name: '暂停自动轮播' }));
+  pointerClick(
+    screen.getByRole('button', { name: `查看影片详情：${TITLES[0]}` }),
+  );
+  expect(mockDetailProps).toHaveBeenLastCalledWith(
+    expect.objectContaining({
+      title: TITLES[0],
+      tmdbId: 42,
+      doubanId: undefined,
+      type: 'tv',
+      cmsData: undefined,
+    }),
+  );
+  pointerClick(screen.getByRole('button', { name: '关闭影片详情' }));
+  expect(
+    screen.getByRole('button', { name: '继续自动轮播' }),
+  ).toBeInTheDocument();
+  advance(INTERVAL * 2);
+  expectSlide(0);
+});
+
+test('open details keep their provider identity when a new banner seed changes data source', () => {
+  const view = render(
+    React.createElement(BannerCarousel, {
+      initialData: {
+        code: 200,
+        source: 'Douban',
+        list: [{ ...ITEMS[0], id: '71' }],
+      },
+    }),
+  );
+  pointerClick(
+    screen.getByRole('button', { name: `查看影片详情：${TITLES[0]}` }),
+  );
+  expect(screen.getByRole('dialog', { name: TITLES[0] })).toBeInTheDocument();
+
+  view.rerender(
+    React.createElement(BannerCarousel, {
+      initialData: {
+        code: 200,
+        source: 'TMDB',
+        list: [{ ...ITEMS[1], id: '99', media_type: 'tv' }],
+      },
+    }),
+  );
+  expectSlide(1);
+  expect(mockDetailProps).toHaveBeenLastCalledWith(
+    expect.objectContaining({
+      isOpen: true,
+      title: TITLES[0],
+      type: 'movie',
+      doubanId: 71,
+      tmdbId: undefined,
+      cmsData: undefined,
+    }),
+  );
 });

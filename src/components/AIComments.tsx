@@ -204,7 +204,7 @@ export default function AIComments({
             {/* 用户信息 */}
             <div className='flex items-start gap-3 mb-3'>
               {/* 头像 */}
-              <div className='flex-shrink-0'>
+              <div className='shrink-0'>
                 <img
                   src={comment.userAvatar}
                   alt={comment.userName}

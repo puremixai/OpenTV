@@ -139,7 +139,7 @@ export default function AnimeSubscribeModal({
   };
 
   return createPortal(
-    <div className='fixed inset-0 z-[10000] flex items-center justify-center p-4'>
+    <div className='fixed inset-0 z-10000 flex items-center justify-center p-4'>
       <div
         className={`absolute inset-0 bg-black transition-opacity duration-200 ${
           visible ? 'opacity-50' : 'opacity-0'
@@ -276,7 +276,7 @@ export default function AnimeSubscribeModal({
               onChange={(e) =>
                 setForm({ ...form, onePerEpisode: e.target.checked })
               }
-              className='rounded border-gray-300'
+              className='rounded-sm border-gray-300'
             />
             单集只下载一次（同集多种子时只入队一条）
           </label>
@@ -287,7 +287,7 @@ export default function AnimeSubscribeModal({
               onChange={(e) =>
                 setForm({ ...form, refillMissingEpisodes: e.target.checked })
               }
-              className='rounded border-gray-300'
+              className='rounded-sm border-gray-300'
             />
             缺集重新检索（跳集时按「番名+集数」补搜）
           </label>

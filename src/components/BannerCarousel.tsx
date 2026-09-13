@@ -4,13 +4,21 @@ import {
   ChevronLeft,
   ChevronRight,
   Film,
+  Info,
   Pause,
   Play,
   Volume2,
   VolumeX,
 } from 'lucide-react';
+import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import {
+  type CSSProperties,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
 
 import { getDoubanDetail } from '@/lib/douban.client';
 import {
@@ -22,7 +30,13 @@ import type { BannerData, BannerItem } from '@/lib/home/banner-types';
 import { logger } from '@/lib/logger';
 import { getGenreNames } from '@/lib/tmdb.client';
 
+import CinematicArtwork from '@/components/hero/CinematicArtwork';
+import { useHeroParallax } from '@/components/hero/useHeroParallax';
 import ProxyImage from '@/components/ProxyImage';
+
+const DetailPanel = dynamic(() => import('@/components/DetailPanel'), {
+  ssr: false,
+});
 
 interface BannerCarouselProps {
   initialArtwork?: InitialBannerArtwork;
@@ -51,7 +65,7 @@ export default function BannerCarousel({
   useEffect(() => setImagesReady(true), []);
   const artworkFor = (
     item: BannerItem,
-    placement: 'hero' | 'poster' | 'thumbnail'
+    placement: 'hero' | 'poster' | 'thumbnail',
   ) =>
     (!imagesReady &&
       initialArtwork?.[getBannerArtworkKey(item)]?.[placement]) ||
@@ -64,7 +78,7 @@ export default function BannerCarousel({
   const [isYouTubeAccessible, setIsYouTubeAccessible] = useState(false); // YouTube连通性（默认false，检查后再决定）
   const [enableTrailers, setEnableTrailers] = useState(false); // 是否启用预告片（默认关闭）
   const [dataSource, setDataSource] = useState<string>(
-    initialData?.source || ''
+    initialData?.source || '',
   ); // 当前数据源
   const [trailersLoaded, setTrailersLoaded] = useState(false); // 预告片是否已加载
   const [isMuted, setIsMuted] = useState(true); // 视频是否静音（默认静音）
@@ -74,6 +88,19 @@ export default function BannerCarousel({
   const [isFocusWithin, setIsFocusWithin] = useState(false);
   const [reducedMotion, setReducedMotion] = useState(false);
   const [pageVisible, setPageVisible] = useState(true);
+  const [detailItem, setDetailItem] = useState<BannerItem | null>(null);
+  const [detailSource, setDetailSource] = useState('');
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const heroRef = useRef<HTMLElement>(null);
+  const pickerRef = useRef<HTMLElement>(null);
+  useHeroParallax(heroRef, {
+    enabled:
+      shouldLoad &&
+      !isLoading &&
+      items.length > 0 &&
+      !reducedMotion &&
+      !isDetailOpen,
+  });
   const rotationPaused = !(rotationEnabled ?? !reducedMotion);
   const [portraitArtwork, setPortraitArtwork] = useState<
     Record<string, boolean>
@@ -138,7 +165,7 @@ export default function BannerCarousel({
     return () => {
       window.removeEventListener(
         'homeModulesUpdated',
-        handleHomeModulesUpdated
+        handleHomeModulesUpdated,
       );
     };
   }, []);
@@ -305,7 +332,7 @@ export default function BannerCarousel({
                 JSON.stringify({
                   data: result.list,
                   timestamp: Date.now(),
-                })
+                }),
               );
             } catch (e) {
               // localStorage 可能已满，忽略错误
@@ -364,7 +391,7 @@ export default function BannerCarousel({
                 logger.error(`获取豆瓣电影 ${item.id} 预告片失败:`, error);
               return item;
             }
-          })
+          }),
         );
 
         if (cancelled) return;
@@ -372,7 +399,7 @@ export default function BannerCarousel({
           itemsWithTrailers.map((item) => [
             getBannerArtworkKey(item),
             item.trailer_url,
-          ])
+          ]),
         );
         setItems((currentItems) =>
           currentItems.map((item) =>
@@ -381,8 +408,8 @@ export default function BannerCarousel({
                   ...item,
                   trailer_url: trailersByItem.get(getBannerArtworkKey(item)),
                 }
-              : item
-          )
+              : item,
+          ),
         );
         setTrailersLoaded(true);
       } catch (error) {
@@ -420,7 +447,13 @@ export default function BannerCarousel({
 
   // 自动播放
   useEffect(() => {
-    if (items.length < 2 || rotationPaused || isFocusWithin || !pageVisible)
+    if (
+      items.length < 2 ||
+      rotationPaused ||
+      isFocusWithin ||
+      !pageVisible ||
+      isDetailOpen
+    )
       return;
 
     const timer = setTimeout(() => {
@@ -436,7 +469,29 @@ export default function BannerCarousel({
     pageVisible,
     autoPlayInterval,
     autoPlayReset,
+    isDetailOpen,
   ]);
+
+  useEffect(() => {
+    const picker = pickerRef.current;
+    const selected = picker?.querySelector<HTMLElement>(
+      '[aria-pressed="true"]',
+    );
+    if (!picker || !selected) return;
+    const left = selected.offsetLeft - picker.offsetLeft;
+    if (
+      left < picker.scrollLeft ||
+      left + selected.offsetWidth > picker.scrollLeft + picker.clientWidth
+    ) {
+      picker.scrollTo?.({
+        left: Math.max(
+          0,
+          left - (picker.clientWidth - selected.offsetWidth) / 2,
+        ),
+        behavior: reducedMotion ? 'instant' : 'smooth',
+      });
+    }
+  }, [currentIndex, reducedMotion]);
 
   const markManualChange = useCallback(() => {
     isManualChange.current = true;
@@ -465,7 +520,7 @@ export default function BannerCarousel({
       markManualChange();
       setCurrentIndex(index);
     },
-    [markManualChange]
+    [markManualChange],
   );
 
   const toggleRotation = () => {
@@ -558,13 +613,14 @@ export default function BannerCarousel({
   const genres = currentItem.tags?.length
     ? currentItem.tags
     : currentItem.genres?.length
-    ? currentItem.genres
-    : getGenreNames(currentItem.genre_ids, 3);
-  const showTrailer = enableTrailers && !reducedMotion && pageVisible;
+      ? currentItem.genres
+      : getGenreNames(currentItem.genre_ids, 3);
+  const showTrailer =
+    enableTrailers && !reducedMotion && pageVisible && !isDetailOpen;
   const renderingTrailer =
     showTrailer &&
     Boolean(
-      currentItem.trailer_url || (currentItem.video_key && isYouTubeAccessible)
+      currentItem.trailer_url || (currentItem.video_key && isYouTubeAccessible),
     );
   const showPoster =
     portraitArtwork[getBannerArtworkKey(currentItem)] ??
@@ -573,9 +629,18 @@ export default function BannerCarousel({
   return (
     <>
       <section
+        ref={heroRef}
         className='cinema-hero'
         data-height={bannerHeightScale}
         data-poster={showPoster && !renderingTrailer}
+        data-rotating={
+          !rotationPaused && !isFocusWithin && pageVisible && !isDetailOpen
+        }
+        style={
+          {
+            '--cinema-rotation-duration': `${autoPlayInterval}ms`,
+          } as CSSProperties
+        }
         aria-roledescription='轮播图'
         aria-label='精选推荐'
         onFocusCapture={() => setIsFocusWithin(keyboardNavigation.current)}
@@ -602,10 +667,12 @@ export default function BannerCarousel({
                 className='cinema-hero-slide'
                 data-active={active}
               >
-                <ProxyImage
+                <CinematicArtwork
                   {...artworkFor(item, 'hero')}
                   alt=''
                   className='cinema-backdrop'
+                  active={active}
+                  paused={rotationPaused || !pageVisible || isDetailOpen}
                   loading={active ? 'eager' : 'lazy'}
                   fetchPriority={active ? 'high' : 'low'}
                   onLoad={(event) => {
@@ -615,7 +682,10 @@ export default function BannerCarousel({
                     setPortraitArtwork((previous) =>
                       previous[getBannerArtworkKey(item)] === portrait
                         ? previous
-                        : { ...previous, [getBannerArtworkKey(item)]: portrait }
+                        : {
+                            ...previous,
+                            [getBannerArtworkKey(item)]: portrait,
+                          },
                     );
                   }}
                 />
@@ -657,7 +727,11 @@ export default function BannerCarousel({
         </div>
         <div className='cinema-hero-shade' />
         {showPoster && !renderingTrailer && (
-          <div className='cinema-hero-poster' aria-hidden='true'>
+          <div
+            key={getBannerArtworkKey(currentItem)}
+            className='cinema-hero-poster'
+            aria-hidden='true'
+          >
             <ProxyImage
               {...artworkFor(currentItem, 'poster')}
               alt=''
@@ -666,11 +740,22 @@ export default function BannerCarousel({
           </div>
         )}
         <div className='cinema-hero-copy'>
-          <p className='cinema-eyebrow'>
+          <p
+            key={`eyebrow-${getBannerArtworkKey(currentItem)}`}
+            className='cinema-eyebrow cinema-hero-enter'
+          >
             <span /> 今晚，值得一看
           </p>
-          <h1 key={getBannerArtworkKey(currentItem)}>{currentItem.title}</h1>
-          <div className='cinema-meta'>
+          <h1
+            className='cinema-hero-enter'
+            key={getBannerArtworkKey(currentItem)}
+          >
+            {currentItem.title}
+          </h1>
+          <div
+            key={`meta-${getBannerArtworkKey(currentItem)}`}
+            className='cinema-meta cinema-hero-enter'
+          >
             {currentItem.vote_average > 0 && (
               <span className='cinema-score'>
                 {currentItem.vote_average.toFixed(1)} <span>评分</span>
@@ -684,7 +769,10 @@ export default function BannerCarousel({
             ))}
           </div>
           {(currentItem.subtitle || currentItem.overview) && (
-            <p className='cinema-synopsis'>
+            <p
+              key={`synopsis-${getBannerArtworkKey(currentItem)}`}
+              className='cinema-synopsis cinema-hero-enter'
+            >
               {currentItem.subtitle || currentItem.overview}
             </p>
           )}
@@ -700,12 +788,24 @@ export default function BannerCarousel({
               className='cinema-secondary'
               onClick={() =>
                 router.push(
-                  '/search?q=' + encodeURIComponent(currentItem.title)
+                  '/search?q=' + encodeURIComponent(currentItem.title),
                 )
               }
             >
               搜索片源
               <ChevronRight size={17} />
+            </button>
+            <button
+              className='cinema-detail-trigger'
+              aria-label={`查看影片详情：${currentItem.title}`}
+              title='查看影片详情'
+              onClick={() => {
+                setDetailItem(currentItem);
+                setDetailSource(dataSource);
+                setIsDetailOpen(true);
+              }}
+            >
+              <Info size={20} />
             </button>
           </div>
         </div>
@@ -722,7 +822,14 @@ export default function BannerCarousel({
                 aria-label={'查看推荐：' + item.title}
                 aria-pressed={index === currentIndex}
               >
-                <span data-active={index === currentIndex} />
+                <span data-active={index === currentIndex}>
+                  {index === currentIndex && (
+                    <i
+                      key={`${currentIndex}-${autoPlayReset}-${rotationPaused}-${isFocusWithin}-${pageVisible}-${isDetailOpen}`}
+                      className='cinema-slide-progress'
+                    />
+                  )}
+                </span>
               </button>
             ))}
           </div>
@@ -755,6 +862,7 @@ export default function BannerCarousel({
         </div>
       </section>
       <nav
+        ref={pickerRef}
         className='cinema-feature-picker'
         aria-label='切换精选影片'
         onFocusCapture={() => setIsFocusWithin(keyboardNavigation.current)}
@@ -782,6 +890,23 @@ export default function BannerCarousel({
           </button>
         ))}
       </nav>
+      {detailItem && (
+        <DetailPanel
+          isOpen={isDetailOpen}
+          onClose={() => setIsDetailOpen(false)}
+          title={detailItem.title}
+          poster={artworkFor(detailItem, 'poster').originalSrc}
+          backdrop={artworkFor(detailItem, 'hero').originalSrc}
+          tmdbId={detailSource === 'TMDB' ? Number(detailItem.id) : undefined}
+          doubanId={detailSource === 'Douban' ? Number(detailItem.id) : undefined}
+          type={detailItem.media_type === 'movie' ? 'movie' : 'tv'}
+          cmsData={
+            detailSource === 'TX'
+              ? { desc: detailItem.overview || detailItem.subtitle }
+              : undefined
+          }
+        />
+      )}
     </>
   );
 }

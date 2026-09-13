@@ -677,7 +677,7 @@ export default function PrivateLibraryPage() {
                     <button
                       key={option.key}
                       onClick={() => setEmbyKey(option.key)}
-                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap flex-shrink-0 ${
+                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap shrink-0 ${
                         embyKey === option.key
                           ? 'bg-blue-600 text-white'
                           : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
@@ -710,7 +710,7 @@ export default function PrivateLibraryPage() {
                 <div className='flex gap-2 px-4 min-w-min'>
                   <button
                     onClick={() => setOpenlistCategory('all')}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap flex-shrink-0 ${
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap shrink-0 ${
                       openlistCategory === 'all'
                         ? 'bg-blue-600 text-white'
                         : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
@@ -722,7 +722,7 @@ export default function PrivateLibraryPage() {
                     <button
                       key={cat}
                       onClick={() => setOpenlistCategory(cat)}
-                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap flex-shrink-0 ${
+                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap shrink-0 ${
                         openlistCategory === cat
                           ? 'bg-blue-600 text-white'
                           : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
@@ -760,7 +760,7 @@ export default function PrivateLibraryPage() {
                   <div className='flex gap-2 px-4 min-w-min'>
                     <button
                       onClick={() => setSelectedView('all')}
-                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap flex-shrink-0 ${
+                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap shrink-0 ${
                         selectedView === 'all'
                           ? 'bg-blue-600 text-white'
                           : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
@@ -772,7 +772,7 @@ export default function PrivateLibraryPage() {
                       <button
                         key={view.id}
                         onClick={() => setSelectedView(view.id)}
-                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap flex-shrink-0 ${
+                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap shrink-0 ${
                           selectedView === view.id
                             ? 'bg-blue-600 text-white'
                             : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
@@ -851,7 +851,7 @@ export default function PrivateLibraryPage() {
         {mounted && showSortDropdown && createPortal(
           <div
             ref={sortDropdownRef}
-            className='fixed z-[9999] bg-white/95 dark:bg-gray-800/95 rounded-xl border border-gray-200/50 dark:border-gray-700/50 backdrop-blur-sm max-h-[50vh] flex flex-col'
+            className='fixed z-9999 bg-white/95 dark:bg-gray-800/95 rounded-xl border border-gray-200/50 dark:border-gray-700/50 backdrop-blur-xs max-h-[50vh] flex flex-col'
             style={{
               left: `${sortDropdownPosition.x}px`,
               top: `${sortDropdownPosition.y}px`,
@@ -893,7 +893,7 @@ export default function PrivateLibraryPage() {
             <div className='space-y-4'>
               {/* 文件夹骨架屏 */}
               <div className='space-y-2'>
-                <div className='h-5 w-16 bg-gray-200 dark:bg-gray-700 rounded animate-pulse' />
+                <div className='h-5 w-16 bg-gray-200 dark:bg-gray-700 rounded-sm animate-pulse' />
                 <div className='grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2'>
                   {Array.from({ length: 12 }).map((_, index) => (
                     <div
@@ -910,7 +910,7 @@ export default function PrivateLibraryPage() {
               {Array.from({ length: pageSize }).map((_, index) => (
                 <div
                   key={index}
-                  className='animate-pulse bg-gray-200 dark:bg-gray-700 rounded-lg aspect-[2/3]'
+                  className='animate-pulse bg-gray-200 dark:bg-gray-700 rounded-lg aspect-2/3'
                 />
               ))}
             </div>
@@ -931,7 +931,7 @@ export default function PrivateLibraryPage() {
                       handleXiaoyaSearch();
                     }
                   }}
-                  className='w-full px-4 py-2 pr-10 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500'
+                  className='w-full px-4 py-2 pr-10 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-hidden focus:ring-2 focus:ring-blue-500'
                 />
                 {xiaoyaSearchKeyword ? (
                   <button
@@ -1010,11 +1010,11 @@ export default function PrivateLibraryPage() {
                         className='flex items-center gap-2 p-3 bg-gray-100 dark:bg-gray-800 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors text-left'
                       >
                         {isVideoFile ? (
-                          <svg className='w-5 h-5 text-green-600 flex-shrink-0' fill='currentColor' viewBox='0 0 20 20'>
+                          <svg className='w-5 h-5 text-green-600 shrink-0' fill='currentColor' viewBox='0 0 20 20'>
                             <path d='M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z' />
                           </svg>
                         ) : (
-                          <svg className='w-5 h-5 text-blue-600 flex-shrink-0' fill='currentColor' viewBox='0 0 20 20'>
+                          <svg className='w-5 h-5 text-blue-600 shrink-0' fill='currentColor' viewBox='0 0 20 20'>
                             <path d='M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z' />
                           </svg>
                         )}

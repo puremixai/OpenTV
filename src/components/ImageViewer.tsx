@@ -118,7 +118,7 @@ const ImageViewer: React.FC<ImageViewerProps> = ({
   if (!isVisible || !mounted) return null;
 
   const content = (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-0 sm:p-4">
+    <div className="fixed inset-0 z-9999 flex items-center justify-center p-0 sm:p-4">
       {/* 背景遮罩 */}
       <div
         className={`absolute inset-0 bg-black/80 transition-opacity duration-200 ease-out ${
@@ -142,7 +142,7 @@ const ImageViewer: React.FC<ImageViewerProps> = ({
 
       {/* 图片容器 */}
       <div
-        className="relative max-w-[100vw] max-h-[100vh] sm:max-w-[90vw] sm:max-h-[90vh] transition-all duration-200 ease-out"
+        className="relative max-w-[100vw] max-h-screen sm:max-w-[90vw] sm:max-h-[90vh] transition-all duration-200 ease-out"
         style={{
           willChange: 'transform, opacity',
           backfaceVisibility: 'hidden',
@@ -155,7 +155,7 @@ const ImageViewer: React.FC<ImageViewerProps> = ({
           <ProxyImage
             originalSrc={imageUrl}
             alt={alt}
-            className="object-contain max-w-[100vw] max-h-[100vh] sm:max-w-[90vw] sm:max-h-[90vh] w-auto h-auto"
+            className="object-contain max-w-[100vw] max-h-screen sm:max-w-[90vw] sm:max-h-[90vh] w-auto h-auto"
             style={{
               maxWidth: '100vw',
               maxHeight: '100vh',

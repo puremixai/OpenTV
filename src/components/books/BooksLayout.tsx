@@ -120,21 +120,21 @@ export default function BooksLayout({
   return (
     <div data-cinema-specialty='books' className='min-h-screen text-slate-900 dark:text-gray-100'>
       <header
-        className='fixed inset-x-0 top-0 z-40 border-b border-emerald-100/80 bg-white/85 shadow-sm shadow-emerald-950/5 backdrop-blur-xl dark:border-emerald-500/10 dark:bg-gray-950/85 dark:shadow-black/20'
+        className='fixed inset-x-0 top-0 z-40 border-b border-emerald-100/80 bg-white/85 shadow-xs shadow-emerald-950/5 backdrop-blur-xl dark:border-emerald-500/10 dark:bg-gray-950/85 dark:shadow-black/20'
         style={{ paddingTop: 'env(safe-area-inset-top)' }}
       >
         <div className='mx-auto flex h-16 max-w-6xl items-center gap-3 px-4'>
           {isRead || pathname === '/books/detail' ? (
             <Link
               href={meta.backHref || '/books'}
-              className='inline-flex h-10 w-10 cursor-pointer items-center justify-center rounded-full text-slate-700 transition-colors duration-200 hover:bg-emerald-50 hover:text-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:text-slate-200 dark:hover:bg-emerald-500/10 dark:hover:text-emerald-200'
+              className='inline-flex h-10 w-10 cursor-pointer items-center justify-center rounded-full text-slate-700 transition-colors duration-200 hover:bg-emerald-50 hover:text-emerald-700 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 dark:text-slate-200 dark:hover:bg-emerald-500/10 dark:hover:text-emerald-200'
             >
               <ChevronLeft className='h-5 w-5' />
             </Link>
           ) : (
             <Link
               href='/'
-              className='inline-flex cursor-pointer items-center gap-2 rounded-full bg-emerald-50 px-3 py-2 text-sm font-bold text-emerald-700 transition-colors duration-200 hover:bg-emerald-100 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:bg-emerald-500/10 dark:text-emerald-200 dark:hover:bg-emerald-500/20'
+              className='inline-flex cursor-pointer items-center gap-2 rounded-full bg-emerald-50 px-3 py-2 text-sm font-bold text-emerald-700 transition-colors duration-200 hover:bg-emerald-100 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 dark:bg-emerald-500/10 dark:text-emerald-200 dark:hover:bg-emerald-500/20'
             >
               <Sparkles className='h-4 w-4' />
               {siteName}
@@ -145,12 +145,12 @@ export default function BooksLayout({
               <div className='truncate text-sm font-bold tracking-tight text-slate-950 dark:text-white sm:text-base'>
                 {meta.title}
               </div>
-              <div className='absolute left-1/2 top-full z-[100] mt-2 w-max max-w-[85vw] -translate-x-1/2 rounded-lg bg-gray-800 px-3 py-2 text-center text-sm text-white opacity-0 invisible shadow-xl transition-all duration-200 ease-out pointer-events-none group-hover:visible group-hover:opacity-100 dark:bg-gray-900'>
-                <div className='max-w-[85vw] break-words whitespace-normal sm:max-w-none sm:whitespace-nowrap'>
+              <div className='absolute left-1/2 top-full z-100 mt-2 w-max max-w-[85vw] -translate-x-1/2 rounded-lg bg-gray-800 px-3 py-2 text-center text-sm text-white opacity-0 invisible shadow-xl transition-all duration-200 ease-out pointer-events-none group-hover:visible group-hover:opacity-100 dark:bg-gray-900'>
+                <div className='max-w-[85vw] wrap-break-word whitespace-normal sm:max-w-none sm:whitespace-nowrap'>
                   {meta.title}
                 </div>
                 {meta.subtitle ? (
-                  <div className='mt-1 max-w-[85vw] break-words whitespace-normal text-xs text-gray-300 sm:max-w-none sm:whitespace-nowrap'>
+                  <div className='mt-1 max-w-[85vw] wrap-break-word whitespace-normal text-xs text-gray-300 sm:max-w-none sm:whitespace-nowrap'>
                     {meta.subtitle}
                   </div>
                 ) : null}
@@ -172,7 +172,7 @@ export default function BooksLayout({
                     new CustomEvent('books-read-toggle-chapters')
                   )
                 }
-                className='inline-flex h-10 w-10 cursor-pointer items-center justify-center rounded-full transition-colors duration-200 hover:bg-emerald-50 hover:text-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:hover:bg-emerald-500/10 dark:hover:text-emerald-200'
+                className='inline-flex h-10 w-10 cursor-pointer items-center justify-center rounded-full transition-colors duration-200 hover:bg-emerald-50 hover:text-emerald-700 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 dark:hover:bg-emerald-500/10 dark:hover:text-emerald-200'
                 aria-label='目录'
               >
                 <List className='h-5 w-5' />
@@ -181,13 +181,13 @@ export default function BooksLayout({
                 <button
                   type='button'
                   onClick={() => setReadMenuOpen((prev) => !prev)}
-                  className='inline-flex h-10 w-10 cursor-pointer items-center justify-center rounded-full transition-colors duration-200 hover:bg-emerald-50 hover:text-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:hover:bg-emerald-500/10 dark:hover:text-emerald-200'
+                  className='inline-flex h-10 w-10 cursor-pointer items-center justify-center rounded-full transition-colors duration-200 hover:bg-emerald-50 hover:text-emerald-700 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 dark:hover:bg-emerald-500/10 dark:hover:text-emerald-200'
                   aria-label='更多'
                 >
                   <MoreVertical className='h-5 w-5' />
                 </button>
                 {readMenuOpen ? (
-                  <div className='absolute right-0 top-12 z-50 min-w-[9rem] overflow-hidden rounded-2xl border border-emerald-100 bg-white py-1 shadow-xl shadow-emerald-950/10 dark:border-emerald-500/10 dark:bg-gray-950'>
+                  <div className='absolute right-0 top-12 z-50 min-w-36 overflow-hidden rounded-2xl border border-emerald-100 bg-white py-1 shadow-xl shadow-emerald-950/10 dark:border-emerald-500/10 dark:bg-gray-950'>
                     <button
                       type='button'
                       onClick={() => {
@@ -228,9 +228,9 @@ export default function BooksLayout({
                     key={tab.href}
                     href={tab.href}
                     aria-current={active ? 'page' : undefined}
-                    className={`inline-flex cursor-pointer items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
+                    className={`inline-flex cursor-pointer items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-colors duration-200 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 ${
                       active
-                        ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-600/20'
+                        ? 'bg-emerald-600 text-white shadow-xs shadow-emerald-600/20'
                         : 'text-slate-600 hover:bg-emerald-50 hover:text-emerald-700 dark:text-gray-300 dark:hover:bg-emerald-500/10 dark:hover:text-emerald-200'
                     }`}
                   >

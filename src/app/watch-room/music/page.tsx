@@ -541,7 +541,7 @@ export default function WatchRoomMusicPage() {
           <>
             <div className="md:hidden">
               <div className="mx-auto flex w-full max-w-[430px] flex-col gap-3">
-                <div ref={mobileVolumeControlRef} className={`rounded-2xl border px-3 py-3 ${isDark ? 'border-white/10 bg-black/20' : 'border-zinc-200 bg-white/80 shadow-sm'}`}>
+                <div ref={mobileVolumeControlRef} className={`rounded-2xl border px-3 py-3 ${isDark ? 'border-white/10 bg-black/20' : 'border-zinc-200 bg-white/80 shadow-xs'}`}>
                   <div className="flex items-center gap-3">
                     <button
                       type="button"
@@ -590,7 +590,7 @@ export default function WatchRoomMusicPage() {
                 </div>
 
                 {showCoverPanel ? (
-                  <div className={`rounded-2xl border px-4 py-4 ${isDark ? 'border-white/10 bg-black/20' : 'border-zinc-200 bg-white/80 shadow-sm'}`}>
+                  <div className={`rounded-2xl border px-4 py-4 ${isDark ? 'border-white/10 bg-black/20' : 'border-zinc-200 bg-white/80 shadow-xs'}`}>
                     <div className="flex flex-col gap-4">
                       <VinylTurntable song={song} isPlaying={Boolean(state?.isPlaying)} />
                       <AudioSpectrumCanvas bars={bars} compact volume={volume} />
@@ -606,7 +606,7 @@ export default function WatchRoomMusicPage() {
                 ) : (
                 <div
                   ref={mobileLyricsContainerRef}
-                  className={`rounded-2xl border px-4 py-4 ${isDark ? 'border-white/10 bg-black/20' : 'border-zinc-200 bg-white/80 shadow-sm'}`}
+                  className={`rounded-2xl border px-4 py-4 ${isDark ? 'border-white/10 bg-black/20' : 'border-zinc-200 bg-white/80 shadow-xs'}`}
                 >
                     <div className="max-h-[64vh] overflow-y-auto px-1">
                       {lyrics.length > 0 ? (
@@ -649,7 +649,7 @@ export default function WatchRoomMusicPage() {
 
             <div className="hidden md:grid flex-1 gap-4 md:grid-cols-[420px_minmax(0,1fr)]">
               <div className={`${showCoverPanel ? 'block' : 'hidden'} min-w-0 md:block`}>
-                  <div ref={desktopVolumeControlRef} className={`rounded-lg border p-4 md:p-6 ${isDark ? 'border-white/10 bg-black/20' : 'border-zinc-200 bg-white/80 shadow-sm'}`}>
+                  <div ref={desktopVolumeControlRef} className={`rounded-lg border p-4 md:p-6 ${isDark ? 'border-white/10 bg-black/20' : 'border-zinc-200 bg-white/80 shadow-xs'}`}>
                   <div className="relative">
                     <button
                       type="button"
@@ -697,7 +697,7 @@ export default function WatchRoomMusicPage() {
 
               <div
                 ref={desktopLyricsContainerRef}
-                className={`${showLyricsPanel ? 'block' : 'hidden'} min-h-0 rounded-lg border p-4 md:block md:h-[70vh] md:overflow-y-auto md:p-6 ${isDark ? 'border-white/10 bg-black/20' : 'border-zinc-200 bg-white/80 shadow-sm'}`}
+                className={`${showLyricsPanel ? 'block' : 'hidden'} min-h-0 rounded-lg border p-4 md:block md:h-[70vh] md:overflow-y-auto md:p-6 ${isDark ? 'border-white/10 bg-black/20' : 'border-zinc-200 bg-white/80 shadow-xs'}`}
               >
                 {lyrics.length > 0 ? (
                   <div className="space-y-4">
@@ -731,7 +731,7 @@ export default function WatchRoomMusicPage() {
       </section>
 
       {needsActivation && song && (
-        <div className={`absolute inset-0 z-20 flex items-center justify-center backdrop-blur ${isDark ? 'bg-black/70' : 'bg-white/60'}`}>
+        <div className={`absolute inset-0 z-20 flex items-center justify-center backdrop-blur-sm ${isDark ? 'bg-black/70' : 'bg-white/60'}`}>
           <button
             type="button"
             onClick={activate}

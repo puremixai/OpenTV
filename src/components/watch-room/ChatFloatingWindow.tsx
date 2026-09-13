@@ -118,7 +118,7 @@ export default function ChatFloatingWindow() {
     // 重连失败时显示重连按钮
     if (watchRoom?.reconnectFailed) {
       return (
-        <div className="fixed bottom-20 right-4 z-[700] flex flex-col gap-3 md:bottom-4">
+        <div className="fixed bottom-20 right-4 z-700 flex flex-col gap-3 md:bottom-4">
           <button
             onClick={handleReconnect}
             disabled={isReconnecting}
@@ -179,7 +179,7 @@ export default function ChatFloatingWindow() {
   // 悬浮按钮组
   if (!isOpen && !showRoomInfo) {
     return (
-      <div className="fixed bottom-20 right-4 z-[700] flex flex-col gap-3 md:bottom-4">
+      <div className="fixed bottom-20 right-4 z-700 flex flex-col gap-3 md:bottom-4">
         {/* 重连失败提示气泡 */}
         {watchRoom?.reconnectFailed && (
           <button
@@ -230,7 +230,7 @@ export default function ChatFloatingWindow() {
       <>
         {/* 背景遮罩 */}
         <div
-          className='fixed inset-0 bg-black/50 backdrop-blur-sm z-[1000]'
+          className='fixed inset-0 bg-black/50 backdrop-blur-xs z-1000'
           onClick={() => setShowRoomInfo(false)}
           onTouchMove={(e) => {
             e.preventDefault();
@@ -244,7 +244,7 @@ export default function ChatFloatingWindow() {
         />
 
         {/* 房间信息面板 */}
-        <div className='fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-white dark:bg-gray-900 rounded-xl shadow-xl z-[1001] overflow-hidden'>
+        <div className='fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-white dark:bg-gray-900 rounded-xl shadow-xl z-1001 overflow-hidden'>
           <div
             className='h-full p-6'
             data-panel-content
@@ -310,7 +310,7 @@ export default function ChatFloatingWindow() {
                       className='flex items-center justify-between bg-white dark:bg-gray-700 rounded-lg p-3 border border-gray-200 dark:border-gray-600'
                     >
                       <div className='flex items-center gap-3'>
-                        <div className='w-8 h-8 rounded-full bg-gradient-to-r from-blue-400 to-purple-500 flex items-center justify-center text-white font-bold text-sm'>
+                        <div className='w-8 h-8 rounded-full bg-linear-to-r from-blue-400 to-purple-500 flex items-center justify-center text-white font-bold text-sm'>
                           {member.name.charAt(0).toUpperCase()}
                         </div>
                         <span className='text-sm font-medium text-gray-900 dark:text-gray-100'>{member.name}</span>
@@ -362,7 +362,7 @@ export default function ChatFloatingWindow() {
           <button
             onClick={handleReconnect}
             disabled={isReconnecting}
-            className="fixed bottom-[13.5rem] right-4 z-[700] group relative flex h-12 w-12 items-center justify-center rounded-full bg-red-500 text-white shadow-2xl transition-all hover:scale-110 hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed animate-pulse md:bottom-[11rem]"
+            className="fixed bottom-54 right-4 z-700 group relative flex h-12 w-12 items-center justify-center rounded-full bg-red-500 text-white shadow-2xl transition-all hover:scale-110 hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed animate-pulse md:bottom-44"
             aria-label="连接失败，点击重连"
             title="连接失败，点击重连"
           >
@@ -378,26 +378,26 @@ export default function ChatFloatingWindow() {
         {/* 房间信息按钮 */}
         <button
           onClick={() => setShowRoomInfo(true)}
-          className="fixed bottom-36 right-4 z-[700] flex h-12 w-12 items-center justify-center rounded-full bg-blue-500 text-white shadow-2xl transition-all hover:scale-110 hover:bg-blue-600 md:bottom-20"
+          className="fixed bottom-36 right-4 z-700 flex h-12 w-12 items-center justify-center rounded-full bg-blue-500 text-white shadow-2xl transition-all hover:scale-110 hover:bg-blue-600 md:bottom-20"
           aria-label="房间信息"
         >
           <Info className="h-5 w-5" />
         </button>
 
         {/* 最小化的聊天窗口 */}
-        <div className="fixed bottom-20 right-4 z-[700] flex items-center gap-2 rounded-lg bg-gray-800 px-4 py-2 shadow-2xl md:bottom-4">
+        <div className="fixed bottom-20 right-4 z-700 flex items-center gap-2 rounded-lg bg-gray-800 px-4 py-2 shadow-2xl md:bottom-4">
           <MessageCircle className="h-5 w-5 text-white" />
           <span className="text-sm text-white">聊天室</span>
           <button
             onClick={() => setIsMinimized(false)}
-            className="ml-2 rounded p-1 text-gray-400 transition-colors hover:bg-gray-700 hover:text-white"
+            className="ml-2 rounded-sm p-1 text-gray-400 transition-colors hover:bg-gray-700 hover:text-white"
             aria-label="展开"
           >
             <Maximize2 className="h-4 w-4" />
           </button>
           <button
             onClick={() => setIsOpen(false)}
-            className="rounded p-1 text-gray-400 transition-colors hover:bg-gray-700 hover:text-white"
+            className="rounded-sm p-1 text-gray-400 transition-colors hover:bg-gray-700 hover:text-white"
             aria-label="关闭"
           >
             <X className="h-4 w-4" />
@@ -415,7 +415,7 @@ export default function ChatFloatingWindow() {
         <button
           onClick={handleReconnect}
           disabled={isReconnecting}
-          className="fixed bottom-[32.5rem] right-4 z-[700] group relative flex h-12 w-12 items-center justify-center rounded-full bg-red-500 text-white shadow-2xl transition-all hover:scale-110 hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed animate-pulse md:bottom-[30rem]"
+          className="fixed bottom-130 right-4 z-700 group relative flex h-12 w-12 items-center justify-center rounded-full bg-red-500 text-white shadow-2xl transition-all hover:scale-110 hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed animate-pulse md:bottom-120"
           aria-label="连接失败，点击重连"
           title="连接失败，点击重连"
         >
@@ -431,14 +431,14 @@ export default function ChatFloatingWindow() {
       {/* 房间信息按钮 */}
       <button
         onClick={() => setShowRoomInfo(true)}
-        className="fixed bottom-[30rem] right-4 z-[700] flex h-12 w-12 items-center justify-center rounded-full bg-blue-500 text-white shadow-2xl transition-all hover:scale-110 hover:bg-blue-600 md:bottom-[28rem]"
+        className="fixed bottom-120 right-4 z-700 flex h-12 w-12 items-center justify-center rounded-full bg-blue-500 text-white shadow-2xl transition-all hover:scale-110 hover:bg-blue-600 md:bottom-112"
         aria-label="房间信息"
       >
         <Info className="h-5 w-5" />
       </button>
 
       {/* 聊天窗口 */}
-      <div className="fixed bottom-20 right-4 z-[700] flex w-80 flex-col rounded-2xl bg-gray-800 shadow-2xl md:bottom-4 md:w-96">
+      <div className="fixed bottom-20 right-4 z-700 flex w-80 flex-col rounded-2xl bg-gray-800 shadow-2xl md:bottom-4 md:w-96">
       {/* 头部 */}
       <div className="rounded-t-2xl bg-green-500">
         {/* 第一行: 标题和窗口控制 */}
@@ -453,14 +453,14 @@ export default function ChatFloatingWindow() {
           <div className="flex gap-1">
             <button
               onClick={() => setIsMinimized(true)}
-              className="rounded p-1 text-white/80 transition-colors hover:bg-white/20 hover:text-white"
+              className="rounded-sm p-1 text-white/80 transition-colors hover:bg-white/20 hover:text-white"
               aria-label="最小化"
             >
               <Minimize2 className="h-4 w-4" />
             </button>
             <button
               onClick={() => setIsOpen(false)}
-              className="rounded p-1 text-white/80 transition-colors hover:bg-white/20 hover:text-white"
+              className="rounded-sm p-1 text-white/80 transition-colors hover:bg-white/20 hover:text-white"
               aria-label="关闭"
             >
               <X className="h-4 w-4" />
@@ -567,7 +567,7 @@ export default function ChatFloatingWindow() {
               <button
                 key={emoji}
                 onClick={() => handleSendEmoji(emoji)}
-                className="rounded p-1 text-2xl transition-colors hover:bg-gray-600"
+                className="rounded-sm p-1 text-2xl transition-colors hover:bg-gray-600"
               >
                 {emoji}
               </button>
@@ -589,7 +589,7 @@ export default function ChatFloatingWindow() {
             onChange={(e) => setMessage(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="输入消息..."
-            className="flex-1 rounded-lg bg-gray-700 px-3 py-2 text-sm text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500"
+            className="flex-1 rounded-lg bg-gray-700 px-3 py-2 text-sm text-white placeholder-gray-400 focus:outline-hidden focus:ring-2 focus:ring-green-500"
             maxLength={200}
           />
           <button

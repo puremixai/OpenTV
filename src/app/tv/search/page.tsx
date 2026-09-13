@@ -174,9 +174,9 @@ export default function TVSearchPage() {
             value={keyword}
             onChange={(e) => setKeyword(e.target.value)}
             placeholder='输入电影、剧集、动漫、综艺名称'
-            className='h-20 flex-1 rounded-3xl border border-white/10 bg-white/10 px-8 text-3xl text-white outline-none placeholder:text-slate-500 focus:border-rose-500 tv-focusable'
+            className='h-20 flex-1 rounded-3xl border border-white/10 bg-white/10 px-8 text-3xl text-white outline-hidden placeholder:text-slate-500 focus:border-rose-500 tv-focusable'
           />
-          <button type='submit' className='flex h-20 cursor-pointer items-center gap-3 rounded-3xl bg-rose-600 px-10 text-3xl font-black text-white outline-none transition hover:bg-rose-500 tv-focusable'>
+          <button type='submit' className='flex h-20 cursor-pointer items-center gap-3 rounded-3xl bg-rose-600 px-10 text-3xl font-black text-white outline-hidden transition hover:bg-rose-500 tv-focusable'>
             <Search className='h-9 w-9' /> 搜索
           </button>
         </form>
@@ -190,7 +190,7 @@ export default function TVSearchPage() {
           {error ? (
             <div className='rounded-3xl border border-red-500/40 bg-red-950/40 p-8 text-2xl font-bold text-red-100'>{error}</div>
           ) : loading ? null : displayResults.length === 0 ? (
-            <div className='rounded-3xl border border-white/10 bg-white/[0.06] p-8 text-2xl font-bold text-slate-300'>未找到相关结果</div>
+            <div className='rounded-3xl border border-white/10 bg-white/6 p-8 text-2xl font-bold text-slate-300'>未找到相关结果</div>
           ) : (
             <div className='grid grid-cols-2 gap-5 lg:grid-cols-4'>
               {displayResults.map((item, index) => (
@@ -198,9 +198,9 @@ export default function TVSearchPage() {
                   key={item.key}
                   ref={index === 0 ? firstResultRef : undefined}
                   onClick={() => router.push(getTVDetailUrl(item))}
-                  className='tv-focusable cursor-pointer overflow-hidden rounded-3xl border border-white/10 bg-white/[0.06] text-left outline-none transition hover:bg-white/12 focus:ring-4 focus:ring-rose-300'
+                  className='tv-focusable cursor-pointer overflow-hidden rounded-3xl border border-white/10 bg-white/6 text-left outline-hidden transition hover:bg-white/12 focus:ring-4 focus:ring-rose-300'
                 >
-                  <div className='aspect-[2/3] bg-slate-900'>
+                  <div className='aspect-2/3 bg-slate-900'>
                     {item.poster ? (
                       <img src={processImageUrl(item.poster)} alt='' className='h-full w-full object-cover' />
                     ) : (
@@ -226,7 +226,7 @@ export default function TVSearchPage() {
           <h2 className='text-4xl font-black'>搜索历史</h2>
           <div className='mt-6 grid grid-cols-2 gap-4 md:grid-cols-4'>
             {history.slice(0, 20).map((item) => (
-              <button key={item} onClick={() => runSearch(item)} className='cursor-pointer rounded-3xl border border-white/10 bg-white/[0.06] px-6 py-5 text-2xl font-bold text-white outline-none transition hover:bg-white/12 tv-focusable'>
+              <button key={item} onClick={() => runSearch(item)} className='cursor-pointer rounded-3xl border border-white/10 bg-white/6 px-6 py-5 text-2xl font-bold text-white outline-hidden transition hover:bg-white/12 tv-focusable'>
                 {item}
               </button>
             ))}
@@ -237,7 +237,7 @@ export default function TVSearchPage() {
         <h2 className='text-4xl font-black'>热门搜索</h2>
         <div className='mt-6 grid grid-cols-2 gap-4 md:grid-cols-4'>
           {hot.map((item) => (
-            <button key={item} onClick={() => runSearch(item)} className='cursor-pointer rounded-3xl border border-white/10 bg-white/[0.06] px-6 py-5 text-2xl font-bold text-white outline-none transition hover:bg-white/12 tv-focusable'>
+            <button key={item} onClick={() => runSearch(item)} className='cursor-pointer rounded-3xl border border-white/10 bg-white/6 px-6 py-5 text-2xl font-bold text-white outline-hidden transition hover:bg-white/12 tv-focusable'>
               {item}
             </button>
           ))}

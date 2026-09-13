@@ -186,7 +186,7 @@ export function OfflineDownloadPanel({ isOpen, onClose }: OfflineDownloadPanelPr
   const libraryVideos = getLibraryVideos();
 
   const panelContent = (
-    <div className='fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4'>
+    <div className='fixed inset-0 z-9999 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4'>
       <div className='bg-white dark:bg-gray-800 rounded-lg shadow-2xl w-full max-w-4xl max-h-[80vh] flex flex-col'>
         {/* 标题栏 */}
         <div className='flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700'>
@@ -258,11 +258,11 @@ export function OfflineDownloadPanel({ isOpen, onClose }: OfflineDownloadPanelPr
                   <div className='flex gap-4'>
                     {/* 封面图 */}
                     {video.metadata?.cover && (
-                      <div className='flex-shrink-0'>
+                      <div className='shrink-0'>
                         <img
                           src={video.metadata.cover}
                           alt={video.metadata.videoTitle || video.title}
-                          className='w-32 h-48 object-cover rounded'
+                          className='w-32 h-48 object-cover rounded-sm'
                         />
                       </div>
                     )}
@@ -299,7 +299,7 @@ export function OfflineDownloadPanel({ isOpen, onClose }: OfflineDownloadPanelPr
                         {episodes.map((ep) => (
                           <div
                             key={ep.id}
-                            className='flex items-center gap-1 px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-xs rounded group'
+                            className='flex items-center gap-1 px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-xs rounded-sm group'
                           >
                             <span>第{ep.episodeIndex + 1}集</span>
                             <button
@@ -330,7 +330,7 @@ export function OfflineDownloadPanel({ isOpen, onClose }: OfflineDownloadPanelPr
                             episodes.forEach((ep) => handleDeleteTask(ep.id));
                           }
                         }}
-                        className='flex items-center gap-1 px-3 py-1.5 bg-red-500 hover:bg-red-600 text-white text-xs font-medium rounded transition-colors'
+                        className='flex items-center gap-1 px-3 py-1.5 bg-red-500 hover:bg-red-600 text-white text-xs font-medium rounded-sm transition-colors'
                       >
                         <svg className='w-4 h-4' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
                           <path
@@ -397,7 +397,7 @@ export function OfflineDownloadPanel({ isOpen, onClose }: OfflineDownloadPanelPr
                       <div
                         className={`h-full rounded-full transition-all duration-300 ${
                           task.status === 'downloading'
-                            ? 'bg-gradient-to-r from-blue-500 to-purple-600 animate-pulse'
+                            ? 'bg-linear-to-r from-blue-500 to-purple-600 animate-pulse'
                             : task.status === 'completed'
                             ? 'bg-green-500'
                             : task.status === 'error'
@@ -429,7 +429,7 @@ export function OfflineDownloadPanel({ isOpen, onClose }: OfflineDownloadPanelPr
                   {(task.status === 'error' || task.status === 'paused') && (
                     <button
                       onClick={() => handleRetryTask(task.id)}
-                      className='flex items-center gap-1 px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white text-xs font-medium rounded transition-colors'
+                      className='flex items-center gap-1 px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white text-xs font-medium rounded-sm transition-colors'
                     >
                       <svg className='w-4 h-4' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
                         <path
@@ -444,7 +444,7 @@ export function OfflineDownloadPanel({ isOpen, onClose }: OfflineDownloadPanelPr
                   )}
                   <button
                     onClick={() => handleDeleteTask(task.id)}
-                    className='flex items-center gap-1 px-3 py-1.5 bg-red-500 hover:bg-red-600 text-white text-xs font-medium rounded transition-colors'
+                    className='flex items-center gap-1 px-3 py-1.5 bg-red-500 hover:bg-red-600 text-white text-xs font-medium rounded-sm transition-colors'
                   >
                     <svg className='w-4 h-4' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
                       <path

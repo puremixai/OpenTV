@@ -143,7 +143,7 @@ function SortablePlaylistRow({
       <button
         type="button"
         aria-label={`拖动调整《${song.name}》的顺序`}
-        className="w-6 h-8 shrink-0 flex items-center justify-center rounded text-zinc-500 hover:text-white hover:bg-white/10 cursor-grab active:cursor-grabbing"
+        className="w-6 h-8 shrink-0 flex items-center justify-center rounded-sm text-zinc-500 hover:text-white hover:bg-white/10 cursor-grab active:cursor-grabbing"
         style={{ touchAction: 'none' }}
         {...attributes}
         {...listeners}
@@ -2453,7 +2453,7 @@ export default function MusicClient({ children: _children }: { children?: React.
         }
       `}</style>
       {resolvingCount > 0 && (
-        <div className="fixed top-4 right-4 z-[80] pointer-events-none">
+        <div className="fixed top-4 right-4 z-80 pointer-events-none">
           <div className="relative w-16 h-16 md:w-20 md:h-20">
             <div className="absolute inset-0 rounded-full border-4 border-white/10" />
             <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-green-500 border-r-emerald-400 animate-spin shadow-[0_0_20px_rgba(34,197,94,0.35)]" />
@@ -2664,7 +2664,7 @@ export default function MusicClient({ children: _children }: { children?: React.
       {/* Lyrics Modal */}
       {showLyrics && currentSong && (
         <div
-          className="fixed inset-0 bg-black/90 backdrop-blur-sm z-[100] flex items-center justify-center p-4"
+          className="fixed inset-0 bg-black/90 backdrop-blur-xs z-100 flex items-center justify-center p-4"
           onClick={(e) => {
             // 点击背景关闭音量条
             if (e.target === e.currentTarget) {
@@ -2686,7 +2686,7 @@ export default function MusicClient({ children: _children }: { children?: React.
             </button>
             <div className="flex flex-1 min-h-0 flex-col md:flex-row">
               {/* Cover / Meta */}
-              <div className="relative h-32 md:h-auto md:w-[380px] lg:w-[430px] xl:w-[480px] bg-gradient-to-b from-zinc-800 to-zinc-900 shrink-0 overflow-hidden">
+              <div className="relative h-32 md:h-auto md:w-[380px] lg:w-[430px] xl:w-[480px] bg-linear-to-b from-zinc-800 to-zinc-900 shrink-0 overflow-hidden">
                 {currentSong.pic && (
                   <div className="absolute inset-0">
                     <img
@@ -2730,7 +2730,7 @@ export default function MusicClient({ children: _children }: { children?: React.
               </div>
 
               {mobileLyricsView === 'vinyl' && (
-                <div className="relative md:hidden flex-1 min-h-0 overflow-hidden bg-gradient-to-b from-zinc-800 to-zinc-900">
+                <div className="relative md:hidden flex-1 min-h-0 overflow-hidden bg-linear-to-b from-zinc-800 to-zinc-900">
                   {currentSong.pic && (
                     <div className="absolute inset-0">
                       <img
@@ -2756,7 +2756,7 @@ export default function MusicClient({ children: _children }: { children?: React.
                         type="button"
                         data-index={index}
                         onClick={() => seekToLyric(line, index)}
-                        className={`block w-full appearance-none border-0 bg-transparent p-0 text-center transition-all duration-300 outline-none ring-0 focus:outline-none focus:ring-0 active:outline-none active:ring-0 ${
+                        className={`block w-full appearance-none border-0 bg-transparent p-0 text-center transition-all duration-300 outline-hidden ring-0 focus:outline-hidden focus:ring-0 active:outline-hidden active:ring-0 ${
                           index === currentLyricIndex
                             ? 'text-white text-lg md:text-xl lg:text-2xl font-bold scale-110'
                             : index === currentLyricIndex - 1 || index === currentLyricIndex + 1
@@ -2851,7 +2851,7 @@ export default function MusicClient({ children: _children }: { children?: React.
                 </button>
                 <button
                   onClick={() => setShowQualityMenu(true)}
-                  className="px-2 py-0.5 rounded border text-amber-400 border-amber-500/50 bg-amber-900/20 text-[9px] md:text-[10px] font-mono min-w-[32px] text-center hover:bg-amber-900/30 transition-colors"
+                  className="px-2 py-0.5 rounded-sm border text-amber-400 border-amber-500/50 bg-amber-900/20 text-[9px] md:text-[10px] font-mono min-w-[32px] text-center hover:bg-amber-900/30 transition-colors"
                   title="音质选择"
                 >
                   {getQualityLabel()}
@@ -2922,7 +2922,7 @@ export default function MusicClient({ children: _children }: { children?: React.
                     className={`absolute bottom-full left-1/2 -translate-x-1/2 pb-2 transition-opacity ${showVolumeSlider ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
                     onClick={(e) => e.stopPropagation()}
                   >
-                    <div className="bg-zinc-800/95 backdrop-blur-sm rounded-lg p-3 shadow-xl border border-white/10">
+                    <div className="bg-zinc-800/95 backdrop-blur-xs rounded-lg p-3 shadow-xl border border-white/10">
                       <div className="flex flex-col items-center gap-2">
                         <span className="text-xs text-zinc-400 font-mono">{volume}</span>
                         <div
@@ -3034,10 +3034,10 @@ export default function MusicClient({ children: _children }: { children?: React.
 
       {/* Playlist Modal */}
       {showPlaylist && (
-        <div className="fixed inset-0 bg-black/90 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-black/90 backdrop-blur-xs z-100 flex items-center justify-center p-4">
           <div className="w-full max-w-2xl h-[90vh] md:h-auto max-h-[90vh] bg-zinc-900/95 rounded-2xl overflow-hidden border border-white/10 shadow-2xl flex flex-col">
             {/* Header */}
-            <div className="relative h-16 bg-gradient-to-b from-zinc-800 to-zinc-900 shrink-0 flex items-center justify-between px-6">
+            <div className="relative h-16 bg-linear-to-b from-zinc-800 to-zinc-900 shrink-0 flex items-center justify-between px-6">
               <div className="flex items-center gap-3">
                 <h2 className="text-lg font-bold text-white">播放列表</h2>
                 <span className="text-xs text-zinc-500">({playlist.length})</span>
@@ -3112,7 +3112,7 @@ export default function MusicClient({ children: _children }: { children?: React.
       {/* Sleep Timer Menu */}
       {showSleepTimerMenu && (
         <div
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[110] flex items-end justify-center"
+          className="fixed inset-0 bg-black/50 backdrop-blur-xs z-110 flex items-end justify-center"
           onClick={() => setShowSleepTimerMenu(false)}
         >
           <div
@@ -3148,7 +3148,7 @@ export default function MusicClient({ children: _children }: { children?: React.
               ))}
             </div>
 
-            <div className="mx-4 mb-4 rounded-xl border border-white/10 bg-white/[0.03] p-4">
+            <div className="mx-4 mb-4 rounded-xl border border-white/10 bg-white/3 p-4">
               <div className="mb-3 text-center text-sm font-medium text-white">自定义时间</div>
               <div className="grid grid-cols-2 gap-3">
                 {[
@@ -3217,8 +3217,8 @@ export default function MusicClient({ children: _children }: { children?: React.
                         })}
                       </div>
                       <div className="pointer-events-none absolute inset-x-0 top-1/2 -translate-y-1/2 border-y border-green-500/40 bg-green-500/10" style={{ height: `${sleepPickerItemHeight}px` }} />
-                      <div className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-zinc-900/95 to-transparent" />
-                      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-zinc-900/95 to-transparent" />
+                      <div className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-linear-to-b from-zinc-900/95 to-transparent" />
+                      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-1/2 bg-linear-to-t from-zinc-900/95 to-transparent" />
                     </div>
                   </div>
                 ))}
@@ -3256,7 +3256,7 @@ export default function MusicClient({ children: _children }: { children?: React.
       )}
 
       {showAudioEffectsMenu && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4" onClick={() => setShowAudioEffectsMenu(false)}>
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-100 flex items-center justify-center p-4" onClick={() => setShowAudioEffectsMenu(false)}>
           <div className="relative w-full max-w-5xl max-h-[90vh] bg-zinc-900 rounded-2xl border border-white/10 shadow-2xl overflow-hidden" onClick={(e) => e.stopPropagation()}>
             <div className="p-5 border-b border-white/10 flex items-center justify-between"><div><h3 className="text-lg font-bold text-white">均衡器与音效调节</h3></div><button onClick={() => setShowAudioEffectsMenu(false)} className="w-8 h-8 rounded-lg text-zinc-400 hover:text-white hover:bg-white/10">✕</button></div>
             <div className="p-5 overflow-y-auto max-h-[calc(90vh-80px)]"><div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-8">
@@ -3264,10 +3264,10 @@ export default function MusicClient({ children: _children }: { children?: React.
                 <div className="rounded-xl border border-white/5 p-4 overflow-x-auto overscroll-x-contain"><div className="min-w-[760px] grid grid-cols-10 gap-3 items-end h-56 sm:h-64">{EQ_BANDS.map((band, index) => (<div key={band.frequency} className="h-full min-w-0 flex flex-col items-center gap-2"><span className="text-[10px] font-mono text-zinc-500">{(eqGains[index] || 0) > 0 ? '+' : ''}{(eqGains[index] || 0).toFixed(1)}</span><div className="flex-1 w-full min-h-0 flex items-center justify-center"><input type="range" min="-12" max="12" step="0.5" value={eqGains[index] || 0} onChange={(e) => { setEqPreset('自定义'); const value = Number(e.target.value); setEqGains(current => current.map((gain, i) => i === index ? value : gain)); }} disabled={!equalizerEnabled} className="w-40 sm:w-52 h-5 -rotate-90 accent-green-500 [direction:rtl] disabled:opacity-40" /></div><span className="text-[10px] font-mono text-zinc-400">{band.label}</span></div>))}</div></div>
                 <div className="mt-5"><div className="flex items-center justify-between mb-3"><h4 className="text-sm font-bold text-white">预设</h4><button onClick={() => applyEqPreset('Flat')} className="text-xs text-green-400 hover:text-green-300">Flat 重置</button></div><div className="flex flex-wrap gap-2">{Object.keys(EQ_PRESETS).map(name => (<button key={name} onClick={() => applyEqPreset(name)} className={`px-3 py-1.5 rounded-lg text-xs transition-colors ${eqPreset === name ? 'bg-green-500/20 text-green-300 border border-green-500/50' : 'bg-white/5 text-zinc-300 border border-white/10 hover:bg-white/10'}`}>{name}</button>))}</div></div>
               </section>
-              <aside className="space-y-5"><section className="rounded-xl border border-white/10 bg-white/[0.03] p-4"><div className="flex items-center justify-between"><div><h4 className="text-sm font-bold text-white">响度增强</h4><p className="text-xs text-zinc-500 mt-1">轻微压缩，增强人声和细节</p></div><input type="checkbox" checked={loudnessEnabled} onChange={(e) => setLoudnessEnabled(e.target.checked)} className="h-4 w-4 accent-green-500" /></div></section>
-                <section className="rounded-xl border border-white/10 bg-white/[0.03] p-4"><div className="flex items-center justify-between mb-3"><div><h4 className="text-sm font-bold text-white">环境混响音效</h4><p className="text-xs text-zinc-500 mt-1">模拟不同空间的回声效果</p></div><input type="checkbox" checked={reverbEnabled} onChange={(e) => setReverbEnabled(e.target.checked)} className="h-4 w-4 accent-green-500" /></div><div className="flex flex-wrap gap-2">{Object.entries(REVERB_PRESETS).map(([id, preset]) => (<button key={id} onClick={() => { const selected = id as keyof typeof REVERB_PRESETS; const selectedPreset = REVERB_PRESETS[selected]; setReverbPreset(selected); setReverbEnabled(selected !== 'none'); setReverbMainGain(Math.round(selectedPreset.main * 100)); setReverbMix(Math.min(100, Math.round(selectedPreset.send * 30))); }} className={`rounded-lg border px-2.5 py-1 text-xs ${reverbPreset === id ? 'border-green-500/50 bg-green-500/20 text-green-300' : 'border-white/10 bg-white/5 text-zinc-300 hover:bg-white/10'}`}>{preset.label}</button>))}</div><label className="mt-3 block text-xs text-zinc-400">原始音量 {reverbMainGain}%<input type="range" min="0" max="150" value={reverbMainGain} onChange={(e) => setReverbMainGain(Number(e.target.value))} disabled={!reverbEnabled} className="mt-2 w-full accent-green-500 disabled:opacity-40" /></label><label className="mt-3 block text-xs text-zinc-400">环境音效 {reverbMix}%<input type="range" min="0" max="100" value={reverbMix} onChange={(e) => setReverbMix(Number(e.target.value))} disabled={!reverbEnabled} className="mt-2 w-full accent-green-500 disabled:opacity-40" /></label></section>
-                <section className="rounded-xl border border-white/10 bg-white/[0.03] p-4"><div className="flex items-center justify-between mb-3"><div><h4 className="text-sm font-bold text-white">音调升降调节</h4><p className="text-xs text-zinc-500 mt-1">当前 {pitchRate.toFixed(2)}x</p></div><button onClick={() => setPitchRate(1)} className="text-xs text-green-400">重置</button></div><input type="range" min="0.5" max="1.5" step="0.01" value={pitchRate} onChange={(e) => setPitchRate(Number(e.target.value))} className="w-full accent-green-500" /><div className="mt-2 flex justify-between text-xs text-zinc-500"><span>低</span><span>原速</span><span>高</span></div></section>
-                <section className="rounded-xl border border-white/10 bg-white/[0.03] p-4"><div className="flex items-center justify-between mb-3"><div><h4 className="text-sm font-bold text-white">3D 立体环绕</h4><p className="text-xs text-zinc-500 mt-1">需使用耳机，模拟声源环绕移动</p></div><input type="checkbox" checked={surroundEnabled} onChange={(e) => setSurroundEnabled(e.target.checked)} className="h-4 w-4 accent-green-500" /></div><label className="block text-xs text-zinc-400">旋转速度 {surroundSpeed}<input type="range" min="5" max="60" value={surroundSpeed} onChange={(e) => setSurroundSpeed(Number(e.target.value))} disabled={!surroundEnabled} className="mt-2 w-full accent-green-500 disabled:opacity-40" /></label><label className="block mt-3 text-xs text-zinc-400">声场距离 {surroundDistance}<input type="range" min="1" max="10" value={surroundDistance} onChange={(e) => setSurroundDistance(Number(e.target.value))} disabled={!surroundEnabled} className="mt-2 w-full accent-green-500 disabled:opacity-40" /></label></section>
+              <aside className="space-y-5"><section className="rounded-xl border border-white/10 bg-white/3 p-4"><div className="flex items-center justify-between"><div><h4 className="text-sm font-bold text-white">响度增强</h4><p className="text-xs text-zinc-500 mt-1">轻微压缩，增强人声和细节</p></div><input type="checkbox" checked={loudnessEnabled} onChange={(e) => setLoudnessEnabled(e.target.checked)} className="h-4 w-4 accent-green-500" /></div></section>
+                <section className="rounded-xl border border-white/10 bg-white/3 p-4"><div className="flex items-center justify-between mb-3"><div><h4 className="text-sm font-bold text-white">环境混响音效</h4><p className="text-xs text-zinc-500 mt-1">模拟不同空间的回声效果</p></div><input type="checkbox" checked={reverbEnabled} onChange={(e) => setReverbEnabled(e.target.checked)} className="h-4 w-4 accent-green-500" /></div><div className="flex flex-wrap gap-2">{Object.entries(REVERB_PRESETS).map(([id, preset]) => (<button key={id} onClick={() => { const selected = id as keyof typeof REVERB_PRESETS; const selectedPreset = REVERB_PRESETS[selected]; setReverbPreset(selected); setReverbEnabled(selected !== 'none'); setReverbMainGain(Math.round(selectedPreset.main * 100)); setReverbMix(Math.min(100, Math.round(selectedPreset.send * 30))); }} className={`rounded-lg border px-2.5 py-1 text-xs ${reverbPreset === id ? 'border-green-500/50 bg-green-500/20 text-green-300' : 'border-white/10 bg-white/5 text-zinc-300 hover:bg-white/10'}`}>{preset.label}</button>))}</div><label className="mt-3 block text-xs text-zinc-400">原始音量 {reverbMainGain}%<input type="range" min="0" max="150" value={reverbMainGain} onChange={(e) => setReverbMainGain(Number(e.target.value))} disabled={!reverbEnabled} className="mt-2 w-full accent-green-500 disabled:opacity-40" /></label><label className="mt-3 block text-xs text-zinc-400">环境音效 {reverbMix}%<input type="range" min="0" max="100" value={reverbMix} onChange={(e) => setReverbMix(Number(e.target.value))} disabled={!reverbEnabled} className="mt-2 w-full accent-green-500 disabled:opacity-40" /></label></section>
+                <section className="rounded-xl border border-white/10 bg-white/3 p-4"><div className="flex items-center justify-between mb-3"><div><h4 className="text-sm font-bold text-white">音调升降调节</h4><p className="text-xs text-zinc-500 mt-1">当前 {pitchRate.toFixed(2)}x</p></div><button onClick={() => setPitchRate(1)} className="text-xs text-green-400">重置</button></div><input type="range" min="0.5" max="1.5" step="0.01" value={pitchRate} onChange={(e) => setPitchRate(Number(e.target.value))} className="w-full accent-green-500" /><div className="mt-2 flex justify-between text-xs text-zinc-500"><span>低</span><span>原速</span><span>高</span></div></section>
+                <section className="rounded-xl border border-white/10 bg-white/3 p-4"><div className="flex items-center justify-between mb-3"><div><h4 className="text-sm font-bold text-white">3D 立体环绕</h4><p className="text-xs text-zinc-500 mt-1">需使用耳机，模拟声源环绕移动</p></div><input type="checkbox" checked={surroundEnabled} onChange={(e) => setSurroundEnabled(e.target.checked)} className="h-4 w-4 accent-green-500" /></div><label className="block text-xs text-zinc-400">旋转速度 {surroundSpeed}<input type="range" min="5" max="60" value={surroundSpeed} onChange={(e) => setSurroundSpeed(Number(e.target.value))} disabled={!surroundEnabled} className="mt-2 w-full accent-green-500 disabled:opacity-40" /></label><label className="block mt-3 text-xs text-zinc-400">声场距离 {surroundDistance}<input type="range" min="1" max="10" value={surroundDistance} onChange={(e) => setSurroundDistance(Number(e.target.value))} disabled={!surroundEnabled} className="mt-2 w-full accent-green-500 disabled:opacity-40" /></label></section>
                 <button onClick={() => setShowAudioEffectsMenu(false)} className="w-full rounded-xl bg-green-500 p-3 text-sm font-medium text-black hover:bg-green-400">完成</button>
               </aside></div></div>
           </div>
@@ -3277,7 +3277,7 @@ export default function MusicClient({ children: _children }: { children?: React.
       {/* Quality Selection Menu */}
       {showQualityMenu && (
         <div
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[100] flex items-end justify-center"
+          className="fixed inset-0 bg-black/50 backdrop-blur-xs z-100 flex items-end justify-center"
           onClick={() => setShowQualityMenu(false)}
         >
           <div
@@ -3441,7 +3441,7 @@ export default function MusicClient({ children: _children }: { children?: React.
       {confirmModal.isOpen &&
         createPortal(
           <div
-            className="music-theme-portal fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4"
+            className="music-theme-portal fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4"
             style={{ zIndex: 99999 }}
             onClick={confirmModal.onCancel}
           >

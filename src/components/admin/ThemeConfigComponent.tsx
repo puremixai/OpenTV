@@ -291,7 +291,7 @@ export const ThemeConfigComponent = ({
                 <div className='flex items-center gap-3'>
                   {/* 圆形颜色预览 */}
                   <div
-                    className='w-10 h-10 rounded-full flex-shrink-0 shadow-sm'
+                    className='w-10 h-10 rounded-full shrink-0 shadow-xs'
                     style={{ backgroundColor: theme.color }}
                   />
                   {/* 主题名称 */}
@@ -300,7 +300,7 @@ export const ThemeConfigComponent = ({
                       {theme.label}
                     </span>
                     {themeSettings.builtInTheme === theme.value && (
-                      <div className='w-4 h-4 rounded-full bg-blue-500 flex items-center justify-center flex-shrink-0'>
+                      <div className='w-4 h-4 rounded-full bg-blue-500 flex items-center justify-center shrink-0'>
                         <svg
                           className='w-2.5 h-2.5 text-white'
                           fill='none'
@@ -366,7 +366,7 @@ export const ThemeConfigComponent = ({
                   enableCache: e.target.checked,
                 }))
               }
-              className='w-4 h-4 text-blue-600 rounded'
+              className='w-4 h-4 text-blue-600 rounded-sm'
             />
             <span className='text-gray-900 dark:text-gray-100'>
               启用浏览器缓存（推荐）
@@ -765,7 +765,7 @@ export const ThemeConfigComponent = ({
             </label>
             <input
               type='text'
-              className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400'
+              className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:outline-hidden focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400'
               placeholder='例如: https://example.com/icon.png'
               value={themeSettings.progressThumbCustomUrl}
               onChange={(e) =>
@@ -787,7 +787,7 @@ export const ThemeConfigComponent = ({
                 <img
                   src={themeSettings.progressThumbCustomUrl}
                   alt='自定义图标预览'
-                  className='w-12 h-12 object-contain border border-gray-300 dark:border-gray-600 rounded'
+                  className='w-12 h-12 object-contain border border-gray-300 dark:border-gray-600 rounded-sm'
                   onError={(e) => {
                     (e.target as HTMLImageElement).style.display = 'none';
                     const parent = (e.target as HTMLImageElement).parentElement;

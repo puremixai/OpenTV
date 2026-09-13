@@ -65,7 +65,7 @@ export default function MangaLayout({ children }: MangaLayoutProps) {
   return (
     <div data-cinema-specialty='manga' className='min-h-screen bg-gray-50 text-gray-900 dark:bg-black dark:text-gray-100'>
       <header
-        className='fixed inset-x-0 top-0 z-[999] border-b border-gray-200/70 bg-white/85 backdrop-blur-xl shadow-sm dark:border-gray-800/80 dark:bg-gray-950/85'
+        className='fixed inset-x-0 top-0 z-999 border-b border-gray-200/70 bg-white/85 backdrop-blur-xl shadow-xs dark:border-gray-800/80 dark:bg-gray-950/85'
         style={{ paddingTop: 'env(safe-area-inset-top)' }}
       >
         <div className='mx-auto flex h-14 max-w-7xl items-center gap-3 px-3 sm:h-16 sm:px-6'>
@@ -88,7 +88,7 @@ export default function MangaLayout({ children }: MangaLayoutProps) {
             <div className='min-w-0'>
               <div className='group relative'>
                 <div className='truncate text-sm font-semibold sm:text-base'>{meta.title}</div>
-                <div className='absolute top-full left-1/2 transform -translate-x-1/2 mt-2 px-3 py-2 bg-gray-800 dark:bg-gray-900 text-white text-sm rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 ease-out z-[100] pointer-events-none w-max max-w-[85vw] whitespace-normal break-words text-center sm:max-w-none sm:whitespace-nowrap'>
+                <div className='absolute top-full left-1/2 transform -translate-x-1/2 mt-2 px-3 py-2 bg-gray-800 dark:bg-gray-900 text-white text-sm rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 ease-out z-100 pointer-events-none w-max max-w-[85vw] whitespace-normal wrap-break-word text-center sm:max-w-none sm:whitespace-nowrap'>
                   <div className='text-sm'>{meta.title}</div>
                 </div>
               </div>
@@ -111,7 +111,7 @@ export default function MangaLayout({ children }: MangaLayoutProps) {
                     aria-current={active ? 'page' : undefined}
                   className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm transition ${
                     active
-                      ? 'bg-sky-600 text-white shadow-sm'
+                      ? 'bg-sky-600 text-white shadow-xs'
                       : 'text-gray-600 hover:bg-gray-100 hover:text-sky-600 dark:text-gray-300 dark:hover:bg-gray-800'
                   }`}
                 >
@@ -170,7 +170,7 @@ export default function MangaLayout({ children }: MangaLayoutProps) {
 
       {!isReadingPage && (
         <nav
-          className='fixed inset-x-0 bottom-0 z-[998] border-t border-gray-200/70 bg-white/92 backdrop-blur-xl dark:border-gray-800/80 dark:bg-gray-950/92 lg:hidden'
+          className='fixed inset-x-0 bottom-0 z-998 border-t border-gray-200/70 bg-white/92 backdrop-blur-xl dark:border-gray-800/80 dark:bg-gray-950/92 lg:hidden'
           style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
         >
           <div className='mx-auto grid max-w-3xl grid-cols-4'>

@@ -254,7 +254,7 @@ export default function EpisodeFilterSettings({
 
   const content = (
     <div
-      className="fixed inset-0 z-[10000] flex items-end justify-center"
+      className="fixed inset-0 z-10000 flex items-end justify-center"
       onTouchMove={(e) => {
         // 阻止最外层容器的触摸移动，防止背景滚动
         e.preventDefault();
@@ -341,7 +341,7 @@ export default function EpisodeFilterSettings({
               </div>
               <button
                 onClick={handleToggleReverseMode}
-                className="flex-shrink-0 active:scale-95 transition-transform duration-150"
+                className="shrink-0 active:scale-95 transition-transform duration-150"
                 title={config.reverseMode ? '关闭相反模式' : '开启相反模式'}
               >
                 {config.reverseMode ? (
@@ -376,20 +376,20 @@ export default function EpisodeFilterSettings({
                 spellCheck="false"
                 data-form-type="other"
                 data-lpignore="true"
-                className="w-full px-4 py-3 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg border border-gray-200 dark:border-gray-600 focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-500/20 transition-all duration-200"
+                className="w-full px-4 py-3 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg border border-gray-200 dark:border-gray-600 focus:border-green-500 focus:outline-hidden focus:ring-2 focus:ring-green-500/20 transition-all duration-200"
               />
               <div className="flex gap-2">
                 <select
                   value={newType}
                   onChange={(e) => setNewType(e.target.value as 'normal' | 'regex')}
-                  className="flex-1 px-4 py-3 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg border border-gray-200 dark:border-gray-600 focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-500/20 transition-all duration-200"
+                  className="flex-1 px-4 py-3 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg border border-gray-200 dark:border-gray-600 focus:border-green-500 focus:outline-hidden focus:ring-2 focus:ring-green-500/20 transition-all duration-200"
                 >
                   <option value="normal">普通模式</option>
                   <option value="regex">正则模式</option>
                 </select>
                 <button
                   onClick={handleAddRule}
-                  className="px-6 py-3 bg-green-600 hover:bg-green-700 active:bg-green-800 text-white rounded-lg transition-all duration-200 flex items-center gap-2 active:scale-[0.98] shadow-sm hover:shadow-md"
+                  className="px-6 py-3 bg-green-600 hover:bg-green-700 active:bg-green-800 text-white rounded-lg transition-all duration-200 flex items-center gap-2 active:scale-[0.98] shadow-xs hover:shadow-md"
                 >
                   <Plus size={18} />
                   <span className="font-medium">添加</span>
@@ -443,7 +443,7 @@ export default function EpisodeFilterSettings({
                     {/* 启用/禁用按钮 */}
                     <button
                       onClick={() => handleToggleRule(rule.id)}
-                      className="flex-shrink-0 active:scale-95 transition-transform duration-150"
+                      className="shrink-0 active:scale-95 transition-transform duration-150"
                     >
                       {rule.enabled ? (
                         <ToggleRight
@@ -483,7 +483,7 @@ export default function EpisodeFilterSettings({
                     {/* 删除按钮 */}
                     <button
                       onClick={() => handleDeleteRule(rule.id)}
-                      className="flex-shrink-0 p-2 text-red-500 hover:text-red-600 active:text-red-700 active:scale-90 transition-all duration-150"
+                      className="shrink-0 p-2 text-red-500 hover:text-red-600 active:text-red-700 active:scale-90 transition-all duration-150"
                     >
                       <Trash2 size={18} />
                     </button>
@@ -506,7 +506,7 @@ export default function EpisodeFilterSettings({
             <button
               onClick={handleSave}
               disabled={saving}
-              className="flex-1 px-4 py-3 bg-green-600 hover:bg-green-700 active:bg-green-800 disabled:bg-gray-300 disabled:cursor-not-allowed dark:disabled:bg-gray-700 text-white rounded-xl font-medium transition-all duration-200 active:scale-[0.98] shadow-sm hover:shadow-md disabled:shadow-none"
+              className="flex-1 px-4 py-3 bg-green-600 hover:bg-green-700 active:bg-green-800 disabled:bg-gray-300 disabled:cursor-not-allowed dark:disabled:bg-gray-700 text-white rounded-xl font-medium transition-all duration-200 active:scale-[0.98] shadow-xs hover:shadow-md disabled:shadow-none"
             >
               {saving ? (
                 <span className="inline-flex items-center gap-2">

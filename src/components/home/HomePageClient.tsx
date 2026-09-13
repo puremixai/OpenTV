@@ -435,8 +435,8 @@ function HomeClient({
             {loading
               ? Array.from({ length: 8 }).map((_, index) => (
                   <div key={index} className='cinema-poster'>
-                    <div className='aspect-[2/3] bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse mb-2' />
-                    <div className='h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse w-3/4' />
+                    <div className='aspect-2/3 bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse mb-2' />
+                    <div className='h-4 bg-gray-200 dark:bg-gray-700 rounded-sm animate-pulse w-3/4' />
                   </div>
                 ))
               : hotMovies.slice(0, 10).map((movie, index) => (
@@ -474,8 +474,8 @@ function HomeClient({
             {loading
               ? Array.from({ length: 8 }).map((_, index) => (
                   <div key={index} className='cinema-poster'>
-                    <div className='aspect-[2/3] bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse mb-2' />
-                    <div className='h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse w-3/4' />
+                    <div className='aspect-2/3 bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse mb-2' />
+                    <div className='h-4 bg-gray-200 dark:bg-gray-700 rounded-sm animate-pulse w-3/4' />
                   </div>
                 ))
               : hotDuanju.map((duanju) => (
@@ -516,10 +516,10 @@ function HomeClient({
             {loading
               ? Array.from({ length: 8 }).map((_, index) => (
                   <div key={index} className='cinema-poster'>
-                    <div className='relative aspect-[2/3] w-full overflow-hidden rounded-lg bg-gray-200 animate-pulse dark:bg-gray-800'>
+                    <div className='relative aspect-2/3 w-full overflow-hidden rounded-lg bg-gray-200 animate-pulse dark:bg-gray-800'>
                       <div className='absolute inset-0 bg-gray-300 dark:bg-gray-700'></div>
                     </div>
-                    <div className='mt-2 h-4 bg-gray-200 rounded animate-pulse dark:bg-gray-800'></div>
+                    <div className='mt-2 h-4 bg-gray-200 rounded-sm animate-pulse dark:bg-gray-800'></div>
                   </div>
                 ))
               : (() => {
@@ -575,8 +575,8 @@ function HomeClient({
             {loading
               ? Array.from({ length: 8 }).map((_, index) => (
                   <div key={index} className='cinema-poster'>
-                    <div className='aspect-[2/3] bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse mb-2' />
-                    <div className='h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse w-3/4' />
+                    <div className='aspect-2/3 bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse mb-2' />
+                    <div className='h-4 bg-gray-200 dark:bg-gray-700 rounded-sm animate-pulse w-3/4' />
                   </div>
                 ))
               : hotTvShows.map((tvShow) => (
@@ -608,8 +608,8 @@ function HomeClient({
             {loading
               ? Array.from({ length: 8 }).map((_, index) => (
                   <div key={index} className='cinema-poster'>
-                    <div className='aspect-[2/3] bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse mb-2' />
-                    <div className='h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse w-3/4' />
+                    <div className='aspect-2/3 bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse mb-2' />
+                    <div className='h-4 bg-gray-200 dark:bg-gray-700 rounded-sm animate-pulse w-3/4' />
                   </div>
                 ))
               : hotVarietyShows.map((varietyShow) => (
@@ -642,8 +642,8 @@ function HomeClient({
             {loading
               ? Array.from({ length: 8 }).map((_, index) => (
                   <div key={index} className='cinema-poster'>
-                    <div className='aspect-[2/3] bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse mb-2' />
-                    <div className='h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse w-3/4' />
+                    <div className='aspect-2/3 bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse mb-2' />
+                    <div className='h-4 bg-gray-200 dark:bg-gray-700 rounded-sm animate-pulse w-3/4' />
                   </div>
                 ))
               : upcomingContent.map((item) => (
@@ -777,7 +777,7 @@ function HomeClient({
 
       {/* 公告弹窗 */}
       {showAnnouncement && (
-        <div className='fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4'>
+        <div className='fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4'>
           <div className='bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full p-6'>
             <h3 className='text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3'>
               公告
@@ -834,7 +834,7 @@ function HomeClient({
                   }
                 }}
                 placeholder='https://example.com/video.m3u8'
-                className='w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500'
+                className='w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-hidden focus:ring-2 focus:ring-blue-500'
               />
               <div className='flex justify-end gap-2'>
                 <button

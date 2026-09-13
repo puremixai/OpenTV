@@ -83,7 +83,7 @@ const AlertModal = ({
   };
 
   return createPortal(
-    <div className={`fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 transition-opacity duration-200 ${isVisible ? 'opacity-100' : 'opacity-0'}`} onClick={onClose}>
+    <div className={`fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 transition-opacity duration-200 ${isVisible ? 'opacity-100' : 'opacity-0'}`} onClick={onClose}>
       <div className={`bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full border ${getBgColor()} transition-all duration-200 ${isVisible ? 'scale-100' : 'scale-95'}`} onClick={(e) => e.stopPropagation()}>
         <div className="p-6 text-center">
           <div className="flex justify-center mb-4">
@@ -388,7 +388,7 @@ const DataMigration = ({ onRefreshConfig }: DataMigrationProps) => {
       <div className="max-w-6xl mx-auto space-y-6">
         {/* 简洁警告提示 */}
         <div className="flex items-center gap-3 p-4 border border-amber-200 dark:border-amber-700 rounded-lg bg-amber-50/30 dark:bg-amber-900/5">
-          <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0" />
+          <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0" />
           <p className="text-sm text-amber-800 dark:text-amber-200">
             数据迁移操作请谨慎，确保已备份重要数据
           </p>
@@ -397,7 +397,7 @@ const DataMigration = ({ onRefreshConfig }: DataMigrationProps) => {
         {/* 主要操作区域 - 响应式布局 */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* 数据导出 */}
-          <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-6 bg-white dark:bg-gray-800 hover:shadow-sm transition-shadow flex flex-col">
+          <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-6 bg-white dark:bg-gray-800 hover:shadow-xs transition-shadow flex flex-col">
             <div className="flex items-center gap-3 mb-6">
               <div className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center">
                 <Download className="w-4 h-4 text-blue-600 dark:text-blue-400" />
@@ -437,7 +437,7 @@ const DataMigration = ({ onRefreshConfig }: DataMigrationProps) => {
                       checked={includeMangaExport}
                       onChange={(e) => setIncludeMangaExport(e.target.checked)}
                       disabled={isExporting}
-                      className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      className="h-4 w-4 rounded-sm border-gray-300 text-blue-600 focus:ring-blue-500"
                     />
                     漫画数据（书架 + 阅读记录）
                   </label>
@@ -447,15 +447,15 @@ const DataMigration = ({ onRefreshConfig }: DataMigrationProps) => {
                       checked={includeBooksExport}
                       onChange={(e) => setIncludeBooksExport(e.target.checked)}
                       disabled={isExporting}
-                      className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      className="h-4 w-4 rounded-sm border-gray-300 text-blue-600 focus:ring-blue-500"
                     />
                     电子书数据（书架 + 阅读记录）
                   </label>
                 </div>
 
                 {/* 备份内容列表 */}
-                <div className="text-xs text-gray-600 dark:text-gray-400 space-y-1">
-                  <p className="font-medium text-gray-700 dark:text-gray-300 mb-2">备份内容：</p>
+                <div className="flex flex-col gap-2 text-xs text-gray-600 dark:text-gray-400">
+                  <p className="font-medium text-gray-700 dark:text-gray-300">备份内容：</p>
                   <div className="grid grid-cols-2 gap-1">
                     <div>• 管理配置</div>
                     <div>• 用户数据</div>
@@ -507,7 +507,7 @@ const DataMigration = ({ onRefreshConfig }: DataMigrationProps) => {
           </div>
 
           {/* 数据导入 */}
-          <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-6 bg-white dark:bg-gray-800 hover:shadow-sm transition-shadow flex flex-col">
+          <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-6 bg-white dark:bg-gray-800 hover:shadow-xs transition-shadow flex flex-col">
             <div className="flex items-center gap-3 mb-6">
               <div className="w-8 h-8 rounded-lg bg-red-50 dark:bg-red-900/20 flex items-center justify-center">
                 <Upload className="w-4 h-4 text-red-600 dark:text-red-400" />
@@ -536,7 +536,7 @@ const DataMigration = ({ onRefreshConfig }: DataMigrationProps) => {
                     type="file"
                     accept=".dat"
                     onChange={handleFileSelect}
-                    className="w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-red-500 focus:border-red-500 file:mr-3 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-sm file:font-medium file:bg-gray-50 dark:file:bg-gray-600 file:text-gray-700 dark:file:text-gray-300 hover:file:bg-gray-100 dark:hover:file:bg-gray-500 transition-colors"
+                    className="w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-red-500 focus:border-red-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-sm file:border-0 file:text-sm file:font-medium file:bg-gray-50 dark:file:bg-gray-600 file:text-gray-700 dark:file:text-gray-300 hover:file:bg-gray-100 dark:hover:file:bg-gray-500 transition-colors"
                     disabled={isImporting}
                   />
                 </div>

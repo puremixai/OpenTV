@@ -326,10 +326,10 @@ export default function WatchRoomPage() {
 
   return (
     <PageLayout activePath="/watch-room">
-      <div className="flex flex-col gap-4 py-4 px-5 lg:px-[3rem] 2xl:px-20">
+      <div className="flex flex-col gap-4 py-4 px-5 lg:px-12 2xl:px-20">
         {/* 房员等待提示 */}
         {currentRoom && !isOwner && (
-          <div className="mb-4 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl p-6 shadow-lg">
+          <div className="mb-4 bg-linear-to-r from-blue-500 to-purple-600 rounded-xl p-6 shadow-lg">
             <div className="flex items-center justify-between gap-4 text-white">
               <div className="flex items-center gap-4 flex-1">
                 <div className="relative">
@@ -453,7 +453,7 @@ export default function WatchRoomPage() {
                 {currentRoom ? (
                   <div className="space-y-4">
                     {/* 房间信息卡片 */}
-                    <div className="bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl p-6 text-white">
+                    <div className="bg-linear-to-r from-blue-500 to-purple-600 rounded-xl p-6 text-white">
                       <div className="flex items-start justify-between mb-4">
                         <div>
                           <h3 className="text-2xl font-bold mb-1">{currentRoom.name}</h3>
@@ -467,15 +467,15 @@ export default function WatchRoomPage() {
                       </div>
 
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4">
-                        <div className="bg-white/10 backdrop-blur rounded-lg p-3">
+                        <div className="bg-white/10 backdrop-blur-sm rounded-lg p-3">
                           <p className="text-blue-100 text-xs mb-1">房间号</p>
                           <p className="text-xl font-mono font-bold">{currentRoom.id}</p>
                         </div>
-                        <div className="bg-white/10 backdrop-blur rounded-lg p-3">
+                        <div className="bg-white/10 backdrop-blur-sm rounded-lg p-3">
                           <p className="text-blue-100 text-xs mb-1">成员数</p>
                           <p className="text-xl font-bold">{members.length} 人</p>
                         </div>
-                        <div className="bg-white/10 backdrop-blur rounded-lg p-3">
+                        <div className="bg-white/10 backdrop-blur-sm rounded-lg p-3">
                           <p className="text-blue-100 text-xs mb-1">房间类型</p>
                           <p className="text-base font-bold">{currentRoom.roomType === 'screen' ? '屏幕共享' : currentRoom.roomType === 'music' ? '一起听' : '进度同步'}</p>
                         </div>
@@ -500,7 +500,7 @@ export default function WatchRoomPage() {
                               </span>
                             </div>
                             {member.isOwner && (
-                              <span className="text-xs bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 px-2 py-1 rounded">
+                              <span className="text-xs bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 px-2 py-1 rounded-sm">
                                 房主
                               </span>
                             )}
@@ -547,7 +547,7 @@ export default function WatchRoomPage() {
                       value={createForm.roomName}
                       onChange={(e) => setCreateForm({ ...createForm, roomName: e.target.value })}
                       placeholder="请输入房间名称"
-                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-hidden focus:ring-2 focus:ring-blue-500"
                       maxLength={50}
                       required
                     />
@@ -561,7 +561,7 @@ export default function WatchRoomPage() {
                       value={createForm.description}
                       onChange={(e) => setCreateForm({ ...createForm, description: e.target.value })}
                       placeholder="请输入房间描述（可选）"
-                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-hidden focus:ring-2 focus:ring-blue-500 resize-none"
                       rows={3}
                       maxLength={200}
                     />
@@ -576,7 +576,7 @@ export default function WatchRoomPage() {
                       value={createForm.password}
                       onChange={(e) => setCreateForm({ ...createForm, password: e.target.value })}
                       placeholder="留空表示无需密码"
-                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-hidden focus:ring-2 focus:ring-blue-500"
                       maxLength={20}
                     />
                   </div>
@@ -587,7 +587,7 @@ export default function WatchRoomPage() {
                       id="isPublic"
                       checked={createForm.isPublic}
                       onChange={(e) => setCreateForm({ ...createForm, isPublic: e.target.checked })}
-                      className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                      className="w-4 h-4 text-blue-600 border-gray-300 rounded-sm focus:ring-blue-500"
                     />
                     <label htmlFor="isPublic" className="text-sm text-gray-700 dark:text-gray-300">
                       在房间列表中公开显示
@@ -674,7 +674,7 @@ export default function WatchRoomPage() {
                 {currentRoom ? (
                   <div className="space-y-4">
                     {/* 房间信息卡片 */}
-                    <div className="bg-gradient-to-r from-green-500 to-teal-600 rounded-xl p-6 text-white">
+                    <div className="bg-linear-to-r from-green-500 to-teal-600 rounded-xl p-6 text-white">
                       <div className="flex items-start justify-between mb-4">
                         <div>
                           <h3 className="text-2xl font-bold mb-1">{currentRoom.name}</h3>
@@ -688,15 +688,15 @@ export default function WatchRoomPage() {
                       </div>
 
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4">
-                        <div className="bg-white/10 backdrop-blur rounded-lg p-3">
+                        <div className="bg-white/10 backdrop-blur-sm rounded-lg p-3">
                           <p className="text-green-100 text-xs mb-1">房间号</p>
                           <p className="text-xl font-mono font-bold">{currentRoom.id}</p>
                         </div>
-                        <div className="bg-white/10 backdrop-blur rounded-lg p-3">
+                        <div className="bg-white/10 backdrop-blur-sm rounded-lg p-3">
                           <p className="text-green-100 text-xs mb-1">成员数</p>
                           <p className="text-xl font-bold">{members.length} 人</p>
                         </div>
-                        <div className="bg-white/10 backdrop-blur rounded-lg p-3">
+                        <div className="bg-white/10 backdrop-blur-sm rounded-lg p-3">
                           <p className="text-green-100 text-xs mb-1">房间类型</p>
                           <p className="text-base font-bold">{currentRoom.roomType === 'screen' ? '屏幕共享' : '进度同步'}</p>
                         </div>
@@ -721,7 +721,7 @@ export default function WatchRoomPage() {
                               </span>
                             </div>
                             {member.isOwner && (
-                              <span className="text-xs bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 px-2 py-1 rounded">
+                              <span className="text-xs bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 px-2 py-1 rounded-sm">
                                 房主
                               </span>
                             )}
@@ -757,7 +757,7 @@ export default function WatchRoomPage() {
                       value={joinForm.roomId}
                       onChange={(e) => setJoinForm({ ...joinForm, roomId: e.target.value.toUpperCase() })}
                       placeholder="请输入6位房间号"
-                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 font-mono text-lg tracking-wider focus:outline-none focus:ring-2 focus:ring-green-500"
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 font-mono text-lg tracking-wider focus:outline-hidden focus:ring-2 focus:ring-green-500"
                       maxLength={6}
                       required
                     />
@@ -772,7 +772,7 @@ export default function WatchRoomPage() {
                       value={joinForm.password}
                       onChange={(e) => setJoinForm({ ...joinForm, password: e.target.value })}
                       placeholder="如果房间有密码，请输入"
-                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-green-500"
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-hidden focus:ring-2 focus:ring-green-500"
                       maxLength={20}
                     />
                   </div>
@@ -860,7 +860,7 @@ export default function WatchRoomPage() {
                           )}
                         </div>
                         {room.password && (
-                          <Lock className="w-5 h-5 text-yellow-500 flex-shrink-0 ml-2" />
+                          <Lock className="w-5 h-5 text-yellow-500 shrink-0 ml-2" />
                         )}
                       </div>
 

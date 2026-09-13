@@ -200,7 +200,7 @@ export default function AddToPlaylistModal({
 
   return (
     <div
-      className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[110] flex items-center justify-center p-4"
+      className="fixed inset-0 bg-black/50 backdrop-blur-xs z-110 flex items-center justify-center p-4"
       onClick={onClose}
     >
       <div
@@ -250,13 +250,13 @@ export default function AddToPlaylistModal({
                 placeholder="歌单名称"
                 value={newPlaylistName}
                 onChange={(e) => setNewPlaylistName(e.target.value)}
-                className="w-full px-3 py-2 bg-zinc-800 text-white rounded-lg border border-white/10 focus:border-green-500 focus:outline-none mb-2"
+                className="w-full px-3 py-2 bg-zinc-800 text-white rounded-lg border border-white/10 focus:border-green-500 focus:outline-hidden mb-2"
               />
               <textarea
                 placeholder="歌单描述（可选）"
                 value={newPlaylistDescription}
                 onChange={(e) => setNewPlaylistDescription(e.target.value)}
-                className="w-full px-3 py-2 bg-zinc-800 text-white rounded-lg border border-white/10 focus:border-green-500 focus:outline-none resize-none"
+                className="w-full px-3 py-2 bg-zinc-800 text-white rounded-lg border border-white/10 focus:border-green-500 focus:outline-hidden resize-none"
                 rows={2}
               />
               <div className="flex gap-2 mt-2">
@@ -301,10 +301,10 @@ export default function AddToPlaylistModal({
                     <img
                       src={playlist.cover}
                       alt={playlist.name}
-                      className="w-12 h-12 rounded object-cover"
+                      className="w-12 h-12 rounded-sm object-cover"
                     />
                   ) : (
-                    <div className="w-12 h-12 rounded bg-zinc-800 flex items-center justify-center">
+                    <div className="w-12 h-12 rounded-sm bg-zinc-800 flex items-center justify-center">
                       <svg className="w-6 h-6 text-zinc-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
                       </svg>

@@ -1312,7 +1312,7 @@ function ChapterReader({ manifest }: { manifest: BookReadManifest }) {
               onClick={() => setTocOpen(false)}
             >
               <div
-                className='absolute right-0 top-0 h-screen w-[22rem] max-w-[88vw] overflow-y-auto border-l border-gray-200 bg-white shadow-xl dark:border-gray-700 dark:bg-gray-950'
+                className='absolute right-0 top-0 h-screen w-88 max-w-[88vw] overflow-y-auto border-l border-gray-200 bg-white shadow-xl dark:border-gray-700 dark:bg-gray-950'
                 onClick={(event) => event.stopPropagation()}
               >
                 <div className='space-y-2 p-4'>
@@ -1512,7 +1512,7 @@ function ChapterReader({ manifest }: { manifest: BookReadManifest }) {
         >
           {loading ? (
             <div className='flex min-h-[45vh] items-center justify-center px-4'>
-              <div className='rounded-[2rem] border border-emerald-100/80 bg-white/80 px-6 py-5 text-center shadow-sm shadow-emerald-950/5 backdrop-blur dark:border-emerald-500/10 dark:bg-gray-950/70'>
+              <div className='rounded-4xl border border-emerald-100/80 bg-white/80 px-6 py-5 text-center shadow-xs shadow-emerald-950/5 backdrop-blur-sm dark:border-emerald-500/10 dark:bg-gray-950/70'>
                 <Loader2 className='mx-auto h-6 w-6 animate-spin text-emerald-600 dark:text-emerald-300' />
                 <div className='mt-3 text-sm font-medium text-slate-600 dark:text-slate-300'>
                   加载中...
@@ -1528,7 +1528,7 @@ function ChapterReader({ manifest }: { manifest: BookReadManifest }) {
             <div className='whitespace-pre-wrap'>{chapter.content}</div>
           ) : (
             <div className='flex min-h-[45vh] items-center justify-center px-4'>
-              <div className='rounded-[2rem] border border-dashed border-emerald-200 bg-white/80 px-6 py-5 text-center shadow-sm shadow-emerald-950/5 backdrop-blur dark:border-emerald-500/20 dark:bg-gray-950/70'>
+              <div className='rounded-4xl border border-dashed border-emerald-200 bg-white/80 px-6 py-5 text-center shadow-xs shadow-emerald-950/5 backdrop-blur-sm dark:border-emerald-500/20 dark:bg-gray-950/70'>
                 <BookOpen className='mx-auto h-7 w-7 text-emerald-600 dark:text-emerald-300' />
                 <div className='mt-3 text-sm font-medium text-slate-600 dark:text-slate-300'>
                   本章暂无内容
@@ -1560,7 +1560,7 @@ function ChapterReader({ manifest }: { manifest: BookReadManifest }) {
       {ttsBarVisible ? (
         <>
           <div className='absolute inset-x-0 bottom-3 z-20 mx-auto w-[min(94vw,34rem)]'>
-            <div className='overflow-hidden rounded-3xl border border-gray-200 bg-white/95 shadow-xl backdrop-blur dark:border-gray-800 dark:bg-gray-950/95'>
+            <div className='overflow-hidden rounded-3xl border border-gray-200 bg-white/95 shadow-xl backdrop-blur-sm dark:border-gray-800 dark:bg-gray-950/95'>
               <div className='px-2 pt-2'>
                 <input
                   type='range'
@@ -1644,7 +1644,7 @@ function ChapterReader({ manifest }: { manifest: BookReadManifest }) {
           </div>
           {ttsPanelOpen ? (
             <div className='absolute inset-x-0 bottom-20 z-30 mx-auto w-[min(94vw,34rem)]'>
-              <div className='rounded-[2rem] border border-gray-200 bg-white/98 p-4 shadow-2xl backdrop-blur dark:border-gray-800 dark:bg-gray-950/98'>
+              <div className='rounded-4xl border border-gray-200 bg-white/98 p-4 shadow-2xl backdrop-blur-sm dark:border-gray-800 dark:bg-gray-950/98'>
                 <div className='mb-3 flex items-center justify-between'>
                   <div className='flex items-center gap-2 text-sm font-medium text-gray-900 dark:text-gray-100'>
                     <Headphones className='h-4 w-4 text-emerald-500' />
@@ -3376,7 +3376,7 @@ export default function BookReadPage() {
               style={{ paddingLeft: `${16 + depth * 14}px` }}
             >
               <span className='block truncate'>{item.label}</span>
-              <div className='pointer-events-none absolute bottom-full left-1/2 z-[100] mb-2 -translate-x-1/2 rounded-lg bg-gray-800 px-3 py-2 text-sm text-white opacity-0 invisible shadow-xl transition-all duration-200 ease-out group-hover:visible group-hover:opacity-100 dark:bg-gray-900 whitespace-nowrap'>
+              <div className='pointer-events-none absolute bottom-full left-1/2 z-100 mb-2 -translate-x-1/2 rounded-lg bg-gray-800 px-3 py-2 text-sm text-white opacity-0 invisible shadow-xl transition-all duration-200 ease-out group-hover:visible group-hover:opacity-100 dark:bg-gray-900 whitespace-nowrap'>
                 <div className='text-sm'>{item.label}</div>
               </div>
             </button>
@@ -3452,15 +3452,15 @@ export default function BookReadPage() {
   return (
     <div className='flex h-[calc(100vh-3.5rem)] flex-col bg-white dark:bg-gray-950'>
       {restoredMessage ? (
-        <div className='absolute left-1/2 top-[4.5rem] z-30 -translate-x-1/2 rounded-full bg-emerald-600 px-4 py-2 text-xs text-white shadow-lg'>
+        <div className='absolute left-1/2 top-18 z-30 -translate-x-1/2 rounded-full bg-emerald-600 px-4 py-2 text-xs text-white shadow-lg'>
           {restoredMessage}
         </div>
       ) : null}
 
       {!ready ? (
-        <div className='absolute inset-x-0 top-[3.5rem] z-10 p-4'>
+        <div className='absolute inset-x-0 top-14 z-10 p-4'>
           <div className='mx-auto max-w-3xl space-y-4'>
-            <div className='space-y-2 rounded-3xl border border-gray-200 bg-white/90 p-5 shadow-sm dark:border-gray-800 dark:bg-gray-950/90'>
+            <div className='space-y-2 rounded-3xl border border-gray-200 bg-white/90 p-5 shadow-xs dark:border-gray-800 dark:bg-gray-950/90'>
               <div className='text-sm font-medium text-gray-700 dark:text-gray-300'>
                 {fileLoadState === 'checking-cache'
                   ? '检查本地缓存'
@@ -3506,11 +3506,11 @@ export default function BookReadPage() {
                 </div>
               ) : (
                 <div className='space-y-3 animate-pulse'>
-                  <div className='h-4 w-full rounded bg-gray-200 dark:bg-gray-800' />
-                  <div className='h-4 w-11/12 rounded bg-gray-200 dark:bg-gray-800' />
-                  <div className='h-4 w-10/12 rounded bg-gray-200 dark:bg-gray-800' />
-                  <div className='h-4 w-full rounded bg-gray-200 dark:bg-gray-800' />
-                  <div className='h-4 w-9/12 rounded bg-gray-200 dark:bg-gray-800' />
+                  <div className='h-4 w-full rounded-sm bg-gray-200 dark:bg-gray-800' />
+                  <div className='h-4 w-11/12 rounded-sm bg-gray-200 dark:bg-gray-800' />
+                  <div className='h-4 w-10/12 rounded-sm bg-gray-200 dark:bg-gray-800' />
+                  <div className='h-4 w-full rounded-sm bg-gray-200 dark:bg-gray-800' />
+                  <div className='h-4 w-9/12 rounded-sm bg-gray-200 dark:bg-gray-800' />
                 </div>
               )}
             </div>
@@ -3525,7 +3525,7 @@ export default function BookReadPage() {
               onClick={() => setTocOpen(false)}
             >
               <div
-                className='absolute right-0 top-0 h-screen w-[22rem] max-w-[88vw] overflow-y-auto border-l border-gray-200 bg-white shadow-xl dark:border-gray-700 dark:bg-gray-950'
+                className='absolute right-0 top-0 h-screen w-88 max-w-[88vw] overflow-y-auto border-l border-gray-200 bg-white shadow-xl dark:border-gray-700 dark:bg-gray-950'
                 onClick={(event) => event.stopPropagation()}
               >
                 <div className='p-4'>
@@ -3698,7 +3698,7 @@ export default function BookReadPage() {
       {manifest.format === 'epub' && ttsBarVisible ? (
         <>
           <div className='absolute inset-x-0 bottom-3 z-20 mx-auto w-[min(94vw,34rem)]'>
-            <div className='overflow-hidden rounded-3xl border border-gray-200 bg-white/95 shadow-xl backdrop-blur dark:border-gray-800 dark:bg-gray-950/95'>
+            <div className='overflow-hidden rounded-3xl border border-gray-200 bg-white/95 shadow-xl backdrop-blur-sm dark:border-gray-800 dark:bg-gray-950/95'>
               <div className='px-2 pt-2'>
                 <input
                   type='range'
@@ -3814,7 +3814,7 @@ export default function BookReadPage() {
 
           {ttsPanelOpen ? (
             <div className='absolute inset-x-0 bottom-20 z-30 mx-auto w-[min(94vw,34rem)]'>
-              <div className='rounded-[2rem] border border-gray-200 bg-white/98 p-4 shadow-2xl backdrop-blur dark:border-gray-800 dark:bg-gray-950/98'>
+              <div className='rounded-4xl border border-gray-200 bg-white/98 p-4 shadow-2xl backdrop-blur-sm dark:border-gray-800 dark:bg-gray-950/98'>
                 <div className='mb-3 flex items-center justify-between'>
                   <div className='flex items-center gap-2 text-sm font-medium text-gray-900 dark:text-gray-100'>
                     <Headphones className='h-4 w-4 text-emerald-500' />

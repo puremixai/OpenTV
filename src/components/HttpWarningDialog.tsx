@@ -64,7 +64,7 @@ export default function HttpWarningDialog({ onClose }: HttpWarningDialogProps) {
 
   return createPortal(
     <div
-      className={`fixed inset-0 bg-black bg-opacity-50 z-[9999] flex items-center justify-center p-4 transition-opacity duration-300 ${
+      className={`fixed inset-0 bg-black/50 z-9999 flex items-center justify-center p-4 transition-opacity duration-300 ${
         isVisible ? 'opacity-100' : 'opacity-0'
       }`}
       onClick={handleClose}
@@ -78,7 +78,7 @@ export default function HttpWarningDialog({ onClose }: HttpWarningDialogProps) {
         <div className="p-6">
           {/* 图标和标题 */}
           <div className="flex items-start gap-4 mb-4">
-            <div className="flex-shrink-0">
+            <div className="shrink-0">
               <AlertTriangle className="w-8 h-8 text-yellow-500" />
             </div>
             <div className="flex-1">

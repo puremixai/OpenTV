@@ -13,18 +13,18 @@ import ProxyImage from '@/components/ProxyImage';
 function MangaDetailSkeleton() {
   return (
     <div className='space-y-6'>
-      <div className='grid gap-6 rounded-[28px] border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-950 md:grid-cols-[260px_1fr]'>
-        <div className='aspect-[3/4] animate-pulse rounded-3xl bg-gray-200 dark:bg-gray-800' />
+      <div className='grid gap-6 rounded-[28px] border border-gray-200 bg-white p-6 shadow-xs dark:border-gray-800 dark:bg-gray-950 md:grid-cols-[260px_1fr]'>
+        <div className='aspect-3/4 animate-pulse rounded-3xl bg-gray-200 dark:bg-gray-800' />
         <div className='space-y-4'>
-          <div className='h-8 w-2/3 animate-pulse rounded bg-gray-200 dark:bg-gray-800' />
+          <div className='h-8 w-2/3 animate-pulse rounded-sm bg-gray-200 dark:bg-gray-800' />
           <div className='flex gap-2'>
             <div className='h-7 w-24 animate-pulse rounded-full bg-gray-200 dark:bg-gray-800' />
             <div className='h-7 w-20 animate-pulse rounded-full bg-gray-200 dark:bg-gray-800' />
           </div>
           <div className='space-y-3'>
-            <div className='h-4 w-full animate-pulse rounded bg-gray-200 dark:bg-gray-800' />
-            <div className='h-4 w-11/12 animate-pulse rounded bg-gray-200 dark:bg-gray-800' />
-            <div className='h-4 w-4/5 animate-pulse rounded bg-gray-200 dark:bg-gray-800' />
+            <div className='h-4 w-full animate-pulse rounded-sm bg-gray-200 dark:bg-gray-800' />
+            <div className='h-4 w-11/12 animate-pulse rounded-sm bg-gray-200 dark:bg-gray-800' />
+            <div className='h-4 w-4/5 animate-pulse rounded-sm bg-gray-200 dark:bg-gray-800' />
           </div>
           <div className='flex flex-wrap gap-3'>
             <div className='h-12 w-32 animate-pulse rounded-2xl bg-gray-200 dark:bg-gray-800' />
@@ -33,13 +33,13 @@ function MangaDetailSkeleton() {
           </div>
         </div>
       </div>
-      <div className='rounded-[28px] border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-950'>
-        <div className='mb-4 h-6 w-32 animate-pulse rounded bg-gray-200 dark:bg-gray-800' />
+      <div className='rounded-[28px] border border-gray-200 bg-white p-6 shadow-xs dark:border-gray-800 dark:bg-gray-950'>
+        <div className='mb-4 h-6 w-32 animate-pulse rounded-sm bg-gray-200 dark:bg-gray-800' />
         <div className='space-y-3'>
           {Array.from({ length: 8 }).map((_, index) => (
             <div key={index} className='rounded-2xl border border-gray-200 px-4 py-3 dark:border-gray-700'>
-              <div className='h-4 w-1/3 animate-pulse rounded bg-gray-200 dark:bg-gray-800' />
-              <div className='mt-2 h-3 w-1/4 animate-pulse rounded bg-gray-200 dark:bg-gray-800' />
+              <div className='h-4 w-1/3 animate-pulse rounded-sm bg-gray-200 dark:bg-gray-800' />
+              <div className='mt-2 h-3 w-1/4 animate-pulse rounded-sm bg-gray-200 dark:bg-gray-800' />
             </div>
           ))}
         </div>
@@ -192,12 +192,12 @@ export default function MangaDetailPage() {
 
   return (
     <div className='space-y-6'>
-      <div className='grid gap-6 rounded-[28px] border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-950 md:grid-cols-[260px_1fr]'>
+      <div className='grid gap-6 rounded-[28px] border border-gray-200 bg-white p-6 shadow-xs dark:border-gray-800 dark:bg-gray-950 md:grid-cols-[260px_1fr]'>
         <div className='overflow-hidden rounded-3xl bg-gray-100 dark:bg-gray-800'>
           {detail.cover ? (
             <ProxyImage originalSrc={detail.cover} alt={detail.title} className='h-full w-full object-cover' />
           ) : (
-            <div className='flex aspect-[3/4] items-center justify-center text-sm text-gray-400'>暂无封面</div>
+            <div className='flex aspect-3/4 items-center justify-center text-sm text-gray-400'>暂无封面</div>
           )}
         </div>
         <div className='space-y-4'>
@@ -233,7 +233,7 @@ export default function MangaDetailPage() {
         </div>
       </div>
 
-      <div className='rounded-[28px] border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-950'>
+      <div className='rounded-[28px] border border-gray-200 bg-white p-6 shadow-xs dark:border-gray-800 dark:bg-gray-950'>
         <div className='mb-4 flex items-center justify-between'>
           <h2 className='text-lg font-semibold'>章节列表</h2>
           <button onClick={() => setDescOrder((prev) => !prev)} className='rounded-2xl border border-gray-200 px-4 py-2 text-sm dark:border-gray-700'>

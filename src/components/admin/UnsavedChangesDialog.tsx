@@ -21,7 +21,7 @@ export function UnsavedChangesDialog({
       ref={ref}
       onCancel={onCancel}
       aria-labelledby='unsaved-title'
-      className='fixed m-auto w-[calc(100vw_-_2rem)] max-w-md rounded-2xl border border-slate-200 bg-white p-6 text-slate-900 shadow-xl backdrop:bg-slate-950/50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100'
+      className='fixed m-auto w-[calc(100vw-2rem)] max-w-md rounded-2xl border border-slate-200 bg-white p-6 text-slate-900 shadow-xl backdrop:bg-slate-950/50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100'
     >
       <h2 id='unsaved-title' className='text-lg font-semibold'>
         更改还未保存

@@ -681,7 +681,7 @@ export default function CorrectDialog({
                       className='flex gap-3 p-3 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors'
                     >
                       {/* 海报 */}
-                      <div className='flex-shrink-0 w-16 h-24 relative rounded overflow-hidden bg-gray-200 dark:bg-gray-700'>
+                      <div className='shrink-0 w-16 h-24 relative rounded-sm overflow-hidden bg-gray-200 dark:bg-gray-700'>
                         {season.poster_path ? (
                           <Image
                             src={processImageUrl(getTMDBImageUrl(season.poster_path))}
@@ -712,7 +712,7 @@ export default function CorrectDialog({
                       </div>
 
                       {/* 选择按钮 */}
-                      <div className='flex-shrink-0 flex items-center'>
+                      <div className='shrink-0 flex items-center'>
                         <button
                           onClick={() => handleSelectSeason(season)}
                           disabled={correcting}
@@ -755,7 +755,7 @@ export default function CorrectDialog({
                     className='flex gap-3 p-3 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors'
                   >
                     {/* 海报 */}
-                    <div className='flex-shrink-0 w-16 h-24 relative rounded overflow-hidden bg-gray-200 dark:bg-gray-700'>
+                    <div className='shrink-0 w-16 h-24 relative rounded-sm overflow-hidden bg-gray-200 dark:bg-gray-700'>
                       {result.poster_path ? (
                         <Image
                           src={processImageUrl(getTMDBImageUrl(result.poster_path))}
@@ -789,7 +789,7 @@ export default function CorrectDialog({
                     </div>
 
                     {/* 选择按钮 */}
-                    <div className='flex-shrink-0 flex items-center'>
+                    <div className='shrink-0 flex items-center'>
                       <button
                         onClick={() => handleSelectResult(result)}
                         disabled={correcting || loadingSeasons}
@@ -819,13 +819,13 @@ export default function CorrectDialog({
 
   return createPortal(
     useDrawer ? (
-      <div className='fixed inset-0 z-[9999] flex items-center justify-end pointer-events-none'>
+      <div className='fixed inset-0 z-9999 flex items-center justify-end pointer-events-none'>
         <div className={`relative ${drawerWidth} h-full bg-white dark:bg-gray-800 shadow-2xl flex flex-col pointer-events-auto`}>
           {dialogContent}
         </div>
       </div>
     ) : (
-      <div className='fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm'>
+      <div className='fixed inset-0 z-9999 flex items-center justify-center bg-black/50 backdrop-blur-xs'>
         <div className='bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-2xl max-h-[80vh] overflow-hidden flex flex-col m-4'>
           {dialogContent}
         </div>

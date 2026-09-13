@@ -224,7 +224,7 @@ html:not(.dark) .cinema-ui .cinema-layout {
   border-color: #ffffff28;
 }
 .cinema-ui:not(.cinema-reading)
-  :is(button, a)[class*='bg-gradient-to']:not([class*='from-red']):not(
+  :is(button, a)[class*='bg-linear-to']:not([class*='from-red']):not(
     [class*='from-orange']
   ) {
   background-image: none;
@@ -341,7 +341,8 @@ html:not(.dark) .cinema-ui .cinema-layout {
   position: absolute;
   z-index: -1;
   inset: 0;
-  background: linear-gradient(90deg, #0b0d13ee, #0b0d1320),
+  background:
+    linear-gradient(90deg, #0b0d13ee, #0b0d1320),
     linear-gradient(0deg, #0b0d13aa, transparent);
 }
 .cinema-spotlight-copy {
@@ -671,7 +672,7 @@ html:not(.dark) .cinema-ui .cinema-layout {
     .bg-green-500,
     .bg-green-600,
     .bg-emerald-600,
-    [class*='bg-gradient-to']
+    [class*='bg-linear-to']
   ) {
   color: #111318 !important;
 }
@@ -708,7 +709,7 @@ html:not(.dark) .cinema-ui .cinema-layout {
     .bg-rose-600,
     .bg-indigo-500,
     .bg-indigo-600,
-    [class*='bg-gradient-to']
+    [class*='bg-linear-to']
   )
   > :is(svg, span) {
   color: inherit !important;

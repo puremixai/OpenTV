@@ -208,7 +208,7 @@ export default function TVMePage() {
                 已登录电视端
               </div>
               <div className='mt-8 flex items-center gap-7'>
-                <div className='flex h-28 w-28 shrink-0 items-center justify-center rounded-[32px] bg-gradient-to-br from-rose-500 to-indigo-600 text-6xl font-black text-white shadow-2xl shadow-rose-950/50'>
+                <div className='flex h-28 w-28 shrink-0 items-center justify-center rounded-[32px] bg-linear-to-br from-rose-500 to-indigo-600 text-6xl font-black text-white shadow-2xl shadow-rose-950/50'>
                   {avatarText}
                 </div>
                 <div>
@@ -222,7 +222,7 @@ export default function TVMePage() {
               </div>
 
               <div className='mt-10 grid gap-4 md:grid-cols-2'>
-                <div className='rounded-[28px] border border-white/10 bg-white/[0.06] p-6'>
+                <div className='rounded-[28px] border border-white/10 bg-white/6 p-6'>
                   <div className='flex items-center gap-3 text-xl font-bold text-slate-300'>
                     <ShieldCheck className='h-6 w-6 text-rose-300' />
                     账号角色
@@ -231,7 +231,7 @@ export default function TVMePage() {
                     {roleText}
                   </div>
                 </div>
-                <div className='rounded-[28px] border border-white/10 bg-white/[0.06] p-6'>
+                <div className='rounded-[28px] border border-white/10 bg-white/6 p-6'>
                   <div className='flex items-center gap-3 text-xl font-bold text-slate-300'>
                     <Clock3 className='h-6 w-6 text-indigo-300' />
                     登录时间
@@ -267,7 +267,7 @@ export default function TVMePage() {
                   type='button'
                   onClick={handleLogout}
                   disabled={loggingOut}
-                  className='tv-focusable flex w-full cursor-pointer items-center justify-center gap-3 rounded-3xl bg-rose-600 px-7 py-5 text-3xl font-black text-white outline-none transition duration-200 hover:bg-rose-500 focus:ring-4 focus:ring-rose-300 disabled:cursor-not-allowed disabled:opacity-70'
+                  className='tv-focusable flex w-full cursor-pointer items-center justify-center gap-3 rounded-3xl bg-rose-600 px-7 py-5 text-3xl font-black text-white outline-hidden transition duration-200 hover:bg-rose-500 focus:ring-4 focus:ring-rose-300 disabled:cursor-not-allowed disabled:opacity-70'
                 >
                   {loggingOut ? (
                     <Loader2 className='h-8 w-8 animate-spin' />
@@ -315,7 +315,7 @@ export default function TVMePage() {
                   tabIndex={0}
                   role='img'
                   aria-label='局域网遥控地址二维码，手机扫码打开遥控器'
-                  className='tv-focusable tv-focusable-light shrink-0 rounded-[32px] border border-white/15 bg-white p-4 shadow-2xl shadow-black/40 outline-none'
+                  className='tv-focusable tv-focusable-light shrink-0 rounded-[32px] border border-white/15 bg-white p-4 shadow-2xl shadow-black/40 outline-hidden'
                 >
                   <img
                     src={`/api/auth/qr/image?data=${encodeURIComponent(localRemoteUrl)}`}
@@ -343,7 +343,7 @@ export default function TVMePage() {
                 </p>
               </div>
 
-              <div className='w-full rounded-[28px] border border-white/10 bg-white/[0.06] p-6 lg:max-w-[560px]'>
+              <div className='w-full rounded-[28px] border border-white/10 bg-white/6 p-6 lg:max-w-[560px]'>
                 <div className='flex items-start justify-between gap-5'>
                   <div>
                     <h3 className='text-2xl font-black text-white'>
@@ -367,7 +367,7 @@ export default function TVMePage() {
                     ref={wakeMenuButtonRef}
                     type='button'
                     onClick={() => handleUpDownActionChange('wake-menu')}
-                    className={`tv-focusable flex cursor-pointer items-center justify-center gap-3 rounded-2xl px-5 py-4 text-xl font-black outline-none transition focus:ring-4 focus:ring-rose-300 ${
+                    className={`tv-focusable flex cursor-pointer items-center justify-center gap-3 rounded-2xl px-5 py-4 text-xl font-black outline-hidden transition focus:ring-4 focus:ring-rose-300 ${
                       upDownAction === 'wake-menu'
                         ? 'bg-rose-600 text-white shadow-lg shadow-rose-950/40'
                         : 'bg-white/10 text-slate-200 hover:bg-white/15'
@@ -380,7 +380,7 @@ export default function TVMePage() {
                     ref={volumeButtonRef}
                     type='button'
                     onClick={() => handleUpDownActionChange('volume')}
-                    className={`tv-focusable flex cursor-pointer items-center justify-center gap-3 rounded-2xl px-5 py-4 text-xl font-black outline-none transition focus:ring-4 focus:ring-rose-300 ${
+                    className={`tv-focusable flex cursor-pointer items-center justify-center gap-3 rounded-2xl px-5 py-4 text-xl font-black outline-hidden transition focus:ring-4 focus:ring-rose-300 ${
                       upDownAction === 'volume'
                         ? 'bg-rose-600 text-white shadow-lg shadow-rose-950/40'
                         : 'bg-white/10 text-slate-200 hover:bg-white/15'

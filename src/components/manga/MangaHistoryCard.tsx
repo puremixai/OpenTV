@@ -84,7 +84,7 @@ export default function MangaHistoryCard({ item, inShelf, onToggleShelf, onDelet
   return (
     <>
       <div
-        className='group overflow-hidden rounded-2xl border border-gray-200/70 bg-white/90 shadow-sm transition hover:-translate-y-1 hover:shadow-xl dark:border-gray-700 dark:bg-gray-900/80 cursor-pointer'
+        className='group overflow-hidden rounded-2xl border border-gray-200/70 bg-white/90 shadow-xs transition hover:-translate-y-1 hover:shadow-xl dark:border-gray-700 dark:bg-gray-900/80 cursor-pointer'
         onClick={goRead}
         onContextMenu={(e) => {
           e.preventDefault();
@@ -104,7 +104,7 @@ export default function MangaHistoryCard({ item, inShelf, onToggleShelf, onDelet
         }}
       >
         <div
-          className='relative aspect-[3/4] overflow-hidden bg-gray-100 dark:bg-gray-800'
+          className='relative aspect-3/4 overflow-hidden bg-gray-100 dark:bg-gray-800'
           onContextMenu={(e) => {
             e.preventDefault();
             e.stopPropagation();
@@ -127,7 +127,7 @@ export default function MangaHistoryCard({ item, inShelf, onToggleShelf, onDelet
           )}
         </div>
         <div className='space-y-1 p-3'>
-          <div className='line-clamp-2 min-h-[2.75rem] text-sm font-semibold text-gray-900 dark:text-gray-100'>
+          <div className='line-clamp-2 min-h-11 text-sm font-semibold text-gray-900 dark:text-gray-100'>
             {item.title}
           </div>
           <div className='text-xs text-gray-500 dark:text-gray-400'>{item.sourceName}</div>

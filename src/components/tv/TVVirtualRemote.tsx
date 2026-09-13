@@ -424,7 +424,7 @@ function RemoteButton({
       onPointerCancel={clearRepeat}
       onPointerLeave={clearRepeat}
       onMouseDown={(event) => event.preventDefault()}
-      className={`flex cursor-pointer items-center justify-center rounded-2xl border border-white/10 bg-white/10 text-white shadow-lg shadow-black/30 outline-none transition hover:bg-white/20 active:scale-95 focus-visible:ring-4 focus-visible:ring-rose-500/70 ${className}`}
+      className={`flex cursor-pointer items-center justify-center rounded-2xl border border-white/10 bg-white/10 text-white shadow-lg shadow-black/30 outline-hidden transition hover:bg-white/20 active:scale-95 focus-visible:ring-4 focus-visible:ring-rose-500/70 ${className}`}
     >
       {children}
     </button>
@@ -554,7 +554,7 @@ export default function TVVirtualRemote() {
   return (
     <aside
       data-tv-remote
-      className='fixed bottom-6 right-6 z-[80] w-[280px] rounded-[34px] border border-white/10 bg-slate-950/88 p-5 text-white shadow-2xl shadow-black/70 backdrop-blur-2xl'
+      className='fixed bottom-6 right-6 z-80 w-[280px] rounded-[34px] border border-white/10 bg-slate-950/88 p-5 text-white shadow-2xl shadow-black/70 backdrop-blur-2xl'
     >
       <div className='mb-4 flex items-center justify-between'>
         <div>
@@ -644,7 +644,7 @@ export default function TVVirtualRemote() {
         <div />
       </div>
 
-      <div className='mt-4 rounded-2xl bg-white/[0.06] p-3 text-center text-sm text-slate-300'>
+      <div className='mt-4 rounded-2xl bg-white/6 p-3 text-center text-sm text-slate-300'>
         点击按钮会向当前页面发送方向键 / Enter / Esc
       </div>
     </aside>

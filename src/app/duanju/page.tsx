@@ -191,7 +191,7 @@ function DuanjuPageClient() {
                       <button
                         key={source.key}
                         onClick={() => handleSourceChange(source.key)}
-                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap flex-shrink-0 ${
+                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap shrink-0 ${
                           selectedSource === source.key
                             ? 'bg-blue-600 text-white'
                             : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
@@ -231,7 +231,7 @@ function DuanjuPageClient() {
               </div>
             ) : (
               <>
-                <div className='grid grid-cols-3 gap-x-2 gap-y-14 sm:gap-y-20 px-0 sm:px-2 sm:grid-cols-[repeat(auto-fill,_minmax(11rem,_1fr))] sm:gap-x-8'>
+                <div className='grid grid-cols-3 gap-x-2 gap-y-14 sm:gap-y-20 px-0 sm:px-2 sm:grid-cols-[repeat(auto-fill,minmax(11rem,1fr))] sm:gap-x-8'>
                   {videos.map((item) => (
                     <div key={`${item.source}-${item.id}`} className='w-full'>
                       <VideoCard

@@ -63,7 +63,7 @@ function SingerGrid({ singers, onOpen }: { singers: SingerResult[]; onOpen: (sin
           onClick={() => onOpen(singer)}
           className="group flex cursor-pointer flex-col items-center rounded-2xl border border-transparent p-2 transition-all hover:border-emerald-500/30 hover:bg-white/5 hover:shadow-md md:p-4"
         >
-          <div className="mb-3 h-20 w-20 overflow-hidden rounded-full bg-white/10 shadow-sm sm:h-24 sm:w-24 md:h-32 md:w-32">
+          <div className="mb-3 h-20 w-20 overflow-hidden rounded-full bg-white/10 shadow-xs sm:h-24 sm:w-24 md:h-32 md:w-32">
             {singer.picUrl ? (
               <img
                 src={singer.picUrl}
@@ -404,13 +404,13 @@ export default function MusicSearchPage() {
   return (
     <div className="animate-in fade-in duration-500 relative z-10">
       <div className="mb-8 flex items-center gap-3 relative z-50">
-        <div className="relative flex-1 flex items-center bg-[rgba(0,0,0,0.04)] dark:bg-[rgba(255,255,255,0.06)] rounded-[8px] pl-3 border border-[rgba(0,0,0,0.06)] dark:border-[rgba(255,255,255,0.06)] focus-within:border-green-500 focus-within:ring-0 transition-all shadow-sm">
+        <div className="relative flex-1 flex items-center bg-[rgba(0,0,0,0.04)] dark:bg-[rgba(255,255,255,0.06)] rounded-[8px] pl-3 border border-[rgba(0,0,0,0.06)] dark:border-[rgba(255,255,255,0.06)] focus-within:border-green-500 focus-within:ring-0 transition-all shadow-xs">
           <svg className="w-4 h-4 opacity-40 text-black dark:text-white mr-2 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
           <input 
             value={keyword} 
             onChange={(e) => setKeyword(e.target.value)} 
             onKeyDown={(e) => e.key === 'Enter' && submit()} 
-            className="w-full bg-transparent border-none outline-none focus:outline-none focus:ring-0 text-[14px] py-2 text-black dark:text-white placeholder-[rgba(0,0,0,0.4)] dark:placeholder-[rgba(255,255,255,0.4)]" 
+            className="w-full bg-transparent border-none outline-hidden focus:outline-hidden focus:ring-0 text-[14px] py-2 text-black dark:text-white placeholder-[rgba(0,0,0,0.4)] dark:placeholder-[rgba(255,255,255,0.4)]"
             placeholder="搜索歌曲或艺术家..." 
           />
           
@@ -548,7 +548,7 @@ export default function MusicSearchPage() {
           <SongList songs={songs} />
         )
       ) : (
-        <div className="rounded-3xl border border-white/10 bg-white/5 p-4 md:p-6 backdrop-blur-sm">
+        <div className="rounded-3xl border border-white/10 bg-white/5 p-4 md:p-6 backdrop-blur-xs">
           <div className="mb-5 flex items-center gap-3">
             <Flame className="h-6 w-6 shrink-0 text-orange-500" />
             <div className="min-w-0">
@@ -567,9 +567,9 @@ export default function MusicSearchPage() {
                     setKeyword(item.keyword);
                     router.push(`/music/search?source=${source}&type=${selectedType}&q=${encodeURIComponent(item.keyword)}`);
                   }}
-                  className="group flex h-14 items-center overflow-hidden rounded-lg border border-white/10 bg-white/5 px-2.5 py-3 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:border-emerald-400 hover:bg-emerald-500/10 hover:shadow-md"
+                  className="group flex h-14 items-center overflow-hidden rounded-lg border border-white/10 bg-white/5 px-2.5 py-3 text-left shadow-xs transition-all hover:-translate-y-0.5 hover:border-emerald-400 hover:bg-emerald-500/10 hover:shadow-md"
                 >
-                  <span className={`mr-3 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full text-xs font-bold ${index < 3 ? 'bg-gradient-to-r from-orange-400 to-red-500 text-white' : 'bg-gray-100 text-gray-500'}`}>
+                  <span className={`mr-3 flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold ${index < 3 ? 'bg-linear-to-r from-orange-400 to-red-500 text-white' : 'bg-gray-100 text-gray-500'}`}>
                     {index + 1}
                   </span>
                   <span className="min-w-0 flex-1 truncate text-sm font-medium text-white group-hover:text-emerald-300">

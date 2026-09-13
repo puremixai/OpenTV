@@ -552,7 +552,7 @@ export function DownloadManagementPanel({
   return (
     <>
       {createPortal(
-        <div className='fixed inset-0 z-[9999] flex items-end justify-center p-0 sm:items-center sm:p-4'>
+        <div className='fixed inset-0 z-9999 flex items-end justify-center p-0 sm:items-center sm:p-4'>
           <div className='absolute inset-0 bg-black/50' onClick={onClose} />
           <div className='relative flex h-[92dvh] max-h-[92dvh] w-full max-w-4xl flex-col rounded-t-2xl bg-white shadow-xl dark:bg-gray-900 sm:h-auto sm:max-h-[90vh] sm:rounded-lg'>
             {/* Header */}
@@ -562,7 +562,7 @@ export function DownloadManagementPanel({
               </h2>
               <button
                 onClick={onClose}
-                className='rounded p-2 transition-colors hover:bg-gray-100 dark:hover:bg-gray-800'
+                className='rounded-sm p-2 transition-colors hover:bg-gray-100 dark:hover:bg-gray-800'
                 aria-label='关闭下载文件管理'
               >
                 <X className='w-5 h-5 text-gray-600 dark:text-gray-400' />
@@ -592,12 +592,12 @@ export function DownloadManagementPanel({
                     `，共 ${videoGroups.length} 个视频`}
                 </span>
               </div>
-              <div className='ml-auto flex flex-shrink-0 items-center justify-end gap-2'>
+              <div className='ml-auto flex shrink-0 items-center justify-end gap-2'>
                 <button
                   onClick={handleExport}
                   aria-label={isExporting ? '导出中' : '导出选中'}
                   disabled={selectedIds.size === 0 || isExporting || isDeleting}
-                  className='flex h-10 w-10 items-center justify-center rounded bg-green-500 text-white transition-colors hover:bg-green-600 disabled:cursor-not-allowed disabled:opacity-50 sm:h-auto sm:w-auto sm:gap-2 sm:px-4 sm:py-2 sm:text-sm'
+                  className='flex h-10 w-10 items-center justify-center rounded-sm bg-green-500 text-white transition-colors hover:bg-green-600 disabled:cursor-not-allowed disabled:opacity-50 sm:h-auto sm:w-auto sm:gap-2 sm:px-4 sm:py-2 sm:text-sm'
                 >
                   <Download className='h-4 w-4' />
                   <span className='hidden sm:inline'>
@@ -608,7 +608,7 @@ export function DownloadManagementPanel({
                   onClick={handleDelete}
                   aria-label={isDeleting ? '删除中' : '删除选中'}
                   disabled={selectedIds.size === 0 || isDeleting || isExporting}
-                  className='flex h-10 w-10 items-center justify-center rounded bg-red-500 text-white transition-colors hover:bg-red-600 disabled:cursor-not-allowed disabled:opacity-50 sm:h-auto sm:w-auto sm:gap-2 sm:px-4 sm:py-2 sm:text-sm'
+                  className='flex h-10 w-10 items-center justify-center rounded-sm bg-red-500 text-white transition-colors hover:bg-red-600 disabled:cursor-not-allowed disabled:opacity-50 sm:h-auto sm:w-auto sm:gap-2 sm:px-4 sm:py-2 sm:text-sm'
                 >
                   <Trash2 className='h-4 w-4' />
                   <span className='hidden sm:inline'>
@@ -655,7 +655,7 @@ export function DownloadManagementPanel({
                               event.stopPropagation();
                               handleToggleGroupSelect(group);
                             }}
-                            className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded border-2 transition-colors sm:mt-1 sm:h-5 sm:w-5 ${
+                            className={`flex h-8 w-8 shrink-0 items-center justify-center rounded border-2 transition-colors sm:mt-1 sm:h-5 sm:w-5 ${
                               isGroupSelected
                                 ? 'border-green-500 bg-green-500'
                                 : isGroupPartiallySelected
@@ -667,7 +667,7 @@ export function DownloadManagementPanel({
                             {isGroupSelected ? (
                               <Check className='h-4 w-4 text-white sm:h-3 sm:w-3' />
                             ) : isGroupPartiallySelected ? (
-                              <span className='h-0.5 w-3 rounded bg-green-500 sm:w-2.5' />
+                              <span className='h-0.5 w-3 rounded-sm bg-green-500 sm:w-2.5' />
                             ) : null}
                           </button>
 
@@ -705,7 +705,7 @@ export function DownloadManagementPanel({
                                   )}
                                 </div>
                                 <ChevronDown
-                                  className={`h-5 w-5 flex-shrink-0 text-gray-400 transition-transform sm:mt-1 ${
+                                  className={`h-5 w-5 shrink-0 text-gray-400 transition-transform sm:mt-1 ${
                                     isExpanded ? 'rotate-180' : ''
                                   }`}
                                 />
@@ -726,7 +726,7 @@ export function DownloadManagementPanel({
                                 }`}
                                 onClick={() => handleToggleSelect(task.id)}
                               >
-                                <div className='flex-shrink-0 sm:mt-1'>
+                                <div className='shrink-0 sm:mt-1'>
                                   <div
                                     className={`flex h-8 w-8 items-center justify-center rounded border-2 sm:h-5 sm:w-5 ${
                                       selectedIds.has(task.id)
@@ -752,7 +752,7 @@ export function DownloadManagementPanel({
                                         {task.title}
                                       </p>
                                     </div>
-                                    <div className='flex-shrink-0 text-left sm:text-right'>
+                                    <div className='shrink-0 text-left sm:text-right'>
                                       <div className='text-xs text-gray-500 dark:text-gray-400'>
                                         {formatDate(task.completedAt)}
                                       </div>

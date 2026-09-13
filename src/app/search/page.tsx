@@ -945,7 +945,7 @@ function SearchPageClient() {
           savePartialCacheForPlayback();
           router.push(itemUrl);
         }}
-        className='group w-full rounded-2xl border border-gray-200/80 bg-white/90 p-3 text-left shadow-sm transition-all hover:border-green-300 hover:shadow-md dark:border-gray-700 dark:bg-gray-900/70 dark:hover:border-green-700'
+        className='group w-full rounded-2xl border border-gray-200/80 bg-white/90 p-3 text-left shadow-xs transition-all hover:border-green-300 hover:shadow-md dark:border-gray-700 dark:bg-gray-900/70 dark:hover:border-green-700'
       >
         <div className='flex items-start gap-4'>
           <div className='relative h-32 w-24 shrink-0 overflow-hidden rounded-xl bg-gray-100 dark:bg-gray-800'>
@@ -1711,7 +1711,7 @@ function SearchPageClient() {
             }
             setPansouCloudFilterOpen((prev) => !prev);
           }}
-          className={`relative z-10 rounded-full px-3 py-1 text-xs font-medium transition-all duration-200 whitespace-nowrap focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 ${
+          className={`relative z-10 rounded-full px-3 py-1 text-xs font-medium transition-all duration-200 whitespace-nowrap focus:outline-hidden focus:ring-2 focus:ring-green-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 ${
             hasFilter
               ? 'cursor-pointer text-green-600 hover:text-green-700 dark:text-green-400 dark:hover:text-green-300'
               : 'cursor-pointer text-gray-700 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100'
@@ -1818,7 +1818,7 @@ function SearchPageClient() {
                 onFocus={handleInputFocus}
                 placeholder='搜索电影、电视剧...'
                 autoComplete='off'
-                className='w-full h-12 rounded-lg bg-gray-50/80 py-3 pl-10 pr-12 text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-400 focus:bg-white border border-gray-200/50 shadow-sm dark:bg-gray-800 dark:text-gray-300 dark:placeholder-gray-500 dark:focus:bg-gray-700 dark:border-gray-700'
+                className='w-full h-12 rounded-lg bg-gray-50/80 py-3 pl-10 pr-12 text-sm text-gray-700 placeholder-gray-400 focus:outline-hidden focus:ring-2 focus:ring-green-400 focus:bg-white border border-gray-200/50 shadow-xs dark:bg-gray-800 dark:text-gray-300 dark:placeholder-gray-500 dark:focus:bg-gray-700 dark:border-gray-700'
               />
 
               {/* 清除按钮 */}
@@ -1938,7 +1938,7 @@ function SearchPageClient() {
                     ref={(el) => {
                       if (el) advancedDropdownRefs.current[0] = el;
                     }}
-                    className='absolute right-0 z-[70] mt-2 w-56 rounded-xl border border-gray-200 bg-white p-3 shadow-lg dark:border-gray-700 dark:bg-gray-900'
+                    className='absolute right-0 z-70 mt-2 w-56 rounded-xl border border-gray-200 bg-white p-3 shadow-lg dark:border-gray-700 dark:bg-gray-900'
                   >
                     <label className='flex cursor-pointer select-none items-center justify-between gap-3 rounded-lg px-1 py-2'>
                       <span className='text-sm text-gray-700 dark:text-gray-300'>
@@ -2021,7 +2021,7 @@ function SearchPageClient() {
           createPortal(
             <div
               ref={pansouCloudFilterDropdownRef}
-              className='fixed z-[9999] max-h-[50vh] overflow-y-auto rounded-xl border border-gray-200/50 bg-white/95 p-2 backdrop-blur-sm dark:border-gray-700/50 dark:bg-gray-800/95'
+              className='fixed z-9999 max-h-[50vh] overflow-y-auto rounded-xl border border-gray-200/50 bg-white/95 p-2 backdrop-blur-xs dark:border-gray-700/50 dark:bg-gray-800/95'
               style={{
                 left: `${pansouCloudFilterPosition.x}px`,
                 top: `${pansouCloudFilterPosition.y}px`,
@@ -2177,7 +2177,7 @@ function SearchPageClient() {
                           ref={(el) => {
                             if (el) advancedDropdownRefs.current[1] = el;
                           }}
-                          className='absolute right-0 top-full z-[70] mt-2 w-56 rounded-xl border border-gray-200 bg-white p-3 shadow-lg dark:border-gray-700 dark:bg-gray-900'
+                          className='absolute right-0 top-full z-70 mt-2 w-56 rounded-xl border border-gray-200 bg-white p-3 shadow-lg dark:border-gray-700 dark:bg-gray-900'
                         >
                           <label className='flex cursor-pointer select-none items-center justify-between gap-3 rounded-lg px-1 py-2'>
                             <span className='text-sm text-gray-700 dark:text-gray-300'>
@@ -2265,7 +2265,7 @@ function SearchPageClient() {
                   ) : (
                     (() => {
                       const gridClassName =
-                        'justify-start grid grid-cols-3 gap-x-2 gap-y-14 px-0 sm:grid-cols-[repeat(auto-fill,_minmax(11rem,_1fr))] sm:gap-x-8 sm:gap-y-20 sm:px-2';
+                        'justify-start grid grid-cols-3 gap-x-2 gap-y-14 px-0 sm:grid-cols-[repeat(auto-fill,minmax(11rem,1fr))] sm:gap-x-8 sm:gap-y-20 sm:px-2';
 
                       const listClassName = 'space-y-4';
 
@@ -2564,7 +2564,7 @@ function SearchPageClient() {
       {/* 返回顶部悬浮按钮 */}
       <button
         onClick={scrollToTop}
-        className={`fixed bottom-20 md:bottom-6 right-6 z-[500] w-12 h-12 bg-green-500/90 hover:bg-green-500 text-white rounded-full shadow-lg backdrop-blur-sm transition-all duration-300 ease-in-out flex items-center justify-center group ${
+        className={`fixed bottom-20 md:bottom-6 right-6 z-500 w-12 h-12 bg-green-500/90 hover:bg-green-500 text-white rounded-full shadow-lg backdrop-blur-xs transition-all duration-300 ease-in-out flex items-center justify-center group ${
           showBackToTop
             ? 'opacity-100 translate-y-0 pointer-events-auto'
             : 'opacity-0 translate-y-4 pointer-events-none'

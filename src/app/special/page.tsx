@@ -45,7 +45,7 @@ function SpecialPageClient() {
             </p>
           </div>
 
-          <div className='mt-8 flex items-center justify-between rounded-xl border border-gray-200 bg-gray-50 dark:border-white/10 dark:bg-white/[0.03] p-4'>
+          <div className='mt-8 flex items-center justify-between rounded-xl border border-gray-200 bg-gray-50 dark:border-white/10 dark:bg-white/3 p-4'>
             <div>
               <div className='text-sm text-gray-600 dark:text-slate-400'>当前状态</div>
               <div className='mt-1 text-lg font-medium text-gray-900 dark:text-white'>
@@ -56,7 +56,7 @@ function SpecialPageClient() {
             <button
               type='button'
               onClick={() => updateEnabled(!enabled)}
-              className={`relative inline-flex h-8 w-14 items-center rounded-full p-1 transition focus:outline-none focus:ring-2 focus:ring-rose-400 ${
+              className={`relative inline-flex h-8 w-14 items-center rounded-full p-1 transition focus:outline-hidden focus:ring-2 focus:ring-rose-400 ${
                 enabled ? 'bg-rose-600' : 'bg-gray-300 dark:bg-slate-700'
               }`}
               aria-pressed={enabled}
@@ -77,7 +77,7 @@ function SpecialPageClient() {
           <div className='mt-8 flex flex-col gap-3 sm:flex-row'>
             <Link
               href='/search'
-              className='inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-rose-600 px-4 py-3 text-sm font-medium text-white transition hover:bg-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-400'
+              className='inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-rose-600 px-4 py-3 text-sm font-medium text-white transition hover:bg-rose-500 focus:outline-hidden focus:ring-2 focus:ring-rose-400'
             >
               <Search className='h-4 w-4' />
               前往搜索

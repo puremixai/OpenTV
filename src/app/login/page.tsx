@@ -350,8 +350,8 @@ function LoginPageClient() {
       <div className='absolute top-4 right-4'>
         <ThemeToggle />
       </div>
-      <div className='cinema-auth-card relative z-10 w-full max-w-md rounded-3xl bg-gradient-to-b from-white/90 via-white/70 to-white/40 dark:from-zinc-900/90 dark:via-zinc-900/70 dark:to-zinc-900/40 shadow-2xl p-10 dark:border dark:border-zinc-800'>
-        <h1 className='text-green-600 tracking-tight text-center text-3xl font-extrabold mb-8 bg-clip-text drop-shadow-sm'>
+      <div className='cinema-auth-card relative z-10 w-full max-w-md rounded-3xl bg-linear-to-b from-white/90 via-white/70 to-white/40 dark:from-zinc-900/90 dark:via-zinc-900/70 dark:to-zinc-900/40 shadow-2xl p-10 dark:border dark:border-zinc-800'>
+        <h1 className='text-green-600 tracking-tight text-center text-3xl font-extrabold mb-8 bg-clip-text drop-shadow-xs'>
           {siteName}
         </h1>
         <form onSubmit={handleSubmit} className='space-y-8'>
@@ -368,7 +368,7 @@ function LoginPageClient() {
                   id='username'
                   type='text'
                   autoComplete='username'
-                  className='block w-full rounded-lg border-0 py-3 pl-10 pr-4 text-gray-900 dark:text-gray-100 shadow-sm ring-1 ring-white/60 dark:ring-white/20 placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:ring-2 focus:ring-green-500 focus:outline-none sm:text-base bg-white/60 dark:bg-zinc-800/60'
+                  className='block w-full rounded-lg border-0 py-3 pl-10 pr-4 text-gray-900 dark:text-gray-100 shadow-xs ring-1 ring-white/60 dark:ring-white/20 placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:ring-2 focus:ring-green-500 focus:outline-hidden sm:text-base bg-white/60 dark:bg-zinc-800/60'
                   placeholder='输入用户名'
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
@@ -389,7 +389,7 @@ function LoginPageClient() {
                 id='password'
                 type={showPassword ? 'text' : 'password'}
                 autoComplete='current-password'
-                className='block w-full rounded-lg border-0 py-3 pl-10 pr-12 text-gray-900 dark:text-gray-100 shadow-sm ring-1 ring-white/60 dark:ring-white/20 placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:ring-2 focus:ring-green-500 focus:outline-none sm:text-base bg-white/60 dark:bg-zinc-800/60'
+                className='block w-full rounded-lg border-0 py-3 pl-10 pr-12 text-gray-900 dark:text-gray-100 shadow-xs ring-1 ring-white/60 dark:ring-white/20 placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:ring-2 focus:ring-green-500 focus:outline-hidden sm:text-base bg-white/60 dark:bg-zinc-800/60'
                 placeholder='输入访问密码'
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -422,7 +422,7 @@ function LoginPageClient() {
             <input
               id='remember-password'
               type='checkbox'
-              className='h-4 w-4 rounded border-gray-300 text-green-600 focus:ring-green-500 dark:border-gray-600 dark:bg-gray-700'
+              className='h-4 w-4 rounded-sm border-gray-300 text-green-600 focus:ring-green-500 dark:border-gray-600 dark:bg-gray-700'
               checked={rememberPassword}
               onChange={(e) => setRememberPassword(e.target.checked)}
             />
@@ -480,7 +480,7 @@ function LoginPageClient() {
                   type='button'
                   disabled={telegramLoginLoading}
                   onClick={handleTelegramLogin}
-                  className='w-full inline-flex justify-center items-center rounded-lg border-2 border-sky-300 dark:border-sky-700 bg-white/60 dark:bg-zinc-800/60 py-3 text-base font-semibold text-sky-700 dark:text-sky-300 shadow-sm transition-all duration-200 hover:bg-sky-50 dark:hover:bg-sky-900/30 disabled:cursor-not-allowed disabled:opacity-60'
+                  className='w-full inline-flex justify-center items-center rounded-lg border-2 border-sky-300 dark:border-sky-700 bg-white/60 dark:bg-zinc-800/60 py-3 text-base font-semibold text-sky-700 dark:text-sky-300 shadow-xs transition-all duration-200 hover:bg-sky-50 dark:hover:bg-sky-900/30 disabled:cursor-not-allowed disabled:opacity-60'
                 >
                   <Send className='w-5 h-5 mr-2' />
                   {telegramLoginLoading ? '等待 Telegram 确认...' : '使用 Telegram 登录'}
@@ -496,7 +496,7 @@ function LoginPageClient() {
                 <button
                   type='button'
                   onClick={() => window.location.href = '/api/auth/oidc/login'}
-                  className='w-full inline-flex justify-center items-center rounded-lg border-2 border-gray-300 dark:border-gray-600 bg-white/60 dark:bg-zinc-800/60 py-3 text-base font-semibold text-gray-700 dark:text-gray-200 shadow-sm transition-all duration-200 hover:bg-gray-50 dark:hover:bg-zinc-700/60'
+                  className='w-full inline-flex justify-center items-center rounded-lg border-2 border-gray-300 dark:border-gray-600 bg-white/60 dark:bg-zinc-800/60 py-3 text-base font-semibold text-gray-700 dark:text-gray-200 shadow-xs transition-all duration-200 hover:bg-gray-50 dark:hover:bg-zinc-700/60'
                 >
                   {getOIDCProviderIcon(siteConfig?.OIDCButtonText || '')}
                   {siteConfig?.OIDCButtonText || '使用OIDC登录'}

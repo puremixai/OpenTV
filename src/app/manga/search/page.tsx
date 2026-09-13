@@ -14,11 +14,11 @@ const MANGA_SEARCH_STATE_KEY = 'manga_search_state';
 function MangaCardSkeleton({ withButton = false }: { withButton?: boolean }) {
   return (
     <div className='space-y-2'>
-      <div className='overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-950'>
-        <div className='aspect-[3/4] w-full animate-pulse bg-gray-200 dark:bg-gray-800' />
+      <div className='overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-xs dark:border-gray-800 dark:bg-gray-950'>
+        <div className='aspect-3/4 w-full animate-pulse bg-gray-200 dark:bg-gray-800' />
         <div className='space-y-3 p-3'>
-          <div className='h-4 w-3/4 animate-pulse rounded bg-gray-200 dark:bg-gray-800' />
-          <div className='h-3 w-1/2 animate-pulse rounded bg-gray-200 dark:bg-gray-800' />
+          <div className='h-4 w-3/4 animate-pulse rounded-sm bg-gray-200 dark:bg-gray-800' />
+          <div className='h-3 w-1/2 animate-pulse rounded-sm bg-gray-200 dark:bg-gray-800' />
         </div>
       </div>
       {withButton && <div className='h-9 w-full animate-pulse rounded-2xl bg-gray-200 dark:bg-gray-800' />}
@@ -418,7 +418,7 @@ export default function MangaSearchPage() {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder='搜索漫画标题'
-              className='w-full rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm outline-none transition focus:border-sky-500 dark:border-gray-700 dark:bg-gray-900'
+              className='w-full rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm outline-hidden transition focus:border-sky-500 dark:border-gray-700 dark:bg-gray-900'
             />
           </div>
           <select

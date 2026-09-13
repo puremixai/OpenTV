@@ -232,7 +232,7 @@ export function ConfigFileComponent({
 
   return (
     <div className='space-y-5'>
-      <div className='sticky top-16 z-10 flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 bg-white/95 py-3 backdrop-blur-sm dark:border-slate-800 dark:bg-[#111824]/95'>
+      <div className='sticky top-16 z-10 flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 bg-white/95 py-3 backdrop-blur-xs dark:border-slate-800 dark:bg-[#111824]/95'>
         <div>
           <h3 className='text-xl font-semibold text-gray-900 dark:text-gray-100'>
             配置订阅
@@ -387,7 +387,7 @@ export function ConfigFileComponent({
                         UpdateIntervalHours: Number(event.target.value),
                       })
                     }
-                    className='w-16 rounded border bg-transparent px-2 py-1'
+                    className='w-16 rounded-sm border bg-transparent px-2 py-1'
                   />
                   小时更新
                 </label>
@@ -446,7 +446,7 @@ export function ConfigFileComponent({
               {!sub.ConfigContent && ' · 尚无缓存，请先拉取'}
             </p>
             {sub.LastError && (
-              <p className='break-words text-sm text-red-600 dark:text-red-400'>
+              <p className='wrap-break-word text-sm text-red-600 dark:text-red-400'>
                 {sub.LastError}
                 {sub.ConfigContent ? '（继续使用上次成功内容）' : ''}
               </p>

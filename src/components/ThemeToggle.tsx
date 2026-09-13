@@ -82,7 +82,7 @@ export function ThemeToggle() {
   return (
     <button
       onClick={toggleTheme}
-      className='w-10 h-10 shrink-0 p-2 rounded-full flex items-center justify-center text-gray-600 hover:bg-gray-200/50 dark:text-gray-300 dark:hover:bg-gray-700/50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500'
+      className='w-10 h-10 shrink-0 p-2 rounded-full flex items-center justify-center text-gray-600 hover:bg-gray-200/50 dark:text-gray-300 dark:hover:bg-gray-700/50 transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500'
       aria-label={label}
       title={label}
     >

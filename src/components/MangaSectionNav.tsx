@@ -23,7 +23,7 @@ export default function MangaSectionNav() {
             href={tab.href}
             className={`rounded-xl px-4 py-2 text-sm font-medium transition ${
               active
-                ? 'bg-sky-600 text-white shadow-sm'
+                ? 'bg-sky-600 text-white shadow-xs'
                 : 'border border-gray-200 bg-white text-gray-700 hover:border-sky-300 hover:text-sky-600 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200'
             }`}
           >

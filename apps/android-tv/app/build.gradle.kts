@@ -13,7 +13,7 @@ val appDisplayName = propOrEnv("APP_NAME", "APP_NAME", "XTV TV")
 val versionNameValue = propOrEnv("VERSION_NAME", "VERSION_NAME", "1.0.0")
 val versionCodeValue = propOrEnv("VERSION_CODE", "VERSION_CODE", "1").toIntOrNull() ?: 1
 val minSdkValue = propOrEnv("MIN_SDK", "MIN_SDK", "23").toIntOrNull() ?: 23
-val geckoViewVersion = propOrEnv("GECKOVIEW_VERSION", "GECKOVIEW_VERSION", "126.0.20240526221752")
+val geckoViewVersion = propOrEnv("GECKOVIEW_VERSION", "GECKOVIEW_VERSION", "128.0.20240725162350")
 
 fun escapeJavaString(value: String): String = value
     .replace("\\", "\\\\")

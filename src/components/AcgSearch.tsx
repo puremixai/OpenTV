@@ -590,7 +590,7 @@ export default function AcgSearch({
                       key={imgIndex}
                       src={img}
                       alt=''
-                      className='h-20 w-auto rounded object-cover'
+                      className='h-20 w-auto rounded-sm object-cover'
                       loading='lazy'
                     />
                   ))}
@@ -708,7 +708,7 @@ export default function AcgSearch({
 
         {/* 命名弹窗 */}
         {showNameDialog && (
-          <div className='fixed inset-0 z-[1000] flex items-center justify-center bg-black/50'>
+          <div className='fixed inset-0 z-1000 flex items-center justify-center bg-black/50'>
             <div className='bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4 shadow-xl'>
               <h3 className='text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4'>
                 设置资源名称
@@ -718,7 +718,7 @@ export default function AcgSearch({
                 value={customName}
                 onChange={(e) => setCustomName(e.target.value)}
                 placeholder='请输入资源名称'
-                className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-green-500'
+                className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-hidden focus:ring-2 focus:ring-green-500'
                 autoFocus
               />
               <label className='mt-4 block text-sm font-medium text-gray-700 dark:text-gray-300'>
@@ -727,7 +727,7 @@ export default function AcgSearch({
               <select
                 value={downloadTool}
                 onChange={(e) => setDownloadTool(e.target.value as DownloadTool)}
-                className='mt-1 w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-green-500'
+                className='mt-1 w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-hidden focus:ring-2 focus:ring-green-500'
               >
                 {downloadToolOptions.map((option) => (
                   <option key={option.value} value={option.value}>

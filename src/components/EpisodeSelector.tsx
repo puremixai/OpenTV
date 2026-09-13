@@ -925,7 +925,7 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
   return (
     <div className='md:ml-2 px-4 py-0 h-full rounded-xl bg-black/10 dark:bg-white/5 flex flex-col border border-white/0 dark:border-white/30 overflow-hidden'>
       {/* 主要的 Tab 切换 - 无缝融入设计 */}
-      <div className='flex mb-1 -mx-6 flex-shrink-0'>
+      <div className='flex mb-1 -mx-6 shrink-0'>
         {/* 选集选项卡 - 仅在多集时显示 */}
         {totalEpisodes > 1 && (
           <div
@@ -989,7 +989,7 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
       {activeTab === 'episodes' && (
         <>
           {/* 分类标签 */}
-          <div className='flex items-center gap-4 mb-4 border-b border-gray-300 dark:border-gray-700 -mx-6 px-6 flex-shrink-0'>
+          <div className='flex items-center gap-4 mb-4 border-b border-gray-300 dark:border-gray-700 -mx-6 px-6 shrink-0'>
             <div
               className='flex-1 overflow-x-auto'
               ref={categoryContainerRef}
@@ -1006,7 +1006,7 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
                         buttonRefs.current[idx] = el;
                       }}
                       onClick={() => handleCategoryClick(idx)}
-                      className={`w-20 relative py-2 text-sm font-medium transition-colors whitespace-nowrap flex-shrink-0 text-center 
+                      className={`w-20 relative py-2 text-sm font-medium transition-colors whitespace-nowrap shrink-0 text-center
                         ${isActive
                           ? 'text-green-500 dark:text-green-400'
                           : inactiveActionTextClass
@@ -1024,7 +1024,7 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
             </div>
             {/* 向上/向下按钮 */}
             <button
-              className={`flex-shrink-0 w-8 h-8 rounded-md flex items-center justify-center ${iconButtonClass} transition-colors transform translate-y-[-4px]`}
+              className={`shrink-0 w-8 h-8 rounded-md flex items-center justify-center ${iconButtonClass} transition-colors transform translate-y-[-4px]`}
               onClick={() => {
                 // 切换集数排序（正序/倒序）
                 setDescending((prev) => !prev);
@@ -1046,7 +1046,7 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
             </button>
             {/* 集数屏蔽配置按钮 */}
             <button
-              className={`flex-shrink-0 w-8 h-8 rounded-md flex items-center justify-center ${iconButtonClass} transition-colors transform translate-y-[-4px]`}
+              className={`shrink-0 w-8 h-8 rounded-md flex items-center justify-center ${iconButtonClass} transition-colors transform translate-y-[-4px]`}
               onClick={() => setShowFilterSettings(true)}
               title='集数屏蔽设置'
             >
@@ -1184,7 +1184,7 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
                           }`.trim()}
                       >
                         {/* 封面 */}
-                        <div className='flex-shrink-0 w-12 h-20 bg-gray-300 dark:bg-gray-600 rounded overflow-hidden flex items-center justify-center'>
+                        <div className='shrink-0 w-12 h-20 bg-gray-300 dark:bg-gray-600 rounded-sm overflow-hidden flex items-center justify-center'>
                           {source.source === 'directplay' ? (
                             <LinkIcon className='w-6 h-6 text-blue-500' />
                           ) : source.poster ? (
@@ -1211,7 +1211,7 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
                               </h3>
                               {/* 标题级别的 tooltip - 第一个元素不显示 */}
                               {index !== 0 && (
-                                <div className='absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-1 bg-gray-800 text-white text-xs rounded-md shadow-lg opacity-0 invisible group-hover/title:opacity-100 group-hover/title:visible transition-all duration-200 ease-out delay-100 whitespace-nowrap z-[500] pointer-events-none'>
+                                <div className='absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-1 bg-gray-800 text-white text-xs rounded-md shadow-lg opacity-0 invisible group-hover/title:opacity-100 group-hover/title:visible transition-all duration-200 ease-out delay-100 whitespace-nowrap z-500 pointer-events-none'>
                                   {source.title}
                                   <div className='absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-800'></div>
                                 </div>
@@ -1224,7 +1224,7 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
                               if (videoInfo && videoInfo.quality !== '未知') {
                                 if (videoInfo.hasError) {
                                   return (
-                                    <div className='bg-gray-500/10 dark:bg-gray-400/20 text-red-600 dark:text-red-400 px-1.5 py-0 rounded text-xs flex-shrink-0 min-w-[50px] text-center'>
+                                    <div className='bg-gray-500/10 dark:bg-gray-400/20 text-red-600 dark:text-red-400 px-1.5 py-0 rounded-sm text-xs shrink-0 min-w-[50px] text-center'>
                                       检测失败
                                     </div>
                                   );
@@ -1244,7 +1244,7 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
 
                                   return (
                                     <div
-                                      className={`bg-gray-500/10 dark:bg-gray-400/20 ${textColorClasses} px-1.5 py-0 rounded text-xs flex-shrink-0 min-w-[50px] text-center`}
+                                      className={`bg-gray-500/10 dark:bg-gray-400/20 ${textColorClasses} px-1.5 py-0 rounded-sm text-xs shrink-0 min-w-[50px] text-center`}
                                     >
                                       {videoInfo.quality}
                                     </div>
@@ -1349,7 +1349,7 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
                     </span>
                   </div>
                 )}
-                <div className='flex-shrink-0 mt-auto pt-2 border-t border-gray-400 dark:border-gray-700'>
+                <div className='shrink-0 mt-auto pt-2 border-t border-gray-400 dark:border-gray-700'>
                   <button
                     onClick={() => {
                       if (videoTitle) {
@@ -1383,7 +1383,7 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
         typeof document !== 'undefined' &&
         createPortal(
           <div
-            className='fixed z-[1000] px-3 py-2 bg-gray-800 dark:bg-gray-900 text-white text-sm rounded-lg shadow-xl pointer-events-none max-w-[min(80vw,20rem)]'
+            className='fixed z-1000 px-3 py-2 bg-gray-800 dark:bg-gray-900 text-white text-sm rounded-lg shadow-xl pointer-events-none max-w-[min(80vw,20rem)]'
             style={{
               left: episodeNamePopup.x,
               top: episodeNamePopup.y,
@@ -1394,7 +1394,7 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
             }}
             role='tooltip'
           >
-            <div className='text-sm break-words whitespace-normal'>
+            <div className='text-sm wrap-break-word whitespace-normal'>
               {episodeNamePopup.title}
             </div>
             {episodeNamePopup.placement === 'top' ? (

@@ -796,7 +796,7 @@ export const UserConfig = ({
         </div>
 
         {/* 用户组列表 */}
-        <div className='border border-gray-200 dark:border-gray-700 rounded-lg max-h-[20rem] overflow-y-auto overflow-x-auto relative'>
+        <div className='border border-gray-200 dark:border-gray-700 rounded-lg max-h-80 overflow-y-auto overflow-x-auto relative'>
           <table className='min-w-full divide-y divide-gray-200 dark:divide-gray-700'>
             <thead className='bg-gray-50 dark:bg-gray-900 sticky top-0 z-10'>
               <tr>
@@ -1113,7 +1113,7 @@ export const UserConfig = ({
           {config.UserConfig.Users &&
             config.UserConfig.Users.filter((u) => u.role !== 'owner').length >
               0 && (
-              <div className='absolute inset-0 z-20 backdrop-blur-sm bg-white/30 dark:bg-gray-900/30 rounded-lg flex items-center justify-center'>
+              <div className='absolute inset-0 z-20 backdrop-blur-xs bg-white/30 dark:bg-gray-900/30 rounded-lg flex items-center justify-center'>
                 <div className='bg-white dark:bg-gray-800 p-6 rounded-lg shadow-xl border border-yellow-200 dark:border-yellow-800 max-w-md'>
                   <div className='flex items-center gap-3 mb-4'>
                     <AlertTriangle className='w-6 h-6 text-yellow-600 dark:text-yellow-400' />
@@ -1131,7 +1131,7 @@ export const UserConfig = ({
               </div>
             )}
           <div
-            className='border border-gray-200 dark:border-gray-700 rounded-lg max-h-[28rem] overflow-y-auto overflow-x-auto relative'
+            className='border border-gray-200 dark:border-gray-700 rounded-lg max-h-112 overflow-y-auto overflow-x-auto relative'
             data-table='user-list'
           >
             <table className='min-w-full divide-y divide-gray-200 dark:divide-gray-700'>
@@ -1156,7 +1156,7 @@ export const UserConfig = ({
                           onChange={(e) =>
                             handleSelectAllUsers(e.target.checked)
                           }
-                          className='w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600'
+                          className='w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded-sm focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600'
                         />
                       ) : (
                         <div className='w-4 h-4' />
@@ -1295,7 +1295,7 @@ export const UserConfig = ({
                                     e.target.checked
                                   )
                                 }
-                                className='w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600'
+                                className='w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded-sm focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600'
                               />
                             ) : (
                               <div className='w-4 h-4' />
@@ -1569,7 +1569,7 @@ export const UserConfig = ({
         selectedDeviceUsername &&
         createPortal(
           <div
-            className='fixed inset-0 bg-black bg-opacity-50 z-[10002] flex items-center justify-center p-4'
+            className='fixed inset-0 bg-black/50 z-10002 flex items-center justify-center p-4'
             onClick={() => {
               setShowUserDevicesModal(false);
               setSelectedDeviceUsername(null);
@@ -1644,7 +1644,7 @@ export const UserConfig = ({
                             }`}
                           >
                             <div className='flex items-start gap-3'>
-                              <DeviceIcon className='w-5 h-5 mt-0.5 text-gray-600 dark:text-gray-400 flex-shrink-0' />
+                              <DeviceIcon className='w-5 h-5 mt-0.5 text-gray-600 dark:text-gray-400 shrink-0' />
                               <div className='min-w-0 flex-1'>
                                 <div className='flex items-center gap-2'>
                                   <div className='text-sm font-medium text-gray-900 dark:text-gray-100 break-all'>
@@ -1685,7 +1685,7 @@ export const UserConfig = ({
                                   disabled={
                                     revokingUserDevice === device.tokenId
                                   }
-                                  className='ml-2 px-3 py-1.5 text-xs font-medium text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 border border-red-200 hover:border-red-300 dark:border-red-800 dark:hover:border-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap'
+                                  className='ml-2 px-3 py-1.5 text-xs font-medium text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 border border-red-200 hover:border-red-300 dark:border-red-800 dark:hover:border-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap'
                                 >
                                   {revokingUserDevice === device.tokenId
                                     ? '登出中...'
@@ -1722,7 +1722,7 @@ export const UserConfig = ({
         selectedUser &&
         createPortal(
           <div
-            className='fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4'
+            className='fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4'
             onClick={() => {
               setShowConfigureApisModal(false);
               setSelectedUser(null);
@@ -1811,7 +1811,7 @@ export const UserConfig = ({
                               );
                             }
                           }}
-                          className='rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700'
+                          className='rounded-sm border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700'
                         />
                         <div className='flex-1 min-w-0'>
                           <div className='text-sm font-medium text-gray-900 dark:text-gray-100 truncate'>
@@ -1898,7 +1898,7 @@ export const UserConfig = ({
       {showAddUserGroupForm &&
         createPortal(
           <div
-            className='fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4'
+            className='fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4'
             onClick={() => {
               setShowAddUserGroupForm(false);
               setNewUserGroup({
@@ -1997,7 +1997,7 @@ export const UserConfig = ({
                                 }));
                               }
                             }}
-                            className='mt-0.5 rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700'
+                            className='mt-0.5 rounded-sm border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700'
                           />
                           <div className='flex-1 min-w-0'>
                             <div className='text-sm font-medium text-gray-900 dark:text-gray-100'>
@@ -2072,7 +2072,7 @@ export const UserConfig = ({
                                 }));
                               }
                             }}
-                            className='rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700'
+                            className='rounded-sm border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700'
                           />
                           <div className='flex-1 min-w-0'>
                             <div className='text-sm font-medium text-gray-900 dark:text-gray-100 truncate'>
@@ -2164,7 +2164,7 @@ export const UserConfig = ({
         editingUserGroup &&
         createPortal(
           <div
-            className='fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4'
+            className='fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4'
             onClick={() => {
               setShowEditUserGroupForm(false);
               setEditingUserGroup(null);
@@ -2245,7 +2245,7 @@ export const UserConfig = ({
                                 );
                               }
                             }}
-                            className='rounded border-gray-300 text-purple-600 focus:ring-purple-500 dark:border-gray-600 dark:bg-gray-700'
+                            className='rounded-sm border-gray-300 text-purple-600 focus:ring-purple-500 dark:border-gray-600 dark:bg-gray-700'
                           />
                           <div className='flex-1 min-w-0'>
                             <div className='text-sm font-medium text-gray-900 dark:text-gray-100 truncate'>
@@ -2331,7 +2331,7 @@ export const UserConfig = ({
                                 );
                               }
                             }}
-                            className='mt-0.5 rounded border-gray-300 text-purple-600 focus:ring-purple-500 dark:border-gray-600 dark:bg-gray-700'
+                            className='mt-0.5 rounded-sm border-gray-300 text-purple-600 focus:ring-purple-500 dark:border-gray-600 dark:bg-gray-700'
                           />
                           <div className='flex-1 min-w-0'>
                             <div className='text-sm font-medium text-gray-900 dark:text-gray-100'>
@@ -2414,7 +2414,7 @@ export const UserConfig = ({
         selectedUserForGroup &&
         createPortal(
           <div
-            className='fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4'
+            className='fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4'
             onClick={() => {
               setShowConfigureUserGroupModal(false);
               setSelectedUserForGroup(null);
@@ -2553,7 +2553,7 @@ export const UserConfig = ({
         deletingUserGroup &&
         createPortal(
           <div
-            className='fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4'
+            className='fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4'
             onClick={() => {
               setShowDeleteUserGroupModal(false);
               setDeletingUserGroup(null);
@@ -2714,7 +2714,7 @@ export const UserConfig = ({
         deletingUser &&
         createPortal(
           <div
-            className='fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4'
+            className='fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4'
             onClick={() => {
               setShowDeleteUserModal(false);
               setDeletingUser(null);
@@ -2807,7 +2807,7 @@ export const UserConfig = ({
       {showBatchUserGroupModal &&
         createPortal(
           <div
-            className='fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4'
+            className='fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4'
             onClick={() => {
               setShowBatchUserGroupModal(false);
               setSelectedUserGroup('');

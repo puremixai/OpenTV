@@ -92,7 +92,7 @@ export function ConfigHistory({
             <button
               disabled={busy}
               onClick={() => void restore(item.version)}
-              className='rounded border px-3 py-1 disabled:opacity-50'
+              className='rounded-sm border px-3 py-1 disabled:opacity-50'
             >
               恢复此版本
             </button>

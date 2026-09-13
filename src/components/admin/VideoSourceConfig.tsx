@@ -777,7 +777,7 @@ export const VideoSourceConfig = ({
         <div
           ref={setNodeRef}
           style={style}
-          className='grid grid-cols-[88px_minmax(0,1fr)_112px_112px_220px] items-center gap-3 rounded-2xl border border-gray-200 bg-white px-4 py-3 shadow-sm transition hover:border-blue-200 hover:shadow dark:border-gray-700 dark:bg-gray-800/90 dark:hover:border-blue-800'
+          className='grid grid-cols-[88px_minmax(0,1fr)_112px_112px_220px] items-center gap-3 rounded-2xl border border-gray-200 bg-white px-4 py-3 shadow-xs transition hover:border-blue-200 hover:shadow-sm dark:border-gray-700 dark:bg-gray-800/90 dark:hover:border-blue-800'
         >
           <div
             className='flex items-center gap-3 text-sm text-gray-500 dark:text-gray-400 cursor-grab'
@@ -832,7 +832,7 @@ export const VideoSourceConfig = ({
             aria-label={'选择视频源 ' + source.name}
             checked={selectedSources.has(source.key)}
             onChange={(e) => handleSelectSource(source.key, e.target.checked)}
-            className='w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600'
+            className='w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded-sm focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600'
           />
         </td>
         <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100'>
@@ -842,18 +842,18 @@ export const VideoSourceConfig = ({
           {source.key}
         </td>
         <td
-          className='px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100 max-w-[12rem] truncate'
+          className='px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100 max-w-48 truncate'
           title={source.api}
         >
           {source.api}
         </td>
         <td
-          className='px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100 max-w-[8rem] truncate'
+          className='px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100 max-w-32 truncate'
           title={source.detail || '-'}
         >
           {source.detail || '-'}
         </td>
-        <td className='px-6 py-4 whitespace-nowrap max-w-[1rem]'>
+        <td className='px-6 py-4 whitespace-nowrap max-w-4'>
           <span
             className={`px-2 py-1 text-xs rounded-full ${
               !source.disabled
@@ -889,7 +889,7 @@ export const VideoSourceConfig = ({
             />
           </button>
         </td>
-        <td className='px-6 py-4 whitespace-nowrap max-w-[1rem]'>
+        <td className='px-6 py-4 whitespace-nowrap max-w-4'>
           {(() => {
             const status = getValidationStatus(source.key);
             if (!status) {
@@ -1293,7 +1293,7 @@ export const VideoSourceConfig = ({
                   aria-label='全选当前筛选的视频源'
                   checked={selectAll}
                   onChange={(e) => handleSelectAll(e.target.checked)}
-                  className='w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600'
+                  className='w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded-sm focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600'
                 />
               </th>
               <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider'>
@@ -1352,7 +1352,7 @@ export const VideoSourceConfig = ({
       {showSpecialSourcesModal &&
         createPortal(
           <div
-            className='fixed inset-0 z-[10000] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm'
+            className='fixed inset-0 z-10000 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs'
             onClick={closeSpecialSourcesModal}
           >
             <div
@@ -1411,7 +1411,7 @@ export const VideoSourceConfig = ({
                             );
                           }
                         }}
-                        className='rounded border-gray-300 text-rose-600 focus:ring-rose-500 dark:border-gray-600 dark:bg-gray-700'
+                        className='rounded-sm border-gray-300 text-rose-600 focus:ring-rose-500 dark:border-gray-600 dark:bg-gray-700'
                       />
                       <div className='min-w-0 flex-1'>
                         <div className='truncate text-sm font-medium text-gray-900 dark:text-gray-100'>
@@ -1481,7 +1481,7 @@ export const VideoSourceConfig = ({
       {showClientAdSourcesModal &&
         createPortal(
           <div
-            className='fixed inset-0 z-[10000] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm'
+            className='fixed inset-0 z-10000 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs'
             onClick={closeClientAdSourcesModal}
           >
             <div
@@ -1530,7 +1530,7 @@ export const VideoSourceConfig = ({
                             );
                           }
                         }}
-                        className='rounded border-gray-300 text-amber-600 focus:ring-amber-500 dark:border-gray-600 dark:bg-gray-700'
+                        className='rounded-sm border-gray-300 text-amber-600 focus:ring-amber-500 dark:border-gray-600 dark:bg-gray-700'
                       />
                       <div className='min-w-0 flex-1'>
                         <div className='truncate text-sm font-medium text-gray-900 dark:text-gray-100'>
@@ -1601,7 +1601,7 @@ export const VideoSourceConfig = ({
         createPortal(
           <>
             <div
-              className='fixed inset-0 bg-black/60 backdrop-blur-sm z-[10000]'
+              className='fixed inset-0 bg-black/60 backdrop-blur-xs z-10000'
               onClick={handleCloseWeightModal}
               onTouchMove={(e) => {
                 e.preventDefault();
@@ -1614,7 +1614,7 @@ export const VideoSourceConfig = ({
               }}
             />
             <div
-              className='fixed left-1/2 top-1/2 z-[10001] flex w-[calc(100%-1rem)] max-w-6xl max-h-[90vh] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-2xl dark:border-gray-700 dark:bg-gray-800'
+              className='fixed left-1/2 top-1/2 z-10001 flex w-[calc(100%-1rem)] max-w-6xl max-h-[90vh] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-2xl dark:border-gray-700 dark:bg-gray-800'
               onClick={(e) => e.stopPropagation()}
             >
               <div className='flex items-start justify-between gap-4 border-b border-gray-200 dark:border-gray-700 px-6 py-5'>
@@ -1745,7 +1745,7 @@ export const VideoSourceConfig = ({
       {showValidationModal &&
         createPortal(
           <div
-            className='fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50'
+            className='fixed inset-0 bg-black/50 flex items-center justify-center z-50'
             onClick={() => setShowValidationModal(false)}
           >
             <div
@@ -1810,7 +1810,7 @@ export const VideoSourceConfig = ({
       {confirmModal.isOpen &&
         createPortal(
           <div
-            className='fixed inset-0 bg-black bg-opacity-50 z-[10020] flex items-center justify-center p-4'
+            className='fixed inset-0 bg-black/50 z-10020 flex items-center justify-center p-4'
             onClick={confirmModal.onCancel}
           >
             <div

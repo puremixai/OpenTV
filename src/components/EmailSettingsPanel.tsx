@@ -55,12 +55,12 @@ function Toggle({
       aria-label={label}
       onClick={onChange}
       disabled={disabled}
-      className={`relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-white disabled:cursor-not-allowed disabled:opacity-50 dark:focus:ring-offset-gray-900 ${
+      className={`relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition-colors duration-200 focus:outline-hidden focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-white disabled:cursor-not-allowed disabled:opacity-50 dark:focus:ring-offset-gray-900 ${
         checked ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-700'
       }`}
     >
       <span
-        className={`inline-flex h-5 w-5 transform items-center justify-center rounded-full bg-white shadow-sm transition-transform duration-200 ${
+        className={`inline-flex h-5 w-5 transform items-center justify-center rounded-full bg-white shadow-xs transition-transform duration-200 ${
           checked ? 'translate-x-6' : 'translate-x-1'
         }`}
       >
@@ -118,14 +118,14 @@ export function EmailSettingsPanel({
   return createPortal(
     <>
       <div
-        className='fixed inset-0 z-[1000] bg-black/50 backdrop-blur-sm'
+        className='fixed inset-0 z-1000 bg-black/50 backdrop-blur-xs'
         onClick={onClose}
         onTouchMove={(e) => e.preventDefault()}
         onWheel={(e) => e.preventDefault()}
         style={{ touchAction: 'none' }}
       />
 
-      <div className='fixed left-1/2 top-1/2 z-[1001] w-[calc(100%-2rem)] max-w-lg -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-2xl bg-white shadow-xl dark:bg-gray-900'>
+      <div className='fixed left-1/2 top-1/2 z-1001 w-[calc(100%-2rem)] max-w-lg -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-2xl bg-white shadow-xl dark:bg-gray-900'>
         <div
           className='max-h-[85vh] overflow-y-auto p-6'
           data-panel-content
@@ -146,7 +146,7 @@ export function EmailSettingsPanel({
             </div>
             <button
               onClick={onClose}
-              className='flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-gray-500 transition-colors hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:hover:bg-gray-800'
+              className='flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-gray-500 transition-colors hover:bg-gray-100 focus:outline-hidden focus:ring-2 focus:ring-blue-500 dark:hover:bg-gray-800'
               aria-label='关闭通知设置'
             >
               <X className='h-5 w-5' />
@@ -163,9 +163,9 @@ export function EmailSettingsPanel({
                   key={item.key}
                   type='button'
                   onClick={() => setNotificationTab(item.key)}
-                  className={`flex cursor-pointer items-center justify-center gap-1.5 rounded-xl px-3 py-2.5 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/70 ${
+                  className={`flex cursor-pointer items-center justify-center gap-1.5 rounded-xl px-3 py-2.5 text-sm font-medium transition focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-blue-500/70 ${
                     active
-                      ? 'bg-white text-gray-900 shadow-sm dark:bg-gray-950 dark:text-white'
+                      ? 'bg-white text-gray-900 shadow-xs dark:bg-gray-950 dark:text-white'
                       : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
                   }`}
                 >
@@ -180,12 +180,12 @@ export function EmailSettingsPanel({
           {emailSettingsLoading ? (
             <div className='space-y-4' aria-live='polite'>
               <div className='animate-pulse rounded-2xl border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800'>
-                <div className='mb-3 h-5 w-28 rounded bg-gray-200 dark:bg-gray-700' />
-                <div className='h-10 rounded bg-gray-200 dark:bg-gray-700' />
+                <div className='mb-3 h-5 w-28 rounded-sm bg-gray-200 dark:bg-gray-700' />
+                <div className='h-10 rounded-sm bg-gray-200 dark:bg-gray-700' />
               </div>
               <div className='animate-pulse rounded-2xl border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800'>
-                <div className='mb-3 h-5 w-32 rounded bg-gray-200 dark:bg-gray-700' />
-                <div className='h-16 rounded bg-gray-200 dark:bg-gray-700' />
+                <div className='mb-3 h-5 w-32 rounded-sm bg-gray-200 dark:bg-gray-700' />
+                <div className='h-16 rounded-sm bg-gray-200 dark:bg-gray-700' />
               </div>
               <p className='text-center text-sm text-gray-500 dark:text-gray-400'>
                 加载中...
@@ -219,7 +219,7 @@ export function EmailSettingsPanel({
                     onChange={(e) => onUserEmailChange(e.target.value)}
                     placeholder='输入您的邮箱地址'
                     disabled={emailSettingsSaving}
-                    className='mb-4 w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 transition-colors placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-600 dark:bg-gray-900 dark:text-white'
+                    className='mb-4 w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 transition-colors placeholder:text-gray-400 focus:outline-hidden focus:ring-2 focus:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-600 dark:bg-gray-900 dark:text-white'
                   />
 
                   <div className='flex items-center justify-between gap-4 rounded-xl bg-white p-3 dark:bg-gray-900/70'>
@@ -361,7 +361,7 @@ export function EmailSettingsPanel({
               <button
                 onClick={onSave}
                 disabled={emailSettingsSaving}
-                className='flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:bg-blue-400 dark:focus:ring-offset-gray-900 dark:disabled:bg-blue-500'
+                className='flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-blue-700 focus:outline-hidden focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:bg-blue-400 dark:focus:ring-offset-gray-900 dark:disabled:bg-blue-500'
               >
                 {emailSettingsSaving ? (
                   <>

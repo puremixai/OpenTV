@@ -198,7 +198,7 @@ export const RegistrationConfigComponent = ({
                       !registrationSettings.EnableRegistration
                     )
                   }
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 ${
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-hidden focus:ring-2 focus:ring-green-500 focus:ring-offset-2 ${
                     registrationSettings.EnableRegistration
                       ? buttonStyles.toggleOn
                       : buttonStyles.toggleOff
@@ -277,7 +277,7 @@ export const RegistrationConfigComponent = ({
                         !prev.RequireRegistrationInviteCode,
                     }))
                   }
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 ${
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-hidden focus:ring-2 focus:ring-green-500 focus:ring-offset-2 ${
                     registrationSettings.RequireRegistrationInviteCode
                       ? buttonStyles.toggleOn
                       : buttonStyles.toggleOff
@@ -338,7 +338,7 @@ export const RegistrationConfigComponent = ({
                         !prev.RegistrationRequireTurnstile,
                     }))
                   }
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 ${
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-hidden focus:ring-2 focus:ring-green-500 focus:ring-offset-2 ${
                     !registrationSettings.TurnstileSiteKey ||
                     !registrationSettings.TurnstileSecretKey
                       ? 'opacity-50 cursor-not-allowed bg-gray-300 dark:bg-gray-600'
@@ -387,7 +387,7 @@ export const RegistrationConfigComponent = ({
                       LoginRequireTurnstile: !prev.LoginRequireTurnstile,
                     }))
                   }
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 ${
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-hidden focus:ring-2 focus:ring-green-500 focus:ring-offset-2 ${
                     !registrationSettings.TurnstileSiteKey ||
                     !registrationSettings.TurnstileSecretKey
                       ? 'opacity-50 cursor-not-allowed bg-gray-300 dark:bg-gray-600'
@@ -484,7 +484,7 @@ export const RegistrationConfigComponent = ({
                     EnableOIDCLogin: !prev.EnableOIDCLogin,
                   }))
                 }
-                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 ${
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-hidden focus:ring-2 focus:ring-green-500 focus:ring-offset-2 ${
                   registrationSettings.EnableOIDCLogin
                     ? buttonStyles.toggleOn
                     : buttonStyles.toggleOff
@@ -520,7 +520,7 @@ export const RegistrationConfigComponent = ({
                     EnableOIDCRegistration: !prev.EnableOIDCRegistration,
                   }))
                 }
-                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 ${
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-hidden focus:ring-2 focus:ring-green-500 focus:ring-offset-2 ${
                   registrationSettings.EnableOIDCRegistration
                     ? buttonStyles.toggleOn
                     : buttonStyles.toggleOff
@@ -756,7 +756,7 @@ export const RegistrationConfigComponent = ({
                   navigator.clipboard.writeText(uri);
                   showSuccess('已复制到剪贴板', showAlert);
                 }}
-                className='absolute right-2 top-1/2 -translate-y-1/2 px-3 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700 transition-colors'
+                className='absolute right-2 top-1/2 -translate-y-1/2 px-3 py-1 text-xs bg-green-600 text-white rounded-sm hover:bg-green-700 transition-colors'
               >
                 复制
               </button>
@@ -849,7 +849,7 @@ export const RegistrationConfigComponent = ({
       {showEnableRegistrationModal &&
         createPortal(
           <div
-            className='fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4'
+            className='fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4'
             onClick={() => setShowEnableRegistrationModal(false)}
           >
             <div

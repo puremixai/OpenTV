@@ -16,7 +16,7 @@ const MobileHeader = ({ showBackButton = false }: MobileHeaderProps) => {
   const { siteName } = useSite();
   return (
     <header
-      className='md:hidden fixed top-0 left-0 right-0 z-[999] w-full bg-white/70 backdrop-blur-xl border-b border-gray-200/50 shadow-sm dark:bg-gray-900/70 dark:border-gray-700/50'
+      className='md:hidden fixed top-0 left-0 right-0 z-999 w-full bg-white/70 backdrop-blur-xl border-b border-gray-200/50 shadow-xs dark:bg-gray-900/70 dark:border-gray-700/50'
       style={{ paddingTop: 'env(safe-area-inset-top)' }}
     >
       <div className='relative h-12 flex items-center justify-between px-4'>

@@ -63,14 +63,14 @@ function BookHistorySkeleton() {
       {Array.from({ length: 6 }).map((_, index) => (
         <div
           key={index}
-          className='rounded-[2rem] border border-emerald-100/80 bg-white/85 p-4 shadow-sm shadow-emerald-950/5 dark:border-emerald-500/10 dark:bg-gray-950/70'
+          className='rounded-4xl border border-emerald-100/80 bg-white/85 p-4 shadow-xs shadow-emerald-950/5 dark:border-emerald-500/10 dark:bg-gray-950/70'
         >
           <div className='flex gap-4'>
             <div className='h-28 w-20 animate-pulse overflow-hidden rounded-2xl bg-emerald-100 dark:bg-gray-800' />
             <div className='min-w-0 flex-1 space-y-3'>
-              <div className='h-5 w-2/3 animate-pulse rounded bg-emerald-100 dark:bg-gray-800' />
-              <div className='h-4 w-1/3 animate-pulse rounded bg-emerald-100 dark:bg-gray-800' />
-              <div className='h-4 w-1/2 animate-pulse rounded bg-emerald-100 dark:bg-gray-800' />
+              <div className='h-5 w-2/3 animate-pulse rounded-sm bg-emerald-100 dark:bg-gray-800' />
+              <div className='h-4 w-1/3 animate-pulse rounded-sm bg-emerald-100 dark:bg-gray-800' />
+              <div className='h-4 w-1/2 animate-pulse rounded-sm bg-emerald-100 dark:bg-gray-800' />
               <div className='flex gap-2 pt-1'>
                 <div className='h-9 w-20 animate-pulse rounded-2xl bg-emerald-100 dark:bg-gray-800' />
                 <div className='h-9 w-16 animate-pulse rounded-2xl bg-emerald-100 dark:bg-gray-800' />
@@ -178,11 +178,11 @@ export default function BookHistoryPage() {
 
   return (
     <div className='space-y-5'>
-      <section className='relative overflow-hidden rounded-[2rem] border border-emerald-100/80 bg-gradient-to-br from-emerald-50 via-white to-lime-50 p-5 shadow-sm shadow-emerald-950/5 dark:border-emerald-500/10 dark:from-emerald-950/30 dark:via-gray-950 dark:to-lime-950/20'>
+      <section className='relative overflow-hidden rounded-4xl border border-emerald-100/80 bg-linear-to-br from-emerald-50 via-white to-lime-50 p-5 shadow-xs shadow-emerald-950/5 dark:border-emerald-500/10 dark:from-emerald-950/30 dark:via-gray-950 dark:to-lime-950/20'>
         <div className='absolute -right-16 -top-20 h-48 w-48 rounded-full bg-emerald-300/20 blur-3xl dark:bg-emerald-500/10' />
         <div className='relative flex items-center justify-between gap-4'>
           <div>
-            <div className='inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-white/70 px-3 py-1 text-xs font-semibold text-emerald-700 shadow-sm dark:border-emerald-500/20 dark:bg-gray-950/50 dark:text-emerald-200'>
+            <div className='inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-white/70 px-3 py-1 text-xs font-semibold text-emerald-700 shadow-xs dark:border-emerald-500/20 dark:bg-gray-950/50 dark:text-emerald-200'>
               <Clock3 className='h-3.5 w-3.5' />
               Reading Timeline
             </div>
@@ -196,7 +196,7 @@ export default function BookHistoryPage() {
           <button
             type='button'
             onClick={() => setCacheModalOpen(true)}
-            className='inline-flex h-11 w-11 cursor-pointer items-center justify-center rounded-2xl border border-emerald-200 bg-white/80 text-emerald-700 transition-colors duration-200 hover:bg-emerald-50 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:border-emerald-500/20 dark:bg-gray-950/60 dark:text-emerald-200 dark:hover:bg-emerald-500/10'
+            className='inline-flex h-11 w-11 cursor-pointer items-center justify-center rounded-2xl border border-emerald-200 bg-white/80 text-emerald-700 transition-colors duration-200 hover:bg-emerald-50 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 dark:border-emerald-500/20 dark:bg-gray-950/60 dark:text-emerald-200 dark:hover:bg-emerald-500/10'
             aria-label='缓存管理'
             title='缓存管理'
           >
@@ -211,10 +211,10 @@ export default function BookHistoryPage() {
         visibleItems.map((item) => (
           <article
             key={item.storageKey}
-            className='rounded-[2rem] border border-emerald-100/80 bg-white/85 p-4 shadow-sm shadow-emerald-950/5 transition-colors duration-200 hover:border-emerald-200 hover:bg-white dark:border-emerald-500/10 dark:bg-gray-950/70 dark:hover:border-emerald-500/30'
+            className='rounded-4xl border border-emerald-100/80 bg-white/85 p-4 shadow-xs shadow-emerald-950/5 transition-colors duration-200 hover:border-emerald-200 hover:bg-white dark:border-emerald-500/10 dark:bg-gray-950/70 dark:hover:border-emerald-500/30'
           >
             <div className='flex gap-4'>
-              <div className='h-28 w-20 shrink-0 overflow-hidden rounded-2xl bg-gradient-to-br from-emerald-50 to-lime-50 ring-1 ring-emerald-100 dark:from-gray-900 dark:to-emerald-950/20 dark:ring-emerald-500/10'>
+              <div className='h-28 w-20 shrink-0 overflow-hidden rounded-2xl bg-linear-to-br from-emerald-50 to-lime-50 ring-1 ring-emerald-100 dark:from-gray-900 dark:to-emerald-950/20 dark:ring-emerald-500/10'>
                 {item.cover ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
@@ -271,7 +271,7 @@ export default function BookHistoryPage() {
                           });
                         }
                       }}
-                      className='inline-flex cursor-pointer items-center gap-1.5 rounded-2xl bg-emerald-600 px-3 py-2 text-xs font-semibold text-white transition-colors duration-200 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500'
+                      className='inline-flex cursor-pointer items-center gap-1.5 rounded-2xl bg-emerald-600 px-3 py-2 text-xs font-semibold text-white transition-colors duration-200 hover:bg-emerald-700 focus:outline-hidden focus:ring-2 focus:ring-emerald-500'
                     >
                       继续阅读
                     </Link>
@@ -295,7 +295,7 @@ export default function BookHistoryPage() {
                         })()
                       );
                     }}
-                    className='cursor-pointer rounded-2xl border border-emerald-100 px-3 py-2 text-xs font-semibold text-slate-600 transition-colors duration-200 hover:bg-emerald-50 hover:text-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:border-emerald-500/10 dark:text-slate-300 dark:hover:bg-emerald-500/10 dark:hover:text-emerald-200'
+                    className='cursor-pointer rounded-2xl border border-emerald-100 px-3 py-2 text-xs font-semibold text-slate-600 transition-colors duration-200 hover:bg-emerald-50 hover:text-emerald-700 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 dark:border-emerald-500/10 dark:text-slate-300 dark:hover:bg-emerald-500/10 dark:hover:text-emerald-200'
                   >
                     删除
                   </button>
@@ -315,7 +315,7 @@ export default function BookHistoryPage() {
         mounted &&
         createPortal(
           <div
-            className='fixed inset-0 z-50 bg-black/45 backdrop-blur-sm'
+            className='fixed inset-0 z-50 bg-black/45 backdrop-blur-xs'
             onClick={() => setCacheModalOpen(false)}
           >
             <div
@@ -323,7 +323,7 @@ export default function BookHistoryPage() {
               onClick={(event) => event.stopPropagation()}
             >
               <div className='space-y-5 p-5'>
-                <div className='rounded-[2rem] border border-emerald-100/80 bg-white/80 p-4 shadow-sm shadow-emerald-950/5 backdrop-blur dark:border-emerald-500/10 dark:bg-gray-950/70'>
+                <div className='rounded-4xl border border-emerald-100/80 bg-white/80 p-4 shadow-xs shadow-emerald-950/5 backdrop-blur-sm dark:border-emerald-500/10 dark:bg-gray-950/70'>
                   <div className='flex items-start justify-between gap-4'>
                     <div>
                       <div className='flex items-center gap-2 text-base font-semibold text-slate-950 dark:text-white'>
@@ -339,7 +339,7 @@ export default function BookHistoryPage() {
                       <button
                         type='button'
                         onClick={() => void loadCacheItems()}
-                        className='inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-full border border-emerald-200 bg-white/80 text-emerald-700 transition-colors duration-200 hover:bg-emerald-50 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:border-emerald-500/20 dark:bg-gray-950/60 dark:text-emerald-200 dark:hover:bg-emerald-500/10'
+                        className='inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-full border border-emerald-200 bg-white/80 text-emerald-700 transition-colors duration-200 hover:bg-emerald-50 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 dark:border-emerald-500/20 dark:bg-gray-950/60 dark:text-emerald-200 dark:hover:bg-emerald-500/10'
                         aria-label='刷新缓存'
                         title='刷新缓存'
                       >
@@ -348,7 +348,7 @@ export default function BookHistoryPage() {
                       <button
                         type='button'
                         onClick={() => setConfirmAction({ type: 'clear-all' })}
-                        className='inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-full border border-red-200 bg-white/80 text-red-600 transition-colors duration-200 hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-500 dark:border-red-500/20 dark:bg-gray-950/60 dark:text-red-300 dark:hover:bg-red-500/10'
+                        className='inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-full border border-red-200 bg-white/80 text-red-600 transition-colors duration-200 hover:bg-red-50 focus:outline-hidden focus:ring-2 focus:ring-red-500 dark:border-red-500/20 dark:bg-gray-950/60 dark:text-red-300 dark:hover:bg-red-500/10'
                         aria-label='清空全部缓存'
                         title='清空全部缓存'
                       >
@@ -357,7 +357,7 @@ export default function BookHistoryPage() {
                       <button
                         type='button'
                         onClick={() => setCacheModalOpen(false)}
-                        className='inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-full border border-emerald-200 bg-white/80 text-slate-600 transition-colors duration-200 hover:bg-emerald-50 hover:text-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:border-emerald-500/20 dark:bg-gray-950/60 dark:text-slate-300 dark:hover:bg-emerald-500/10 dark:hover:text-emerald-200'
+                        className='inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-full border border-emerald-200 bg-white/80 text-slate-600 transition-colors duration-200 hover:bg-emerald-50 hover:text-emerald-700 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 dark:border-emerald-500/20 dark:bg-gray-950/60 dark:text-slate-300 dark:hover:bg-emerald-500/10 dark:hover:text-emerald-200'
                         aria-label='关闭'
                         title='关闭'
                       >
@@ -368,12 +368,12 @@ export default function BookHistoryPage() {
                 </div>
 
                 {cacheLoading ? (
-                  <div className='rounded-3xl border border-emerald-100 bg-white/75 p-5 text-center text-sm text-slate-500 shadow-sm dark:border-emerald-500/10 dark:bg-gray-950/60 dark:text-slate-400'>
+                  <div className='rounded-3xl border border-emerald-100 bg-white/75 p-5 text-center text-sm text-slate-500 shadow-xs dark:border-emerald-500/10 dark:bg-gray-950/60 dark:text-slate-400'>
                     正在读取缓存…
                   </div>
                 ) : null}
                 {!cacheLoading && cacheItems.length === 0 ? (
-                  <div className='rounded-3xl border border-dashed border-emerald-200 bg-white/75 p-8 text-center text-sm text-slate-500 shadow-sm dark:border-emerald-500/20 dark:bg-gray-950/60 dark:text-slate-400'>
+                  <div className='rounded-3xl border border-dashed border-emerald-200 bg-white/75 p-8 text-center text-sm text-slate-500 shadow-xs dark:border-emerald-500/20 dark:bg-gray-950/60 dark:text-slate-400'>
                     当前还没有缓存书籍
                   </div>
                 ) : null}
@@ -382,7 +382,7 @@ export default function BookHistoryPage() {
                   {cacheItems.map((item) => (
                     <div
                       key={item.key}
-                      className='rounded-[2rem] border border-emerald-100/80 bg-white/85 p-4 shadow-sm shadow-emerald-950/5 transition-colors duration-200 hover:border-emerald-200 hover:bg-white dark:border-emerald-500/10 dark:bg-gray-950/70 dark:hover:border-emerald-500/30'
+                      className='rounded-4xl border border-emerald-100/80 bg-white/85 p-4 shadow-xs shadow-emerald-950/5 transition-colors duration-200 hover:border-emerald-200 hover:bg-white dark:border-emerald-500/10 dark:bg-gray-950/70 dark:hover:border-emerald-500/30'
                     >
                       <div className='flex items-start justify-between gap-3'>
                         <div className='min-w-0 flex-1'>
@@ -407,7 +407,7 @@ export default function BookHistoryPage() {
                               title: item.title,
                             })
                           }
-                          className='inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-full border border-red-100 bg-white/80 text-red-600 transition-colors duration-200 hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-500 dark:border-red-500/20 dark:bg-gray-950/60 dark:text-red-300 dark:hover:bg-red-500/10'
+                          className='inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-full border border-red-100 bg-white/80 text-red-600 transition-colors duration-200 hover:bg-red-50 focus:outline-hidden focus:ring-2 focus:ring-red-500 dark:border-red-500/20 dark:bg-gray-950/60 dark:text-red-300 dark:hover:bg-red-500/10'
                           aria-label='删除缓存'
                           title='删除缓存'
                         >
@@ -427,11 +427,11 @@ export default function BookHistoryPage() {
         mounted &&
         createPortal(
           <div
-            className='fixed inset-0 z-[60] flex items-center justify-center bg-black/55 px-4 backdrop-blur-sm'
+            className='fixed inset-0 z-60 flex items-center justify-center bg-black/55 px-4 backdrop-blur-xs'
             onClick={() => setConfirmAction(null)}
           >
             <div
-              className='w-full max-w-sm rounded-[2rem] border border-emerald-100 bg-white/95 p-5 shadow-2xl shadow-emerald-950/10 dark:border-emerald-500/10 dark:bg-gray-950/95'
+              className='w-full max-w-sm rounded-4xl border border-emerald-100 bg-white/95 p-5 shadow-2xl shadow-emerald-950/10 dark:border-emerald-500/10 dark:bg-gray-950/95'
               onClick={(event) => event.stopPropagation()}
             >
               <div className='flex items-center gap-2 text-base font-bold text-slate-950 dark:text-white'>
@@ -451,7 +451,7 @@ export default function BookHistoryPage() {
                 <button
                   type='button'
                   onClick={() => setConfirmAction(null)}
-                  className='cursor-pointer rounded-2xl border border-emerald-200 px-4 py-2 text-sm font-semibold text-slate-600 transition-colors duration-200 hover:bg-emerald-50 hover:text-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:border-emerald-500/20 dark:text-slate-300 dark:hover:bg-emerald-500/10 dark:hover:text-emerald-200'
+                  className='cursor-pointer rounded-2xl border border-emerald-200 px-4 py-2 text-sm font-semibold text-slate-600 transition-colors duration-200 hover:bg-emerald-50 hover:text-emerald-700 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 dark:border-emerald-500/20 dark:text-slate-300 dark:hover:bg-emerald-500/10 dark:hover:text-emerald-200'
                 >
                   取消
                 </button>
@@ -471,7 +471,7 @@ export default function BookHistoryPage() {
                     }
                     setConfirmAction(null);
                   }}
-                  className='cursor-pointer rounded-2xl bg-red-600 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-red-600/20 transition-colors duration-200 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500'
+                  className='cursor-pointer rounded-2xl bg-red-600 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-red-600/20 transition-colors duration-200 hover:bg-red-700 focus:outline-hidden focus:ring-2 focus:ring-red-500'
                 >
                   确认
                 </button>

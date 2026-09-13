@@ -389,7 +389,7 @@ export const VideoSourceScriptLab = () => {
             </div>
           </div>
 
-          <div className='space-y-3 max-h-[38rem] overflow-y-auto pr-1'>
+          <div className='space-y-3 max-h-152 overflow-y-auto pr-1'>
             {loadingScripts ? (
               <div className='text-sm text-gray-500 dark:text-gray-400'>
                 加载中...
@@ -585,7 +585,7 @@ export const VideoSourceScriptLab = () => {
               <div className='text-sm font-medium text-gray-700 dark:text-gray-300'>
                 测试输出
               </div>
-              <pre className='w-full min-h-[16rem] whitespace-pre-wrap break-all px-3 py-3 text-xs border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-950 text-gray-100 overflow-auto'>
+              <pre className='w-full min-h-64 whitespace-pre-wrap break-all px-3 py-3 text-xs border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-950 text-gray-100 overflow-auto'>
                 {testOutput || '运行测试后会显示结果、日志和错误信息'}
               </pre>
             </div>

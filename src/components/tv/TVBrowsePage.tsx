@@ -64,11 +64,11 @@ export default function TVBrowsePage({
       <section className='relative overflow-hidden rounded-[42px] border border-white/10 bg-slate-950/70 p-10 shadow-2xl shadow-black/60'>
         <div className='absolute inset-0 opacity-35'>
           {hero?.poster ? (
-            <img src={hero.poster} alt='' className='h-full w-full object-cover blur-sm' />
+            <img src={hero.poster} alt='' className='h-full w-full object-cover blur-xs' />
           ) : (
-            <img src={fallbackPosters[0]} alt='' className='h-full w-full object-cover blur-sm' />
+            <img src={fallbackPosters[0]} alt='' className='h-full w-full object-cover blur-xs' />
           )}
-          <div className='absolute inset-0 bg-gradient-to-r from-black via-black/80 to-transparent' />
+          <div className='absolute inset-0 bg-linear-to-r from-black via-black/80 to-transparent' />
         </div>
         <div className='relative max-w-4xl py-12'>
           <p className='mb-4 inline-flex rounded-full bg-rose-600 px-5 py-2 text-xl font-bold text-white'>TV 专用大屏模式</p>

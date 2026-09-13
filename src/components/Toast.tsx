@@ -45,16 +45,16 @@ export default function Toast({ message, type = 'info', duration = 3000, onClose
 
   return (
     <div
-      className={`fixed top-20 left-1/2 -translate-x-1/2 z-[9999] transition-all duration-300 ${
+      className={`fixed top-20 left-1/2 -translate-x-1/2 z-9999 transition-all duration-300 ${
         isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4'
       }`}
     >
       <div className={`${colors[type]} text-white px-6 py-3 rounded-lg shadow-lg flex items-start gap-3 min-w-[300px] max-w-[min(90vw,560px)]`}>
-        <div className="flex-shrink-0">{icons[type]}</div>
-        <div className="flex-1 text-sm font-medium whitespace-pre-wrap break-words">{message}</div>
+        <div className="shrink-0">{icons[type]}</div>
+        <div className="flex-1 text-sm font-medium whitespace-pre-wrap wrap-break-word">{message}</div>
         <button
           onClick={handleClose}
-          className="flex-shrink-0 hover:bg-white/20 rounded p-1 transition-colors"
+          className="shrink-0 hover:bg-white/20 rounded-sm p-1 transition-colors"
         >
           <X className="w-4 h-4" />
         </button>

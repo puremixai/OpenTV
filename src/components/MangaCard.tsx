@@ -24,9 +24,9 @@ export default function MangaCard({ item, href, subtitle, badge, updateCount }: 
   return (
     <Link
       href={href}
-      className='group overflow-hidden rounded-2xl border border-gray-200/70 bg-white/90 shadow-sm transition hover:-translate-y-1 hover:shadow-xl dark:border-gray-700 dark:bg-gray-900/80'
+      className='group overflow-hidden rounded-2xl border border-gray-200/70 bg-white/90 shadow-xs transition hover:-translate-y-1 hover:shadow-xl dark:border-gray-700 dark:bg-gray-900/80'
     >
-      <div className='relative aspect-[3/4] overflow-hidden bg-gray-100 dark:bg-gray-800'>
+      <div className='relative aspect-3/4 overflow-hidden bg-gray-100 dark:bg-gray-800'>
         {item.cover ? (
           <ProxyImage
             originalSrc={item.cover}
@@ -95,7 +95,7 @@ export default function MangaCard({ item, href, subtitle, badge, updateCount }: 
         )}
       </div>
       <div className='space-y-1 p-3'>
-        <div className='line-clamp-2 min-h-[2.75rem] text-sm font-semibold text-gray-900 dark:text-gray-100'>
+        <div className='line-clamp-2 min-h-11 text-sm font-semibold text-gray-900 dark:text-gray-100'>
           {item.title}
         </div>
         {sourceName && <div className='text-xs text-gray-500 dark:text-gray-400'>{sourceName}</div>}

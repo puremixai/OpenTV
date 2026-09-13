@@ -19,11 +19,11 @@ import MangaCard from '@/components/MangaCard';
 function MangaCardSkeleton({ withButton = false }: { withButton?: boolean }) {
   return (
     <div className='space-y-2'>
-      <div className='overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-950'>
-        <div className='aspect-[3/4] w-full animate-pulse bg-gray-200 dark:bg-gray-800' />
+      <div className='overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-xs dark:border-gray-800 dark:bg-gray-950'>
+        <div className='aspect-3/4 w-full animate-pulse bg-gray-200 dark:bg-gray-800' />
         <div className='space-y-3 p-3'>
-          <div className='h-4 w-3/4 animate-pulse rounded bg-gray-200 dark:bg-gray-800' />
-          <div className='h-3 w-1/2 animate-pulse rounded bg-gray-200 dark:bg-gray-800' />
+          <div className='h-4 w-3/4 animate-pulse rounded-sm bg-gray-200 dark:bg-gray-800' />
+          <div className='h-3 w-1/2 animate-pulse rounded-sm bg-gray-200 dark:bg-gray-800' />
         </div>
       </div>
       {withButton && <div className='h-9 w-full animate-pulse rounded-2xl bg-gray-200 dark:bg-gray-800' />}
@@ -175,7 +175,7 @@ export default function MangaRecommendPage() {
 
   return (
     <div className='mx-auto max-w-6xl space-y-6'>
-      <section className='space-y-4 rounded-3xl border border-gray-200/70 bg-white/80 p-4 shadow-sm dark:border-gray-800 dark:bg-gray-950/70 sm:p-5'>
+      <section className='space-y-4 rounded-3xl border border-gray-200/70 bg-white/80 p-4 shadow-xs dark:border-gray-800 dark:bg-gray-950/70 sm:p-5'>
         <div className='space-y-2'>
           <div className='text-sm font-medium text-gray-700 dark:text-gray-200'>漫画源</div>
           {sourceOptions.length > 0 ? (

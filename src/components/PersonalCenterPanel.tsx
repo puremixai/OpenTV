@@ -40,7 +40,7 @@ export function PersonalCenterPanel({
   return createPortal(
     <>
       <div
-        className='fixed inset-0 bg-black/50 backdrop-blur-sm z-[1000]'
+        className='fixed inset-0 bg-black/50 backdrop-blur-xs z-1000'
         onClick={onClose}
         onTouchMove={(e) => {
           e.preventDefault();
@@ -51,7 +51,7 @@ export function PersonalCenterPanel({
         style={{ touchAction: 'none' }}
       />
 
-      <div className='fixed top-1/2 left-1/2 z-[1001] w-[calc(100%-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-2xl bg-white shadow-xl dark:bg-gray-900'>
+      <div className='fixed top-1/2 left-1/2 z-1001 w-[calc(100%-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-2xl bg-white shadow-xl dark:bg-gray-900'>
         <div
           className='p-6'
           data-panel-content

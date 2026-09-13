@@ -799,7 +799,7 @@ export default function PansouSearch({
               <div className='flex gap-2 min-w-min'>
                 <button
                   onClick={() => setSelectedType('all')}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap flex-shrink-0 ${
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap shrink-0 ${
                     selectedType === 'all'
                       ? 'bg-green-600 text-white dark:bg-green-600'
                       : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700'
@@ -814,7 +814,7 @@ export default function PansouSearch({
                     <button
                       key={type}
                       onClick={() => setSelectedType(type)}
-                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap flex-shrink-0 ${
+                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap shrink-0 ${
                         selectedType === type
                           ? 'bg-green-600 text-white dark:bg-green-600'
                           : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700'
@@ -923,7 +923,7 @@ export default function PansouSearch({
                       </div>
 
                       {/* 操作按钮 */}
-                      <div className='flex items-center gap-1 flex-shrink-0'>
+                      <div className='flex items-center gap-1 shrink-0'>
                         {(() => {
                           const checkResult = getCheckResultForUrl(
                             cloudType,
@@ -1115,7 +1115,7 @@ export default function PansouSearch({
                             key={imgIndex}
                             src={img}
                             alt=''
-                            className='h-20 w-auto rounded object-cover'
+                            className='h-20 w-auto rounded-sm object-cover'
                             loading='lazy'
                           />
                         ))}
@@ -1135,7 +1135,7 @@ export default function PansouSearch({
     <>
       <div className='space-y-6'>{renderBody()}</div>
       {showNameDialog && (
-        <div className='fixed inset-0 z-[1000] flex items-center justify-center bg-black/50'>
+        <div className='fixed inset-0 z-1000 flex items-center justify-center bg-black/50'>
           <div className='bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4 shadow-xl'>
             <h3 className='text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4'>
               设置资源名称
@@ -1145,7 +1145,7 @@ export default function PansouSearch({
               value={customName}
               onChange={(e) => setCustomName(e.target.value)}
               placeholder='请输入资源名称'
-              className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-green-500'
+              className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-hidden focus:ring-2 focus:ring-green-500'
               autoFocus
             />
             <label className='mt-4 block text-sm font-medium text-gray-700 dark:text-gray-300'>
@@ -1154,7 +1154,7 @@ export default function PansouSearch({
             <select
               value={downloadTool}
               onChange={(e) => setDownloadTool(e.target.value as DownloadTool)}
-              className='mt-1 w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-green-500'
+              className='mt-1 w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-hidden focus:ring-2 focus:ring-green-500'
             >
               {downloadToolOptions.map((option) => (
                 <option key={option.value} value={option.value}>

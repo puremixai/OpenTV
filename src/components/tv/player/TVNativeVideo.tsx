@@ -369,7 +369,7 @@ export default function TVNativeVideo({
       <button
         type='button'
         onClick={toggle}
-        className='tv-focusable absolute left-1/2 top-1/2 flex h-24 w-24 -translate-x-1/2 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full bg-black/35 text-white opacity-0 outline-none backdrop-blur transition hover:opacity-100 focus:opacity-100'
+        className='tv-focusable absolute left-1/2 top-1/2 flex h-24 w-24 -translate-x-1/2 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full bg-black/35 text-white opacity-0 outline-hidden backdrop-blur-sm transition hover:opacity-100 focus:opacity-100'
         aria-label={playing ? '暂停' : '播放'}
       >
         {playing ? <Pause className='h-12 w-12' /> : <Play className='h-12 w-12 fill-current' />}

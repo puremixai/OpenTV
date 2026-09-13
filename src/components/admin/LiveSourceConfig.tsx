@@ -338,19 +338,19 @@ export const LiveSourceConfig = ({
           {liveSource.key}
         </td>
         <td
-          className='px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100 max-w-[12rem] truncate'
+          className='px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100 max-w-48 truncate'
           title={liveSource.url}
         >
           {liveSource.url}
         </td>
         <td
-          className='px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100 max-w-[8rem] truncate'
+          className='px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100 max-w-32 truncate'
           title={liveSource.epg || '-'}
         >
           {liveSource.epg || '-'}
         </td>
         <td
-          className='px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100 max-w-[8rem] truncate'
+          className='px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100 max-w-32 truncate'
           title={liveSource.ua || '-'}
         >
           {liveSource.ua || '-'}
@@ -360,7 +360,7 @@ export const LiveSourceConfig = ({
             ? liveSource.channelNumber
             : '-'}
         </td>
-        <td className='px-6 py-4 whitespace-nowrap max-w-[1rem]'>
+        <td className='px-6 py-4 whitespace-nowrap max-w-4'>
           <span
             className={`px-2 py-1 text-xs rounded-full ${
               !liveSource.disabled
@@ -704,7 +704,7 @@ export const LiveSourceConfig = ({
 
       {/* 直播源表格 */}
       <div
-        className='border border-gray-200 dark:border-gray-700 rounded-lg max-h-[28rem] overflow-y-auto overflow-x-auto relative'
+        className='border border-gray-200 dark:border-gray-700 rounded-lg max-h-112 overflow-y-auto overflow-x-auto relative'
         data-table='live-source-list'
       >
         <table className='min-w-full divide-y divide-gray-200 dark:divide-gray-700'>

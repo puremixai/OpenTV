@@ -954,9 +954,9 @@ const VideoCard = forwardRef<VideoCardHandle, VideoCardProps>(
       <>
         <div
           data-video-card
-          className={`group relative w-full rounded-lg bg-transparent transition-all duration-300 ease-in-out hover:scale-[1.05] hover:z-[500] ${
+          className={`group relative w-full rounded-lg bg-transparent transition-all duration-300 ease-in-out hover:scale-[1.05] hover:z-500 ${
             isUpcoming ? 'cursor-default' : 'cursor-pointer'
-          } ${showUpcomingInfo ? 'scale-[1.05] z-[500]' : ''}`}
+          } ${showUpcomingInfo ? 'scale-[1.05] z-500' : ''}`}
           onClick={handleClick}
           {...longPressProps}
           style={
@@ -1005,7 +1005,7 @@ const VideoCard = forwardRef<VideoCardHandle, VideoCardProps>(
                 ? 'ring-1 ring-gray-300/80 dark:ring-gray-600/80'
                 : ''
             } ${
-              orientation === 'horizontal' ? 'aspect-[3/2]' : 'aspect-[2/3]'
+              orientation === 'horizontal' ? 'aspect-3/2' : 'aspect-2/3'
             }`}
             style={
               {
@@ -1026,8 +1026,8 @@ const VideoCard = forwardRef<VideoCardHandle, VideoCardProps>(
                 <ImagePlaceholder
                   aspectRatio={
                     orientation === 'horizontal'
-                      ? 'aspect-[3/2]'
-                      : 'aspect-[2/3]'
+                      ? 'aspect-3/2'
+                      : 'aspect-2/3'
                   }
                 />
               )}
@@ -1118,7 +1118,7 @@ const VideoCard = forwardRef<VideoCardHandle, VideoCardProps>(
 
               {/* 悬浮遮罩 */}
               <div
-                className='absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent transition-opacity duration-300 ease-in-out opacity-0 group-hover:opacity-100'
+                className='absolute inset-0 bg-linear-to-t from-black/80 via-black/20 to-transparent transition-opacity duration-300 ease-in-out opacity-0 group-hover:opacity-100'
                 style={
                   {
                     WebkitUserSelect: 'none',
@@ -1154,7 +1154,7 @@ const VideoCard = forwardRef<VideoCardHandle, VideoCardProps>(
                 }}
               >
                 <div
-                  className='bg-black/70 backdrop-blur-sm text-white px-4 py-2 rounded-lg text-xs md:text-sm font-medium shadow-lg'
+                  className='bg-black/70 backdrop-blur-xs text-white px-4 py-2 rounded-lg text-xs md:text-sm font-medium shadow-lg'
                   style={
                     {
                       WebkitUserSelect: 'none',
@@ -1266,7 +1266,7 @@ const VideoCard = forwardRef<VideoCardHandle, VideoCardProps>(
             {/* 季度徽章 */}
             {seasonNumber && (
               <div
-                className='absolute top-2 left-2 bg-blue-500/80 text-white text-xs font-medium px-2 py-1 rounded backdrop-blur-sm shadow-sm transition-all duration-300 ease-out group-hover:opacity-90'
+                className='absolute top-2 left-2 bg-blue-500/80 text-white text-xs font-medium px-2 py-1 rounded-sm backdrop-blur-xs shadow-xs transition-all duration-300 ease-out group-hover:opacity-90'
                 style={
                   {
                     WebkitUserSelect: 'none',
@@ -1362,7 +1362,7 @@ const VideoCard = forwardRef<VideoCardHandle, VideoCardProps>(
                 >
                   {/* 集数显示 */}
                   <div
-                    className='bg-black/60 text-white text-[9px] sm:text-xs font-medium px-2 sm:px-3 py-0.5 sm:py-1 rounded-full shadow-md transition-all duration-300 ease-out group-hover:scale-110 backdrop-blur-sm flex items-center justify-center'
+                    className='bg-black/60 text-white text-[9px] sm:text-xs font-medium px-2 sm:px-3 py-0.5 sm:py-1 rounded-full shadow-md transition-all duration-300 ease-out group-hover:scale-110 backdrop-blur-xs flex items-center justify-center'
                     style={
                       {
                         WebkitUserSelect: 'none',
@@ -1383,7 +1383,7 @@ const VideoCard = forwardRef<VideoCardHandle, VideoCardProps>(
                   {/* 年份显示 */}
                   {displayYear && (
                     <div
-                      className='bg-black/60 text-white text-[9px] sm:text-xs font-medium px-2 sm:px-3 py-0.5 sm:py-1 rounded-full shadow-md transition-all duration-300 ease-out group-hover:scale-110 backdrop-blur-sm flex items-center justify-center'
+                      className='bg-black/60 text-white text-[9px] sm:text-xs font-medium px-2 sm:px-3 py-0.5 sm:py-1 rounded-full shadow-md transition-all duration-300 ease-out group-hover:scale-110 backdrop-blur-xs flex items-center justify-center'
                       style={
                         {
                           WebkitUserSelect: 'none',
@@ -1524,7 +1524,7 @@ const VideoCard = forwardRef<VideoCardHandle, VideoCardProps>(
                 return (
                   <div
                     data-button='true'
-                    className={`absolute bottom-1 right-1 z-[55] sm:bottom-2 sm:right-2 transition-all duration-300 ease-in-out delay-75 ${
+                    className={`absolute bottom-1 right-1 z-55 sm:bottom-2 sm:right-2 transition-all duration-300 ease-in-out delay-75 ${
                       from === 'search'
                         ? 'opacity-100'
                         : 'opacity-0 sm:group-hover:opacity-100'
@@ -1622,7 +1622,7 @@ const VideoCard = forwardRef<VideoCardHandle, VideoCardProps>(
 
                         return (
                           <div
-                            className='absolute bottom-full right-0 z-[60] mb-2 -translate-x-0 opacity-0 invisible pointer-events-none transition-all duration-200 ease-out delay-100 group-hover/sources:opacity-100 group-hover/sources:visible sm:right-0 sm:translate-x-0'
+                            className='absolute bottom-full right-0 z-60 mb-2 translate-x-0 opacity-0 invisible pointer-events-none transition-all duration-200 ease-out delay-100 group-hover/sources:opacity-100 group-hover/sources:visible sm:right-0 sm:translate-x-0'
                             style={
                               {
                                 WebkitUserSelect: 'none',
@@ -1636,7 +1636,7 @@ const VideoCard = forwardRef<VideoCardHandle, VideoCardProps>(
                             }}
                           >
                             <div
-                              className='relative rounded-lg border border-white/10 bg-gray-800/95 p-1.5 text-xs text-white shadow-xl backdrop-blur-sm sm:p-2 sm:text-xs min-w-[100px] max-w-[140px] sm:min-w-[120px] sm:max-w-[200px]'
+                              className='relative rounded-lg border border-white/10 bg-gray-800/95 p-1.5 text-xs text-white shadow-xl backdrop-blur-xs sm:p-2 sm:text-xs min-w-[100px] max-w-[140px] sm:min-w-[120px] sm:max-w-[200px]'
                               style={
                                 {
                                   WebkitUserSelect: 'none',
@@ -1656,7 +1656,7 @@ const VideoCard = forwardRef<VideoCardHandle, VideoCardProps>(
                                     key={index}
                                     className='flex items-center gap-1 sm:gap-1.5'
                                   >
-                                    <div className='h-0.5 w-0.5 flex-shrink-0 rounded-full bg-blue-400 sm:h-1 sm:w-1'></div>
+                                    <div className='h-0.5 w-0.5 shrink-0 rounded-full bg-blue-400 sm:h-1 sm:w-1'></div>
                                     <span
                                       className='truncate text-[10px] leading-tight sm:text-xs'
                                       title={sourceName}
@@ -1679,7 +1679,7 @@ const VideoCard = forwardRef<VideoCardHandle, VideoCardProps>(
                               )}
 
                               {/* 小箭头：放在内容盒外侧，避免被裁切 */}
-                              <div className='absolute top-full right-2 h-0 w-0 border-l-[4px] border-r-[4px] border-t-[4px] border-transparent border-t-gray-800/95 sm:right-3 sm:border-l-[6px] sm:border-r-[6px] sm:border-t-[6px]'></div>
+                              <div className='absolute top-full right-2 h-0 w-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-800/95 sm:right-3 sm:border-l-[6px] sm:border-r-[6px] sm:border-t-[6px]'></div>
                             </div>
                           </div>
                         );
@@ -1694,7 +1694,7 @@ const VideoCard = forwardRef<VideoCardHandle, VideoCardProps>(
               <>
                 {/* 顶部渐变遮罩 - 用于标题背景 */}
                 <div
-                  className='absolute top-0 left-0 right-0 bg-gradient-to-b from-black/80 via-black/40 to-transparent pt-2 pb-8 px-2'
+                  className='absolute top-0 left-0 right-0 bg-linear-to-b from-black/80 via-black/40 to-transparent pt-2 pb-8 px-2'
                   style={
                     {
                       WebkitUserSelect: 'none',
@@ -1781,7 +1781,7 @@ const VideoCard = forwardRef<VideoCardHandle, VideoCardProps>(
 
                 {/* 底部渐变遮罩 - 用于进度条背景 */}
                 <div
-                  className='absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/60 to-transparent pt-8 pb-2 px-2'
+                  className='absolute bottom-0 left-0 right-0 bg-linear-to-t from-black/90 via-black/60 to-transparent pt-8 pb-2 px-2'
                   style={
                     {
                       WebkitUserSelect: 'none',
@@ -1845,7 +1845,7 @@ const VideoCard = forwardRef<VideoCardHandle, VideoCardProps>(
                           {/* 来源 - 右侧 */}
                           {config.showSourceName && source_name && !cmsData && (
                             <span
-                              className={`inline-block border rounded px-1 py-0.5 text-[8px] text-white/90 bg-black/30 backdrop-blur-sm ${
+                              className={`inline-block border rounded px-1 py-0.5 text-[8px] text-white/90 bg-black/30 backdrop-blur-xs ${
                                 actualSource === 'xiaoya'
                                   ? 'border-blue-500'
                                   : isNetdiskSource(actualSource)
@@ -1912,7 +1912,7 @@ const VideoCard = forwardRef<VideoCardHandle, VideoCardProps>(
                     !cmsData && (
                       <div className='flex items-center justify-end'>
                         <span
-                          className={`inline-block border rounded px-1 py-0.5 text-[8px] text-white/90 bg-black/30 backdrop-blur-sm ${
+                          className={`inline-block border rounded px-1 py-0.5 text-[8px] text-white/90 bg-black/30 backdrop-blur-xs ${
                             origin === 'live'
                               ? 'border-red-500'
                               : actualSource === 'openlist' ||
@@ -2026,7 +2026,7 @@ const VideoCard = forwardRef<VideoCardHandle, VideoCardProps>(
                   </span>
                   {/* 自定义 tooltip */}
                   <div
-                    className='absolute bottom-full left-1/2 z-[70] mb-2 w-max max-w-[min(20rem,calc(100vw-2rem))] -translate-x-1/2 rounded-md bg-gray-800 px-3 py-1 text-center text-xs text-white shadow-lg opacity-0 invisible peer-hover:opacity-100 peer-hover:visible transition-all duration-200 ease-out delay-100 whitespace-normal break-words pointer-events-none'
+                    className='absolute bottom-full left-1/2 z-70 mb-2 w-max max-w-[min(20rem,calc(100vw-2rem))] -translate-x-1/2 rounded-md bg-gray-800 px-3 py-1 text-center text-xs text-white shadow-lg opacity-0 invisible peer-hover:opacity-100 peer-hover:visible transition-all duration-200 ease-out delay-100 whitespace-normal wrap-break-word pointer-events-none'
                     style={
                       {
                         WebkitUserSelect: 'none',
@@ -2162,7 +2162,7 @@ const VideoCard = forwardRef<VideoCardHandle, VideoCardProps>(
           />
         )}
         {animeSubscribeToast ? (
-          <div className='fixed bottom-24 left-1/2 z-[10001] -translate-x-1/2 rounded-full bg-green-600 px-4 py-2 text-sm text-white shadow-lg'>
+          <div className='fixed bottom-24 left-1/2 z-10001 -translate-x-1/2 rounded-full bg-green-600 px-4 py-2 text-sm text-white shadow-lg'>
             {animeSubscribeToast}
           </div>
         ) : null}

@@ -107,7 +107,7 @@ export function AdminWorkspace({
             type='search'
             aria-label='搜索管理功能'
             placeholder='搜索功能…'
-            className='h-10 w-full rounded-lg border border-slate-200 bg-slate-50 pl-9 pr-3 text-sm outline-none focus:border-emerald-500 dark:border-slate-700 dark:bg-slate-900'
+            className='h-10 w-full rounded-lg border border-slate-200 bg-slate-50 pl-9 pr-3 text-sm outline-hidden focus:border-emerald-500 dark:border-slate-700 dark:bg-slate-900'
           />
         </div>
         <p className='mt-2 text-[11px] text-slate-400'>Ctrl / ⌘ K 快速查找</p>
@@ -179,7 +179,7 @@ export function AdminWorkspace({
     >
       <a
         href='#admin-content'
-        className='sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-lg focus:bg-white focus:p-3'
+        className='sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-100 focus:rounded-lg focus:bg-white focus:p-3'
       >
         跳转到配置内容
       </a>
@@ -197,7 +197,7 @@ export function AdminWorkspace({
         <div className='flex h-full flex-col'>{navigation(true)}</div>
       </dialog>
       <div className='min-w-0 lg:pl-60'>
-        <header className='sticky top-0 z-20 flex min-h-16 items-center justify-between gap-3 border-b border-slate-200 bg-white/95 px-4 backdrop-blur-sm dark:border-slate-800 dark:bg-[#111824]/95 sm:px-8'>
+        <header className='sticky top-0 z-20 flex min-h-16 items-center justify-between gap-3 border-b border-slate-200 bg-white/95 px-4 backdrop-blur-xs dark:border-slate-800 dark:bg-[#111824]/95 sm:px-8'>
           <div className='flex min-w-0 items-center gap-3'>
             <button
               onClick={() => dialog.current?.showModal()}
@@ -232,7 +232,7 @@ export function AdminWorkspace({
             <h1
               ref={titleRef}
               tabIndex={-1}
-              className='text-2xl font-semibold tracking-tight outline-none sm:text-[28px]'
+              className='text-2xl font-semibold tracking-tight outline-hidden sm:text-[28px]'
             >
               {section.title}
             </h1>

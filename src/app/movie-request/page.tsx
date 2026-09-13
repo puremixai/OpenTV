@@ -237,7 +237,7 @@ export default function MovieRequestPage() {
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') handleSearch();
                 }}
-                className='flex-1 px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500'
+                className='flex-1 px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-hidden focus:ring-2 focus:ring-blue-500'
               />
               <button
                 onClick={handleSearch}
@@ -269,16 +269,16 @@ export default function MovieRequestPage() {
                 {myRequests.map((request) => (
                   <div
                     key={request.id}
-                    className='bg-white dark:bg-gray-800 rounded-lg overflow-hidden shadow hover:shadow-lg transition-shadow'
+                    className='bg-white dark:bg-gray-800 rounded-lg overflow-hidden shadow-sm hover:shadow-lg transition-shadow'
                   >
                     {request.poster ? (
                       <img
                         src={request.poster}
                         alt={request.title}
-                        className='w-full aspect-[2/3] object-cover'
+                        className='w-full aspect-2/3 object-cover'
                       />
                     ) : (
-                      <div className='w-full aspect-[2/3] bg-gray-200 dark:bg-gray-700 flex items-center justify-center'>
+                      <div className='w-full aspect-2/3 bg-gray-200 dark:bg-gray-700 flex items-center justify-center'>
                         <span className='text-gray-400'>无海报</span>
                       </div>
                     )}
@@ -310,16 +310,16 @@ export default function MovieRequestPage() {
             {searchResults.map((item) => (
               <div
                 key={item.id}
-                className='bg-white dark:bg-gray-800 rounded-lg overflow-hidden shadow hover:shadow-lg transition-shadow'
+                className='bg-white dark:bg-gray-800 rounded-lg overflow-hidden shadow-sm hover:shadow-lg transition-shadow'
               >
                 {item.poster_path ? (
                   <img
                     src={processImageUrl(getTMDBImageUrl(item.poster_path, 'w500'))}
                     alt={item.title || item.name}
-                    className='w-full aspect-[2/3] object-cover'
+                    className='w-full aspect-2/3 object-cover'
                   />
                 ) : (
-                  <div className='w-full aspect-[2/3] bg-gray-200 dark:bg-gray-700 flex items-center justify-center'>
+                  <div className='w-full aspect-2/3 bg-gray-200 dark:bg-gray-700 flex items-center justify-center'>
                     <span className='text-gray-400'>无海报</span>
                   </div>
                 )}
@@ -333,7 +333,7 @@ export default function MovieRequestPage() {
                   <button
                     onClick={() => handleRequest(item)}
                     disabled={submitting || !isFeatureEnabled}
-                    className='w-full px-3 py-1.5 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed'
+                    className='w-full px-3 py-1.5 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed'
                   >
                     {submitting ? '处理中...' : !isFeatureEnabled ? '功能已关闭' : '求片'}
                   </button>
@@ -350,7 +350,7 @@ export default function MovieRequestPage() {
 
       {/* 提示弹窗 */}
       {alertModal.isOpen && typeof window !== 'undefined' && createPortal(
-        <div className='fixed inset-0 bg-black/50 z-[1002] flex items-center justify-center p-4'>
+        <div className='fixed inset-0 bg-black/50 z-1002 flex items-center justify-center p-4'>
           <div className='bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-sm w-full p-6'>
             <div className='flex justify-center mb-4'>
               {alertModal.type === 'success' ? (
@@ -380,10 +380,10 @@ export default function MovieRequestPage() {
       {showSeasonDialog && typeof window !== 'undefined' && createPortal(
         <>
           <div
-            className='fixed inset-0 bg-black/50 backdrop-blur-sm z-[1000]'
+            className='fixed inset-0 bg-black/50 backdrop-blur-xs z-1000'
             onClick={() => setShowSeasonDialog(false)}
           />
-          <div className='fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-white dark:bg-gray-900 rounded-xl shadow-xl z-[1001] p-6'>
+          <div className='fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-white dark:bg-gray-900 rounded-xl shadow-xl z-1001 p-6'>
             <h3 className='text-lg font-bold text-gray-800 dark:text-gray-200 mb-4'>
               选择季度
             </h3>

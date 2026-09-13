@@ -60,8 +60,8 @@ export default function TrailerPickerDialog({
   if (!mounted || !isOpen) return null;
 
   return createPortal(
-    <div className='fixed inset-0 z-[10000] flex items-end sm:items-center justify-center'>
-      <div className='absolute inset-0 bg-black/60 backdrop-blur-sm' onClick={onClose} />
+    <div className='fixed inset-0 z-10000 flex items-end sm:items-center justify-center'>
+      <div className='absolute inset-0 bg-black/60 backdrop-blur-xs' onClick={onClose} />
       <div className='relative w-full sm:max-w-2xl max-h-[85vh] overflow-hidden rounded-t-2xl sm:rounded-2xl bg-white dark:bg-gray-900 shadow-2xl border border-gray-200 dark:border-gray-700'>
         <div className='flex items-start justify-between gap-4 border-b border-gray-200 dark:border-gray-800 px-4 sm:px-6 py-4'>
           <div className='min-w-0'>
@@ -92,8 +92,8 @@ export default function TrailerPickerDialog({
                 >
                   <div className='h-11 w-11 rounded-full bg-gray-200 dark:bg-gray-700' />
                   <div className='flex-1 space-y-2'>
-                    <div className='h-4 w-2/3 rounded bg-gray-200 dark:bg-gray-700' />
-                    <div className='h-3 w-1/3 rounded bg-gray-200 dark:bg-gray-700' />
+                    <div className='h-4 w-2/3 rounded-sm bg-gray-200 dark:bg-gray-700' />
+                    <div className='h-3 w-1/3 rounded-sm bg-gray-200 dark:bg-gray-700' />
                   </div>
                 </div>
               ))}

@@ -20,15 +20,15 @@ import {
 function DetailSkeleton() {
   return (
     <div className='space-y-6 animate-pulse'>
-      <section className='grid gap-6 rounded-[2rem] border border-emerald-100/80 bg-white/85 p-5 shadow-sm shadow-emerald-950/5 dark:border-emerald-500/10 dark:bg-gray-950/70 md:grid-cols-[220px_1fr]'>
-        <div className='aspect-[3/4] rounded-3xl bg-emerald-100 dark:bg-gray-800' />
+      <section className='grid gap-6 rounded-4xl border border-emerald-100/80 bg-white/85 p-5 shadow-xs shadow-emerald-950/5 dark:border-emerald-500/10 dark:bg-gray-950/70 md:grid-cols-[220px_1fr]'>
+        <div className='aspect-3/4 rounded-3xl bg-emerald-100 dark:bg-gray-800' />
         <div className='space-y-4'>
-          <div className='h-8 w-2/3 rounded bg-emerald-100 dark:bg-gray-800' />
-          <div className='h-4 w-1/3 rounded bg-emerald-100 dark:bg-gray-800' />
+          <div className='h-8 w-2/3 rounded-sm bg-emerald-100 dark:bg-gray-800' />
+          <div className='h-4 w-1/3 rounded-sm bg-emerald-100 dark:bg-gray-800' />
           <div className='space-y-2'>
-            <div className='h-4 w-full rounded bg-emerald-100 dark:bg-gray-800' />
-            <div className='h-4 w-11/12 rounded bg-emerald-100 dark:bg-gray-800' />
-            <div className='h-4 w-10/12 rounded bg-emerald-100 dark:bg-gray-800' />
+            <div className='h-4 w-full rounded-sm bg-emerald-100 dark:bg-gray-800' />
+            <div className='h-4 w-11/12 rounded-sm bg-emerald-100 dark:bg-gray-800' />
+            <div className='h-4 w-10/12 rounded-sm bg-emerald-100 dark:bg-gray-800' />
           </div>
           <div className='flex gap-3'>
             <div className='h-10 w-24 rounded-2xl bg-gray-200 dark:bg-gray-800' />
@@ -250,10 +250,10 @@ export default function BookDetailPage() {
 
   return (
     <div className='space-y-6'>
-      <section className='relative overflow-hidden rounded-[2.25rem] border border-emerald-100 bg-gradient-to-br from-emerald-50 via-white to-lime-50 p-5 shadow-sm shadow-emerald-950/5 dark:border-emerald-500/10 dark:from-emerald-950/30 dark:via-gray-950 dark:to-lime-950/20'>
+      <section className='relative overflow-hidden rounded-[2.25rem] border border-emerald-100 bg-linear-to-br from-emerald-50 via-white to-lime-50 p-5 shadow-xs shadow-emerald-950/5 dark:border-emerald-500/10 dark:from-emerald-950/30 dark:via-gray-950 dark:to-lime-950/20'>
         <div className='absolute -right-20 -top-24 h-64 w-64 rounded-full bg-emerald-300/20 blur-3xl dark:bg-emerald-500/10' />
         <div className='relative grid gap-6 md:grid-cols-[220px_1fr]'>
-          <div className='overflow-hidden rounded-[2rem] bg-gradient-to-br from-emerald-50 to-lime-50 shadow-xl shadow-emerald-950/10 ring-1 ring-emerald-100 dark:from-gray-900 dark:to-emerald-950/20 dark:ring-emerald-500/10'>
+          <div className='overflow-hidden rounded-4xl bg-linear-to-br from-emerald-50 to-lime-50 shadow-xl shadow-emerald-950/10 ring-1 ring-emerald-100 dark:from-gray-900 dark:to-emerald-950/20 dark:ring-emerald-500/10'>
             {detail.cover ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
@@ -262,7 +262,7 @@ export default function BookDetailPage() {
                 className='h-full w-full object-cover'
               />
             ) : (
-              <div className='flex aspect-[3/4] flex-col items-center justify-center gap-2 text-sm text-emerald-500 dark:text-emerald-300'>
+              <div className='flex aspect-3/4 flex-col items-center justify-center gap-2 text-sm text-emerald-500 dark:text-emerald-300'>
                 <BookOpen className='h-9 w-9' />
                 无封面
               </div>
@@ -270,7 +270,7 @@ export default function BookDetailPage() {
           </div>
           <div className='flex min-w-0 flex-col justify-between gap-5'>
             <div>
-              <div className='inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-white/70 px-3 py-1 text-xs font-semibold text-emerald-700 shadow-sm dark:border-emerald-500/20 dark:bg-gray-950/50 dark:text-emerald-200'>
+              <div className='inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-white/70 px-3 py-1 text-xs font-semibold text-emerald-700 shadow-xs dark:border-emerald-500/20 dark:bg-gray-950/50 dark:text-emerald-200'>
                 <BookOpen className='h-3.5 w-3.5' />
                 {detail.sourceName}
               </div>
@@ -302,7 +302,7 @@ export default function BookDetailPage() {
                 <Link
                   href={buildBookReadPath(detail.sourceId, detail.id)}
                   onClick={() => cacheBookDetail(detail)}
-                  className='inline-flex cursor-pointer items-center gap-2 rounded-2xl bg-emerald-600 px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-emerald-600/20 transition-colors duration-200 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 dark:focus:ring-offset-gray-950'
+                  className='inline-flex cursor-pointer items-center gap-2 rounded-2xl bg-emerald-600 px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-emerald-600/20 transition-colors duration-200 hover:bg-emerald-700 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 dark:focus:ring-offset-gray-950'
                 >
                   <BookOpen className='h-4 w-4' />
                   在线阅读
@@ -311,7 +311,7 @@ export default function BookDetailPage() {
               <button
                 type='button'
                 onClick={toggleShelf}
-                className='inline-flex cursor-pointer items-center gap-2 rounded-2xl border border-emerald-200 bg-white/70 px-5 py-2.5 text-sm font-semibold text-emerald-800 transition-colors duration-200 hover:bg-emerald-50 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:border-emerald-500/20 dark:bg-gray-950/50 dark:text-emerald-100 dark:hover:bg-emerald-500/10'
+                className='inline-flex cursor-pointer items-center gap-2 rounded-2xl border border-emerald-200 bg-white/70 px-5 py-2.5 text-sm font-semibold text-emerald-800 transition-colors duration-200 hover:bg-emerald-50 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 dark:border-emerald-500/20 dark:bg-gray-950/50 dark:text-emerald-100 dark:hover:bg-emerald-500/10'
               >
                 <BookmarkPlus className='h-4 w-4' />
                 {shelf[`${detail.sourceId}+${detail.id}`]
@@ -339,7 +339,7 @@ export default function BookDetailPage() {
                     }
                   }}
                   disabled={fileBusy !== ''}
-                  className='inline-flex cursor-pointer items-center gap-2 rounded-2xl border border-emerald-200 bg-white/70 px-5 py-2.5 text-sm font-semibold text-emerald-800 transition-colors duration-200 hover:bg-emerald-50 focus:outline-none focus:ring-2 focus:ring-emerald-500 disabled:cursor-not-allowed disabled:opacity-60 dark:border-emerald-500/20 dark:bg-gray-950/50 dark:text-emerald-100 dark:hover:bg-emerald-500/10'
+                  className='inline-flex cursor-pointer items-center gap-2 rounded-2xl border border-emerald-200 bg-white/70 px-5 py-2.5 text-sm font-semibold text-emerald-800 transition-colors duration-200 hover:bg-emerald-50 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 disabled:cursor-not-allowed disabled:opacity-60 dark:border-emerald-500/20 dark:bg-gray-950/50 dark:text-emerald-100 dark:hover:bg-emerald-500/10'
                 >
                   <Download className='h-4 w-4' />
                   {fileBusy === 'download' ? '下载中...' : '下载文件'}
@@ -350,7 +350,7 @@ export default function BookDetailPage() {
         </div>
       </section>
 
-      <section className='rounded-[2rem] border border-emerald-100/80 bg-white/85 p-5 shadow-sm shadow-emerald-950/5 dark:border-emerald-500/10 dark:bg-gray-950/70'>
+      <section className='rounded-4xl border border-emerald-100/80 bg-white/85 p-5 shadow-xs shadow-emerald-950/5 dark:border-emerald-500/10 dark:bg-gray-950/70'>
         <div className='flex items-center gap-2'>
           <FileText className='h-5 w-5 text-emerald-600 dark:text-emerald-300' />
           <h2 className='text-lg font-bold text-slate-950 dark:text-white'>
@@ -420,7 +420,7 @@ export default function BookDetailPage() {
       </section>
 
       {readableFormat === 'chapters' ? (
-        <section className='rounded-[2rem] border border-emerald-100/80 bg-white/85 p-5 shadow-sm shadow-emerald-950/5 dark:border-emerald-500/10 dark:bg-gray-950/70'>
+        <section className='rounded-4xl border border-emerald-100/80 bg-white/85 p-5 shadow-xs shadow-emerald-950/5 dark:border-emerald-500/10 dark:bg-gray-950/70'>
           <div className='flex items-center justify-between gap-3'>
             <h2 className='text-lg font-bold text-slate-950 dark:text-white'>
               章节目录

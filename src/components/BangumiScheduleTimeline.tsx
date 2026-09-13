@@ -23,13 +23,13 @@ function TimelineSkeleton() {
     <div className='space-y-6 animate-pulse'>
       {/* 标题占位 */}
       <div className='flex items-baseline gap-2'>
-        <div className='h-5 w-16 bg-gray-200 rounded dark:bg-gray-700' />
-        <div className='h-3 w-20 bg-gray-200 rounded dark:bg-gray-700' />
+        <div className='h-5 w-16 bg-gray-200 rounded-sm dark:bg-gray-700' />
+        <div className='h-3 w-20 bg-gray-200 rounded-sm dark:bg-gray-700' />
       </div>
 
       <div className='relative'>
         {/* 垂直主线 */}
-        <div className='absolute left-[5.25rem] sm:left-[5.5rem] top-0 bottom-0 w-px bg-gray-200 dark:bg-gray-700' />
+        <div className='absolute left-21 sm:left-22 top-0 bottom-0 w-px bg-gray-200 dark:bg-gray-700' />
 
         <div className='space-y-6'>
           {SKELETON_SLOTS.map((time, i) => (
@@ -38,8 +38,8 @@ function TimelineSkeleton() {
               className='relative grid grid-cols-[4.5rem_1.5rem_1fr] sm:grid-cols-[5rem_1.5rem_1fr] items-start'
             >
               {/* 时间标签占位 */}
-              <div className='text-right pr-3 leading-[1.875rem]'>
-                <div className='ml-auto h-3 w-9 bg-gray-200 rounded dark:bg-gray-700' />
+              <div className='text-right pr-3 leading-7.5'>
+                <div className='ml-auto h-3 w-9 bg-gray-200 rounded-sm dark:bg-gray-700' />
               </div>
               {/* 时间节点占位 */}
               <div className='flex justify-center pt-1.5'>
@@ -50,9 +50,9 @@ function TimelineSkeleton() {
                 {Array.from({ length: SKELETON_ITEMS[i] }, (_, j) => (
                   <div key={j} className='w-32 sm:w-40 shrink-0'>
                     <div className='relative w-full rounded-lg bg-transparent flex flex-col'>
-                      <ImagePlaceholder aspectRatio='aspect-[2/3]' />
+                      <ImagePlaceholder aspectRatio='aspect-2/3' />
                       <div className='absolute top-[calc(100%+0.5rem)] left-0 right-0 flex justify-center'>
-                        <div className='h-4 w-24 sm:w-32 bg-gray-200 rounded dark:bg-gray-700'></div>
+                        <div className='h-4 w-24 sm:w-32 bg-gray-200 rounded-sm dark:bg-gray-700'></div>
                       </div>
                     </div>
                   </div>
@@ -174,7 +174,7 @@ function BangumiScheduleTimeline({
           {/* 已知放送时刻：垂直时间轴（仅当天） */}
           <div className='relative'>
             {/* 垂直主线 */}
-            <div className='absolute left-[5.25rem] sm:left-[5.5rem] top-0 bottom-0 w-px bg-gray-200 dark:bg-gray-700' />
+            <div className='absolute left-21 sm:left-22 top-0 bottom-0 w-px bg-gray-200 dark:bg-gray-700' />
 
             <div className='flex items-baseline gap-2 mb-4'>
               <span className='text-base sm:text-lg font-semibold text-gray-800 dark:text-gray-200'>
@@ -189,7 +189,7 @@ function BangumiScheduleTimeline({
             </div>
 
             {day.slots.length === 0 ? (
-              <div className='pl-[6.25rem] sm:pl-[6.5rem] text-xs text-gray-400 dark:text-gray-500'>
+              <div className='pl-25 sm:pl-26 text-xs text-gray-400 dark:text-gray-500'>
                 暂无固定放送时刻
               </div>
             ) : (
@@ -200,7 +200,7 @@ function BangumiScheduleTimeline({
                     className='relative grid grid-cols-[4.5rem_1.5rem_1fr] sm:grid-cols-[5rem_1.5rem_1fr] items-start'
                   >
                     {/* 时间标签 */}
-                    <div className='text-right pr-3 text-sm font-mono text-gray-500 dark:text-gray-400 leading-[1.875rem]'>
+                    <div className='text-right pr-3 text-sm font-mono text-gray-500 dark:text-gray-400 leading-7.5'>
                       {slot.time}
                     </div>
                     {/* 时间节点 */}

@@ -162,12 +162,12 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({
     <>
       {/* 背景遮罩 */}
       <div
-        className='fixed inset-0 bg-black/50 backdrop-blur-sm z-[1000]'
+        className='fixed inset-0 bg-black/50 backdrop-blur-xs z-1000'
         onClick={onClose}
       />
 
       {/* 通知面板 */}
-      <div className='fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-lg min-h-[520px] max-h-[80vh] bg-white dark:bg-gray-900 rounded-xl shadow-xl z-[1001] flex flex-col overflow-hidden max-sm:min-h-[70vh]'>
+      <div className='fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-lg min-h-[520px] max-h-[80vh] bg-white dark:bg-gray-900 rounded-xl shadow-xl z-1001 flex flex-col overflow-hidden max-sm:min-h-[70vh]'>
         {/* 标题栏 */}
         <div className='flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700'>
           <div className='flex items-center gap-2'>
@@ -206,7 +206,7 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({
               <button
                 type='button'
                 onClick={handleOpenNotificationSettings}
-                className='mb-3 flex w-full items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2.5 text-left transition-colors hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:border-blue-800 dark:bg-blue-900/20 dark:hover:bg-blue-900/30 dark:focus:ring-offset-gray-900'
+                className='mb-3 flex w-full items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2.5 text-left transition-colors hover:bg-blue-100 focus:outline-hidden focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:border-blue-800 dark:bg-blue-900/20 dark:hover:bg-blue-900/30 dark:focus:ring-offset-gray-900'
               >
                 <div className='flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-blue-100 text-blue-600 dark:bg-blue-900/40 dark:text-blue-300'>
                   <Settings className='h-4 w-4' />
@@ -262,7 +262,7 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({
                   </div>
 
                   {/* 操作按钮 */}
-                  <div className='absolute top-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity'>
+                  <div className='absolute top-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 [@media(hover:none)]:opacity-100 transition-opacity'>
                     {!notification.read && (
                       <button
                         onClick={(e) => {

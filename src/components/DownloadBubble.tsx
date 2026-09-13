@@ -126,7 +126,7 @@ export function DownloadBubble() {
           cursor: isDragging ? 'grabbing' : 'grab',
           touchAction: 'none',
         }}
-        className='relative group bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white rounded-full p-4 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-110'
+        className='relative group bg-linear-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white rounded-full p-4 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-110'
       >
         {/* 下载图标 */}
         <svg

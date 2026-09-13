@@ -182,21 +182,21 @@ export default function MusicSongListsPage() {
   };
 
   const sortButtonClass = (active: boolean) =>
-    `px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap flex-shrink-0 ${active ? 'bg-green-500 text-white' : 'bg-white/10 text-black dark:text-white hover:bg-white/20 dark:hover:bg-white/15'}`;
+    `px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap shrink-0 ${active ? 'bg-green-500 text-white' : 'bg-white/10 text-black dark:text-white hover:bg-white/20 dark:hover:bg-white/15'}`;
 
   const flatTags = hotTags.length > 0 ? hotTags : groups.flatMap((group) => group.list || []);
   const selectedTagLabel = activeTagLabel || '分类';
 
   return (
     <div>
-      <div className="mb-8 flex items-center justify-between gap-3 border-b border-[rgba(0,0,0,0.08)] dark:border-[rgba(255,255,255,0.08)] pb-4 relative z-[160]">
+      <div className="mb-8 flex items-center justify-between gap-3 border-b border-[rgba(0,0,0,0.08)] dark:border-[rgba(255,255,255,0.08)] pb-4 relative z-160">
         <h2 className="text-2xl font-bold text-black dark:text-white tracking-tight">推荐歌单</h2>
 
         <div className="relative">
           <button
             type="button"
             onClick={() => setShowSourceMenu((open) => !open)}
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded-[6px] bg-[rgba(0,0,0,0.04)] dark:bg-[rgba(255,255,255,0.08)] hover:bg-[rgba(0,0,0,0.08)] dark:hover:bg-[rgba(255,255,255,0.12)] border border-[rgba(0,0,0,0.04)] dark:border-[rgba(255,255,255,0.04)] shadow-sm transition-all"
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-[6px] bg-[rgba(0,0,0,0.04)] dark:bg-[rgba(255,255,255,0.08)] hover:bg-[rgba(0,0,0,0.08)] dark:hover:bg-[rgba(255,255,255,0.12)] border border-[rgba(0,0,0,0.04)] dark:border-[rgba(255,255,255,0.04)] shadow-xs transition-all"
             aria-haspopup="listbox"
             aria-expanded={showSourceMenu}
           >
@@ -211,11 +211,11 @@ export default function MusicSongListsPage() {
             <>
               <button
                 type="button"
-                className="fixed inset-0 z-[150] cursor-default"
+                className="fixed inset-0 z-150 cursor-default"
                 onClick={() => setShowSourceMenu(false)}
                 aria-label="关闭菜单"
               />
-              <div className="absolute right-0 top-[calc(100%+6px)] z-[160] w-32 p-1.5 overflow-hidden rounded-xl bg-[rgba(255,255,255,0.85)] dark:bg-[rgba(35,35,35,0.85)] backdrop-blur-2xl shadow-[0_8px_30px_rgba(0,0,0,0.12)] border border-[rgba(0,0,0,0.1)] dark:border-[rgba(255,255,255,0.15)] animate-in fade-in zoom-in-95 duration-100 origin-top-right" role="listbox">
+              <div className="absolute right-0 top-[calc(100%+6px)] z-160 w-32 p-1.5 overflow-hidden rounded-xl bg-[rgba(255,255,255,0.85)] dark:bg-[rgba(35,35,35,0.85)] backdrop-blur-2xl shadow-[0_8px_30px_rgba(0,0,0,0.12)] border border-[rgba(0,0,0,0.1)] dark:border-[rgba(255,255,255,0.15)] animate-in fade-in zoom-in-95 duration-100 origin-top-right" role="listbox">
                 {musicSources.map((item) => {
                   const active = source === item.key;
                   return (
@@ -260,7 +260,7 @@ export default function MusicSongListsPage() {
             </button>
           ))}
         </div>
-        <div className="relative z-[130]">
+        <div className="relative z-130">
           <button
             type="button"
             onClick={() => setShowTagMenu(true)}
@@ -291,12 +291,12 @@ export default function MusicSongListsPage() {
             <>
               <button
                 type="button"
-                className="fixed inset-0 z-[119] cursor-default"
+                className="fixed inset-0 z-119 cursor-default"
                 onClick={() => setShowTagMenu(false)}
                 aria-label="关闭分类"
               />
               <div
-                className="absolute right-0 top-[calc(100%+6px)] z-[130] w-[min(760px,calc(100vw-2rem))] max-h-[70vh] overflow-auto rounded-2xl border border-[rgba(0,0,0,0.1)] dark:border-[rgba(255,255,255,0.15)] bg-[rgba(255,255,255,0.88)] dark:bg-[rgba(35,35,35,0.88)] backdrop-blur-2xl shadow-[0_8px_30px_rgba(0,0,0,0.12)] p-4"
+                className="absolute right-0 top-[calc(100%+6px)] z-130 w-[min(760px,calc(100vw-2rem))] max-h-[70vh] overflow-auto rounded-2xl border border-[rgba(0,0,0,0.1)] dark:border-[rgba(255,255,255,0.15)] bg-[rgba(255,255,255,0.88)] dark:bg-[rgba(35,35,35,0.88)] backdrop-blur-2xl shadow-[0_8px_30px_rgba(0,0,0,0.12)] p-4"
                 onMouseLeave={() => setShowTagMenu(false)}
               >
                 {loadingTags ? (

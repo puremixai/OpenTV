@@ -123,7 +123,7 @@ export function DownloadPanel() {
   } : null;
 
   return (
-    <div className='fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 p-3 backdrop-blur-sm sm:p-6'>
+    <div className='fixed inset-0 z-9999 flex items-center justify-center bg-black/60 p-3 backdrop-blur-xs sm:p-6'>
       <div className='flex max-h-[86vh] w-full max-w-6xl flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-2xl dark:border-slate-700/80 dark:bg-slate-950'>
         {/* 标题栏 */}
         <div className='flex items-center justify-between border-b border-gray-200 bg-white/90 p-4 dark:border-slate-800 dark:bg-slate-950/90'>
@@ -133,7 +133,7 @@ export function DownloadPanel() {
           </div>
           <button
             onClick={() => setShowDownloadPanel(false)}
-            className='cursor-pointer rounded-lg p-2 text-gray-500 transition-colors duration-200 hover:bg-gray-100 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-sky-500 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200'
+            className='cursor-pointer rounded-lg p-2 text-gray-500 transition-colors duration-200 hover:bg-gray-100 hover:text-gray-700 focus:outline-hidden focus:ring-2 focus:ring-sky-500 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200'
             aria-label='关闭下载任务列表'
           >
             <svg className='h-6 w-6' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
@@ -197,7 +197,7 @@ export function DownloadPanel() {
                       <div
                         className={`h-full rounded-full transition-all duration-300 ${
                           task.status === 'downloading'
-                            ? 'bg-gradient-to-r from-sky-500 to-emerald-500 motion-safe:animate-pulse'
+                            ? 'bg-linear-to-r from-sky-500 to-emerald-500 motion-safe:animate-pulse'
                             : task.status === 'done'
                             ? 'bg-emerald-500'
                             : task.status === 'error'
@@ -217,7 +217,7 @@ export function DownloadPanel() {
                       </div>
                       <button
                         onClick={() => retryFailedSegments(task.id)}
-                        className='cursor-pointer text-xs text-sky-600 underline transition-colors hover:text-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-500 dark:text-sky-300 dark:hover:text-sky-200'
+                        className='cursor-pointer text-xs text-sky-600 underline transition-colors hover:text-sky-700 focus:outline-hidden focus:ring-2 focus:ring-sky-500 dark:text-sky-300 dark:hover:text-sky-200'
                       >
                         重试失败片段
                       </button>
@@ -231,7 +231,7 @@ export function DownloadPanel() {
                         setLogTaskId(task.id);
                         setLogFilter('all');
                       }}
-                      className='flex cursor-pointer items-center gap-1 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 transition-colors duration-200 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700'
+                      className='flex cursor-pointer items-center gap-1 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 transition-colors duration-200 hover:bg-slate-100 focus:outline-hidden focus:ring-2 focus:ring-sky-500 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700'
                     >
                       <svg className='h-4 w-4' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
                         <path strokeLinecap='round' strokeLinejoin='round' strokeWidth='2' d='M9 17v-6m4 6V7m4 10v-3M5 19h14M5 5h14' />
@@ -247,7 +247,7 @@ export function DownloadPanel() {
                     {task.status === 'downloading' && (
                       <button
                         onClick={() => pauseTask(task.id)}
-                        className='flex cursor-pointer items-center gap-1 rounded-lg bg-amber-500 px-3 py-1.5 text-xs font-medium text-white transition-colors duration-200 hover:bg-amber-600 focus:outline-none focus:ring-2 focus:ring-amber-400'
+                        className='flex cursor-pointer items-center gap-1 rounded-lg bg-amber-500 px-3 py-1.5 text-xs font-medium text-white transition-colors duration-200 hover:bg-amber-600 focus:outline-hidden focus:ring-2 focus:ring-amber-400'
                       >
                         <svg className='h-4 w-4' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
                           <path strokeLinecap='round' strokeLinejoin='round' strokeWidth='2' d='M10 9v6m4-6v6' />
@@ -259,7 +259,7 @@ export function DownloadPanel() {
                     {(task.status === 'pause' || task.status === 'ready' || task.status === 'error') && (
                       <button
                         onClick={() => startTask(task.id)}
-                        className='flex cursor-pointer items-center gap-1 rounded-lg bg-sky-500 px-3 py-1.5 text-xs font-medium text-white transition-colors duration-200 hover:bg-sky-600 focus:outline-none focus:ring-2 focus:ring-sky-400'
+                        className='flex cursor-pointer items-center gap-1 rounded-lg bg-sky-500 px-3 py-1.5 text-xs font-medium text-white transition-colors duration-200 hover:bg-sky-600 focus:outline-hidden focus:ring-2 focus:ring-sky-400'
                       >
                         <svg className='h-4 w-4' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
                           <path strokeLinecap='round' strokeLinejoin='round' strokeWidth='2' d='M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z' />
@@ -271,7 +271,7 @@ export function DownloadPanel() {
 
                     <button
                       onClick={() => cancelTask(task.id)}
-                      className='flex cursor-pointer items-center gap-1 rounded-lg bg-rose-500 px-3 py-1.5 text-xs font-medium text-white transition-colors duration-200 hover:bg-rose-600 focus:outline-none focus:ring-2 focus:ring-rose-400'
+                      className='flex cursor-pointer items-center gap-1 rounded-lg bg-rose-500 px-3 py-1.5 text-xs font-medium text-white transition-colors duration-200 hover:bg-rose-600 focus:outline-hidden focus:ring-2 focus:ring-rose-400'
                     >
                       <svg className='h-4 w-4' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
                         <path strokeLinecap='round' strokeLinejoin='round' strokeWidth='2' d='M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16' />
@@ -299,7 +299,7 @@ export function DownloadPanel() {
       </div>
 
       {logTask && (
-        <div className='fixed inset-0 z-[10000] flex items-center justify-center bg-black/50 p-3 backdrop-blur-sm sm:p-6'>
+        <div className='fixed inset-0 z-10000 flex items-center justify-center bg-black/50 p-3 backdrop-blur-xs sm:p-6'>
           <div className='flex max-h-[82vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-2xl dark:border-slate-700 dark:bg-slate-950'>
             <div className='border-b border-gray-200 bg-white/95 p-4 dark:border-slate-800 dark:bg-slate-950/95'>
               <div className='flex items-start justify-between gap-4'>
@@ -309,7 +309,7 @@ export function DownloadPanel() {
                 </div>
                 <button
                   onClick={() => setLogTaskId(null)}
-                  className='cursor-pointer rounded-lg p-2 text-gray-500 transition-colors duration-200 hover:bg-gray-100 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-sky-500 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200'
+                  className='cursor-pointer rounded-lg p-2 text-gray-500 transition-colors duration-200 hover:bg-gray-100 hover:text-gray-700 focus:outline-hidden focus:ring-2 focus:ring-sky-500 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200'
                   aria-label='关闭分片下载日志'
                 >
                   <svg className='h-5 w-5' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
@@ -344,7 +344,7 @@ export function DownloadPanel() {
                   <button
                     key={filter}
                     onClick={() => setLogFilter(filter)}
-                    className={`cursor-pointer rounded-full border px-3 py-1 text-xs font-medium transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-sky-500 ${
+                    className={`cursor-pointer rounded-full border px-3 py-1 text-xs font-medium transition-colors duration-200 focus:outline-hidden focus:ring-2 focus:ring-sky-500 ${
                       logFilter === filter
                         ? 'border-sky-500 bg-sky-500 text-white'
                         : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800'

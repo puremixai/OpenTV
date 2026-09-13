@@ -351,7 +351,7 @@ export const SiteConfigComponent = ({
   }
 
   return (
-    <div className='space-y-6'>
+    <div className='flex flex-col gap-6'>
       <div
         className='flex flex-wrap gap-1 rounded-lg bg-slate-100 p-1 dark:bg-slate-800'
         role='tablist'
@@ -384,7 +384,7 @@ export const SiteConfigComponent = ({
             onClick={() => setSiteTab(tab.id)}
             className={
               siteTab === tab.id
-                ? 'rounded-md bg-white px-4 py-2 text-sm font-medium text-emerald-700 shadow-sm dark:bg-slate-700 dark:text-emerald-300'
+                ? 'rounded-md bg-white px-4 py-2 text-sm font-medium text-emerald-700 shadow-xs dark:bg-slate-700 dark:text-emerald-300'
                 : 'rounded-md px-4 py-2 text-sm text-slate-500 hover:text-slate-900 dark:hover:text-slate-200'
             }
           >
@@ -530,7 +530,7 @@ export const SiteConfigComponent = ({
               <button
                 type='button'
                 onClick={() => setIsDoubanDropdownOpen(!isDoubanDropdownOpen)}
-                className='w-full px-3 py-2.5 pr-10 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 shadow-sm hover:border-gray-400 dark:hover:border-gray-500 text-left'
+                className='w-full px-3 py-2.5 pr-10 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:outline-hidden focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 shadow-xs hover:border-gray-400 dark:hover:border-gray-500 text-left'
               >
                 {
                   doubanDataSourceOptions.find(
@@ -567,7 +567,7 @@ export const SiteConfigComponent = ({
                     >
                       <span className='truncate'>{option.label}</span>
                       {siteSettings.DoubanProxyType === option.value && (
-                        <Check className='w-4 h-4 text-green-600 dark:text-green-400 flex-shrink-0 ml-2' />
+                        <Check className='w-4 h-4 text-green-600 dark:text-green-400 shrink-0 ml-2' />
                       )}
                     </button>
                   ))}
@@ -620,7 +620,7 @@ export const SiteConfigComponent = ({
                     DoubanProxy: e.target.value,
                   }))
                 }
-                className='w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 shadow-sm hover:border-gray-400 dark:hover:border-gray-500'
+                className='w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:outline-hidden focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 shadow-xs hover:border-gray-400 dark:hover:border-gray-500'
               />
               <p className='mt-1 text-xs text-gray-500 dark:text-gray-400'>
                 自定义代理服务器地址
@@ -642,7 +642,7 @@ export const SiteConfigComponent = ({
                     !isDoubanImageProxyDropdownOpen
                   )
                 }
-                className='w-full px-3 py-2.5 pr-10 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 shadow-sm hover:border-gray-400 dark:hover:border-gray-500 text-left'
+                className='w-full px-3 py-2.5 pr-10 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:outline-hidden focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 shadow-xs hover:border-gray-400 dark:hover:border-gray-500 text-left'
               >
                 {
                   doubanImageProxyTypeOptions.find(
@@ -680,7 +680,7 @@ export const SiteConfigComponent = ({
                     >
                       <span className='truncate'>{option.label}</span>
                       {siteSettings.DoubanImageProxyType === option.value && (
-                        <Check className='w-4 h-4 text-green-600 dark:text-green-400 flex-shrink-0 ml-2' />
+                        <Check className='w-4 h-4 text-green-600 dark:text-green-400 shrink-0 ml-2' />
                       )}
                     </button>
                   ))}
@@ -733,7 +733,7 @@ export const SiteConfigComponent = ({
                     DoubanImageProxy: e.target.value,
                   }))
                 }
-                className='w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 shadow-sm hover:border-gray-400 dark:hover:border-gray-500'
+                className='w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:outline-hidden focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 shadow-xs hover:border-gray-400 dark:hover:border-gray-500'
               />
               <p className='mt-1 text-xs text-gray-500 dark:text-gray-400'>
                 自定义图片代理服务器地址
@@ -961,7 +961,7 @@ export const SiteConfigComponent = ({
                     className={`rounded-md px-3 py-1.5 text-sm transition-colors ${
                       (siteSettings.BangumiDataSource || 'direct') ===
                       option.value
-                        ? 'bg-white text-green-600 shadow-sm dark:bg-gray-700 dark:text-green-400'
+                        ? 'bg-white text-green-600 shadow-xs dark:bg-gray-700 dark:text-green-400'
                         : 'text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white'
                     }`}
                   >
@@ -1178,7 +1178,7 @@ export const SiteConfigComponent = ({
                   DisableYellowFilter: !prev.DisableYellowFilter,
                 }))
               }
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 ${
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-hidden focus:ring-2 focus:ring-green-500 focus:ring-offset-2 ${
                 siteSettings.DisableYellowFilter
                   ? buttonStyles.toggleOn
                   : buttonStyles.toggleOff
@@ -1212,7 +1212,7 @@ export const SiteConfigComponent = ({
                   FluidSearch: !prev.FluidSearch,
                 }))
               }
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 ${
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-hidden focus:ring-2 focus:ring-green-500 focus:ring-offset-2 ${
                 siteSettings.FluidSearch
                   ? buttonStyles.toggleOn
                   : buttonStyles.toggleOff
@@ -1249,7 +1249,7 @@ export const SiteConfigComponent = ({
                 }
                 className={`rounded-md px-3 py-1.5 text-sm transition-colors ${
                   siteSettings.DanmakuSourceType !== 'custom'
-                    ? 'bg-white text-green-600 shadow-sm dark:bg-gray-700 dark:text-green-400'
+                    ? 'bg-white text-green-600 shadow-xs dark:bg-gray-700 dark:text-green-400'
                     : 'text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white'
                 }`}
               >
@@ -1265,7 +1265,7 @@ export const SiteConfigComponent = ({
                 }
                 className={`rounded-md px-3 py-1.5 text-sm transition-colors ${
                   siteSettings.DanmakuSourceType === 'custom'
-                    ? 'bg-white text-green-600 shadow-sm dark:bg-gray-700 dark:text-green-400'
+                    ? 'bg-white text-green-600 shadow-xs dark:bg-gray-700 dark:text-green-400'
                     : 'text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white'
                 }`}
               >
@@ -1642,7 +1642,7 @@ export const SiteConfigComponent = ({
                   onClick={() =>
                     handleCommentsToggle(!siteSettings.EnableComments)
                   }
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 ${
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-hidden focus:ring-2 focus:ring-green-500 focus:ring-offset-2 ${
                     siteSettings.EnableComments
                       ? buttonStyles.toggleOn
                       : buttonStyles.toggleOff
@@ -1701,7 +1701,7 @@ export const SiteConfigComponent = ({
                     AnalyticsEnabled: !prev.AnalyticsEnabled,
                   }))
                 }
-                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 ${
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-hidden focus:ring-2 focus:ring-green-500 focus:ring-offset-2 ${
                   siteSettings.AnalyticsEnabled
                     ? buttonStyles.toggleOn
                     : buttonStyles.toggleOff
@@ -1926,7 +1926,7 @@ export const SiteConfigComponent = ({
       {showEnableCommentsModal &&
         createPortal(
           <div
-            className='fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4'
+            className='fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4'
             onClick={() => setShowEnableCommentsModal(false)}
           >
             <div

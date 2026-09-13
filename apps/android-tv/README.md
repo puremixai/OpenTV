@@ -14,8 +14,8 @@
 - `APP_NAME`: Android TV 桌面显示名称，默认 `XTV TV`
 - `VERSION_NAME`: APK 版本名
 - `VERSION_CODE`: APK 版本号，整数
-- `MIN_SDK`: 最低 Android API，标准版为 `23`（Android 6+），兼容版为 `21`（Android 5+）
-- `GECKOVIEW_VERSION`: GeckoView 依赖版本，仅 GeckoView 版本使用，默认 `126.0.20240526221752`
+- `MIN_SDK`: Android 外壳的最低 API，标准版为 `23`（Android 6+），兼容版为 `21`（Android 5+）；网页兼容性还取决于浏览器内核，见下文
+- `GECKOVIEW_VERSION`: GeckoView 依赖版本，仅 GeckoView 版本使用，默认 `128.0.20240725162350`
 
 App 启动时会自动打开：
 
@@ -29,8 +29,8 @@ BASE_URL 去掉末尾 / 后 + /tv
 
 - GitHub Actions 默认构建四个版本：`webview-android6plus`、`webview-android5plus`、`geckoview-android6plus`、`geckoview-android5plus`
 - GitHub Actions 未配置签名 secrets 时只构建 debug APK；配置完整签名 secrets 后只构建 release APK
-- `webview` 版本使用系统 Android WebView，体积小但依赖设备内置 WebView 版本
-- `gecko` 版本自带 GeckoView 浏览器内核，用于旧系统 WebView 无法兼容 Next.js 页面时测试
+- `webview` 版本使用系统 Android WebView，体积小，需要内核满足当前网页的浏览器要求
+- `gecko` 版本自带 GeckoView 浏览器内核；所选内核须同时满足网页要求与设备的 Android 版本要求
 - 锁定横屏
 - 支持 Android TV Launcher
 - 允许 HTTP 明文访问
@@ -39,6 +39,12 @@ BASE_URL 去掉末尾 / 后 + /tv
 - 内置局域网遥控服务，手机与电视在同一局域网时可打开遥控页面
 
 ## 图标与兼容性
+
+网页已迁移至 Tailwind CSS 4，官方浏览器基线为 Chrome 111+、Safari 16.4+ 和 Firefox 128+，详见 [Tailwind 4 升级说明](../../docs/TAILWIND4-UPGRADE.md#浏览器与电视端)。Android WebView 应使用 Chromium 111 或更新内核；GeckoView 应选择基于 Firefox 128 或更新内核的版本，并在目标电视上验证页面、焦点导航与播放。
+
+`MIN_SDK` 和 APK 名称中的 `android5plus` / `android6plus` 只说明 Android 外壳的构建目标，不能保证设备自带的旧 WebView 能显示当前网页。本轮将默认 GeckoView 从 126 升至 `128.0.20240725162350`，以满足 Tailwind 4 的 CSS 浏览器基线，保留 `MIN_SDK=21/23`。已核对官方 AAR 的 SDK 元数据；尚未执行 Android APK 构建或设备测试。旧设备若无法运行符合要求的内核，不能仅通过切换壳版本解决。
+
+GeckoView 内核随 APK 打包，更新网页或服务端 Docker 不会更新电视上已安装的内核；调整 `GECKOVIEW_VERSION` 后需要重新构建并安装 APK。系统 WebView 则需要在电视设备上更新，能否更新取决于设备支持。
 
 Android 使用 [app/src/main/res/drawable/logo.png](app/src/main/res/drawable/logo.png) 作为图标资源。GitHub Actions 构建会从仓库根目录的 `public/logo.png` 自动复制；本地替换 Logo 后，也需同步该文件再构建 APK。
 

@@ -411,16 +411,16 @@ function TVDetailClient() {
               <img
                 src={poster}
                 alt={detail.title}
-                className='aspect-[2/3] h-full w-full object-cover'
+                className='aspect-2/3 h-full w-full object-cover'
               />
             ) : (
-              <div className='aspect-[2/3]' />
+              <div className='aspect-2/3' />
             )}
           </div>
           <div className='py-2'>
             <button
               onClick={() => router.back()}
-              className='tv-focusable mb-6 flex cursor-pointer items-center gap-2 rounded-2xl bg-white/10 px-5 py-3 text-xl font-bold outline-none'
+              className='tv-focusable mb-6 flex cursor-pointer items-center gap-2 rounded-2xl bg-white/10 px-5 py-3 text-xl font-bold outline-hidden'
             >
               <ArrowLeft className='h-6 w-6' />
               返回
@@ -455,7 +455,7 @@ function TVDetailClient() {
             )}
             <button
               onClick={() => play(bestSource)}
-              className='tv-focusable mt-8 flex cursor-pointer items-center gap-3 rounded-3xl bg-rose-600 px-9 py-5 text-3xl font-black text-white outline-none'
+              className='tv-focusable mt-8 flex cursor-pointer items-center gap-3 rounded-3xl bg-rose-600 px-9 py-5 text-3xl font-black text-white outline-hidden'
             >
               <Play className='h-9 w-9 fill-current' /> 立即播放
             </button>
@@ -464,7 +464,7 @@ function TVDetailClient() {
       </section>
 
       {sources.length > 1 && (
-        <section className='mt-10 rounded-[36px] border border-white/10 bg-white/[0.04] p-6'>
+        <section className='mt-10 rounded-[36px] border border-white/10 bg-white/4 p-6'>
           <div className='mb-5 flex flex-wrap items-center justify-between gap-4'>
             <h2 className='text-4xl font-black'>播放源</h2>
             <div className='flex items-center gap-3 rounded-2xl bg-white/10 px-5 py-3 text-xl font-black text-slate-100'>
@@ -489,7 +489,7 @@ function TVDetailClient() {
                 <button
                   key={`${item.source}-${item.id}`}
                   onClick={() => play(item)}
-                  className={`tv-focusable flex min-w-[210px] cursor-pointer flex-col items-start justify-center gap-1 whitespace-nowrap rounded-2xl px-6 py-4 text-left text-2xl font-bold outline-none ${
+                  className={`tv-focusable flex min-w-[210px] cursor-pointer flex-col items-start justify-center gap-1 whitespace-nowrap rounded-2xl px-6 py-4 text-left text-2xl font-bold outline-hidden ${
                     active
                       ? 'bg-rose-600 text-white'
                       : 'bg-white/10 text-slate-200'
@@ -523,7 +523,7 @@ function TVDetailClient() {
         </section>
       )}
 
-      <section className='mt-10 rounded-[36px] border border-white/10 bg-white/[0.04] p-6'>
+      <section className='mt-10 rounded-[36px] border border-white/10 bg-white/4 p-6'>
         <h2 className='mb-5 text-4xl font-black'>选集</h2>
         <div className='grid grid-cols-3 gap-4 md:grid-cols-5 lg:grid-cols-8'>
           {(detail.episodes_titles?.length
@@ -533,7 +533,7 @@ function TVDetailClient() {
             <button
               key={`${ep}-${index}`}
               onClick={() => play(bestSource, index)}
-              className='tv-focusable min-h-20 cursor-pointer rounded-2xl bg-white/10 px-4 py-3 text-xl font-black text-white outline-none'
+              className='tv-focusable min-h-20 cursor-pointer rounded-2xl bg-white/10 px-4 py-3 text-xl font-black text-white outline-hidden'
             >
               {detail.episodes_titles?.[index] || `第 ${index + 1} 集`}
             </button>

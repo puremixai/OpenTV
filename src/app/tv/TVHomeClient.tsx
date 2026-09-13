@@ -108,7 +108,7 @@ export default function TVHomeClient() {
           <Loader2 className='h-8 w-8 animate-spin' /> 正在加载电视首页...
         </div>
       ) : empty ? (
-        <div className='rounded-[36px] border border-white/10 bg-white/[0.04] p-10 text-2xl text-slate-300'>暂无首页内容</div>
+        <div className='rounded-[36px] border border-white/10 bg-white/4 p-10 text-2xl text-slate-300'>暂无首页内容</div>
       ) : (
         sections.map((section) => <TVRow key={section.title} section={section} />)
       )}

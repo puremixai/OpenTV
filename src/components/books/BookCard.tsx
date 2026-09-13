@@ -17,13 +17,13 @@ export default function BookCard({
   onNavigate?: () => void;
 }) {
   return (
-    <article className='group overflow-hidden rounded-[1.75rem] border border-emerald-100/80 bg-white/85 shadow-sm shadow-emerald-950/5 transition-colors duration-200 hover:border-emerald-200 hover:bg-white dark:border-emerald-500/10 dark:bg-gray-950/70 dark:hover:border-emerald-500/30'>
+    <article className='group overflow-hidden rounded-[1.75rem] border border-emerald-100/80 bg-white/85 shadow-xs shadow-emerald-950/5 transition-colors duration-200 hover:border-emerald-200 hover:bg-white dark:border-emerald-500/10 dark:bg-gray-950/70 dark:hover:border-emerald-500/30'>
       <Link
         href={href}
         onClick={onNavigate}
-        className='block cursor-pointer focus:outline-none focus:ring-2 focus:ring-inset focus:ring-emerald-500'
+        className='block cursor-pointer focus:outline-hidden focus:ring-2 focus:ring-inset focus:ring-emerald-500'
       >
-        <div className='relative aspect-[3/4] overflow-hidden bg-gradient-to-br from-emerald-50 to-amber-50 dark:from-gray-900 dark:to-emerald-950/20'>
+        <div className='relative aspect-3/4 overflow-hidden bg-linear-to-br from-emerald-50 to-amber-50 dark:from-gray-900 dark:to-emerald-950/20'>
           {item.cover ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
@@ -37,8 +37,8 @@ export default function BookCard({
               无封面
             </div>
           )}
-          <div className='absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-black/55 to-transparent opacity-80' />
-          <div className='absolute right-2 top-2 inline-flex max-w-[74%] items-center gap-1.5 truncate rounded-full bg-black/65 px-2.5 py-1 text-[11px] font-medium text-white shadow-lg backdrop-blur'>
+          <div className='absolute inset-x-0 bottom-0 h-20 bg-linear-to-t from-black/55 to-transparent opacity-80' />
+          <div className='absolute right-2 top-2 inline-flex max-w-[74%] items-center gap-1.5 truncate rounded-full bg-black/65 px-2.5 py-1 text-[11px] font-medium text-white shadow-lg backdrop-blur-sm'>
             <Library className='h-3 w-3 shrink-0' />
             <span className='truncate'>{item.sourceName}</span>
           </div>
@@ -48,7 +48,7 @@ export default function BookCard({
         <Link
           href={href}
           onClick={onNavigate}
-          className='line-clamp-2 cursor-pointer text-sm font-semibold leading-5 text-slate-950 transition-colors duration-200 hover:text-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:text-white dark:hover:text-emerald-200'
+          className='line-clamp-2 cursor-pointer text-sm font-semibold leading-5 text-slate-950 transition-colors duration-200 hover:text-emerald-700 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 dark:text-white dark:hover:text-emerald-200'
         >
           {item.title}
         </Link>

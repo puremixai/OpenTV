@@ -150,7 +150,7 @@ export const WebLiveConfig = ({
   return (
     <div className='space-y-6'>
       {/* 功能总开关 */}
-      <div className='p-4 bg-gradient-to-r from-orange-50 to-red-50 dark:from-orange-900/20 dark:to-red-900/20 rounded-lg border-2 border-orange-300 dark:border-orange-700'>
+      <div className='p-4 bg-linear-to-r from-orange-50 to-red-50 dark:from-orange-900/20 dark:to-red-900/20 rounded-lg border-2 border-orange-300 dark:border-orange-700'>
         <div className='flex items-center justify-between'>
           <div className='flex-1'>
             <h4 className='text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1'>
@@ -163,7 +163,7 @@ export const WebLiveConfig = ({
           <button
             onClick={handleToggleWebLiveEnabled}
             disabled={isLoading('toggleWebLiveEnabled')}
-            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 ${
+            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-hidden focus:ring-2 focus:ring-offset-2 focus:ring-green-500 ${
               config.WebLiveEnabled
                 ? buttonStyles.toggleOn
                 : buttonStyles.toggleOff
@@ -189,7 +189,7 @@ export const WebLiveConfig = ({
       {/* 免责声明弹窗 */}
       {showDisclaimerModal &&
         createPortal(
-          <div className='fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4'>
+          <div className='fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4'>
             <div className='bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full border border-red-200 dark:border-red-800'>
               <div className='p-6'>
                 <div className='flex justify-center mb-4'>

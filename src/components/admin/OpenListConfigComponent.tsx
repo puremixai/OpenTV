@@ -431,7 +431,7 @@ export const OpenListConfigComponent = ({
             onChange={(e) => setEnabled(e.target.checked)}
             className='sr-only peer'
           />
-          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-hidden peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:rtl:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:inset-s-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
         </label>
       </div>
 
@@ -721,7 +721,7 @@ export const OpenListConfigComponent = ({
         {pathMetaDialogOpen &&
           createPortal(
             <div
-              className='fixed inset-0 bg-black bg-opacity-50 z-[10002] flex items-center justify-center p-4'
+              className='fixed inset-0 bg-black/50 z-10002 flex items-center justify-center p-4'
               onClick={() => setPathMetaDialogOpen(false)}
               onTouchMove={(e) => e.preventDefault()}
               onWheel={(e) => e.preventDefault()}
@@ -780,7 +780,7 @@ export const OpenListConfigComponent = ({
                                   return next;
                                 })
                               }
-                              className='flex-shrink-0 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
+                              className='shrink-0 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
                               aria-label={expanded ? '收起' : '展开'}
                             >
                               {expanded ? (
@@ -810,7 +810,7 @@ export const OpenListConfigComponent = ({
                                   rows.filter((_, i) => i !== index)
                                 )
                               }
-                              className='flex-shrink-0 px-2 py-1 text-sm text-red-600 hover:text-red-700 dark:text-red-400'
+                              className='shrink-0 px-2 py-1 text-sm text-red-600 hover:text-red-700 dark:text-red-400'
                             >
                               删除
                             </button>
@@ -862,7 +862,7 @@ export const OpenListConfigComponent = ({
                                       )
                                     )
                                   }
-                                  className={`relative inline-flex h-6 w-11 flex-shrink-0 items-center rounded-full transition-colors ${
+                                  className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors ${
                                     row.refresh14m
                                       ? 'bg-blue-600'
                                       : 'bg-gray-200 dark:bg-gray-700'
@@ -900,7 +900,7 @@ export const OpenListConfigComponent = ({
                                       )
                                     )
                                   }
-                                  className={`relative inline-flex h-6 w-11 flex-shrink-0 items-center rounded-full transition-colors ${
+                                  className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors ${
                                     row.proxyPlay
                                       ? 'bg-blue-600'
                                       : 'bg-gray-200 dark:bg-gray-700'
