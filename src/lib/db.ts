@@ -105,14 +105,14 @@ function createStorage(): IStorage {
 
 /**
  * 获取 Postgres 适配器
- * 使用 Vercel Postgres (@vercel/postgres)
+ * 使用标准 PostgreSQL 连接池
  */
 function getPostgresAdapter(): any {
   // 动态导入适配器以避免客户端打包
   // eslint-disable-next-line @typescript-eslint/no-var-requires -- Load the runtime adapter only on the server or share the CommonJS server singleton.
   const { PostgresAdapter } = require('./postgres-adapter');
 
-  console.log('Using Vercel Postgres database');
+  console.log('Using PostgreSQL database');
 
   return new PostgresAdapter();
 }

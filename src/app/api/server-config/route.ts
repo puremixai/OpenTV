@@ -39,7 +39,8 @@ export async function GET(request: NextRequest) {
       TVModeEnabled: process.env.ENABLE_TV_MODE !== 'false',
       WatchRoom: watchRoomConfig,
       EnableOfflineDownload: process.env.NEXT_PUBLIC_ENABLE_OFFLINE_DOWNLOAD === 'true',
-      DanmakuAutoLoadDefault: true,
+      DanmakuEnabled: process.env.DANMAKU_ENABLED !== 'false',
+      DanmakuAutoLoadDefault: process.env.DANMAKU_ENABLED !== 'false',
       EnableTelegramLogin: Boolean(process.env.TELEGRAM_BOT_TOKEN && process.env.TELEGRAM_BOT_USERNAME && process.env.TELEGRAM_LOGIN_ENABLED !== 'false'),
       TelegramBotUsername: process.env.TELEGRAM_BOT_USERNAME || '',
     });
@@ -69,7 +70,8 @@ export async function GET(request: NextRequest) {
       (config.TelegramConfig?.botUsername || process.env.TELEGRAM_BOT_USERNAME)
     ),
     TelegramBotUsername: config.TelegramConfig?.botUsername || process.env.TELEGRAM_BOT_USERNAME || '',
-    DanmakuAutoLoadDefault: config.SiteConfig.DanmakuAutoLoadDefault !== false,
+    DanmakuEnabled: process.env.DANMAKU_ENABLED !== 'false',
+    DanmakuAutoLoadDefault: process.env.DANMAKU_ENABLED !== 'false' && config.SiteConfig.DanmakuAutoLoadDefault !== false,
     loginBackgroundImage: config.ThemeConfig?.loginBackgroundImage || '',
     registerBackgroundImage: config.ThemeConfig?.registerBackgroundImage || '',
     homeBackgroundImage: config.ThemeConfig?.homeBackgroundImage || '',

@@ -1,110 +1,88 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
 
-import { AIComment,generateAIComments } from '@/lib/ai-comment-generator';
+import { AIConfigurationError } from '@/lib/ai-model-config';
 import { getConfig } from '@/lib/config';
-import { logger } from '@/lib/logger';
+import { hasFeaturePermission } from '@/lib/permissions';
+import {
+  enqueueAIComments,
+  readSavedAIComments,
+} from '@/lib/server/ai-comments';
+import { getAuthenticatedUser } from '@/lib/session';
 
 export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
 
-interface AICommentsResponse {
-  comments: AIComment[];
-  total: number;
-  movieName: string;
-  isAiGenerated: true;
-  generatedAt: string;
-}
+const input = z.object({
+  name: z.string().trim().min(1, '缺少影片名称参数').max(300),
+  year: z.string().trim().max(16).default(''),
+  info: z.string().max(4000).default(''),
+  count: z.number().int().min(1).max(50).default(10),
+  regenerate: z.boolean().default(false),
+});
 
-export async function GET(request: NextRequest) {
+const json = (value: unknown, status = 200) =>
+  NextResponse.json(value, {
+    status,
+    headers: { 'Cache-Control': 'private, no-store' },
+  });
+
+async function handle(request: NextRequest, submit: boolean) {
   try {
-    const searchParams = request.nextUrl.searchParams;
-    const movieName = searchParams.get('name');
-    const movieInfo = searchParams.get('info');
-    const count = parseInt(searchParams.get('count') || '10');
-
-    // 参数验证
-    if (!movieName) {
-      return NextResponse.json(
-        { error: '缺少影片名称参数' },
-        { status: 400 }
-      );
+    const auth = await getAuthenticatedUser(request);
+    if (!auth?.username) return json({ error: 'Unauthorized' }, 401);
+    const origin = request.headers.get('origin');
+    // The custom server's nextUrl can contain its internal Docker port.
+    // Host preserves the browser-facing authority; TLS proxies supply protocol.
+    const host = request.headers.get('host') || request.nextUrl.host;
+    const protocol =
+      request.headers.get('x-forwarded-proto')?.split(',')[0].trim() ||
+      request.nextUrl.protocol.replace(':', '');
+    const expectedOrigin = `${protocol}://${host}`;
+    if (
+      submit &&
+      (request.headers.get('sec-fetch-site') === 'cross-site' ||
+        (origin && origin !== expectedOrigin))
+    ) {
+      return json({ error: '不允许跨站提交生成任务' }, 403);
     }
-
-    if (count < 1 || count > 50) {
-      return NextResponse.json(
-        { error: '评论数量必须在1-50之间' },
-        { status: 400 }
-      );
-    }
-
-    // 读取AI配置
-    const config = await getConfig();
-    const aiConfig = config.AIConfig;
-
-    // 检查AI功能是否启用
-    if (!aiConfig?.Enabled) {
-      return NextResponse.json(
-        { error: 'AI功能未启用' },
-        { status: 403 }
-      );
-    }
-
-    // 检查AI评论功能是否启用
-    if (!aiConfig?.EnableAIComments) {
-      return NextResponse.json(
-        { error: 'AI评论功能未启用' },
-        { status: 403 }
-      );
-    }
-
-    // 检查必要的配置
-    if (!aiConfig.CustomApiKey || !aiConfig.CustomBaseURL || !aiConfig.CustomModel) {
-      return NextResponse.json(
-        { error: 'AI配置不完整，请在管理面板配置' },
-        { status: 500 }
-      );
-    }
-
-    // 生成AI评论
-    const comments = await generateAIComments({
-      movieName,
-      movieInfo: movieInfo || undefined,
-      count,
-      aiConfig: {
-        CustomApiKey: aiConfig.CustomApiKey,
-        CustomBaseURL: aiConfig.CustomBaseURL,
-        CustomModel: aiConfig.CustomModel,
-        Temperature: aiConfig.Temperature,
-        MaxTokens: aiConfig.MaxTokens,
-        EnableWebSearch: aiConfig.EnableWebSearch,
-        WebSearchProvider: aiConfig.WebSearchProvider,
-        TavilyApiKey: aiConfig.TavilyApiKey,
-        SerperApiKey: aiConfig.SerperApiKey,
-        SerpApiKey: aiConfig.SerpApiKey,
-      },
-    });
-
-    // 返回结果
-    const response: AICommentsResponse = {
-      comments,
-      total: comments.length,
-      movieName,
-      isAiGenerated: true,
-      generatedAt: new Date().toISOString(),
-    };
-
-    return NextResponse.json(response);
-  } catch (error) {
-    logger.error('AI评论生成失败:', error);
-
-    // 返回友好的错误信息
-    const errorMessage = error instanceof Error ? error.message : 'AI评论生成失败';
-
-    return NextResponse.json(
-      {
-        error: errorMessage,
-        details: process.env.NODE_ENV === 'development' ? String(error) : undefined
-      },
-      { status: 500 }
+    if (!(await hasFeaturePermission(auth.username, 'ai_ask')))
+      return json({ error: '无权限使用 AI 评论功能' }, 403);
+    if (process.env.NEXT_PUBLIC_STORAGE_TYPE !== 'postgres')
+      return json({ error: '保存 AI 评论需要 PostgreSQL 存储' }, 503);
+    const search = request.nextUrl.searchParams;
+    const data = input.safeParse(
+      submit
+        ? await request.json()
+        : {
+            name: search.get('name'),
+            year: search.get('year') || '',
+            count: Number(search.get('count') ?? '10'),
+          }
     );
+    if (!data.success)
+      return json({ error: '影片参数无效，评论数量须为 1–50 的整数' }, 400);
+    const config = await getConfig();
+    if (!config.AIConfig?.Enabled || !config.AIConfig.EnableAIComments)
+      return json({ error: 'AI评论功能未启用' }, 403);
+    const { regenerate, ...movie } = data.data;
+    const result = submit
+      ? await enqueueAIComments(auth.username, movie, regenerate)
+      : await readSavedAIComments(auth.username, movie);
+    return json(
+      result,
+      submit && ['queued', 'running'].includes(result.status) ? 202 : 200
+    );
+  } catch (error) {
+    if (error instanceof SyntaxError)
+      return json({ error: '请求格式错误' }, 400);
+    if (error instanceof AIConfigurationError)
+      return json({ error: error.message }, 400);
+    if ((error as { code?: string })?.code === 'AI_QUEUE_FULL')
+      return json({ error: (error as Error).message }, 429);
+    return json({ error: 'AI评论任务暂时无法读写，请稍后重试' }, 500);
   }
 }
+
+export const GET = (request: NextRequest) => handle(request, false);
+export const POST = (request: NextRequest) => handle(request, true);

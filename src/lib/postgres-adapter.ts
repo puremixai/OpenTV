@@ -1,154 +1,80 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+import type { Pool, PoolClient, QueryResultRow } from 'pg';
 
-/**
- * Vercel Postgres (Neon/Postgres) 适配器
- *
- * 将 Vercel Postgres API 转换为与 D1 兼容的接口
- *
- * 注意：此模块仅在服务端使用，通过 webpack 配置排除客户端打包
- */
+import { D1PreparedStatement, D1Result, DatabaseAdapter } from './d1-adapter';
+import { getPostgresPool } from '../../server/postgres';
 
-import { sql } from '@vercel/postgres';
+// Preserve quoted literals, identifiers and comments while converting D1 placeholders.
+export function postgresParameters(query: string): string {
+  if (/\$\d+/.test(query)) return query;
+  let index = 0;
+  return query.replace(
+    /'(?:''|[^'])*'|"(?:""|[^"])*"|--[^\n]*|\/\*[\s\S]*?\*\/|\$(\w*)\$[\s\S]*?\$\1\$|\?/g,
+    (part) => (part === '?' ? `$${++index}` : part)
+  );
+}
 
-import { logger } from '@/lib/logger';
-
-import { D1PreparedStatement, D1Result,DatabaseAdapter } from './d1-adapter';
-
-/**
- * Vercel Postgres 适配器
- *
- * 使用 @vercel/postgres 包装为 D1 兼容接口
- */
 export class PostgresAdapter implements DatabaseAdapter {
-  private queryParams: { query: string; values: any[] } | null = null;
+  constructor(private pool: Pool = getPostgresPool()) {}
 
   prepare(query: string): D1PreparedStatement {
-    return new PostgresPreparedStatement(query);
+    return new PostgresPreparedStatement(this.pool, postgresParameters(query));
   }
 
-  batch(statements: D1PreparedStatement[]): Promise<D1Result[]> {
-    // Postgres 使用事务模拟 batch
-    return new Promise((resolve, reject) => {
-      Promise.all(statements.map((stmt) => (stmt as PostgresPreparedStatement).execute()))
-        .then((results) => resolve(results))
-        .catch((err) => reject(err));
-    });
-  }
-
-  exec(query: string): void {
-    // Vercel Postgres 不支持直接 exec，需要使用 sql 模板
-    throw new Error('exec() is not supported for Vercel Postgres. Use prepare() instead.');
+  async batch(statements: D1PreparedStatement[]): Promise<D1Result[]> {
+    const client = await this.pool.connect();
+    try {
+      await client.query('BEGIN');
+      const results: D1Result[] = [];
+      for (const statement of statements) {
+        if (!(statement instanceof PostgresPreparedStatement))
+          throw new Error('PostgreSQL batch requires PostgreSQL statements');
+        results.push(await statement.execute(client));
+      }
+      await client.query('COMMIT');
+      return results;
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
   }
 }
 
-/**
- * Vercel Postgres PreparedStatement 包装器
- * 将 Vercel Postgres API 转换为 D1 兼容 API
- */
 class PostgresPreparedStatement implements D1PreparedStatement {
-  private params: any[] = [];
-  private paramIndex = 1;
+  private params: unknown[] = [];
 
-  constructor(private query: string) {}
+  constructor(private pool: Pool, private query: string) {}
 
-  bind(...values: any[]): D1PreparedStatement {
+  bind(...values: unknown[]): D1PreparedStatement {
     this.params = values;
     return this;
   }
 
-  /**
-   * 将 SQLite 风格的 ? 占位符替换为 Postgres 风格的 $1, $2, ...
-   */
-  private convertQuery(query: string): string {
-    let index = 1;
-    return query.replace(/\?/g, () => `$${index++}`);
+  async first<T = QueryResultRow>(colName?: string): Promise<T | null> {
+    const result = await this.pool.query(this.query, this.params);
+    const row = result.rows[0];
+    if (!row) return null;
+    return colName ? row[colName] ?? null : row;
   }
 
-  /**
-   * 将 SQL 查询中的表名和列名转换为双引号包裹（Postgres 要求）
-   * 注意：需要排除已经有引号的内容
-   */
-  private quoteIdentifiers(query: string): string {
-    // 这个方法主要用于处理列值，表名在 schema 中已经创建好
-    return query;
+  async run<T = QueryResultRow>(): Promise<D1Result<T>> {
+    return this.execute<T>(this.pool);
   }
 
-  /**
-   * 执行查询并返回第一行
-   */
-  async first<T = any>(colName?: string): Promise<T | null> {
-    try {
-      const convertedQuery = this.convertQuery(this.query);
-
-      // 使用 Vercel Postgres 的 query 方法执行参数化查询
-      const result = await sql.query(convertedQuery, this.params);
-
-      if (!result || result.rows.length === 0) return null;
-
-      const row = result.rows[0];
-
-      if (colName) return row[colName] ?? null;
-
-      return row as T;
-    } catch (err) {
-      logger.error('Postgres first() error:', err);
-      return null;
-    }
+  async all<T = QueryResultRow>(): Promise<D1Result<T>> {
+    return this.execute<T>(this.pool);
   }
 
-  /**
-   * 执行查询并返回结果
-   */
-  async run<T = any>(): Promise<D1Result<T>> {
-    try {
-      const convertedQuery = this.convertQuery(this.query);
-
-      const result = await sql.query(convertedQuery, this.params);
-
-      return {
-        success: true,
-        meta: {
-          changes: result.rowCount || 0,
-          last_row_id: null, // Postgres 不直接返回 lastInsertId
-        },
-        results: result.rows,
-      };
-    } catch (err: any) {
-      logger.error('Postgres run() error:', err);
-      return {
-        success: false,
-        error: err.message,
-      };
-    }
-  }
-
-  /**
-   * 执行查询并返回所有行
-   */
-  async all<T = any>(): Promise<D1Result<T>> {
-    try {
-      const convertedQuery = this.convertQuery(this.query);
-
-      const result = await sql.query(convertedQuery, this.params);
-
-      return {
-        success: true,
-        results: result.rows || [],
-      };
-    } catch (err: any) {
-      logger.error('Postgres all() error:', err);
-      return {
-        success: false,
-        error: err.message,
-        results: [],
-      };
-    }
-  }
-
-  /**
-   * 内部执行方法（用于 batch 操作）
-   */
-  async execute(): Promise<D1Result> {
-    return this.run();
+  async execute<T = QueryResultRow>(
+    client: Pool | PoolClient
+  ): Promise<D1Result<T>> {
+    // Fail visibly instead of reporting success after a database error.
+    const result = await client.query(this.query, this.params);
+    return {
+      success: true,
+      results: result.rows,
+      meta: { changes: result.rowCount || 0 },
+    };
   }
 }

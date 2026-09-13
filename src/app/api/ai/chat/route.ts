@@ -2,6 +2,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 
+import { AIConfigurationError, resolveAIModelConfig } from '@/lib/ai-model-config';
 import {
   orchestrateDataSources,
   VideoContext,
@@ -10,7 +11,6 @@ import {
   buildAgentSystemPrompt,
   buildAgentTools,
   HistoryTurn,
-  NewProtocol,
   runToolAgent,
   ToolDataSources,
 } from '@/lib/ai-tool-agent';
@@ -19,11 +19,6 @@ import { hasFeaturePermission } from '@/lib/permissions';
 import { getAuthenticatedUser } from '@/lib/session';
 
 export const runtime = 'nodejs';
-
-function normalizeClaudeBaseURL(baseURL: string): string {
-  const normalized = baseURL.trim().replace(/\/+$/, '');
-  return /\/v1$/i.test(normalized) ? normalized : `${normalized}/v1`;
-}
 
 interface ChatMessage {
   role: 'user' | 'assistant';
@@ -232,44 +227,16 @@ async function handleNewMode(
   username?: string
 ): Promise<NextResponse> {
   const { message, context, history = [] } = body;
-  const protocol: NewProtocol =
-    aiConfig.NewProtocol === 'openai-responses' || aiConfig.NewProtocol === 'claude'
-      ? aiConfig.NewProtocol
-      : 'openai-completions';
-
-
-  // 解析凭据
-  let apiKey = '';
-  let baseURL = '';
-  let model = '';
-  if (protocol === 'claude') {
-    apiKey = aiConfig.ClaudeApiKey || '';
-    baseURL = normalizeClaudeBaseURL(aiConfig.ClaudeBaseURL || 'https://api.anthropic.com');
-    model = aiConfig.ClaudeModel || '';
-  } else {
-    apiKey = aiConfig.OpenAIApiKey || aiConfig.CustomApiKey || '';
-    baseURL = aiConfig.OpenAIBaseURL || aiConfig.CustomBaseURL || '';
-    model = aiConfig.OpenAIModel || aiConfig.CustomModel || 'gpt-3.5-turbo';
+  let connection: ReturnType<typeof resolveAIModelConfig>;
+  try {
+    connection = resolveAIModelConfig(aiConfig);
+  } catch (error) {
+    if (error instanceof AIConfigurationError) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
+    throw error;
   }
-
-  if (!apiKey) {
-    return NextResponse.json(
-      { error: `新版模式（${protocol}）未配置 API Key` },
-      { status: 400 }
-    );
-  }
-  if (!model) {
-    return NextResponse.json(
-      { error: `新版模式（${protocol}）未配置模型名称` },
-      { status: 400 }
-    );
-  }
-  if (!baseURL) {
-    return NextResponse.json(
-      { error: `新版模式（${protocol}）未配置 Base URL` },
-      { status: 400 }
-    );
-  }
+  const { protocol, apiKey, baseURL, model } = connection;
 
   // 组装数据源
   const dataSources: ToolDataSources = {

@@ -60,6 +60,8 @@ function handleAuthFailure(
 
 // 判断是否需要跳过认证的路径
 function shouldSkipAuth(pathname: string): boolean {
+  // The internal worker route validates a process-local secret, never a browser cookie.
+  if (pathname === '/api/ai-comments/worker') return true;
   const skipPaths = [
     '/_next',
     '/favicon.ico',

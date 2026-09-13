@@ -2,36 +2,17 @@
 
 import { parseStringPromise } from 'xml2js';
 
+import type { AIComment } from '@/lib/ai-comments.types';
+import { AISettings, resolveAIModelConfig } from '@/lib/ai-model-config';
 import { logger } from '@/lib/logger';
-import { normalizeApiBaseUrl } from '@/lib/url';
 
-export interface AIComment {
-  id: string;
-  userName: string;
-  userAvatar: string;
-  rating: number | null;
-  content: string;
-  time: string;
-  votes: number;
-  isAiGenerated: true;
-}
+export type { AIComment } from '@/lib/ai-comments.types';
 
 interface GenerateCommentsParams {
   movieName: string;
   movieInfo?: string;
   count?: number;
-  aiConfig: {
-    CustomApiKey: string;
-    CustomBaseURL: string;
-    CustomModel: string;
-    Temperature?: number;
-    MaxTokens?: number;
-    EnableWebSearch?: boolean;
-    WebSearchProvider?: 'tavily' | 'serper' | 'serpapi' | 'bing';
-    TavilyApiKey?: string;
-    SerperApiKey?: string;
-    SerpApiKey?: string;
-  };
+  aiConfig: AISettings;
 }
 
 interface CommentData {
@@ -96,6 +77,7 @@ async function searchMovieInfo(
 
     if (provider === 'tavily' && aiConfig.TavilyApiKey) {
       const response = await fetch('https://api.tavily.com/search', {
+        signal: AbortSignal.timeout(15000),
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -116,6 +98,7 @@ async function searchMovieInfo(
       }
     } else if (provider === 'serper' && aiConfig.SerperApiKey) {
       const response = await fetch('https://google.serper.dev/search', {
+        signal: AbortSignal.timeout(15000),
         method: 'POST',
         headers: {
           'X-API-KEY': aiConfig.SerperApiKey,
@@ -136,7 +119,10 @@ async function searchMovieInfo(
       }
     } else if (provider === 'serpapi' && aiConfig.SerpApiKey) {
       const response = await fetch(
-        `https://serpapi.com/search?q=${encodeURIComponent(movieName + ' 影评 评价')}&api_key=${aiConfig.SerpApiKey}&num=5`
+        `https://serpapi.com/search?q=${encodeURIComponent(
+          movieName + ' 影评 评价'
+        )}&api_key=${aiConfig.SerpApiKey}&num=5`,
+        { signal: AbortSignal.timeout(15000) }
       );
 
       if (response.ok) {
@@ -148,8 +134,11 @@ async function searchMovieInfo(
       }
     } else if (provider === 'bing') {
       const response = await fetch(
-        `https://www.bing.com/search?format=rss&q=${encodeURIComponent(movieName + ' 影评 评价')}`,
+        `https://www.bing.com/search?format=rss&q=${encodeURIComponent(
+          movieName + ' 影评 评价'
+        )}`,
         {
+          signal: AbortSignal.timeout(15000),
           headers: {
             Accept: 'application/rss+xml, application/xml, text/xml',
             'User-Agent': 'Mozilla/5.0 (compatible; MoonTVPlusBot/1.0)',
@@ -157,7 +146,9 @@ async function searchMovieInfo(
         }
       );
       if (response.ok) {
-        const parsed = await parseStringPromise(await response.text(), { trim: true });
+        const parsed = await parseStringPromise(await response.text(), {
+          trim: true,
+        });
         const items = parsed?.rss?.channel?.[0]?.item || [];
         searchResults = items
           .slice(0, 5)
@@ -179,48 +170,111 @@ export async function generateAIComments(
   params: GenerateCommentsParams
 ): Promise<AIComment[]> {
   const { movieName, movieInfo, count = 10, aiConfig } = params;
+  const connection = resolveAIModelConfig(aiConfig);
 
   try {
     // 1. 联网搜索影片资料（如果启用）
     const searchResults = await searchMovieInfo(movieName, aiConfig);
 
     // 2. 构建Prompt
-    const prompt = buildCommentPrompt(movieName, movieInfo, searchResults, count);
+    const prompt = buildCommentPrompt(
+      movieName,
+      movieInfo,
+      searchResults,
+      count
+    );
 
     // 3. 调用AI API
-    const baseURL = normalizeApiBaseUrl(aiConfig.CustomBaseURL);
-    const response = await fetch(`${baseURL}/chat/completions`, {
+    const { protocol, apiKey, baseURL, model } = connection;
+    const system = '你是一个专业的影评生成助手，擅长生成真实自然的观众评论。';
+    const temperature = aiConfig.Temperature ?? 0.8;
+    const maxTokens = aiConfig.MaxTokens ?? 2000;
+    const path =
+      protocol === 'claude'
+        ? 'messages'
+        : protocol === 'openai-responses'
+        ? 'responses'
+        : 'chat/completions';
+    const body =
+      protocol === 'claude'
+        ? {
+            model,
+            system,
+            messages: [{ role: 'user', content: prompt }],
+            temperature,
+            max_tokens: maxTokens,
+          }
+        : protocol === 'openai-responses'
+        ? {
+            model,
+            instructions: system,
+            input: prompt,
+            temperature,
+            max_output_tokens: maxTokens,
+          }
+        : {
+            model,
+            messages: [
+              { role: 'system', content: system },
+              { role: 'user', content: prompt },
+            ],
+            temperature,
+            max_tokens: maxTokens,
+          };
+    const response = await fetch(`${baseURL}/${path}`, {
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${aiConfig.CustomApiKey}`,
         'Content-Type': 'application/json',
+        ...(protocol === 'claude'
+          ? { 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' }
+          : { Authorization: `Bearer ${apiKey}` }),
       },
-      body: JSON.stringify({
-        model: aiConfig.CustomModel,
-        messages: [
-          {
-            role: 'system',
-            content:
-              '你是一个专业的影评生成助手，擅长生成真实自然的观众评论。',
-          },
-          {
-            role: 'user',
-            content: prompt,
-          },
-        ],
-        temperature: aiConfig.Temperature ?? 0.8,
-        max_tokens: aiConfig.MaxTokens ?? 2000,
-      }),
+      body: JSON.stringify({ ...body, stream: false }),
+      signal: AbortSignal.timeout(60_000),
     });
 
     if (!response.ok) {
       throw new Error(`AI API调用失败: ${response.status}`);
     }
 
-    const data = await response.json();
-    const content = data.choices?.[0]?.message?.content;
+    let data;
+    try {
+      data = await response.json();
+    } catch {
+      throw new Error(
+        'AI接口未返回有效JSON，请检查当前协议的 Base URL 是否正确'
+      );
+    }
+    const textBlocks = (
+      blocks: Array<{ type?: string; text?: string }> | undefined,
+      type: string
+    ) =>
+      Array.isArray(blocks)
+        ? blocks
+            .filter(
+              (block) => block.type === type && typeof block.text === 'string'
+            )
+            .map((block) => block.text)
+            .join('')
+        : '';
+    const content =
+      protocol === 'claude'
+        ? textBlocks(data.content, 'text')
+        : protocol === 'openai-responses'
+        ? data.output_text ||
+          (Array.isArray(data.output)
+            ? data.output
+                .filter((item: { type?: string }) => item.type === 'message')
+                .map(
+                  (item: {
+                    content?: Array<{ type?: string; text?: string }>;
+                  }) => textBlocks(item.content, 'output_text')
+                )
+                .join('')
+            : '')
+        : data.choices?.[0]?.message?.content;
 
-    if (!content) {
+    if (typeof content !== 'string' || !content.trim()) {
       throw new Error('AI返回内容为空');
     }
 
@@ -234,8 +288,18 @@ export async function generateAIComments(
       } else {
         commentsData = JSON.parse(content);
       }
-    } catch (parseError) {
-      logger.error('解析AI返回的JSON失败:', content);
+      if (
+        !Array.isArray(commentsData) ||
+        !commentsData.length ||
+        commentsData.some(
+          (comment) =>
+            !comment ||
+            typeof comment.content !== 'string' ||
+            !comment.content.trim()
+        )
+      )
+        throw new Error('Invalid comments');
+    } catch {
       throw new Error('AI返回格式错误');
     }
 

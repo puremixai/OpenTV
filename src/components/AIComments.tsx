@@ -1,86 +1,29 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
-
-import { logger } from '@/lib/logger';
-
-interface AIComment {
-  id: string;
-  userName: string;
-  userAvatar: string;
-  rating: number | null;
-  content: string;
-  time: string;
-  votes: number;
-  isAiGenerated: true;
-}
+import { useSavedAIComments } from '@/hooks/useSavedAIComments';
 
 interface AICommentsProps {
   movieName: string;
+  movieYear?: string;
   movieInfo?: string;
 }
 
-export default function AIComments({ movieName, movieInfo }: AICommentsProps) {
-  const [comments, setComments] = useState<AIComment[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [hasStartedLoading, setHasStartedLoading] = useState(false);
-
-  const fetchComments = useCallback(async () => {
-    try {
-      logger.debug('正在生成AI评论...');
-      setLoading(true);
-      setError(null);
-
-      const params = new URLSearchParams({
-        name: movieName,
-        count: '10',
-        _t: Date.now().toString(), // 添加时间戳防止缓存
-      });
-
-      if (movieInfo) {
-        params.append('info', movieInfo);
-      }
-
-      const response = await fetch(`/api/ai-comments?${params.toString()}`, {
-        cache: 'no-store', // 禁用缓存
-      });
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || '生成AI评论失败');
-      }
-
-      const data = await response.json();
-      logger.debug('AI评论生成成功:', data.comments.length);
-
-      setComments(data.comments);
-    } catch (err) {
-      logger.error('生成AI评论失败:', err);
-      setError(err instanceof Error ? err.message : '生成AI评论失败');
-    } finally {
-      setLoading(false);
-    }
-  }, [movieName, movieInfo]);
-
-  useEffect(() => {
-    // 重置状态当 movieName 变化时
-    setHasStartedLoading(false);
-    setComments([]);
-    setLoading(false);
-    setError(null);
-  }, [movieName]);
-
-  const startLoading = () => {
-    logger.debug('开始生成AI评论');
-    setHasStartedLoading(true);
-    fetchComments();
-  };
-
-  const regenerate = () => {
-    logger.debug('重新生成AI评论');
-    fetchComments();
-  };
+export default function AIComments({
+  movieName,
+  movieYear,
+  movieInfo,
+}: AICommentsProps) {
+  const {
+    job,
+    restoring,
+    loading,
+    error,
+    readFailed,
+    refresh,
+    start: startLoading,
+    regenerate,
+  } = useSavedAIComments(movieName, movieYear, movieInfo);
+  const comments = job.comments;
 
   // 星级渲染
   const renderStars = (rating: number | null) => {
@@ -102,8 +45,16 @@ export default function AIComments({ movieName, movieInfo }: AICommentsProps) {
     );
   };
 
-  // 初始状态：显示生成按钮
-  if (!hasStartedLoading) {
+  if (restoring) {
+    return (
+      <div className='py-12 text-center text-sm text-gray-500' role='status'>
+        正在读取已保存的评论...
+      </div>
+    );
+  }
+
+  // Reading a movie never starts a paid generation request.
+  if (job.status === 'idle' && !loading && !error) {
     return (
       <div className='flex flex-col items-center justify-center py-12'>
         <div className='text-gray-500 dark:text-gray-400 mb-4'>
@@ -129,7 +80,12 @@ export default function AIComments({ movieName, movieInfo }: AICommentsProps) {
           onClick={startLoading}
           className='px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors flex items-center gap-2'
         >
-          <svg className='w-4 h-4' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+          <svg
+            className='w-4 h-4'
+            fill='none'
+            stroke='currentColor'
+            viewBox='0 0 24 24'
+          >
             <path
               strokeLinecap='round'
               strokeLinejoin='round'
@@ -143,13 +99,19 @@ export default function AIComments({ movieName, movieInfo }: AICommentsProps) {
     );
   }
 
-  if (loading && comments.length === 0) {
+  if (loading && comments.length === 0 && !error) {
     return (
       <div className='flex flex-col items-center justify-center py-12'>
         <div className='animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mb-3'></div>
-        <span className='text-gray-600 dark:text-gray-400'>AI正在生成评论...</span>
+        <span className='text-gray-600 dark:text-gray-400'>
+          {job.status === 'idle' ? '正在提交生成任务...' : 'AI正在生成评论...'}
+        </span>
         <span className='text-xs text-gray-500 dark:text-gray-500 mt-2'>
-          这可能需要几秒钟
+          {job.status === 'idle'
+            ? '正在保存任务，请稍候'
+            : job.status === 'queued'
+            ? '任务已排队，可以刷新或稍后回来查看'
+            : '任务已保存，刷新页面后可继续查看进度'}
         </span>
       </div>
     );
@@ -161,13 +123,16 @@ export default function AIComments({ movieName, movieInfo }: AICommentsProps) {
         <div className='text-red-500 mb-2'>❌</div>
         <p className='text-gray-600 dark:text-gray-400 mb-1'>{error}</p>
         <p className='text-xs text-gray-500 dark:text-gray-500 mb-4'>
-          请检查管理面板的AI配置是否正确
+          {readFailed
+            ? '已有任务和评论仍保存在服务器中'
+            : '任务未完成，可以重试生成'}
         </p>
         <button
-          onClick={startLoading}
-          className='px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors'
+          onClick={readFailed ? refresh : startLoading}
+          disabled={loading}
+          className='px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors disabled:opacity-50'
         >
-          重试
+          {readFailed ? '重新读取' : '重试生成'}
         </button>
       </div>
     );
@@ -178,7 +143,7 @@ export default function AIComments({ movieName, movieInfo }: AICommentsProps) {
       {/* 头部统计和操作 */}
       <div className='flex items-center justify-between'>
         <div className='text-sm text-gray-600 dark:text-gray-400'>
-          已生成 {comments.length} 条AI评论
+          已保存 {comments.length} 条AI评论
         </div>
         <button
           onClick={regenerate}
@@ -201,6 +166,22 @@ export default function AIComments({ movieName, movieInfo }: AICommentsProps) {
           {loading ? '生成中...' : '重新生成'}
         </button>
       </div>
+
+      {job.generatedAt && (
+        <p className='text-xs text-gray-500'>
+          保存于 {new Date(job.generatedAt).toLocaleString('zh-CN')}
+        </p>
+      )}
+      {loading && (
+        <p className='text-sm text-blue-600' role='status'>
+          新评论正在生成，完成后自动更新。可以刷新或稍后回来查看。
+        </p>
+      )}
+      {error && (
+        <p className='text-sm text-amber-600' role='alert'>
+          {error}，已保留上一次生成的评论。
+        </p>
+      )}
 
       {/* 评论列表 */}
       <div className='space-y-4'>
@@ -229,7 +210,11 @@ export default function AIComments({ movieName, movieInfo }: AICommentsProps) {
                   {renderStars(comment.rating)}
                   {/* AI标识 */}
                   <span className='inline-flex items-center gap-1 px-2 py-0.5 bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 text-xs rounded-full'>
-                    <svg className='w-3 h-3' fill='currentColor' viewBox='0 0 24 24'>
+                    <svg
+                      className='w-3 h-3'
+                      fill='currentColor'
+                      viewBox='0 0 24 24'
+                    >
                       <path d='M13 10V3L4 14h7v7l9-11h-7z' />
                     </svg>
                     AI生成

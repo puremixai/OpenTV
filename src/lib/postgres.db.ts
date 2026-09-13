@@ -11,9 +11,9 @@ import { dispatchNotificationChannels } from './notification-dispatch';
 import { hashPassword, verifyPassword } from './password';
 /* eslint-disable no-console, @typescript-eslint/no-explicit-any */
 /**
- * Vercel Postgres Storage Implementation
+ * PostgreSQL Storage Implementation
  *
- * 兼容 D1Storage 的接口，使用 Vercel Postgres 作为后端
+ * 兼容 D1Storage 的接口，使用标准 PostgreSQL 作为后端
  *
  * 注意：此模块仅在服务端使用，通过 webpack 配置排除客户端打包
  */
@@ -32,12 +32,12 @@ import {
 } from './types';
 
 /**
- * Vercel Postgres 存储实现
+ * PostgreSQL 存储实现
  *
  * 特点：
  * - 兼容 D1Storage 的所有接口
- * - 使用 Vercel Postgres (Neon) 作为数据库
- * - 支持 Vercel serverless 部署
+ * - 通过 pg 连接池使用标准 PostgreSQL 数据库
+ * - 支持 Docker 自建 PostgreSQL 及托管 PostgreSQL
  *
  * 使用方式：
  * 1. 设置环境变量：NEXT_PUBLIC_STORAGE_TYPE=postgres

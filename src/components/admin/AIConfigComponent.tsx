@@ -464,7 +464,7 @@ export const AIConfigComponent = ({
                   type='text'
                   value={openaiBaseURL}
                   onChange={(e) => setOpenaiBaseURL(e.target.value)}
-                  placeholder='https://api.openai.com'
+                  placeholder='https://api.openai.com/v1'
                   className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100'
                 />
               </div>
@@ -687,7 +687,7 @@ export const AIConfigComponent = ({
           {
             key: 'aicomments',
             label: 'AI评论功能',
-            desc: '在播放页生成AI评论（独立于豆瓣评论）',
+            desc: '使用上方当前模式的 AI 配置，在播放页生成评论',
             state: enableAIComments,
             setState: setEnableAIComments,
           },

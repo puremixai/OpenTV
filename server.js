@@ -779,10 +779,23 @@ class TVRemoteServer {
   }
 }
 
-app.prepare().then(async () => {
+const databaseReady = process.env.NEXT_PUBLIC_STORAGE_TYPE === 'postgres'
+  ? require('./scripts/init-postgres').initPostgresDatabase()
+  : Promise.resolve();
+
+databaseReady.then(() => app.prepare()).then(async () => {
   const httpServer = createServer(async (req, res) => {
     try {
       const parsedUrl = parse(req.url, true);
+      if (parsedUrl.pathname === '/api/health' && req.method === 'GET') {
+        const health = await require('./server/health').getHealth();
+        res.writeHead(health.status === 'unavailable' ? 503 : 200, {
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-store',
+        });
+        res.end(JSON.stringify(health));
+        return;
+      }
       await handle(req, res, parsedUrl);
     } catch (err) {
       console.error('Error occurred handling', req.url, err);
@@ -845,6 +858,10 @@ app.prepare().then(async () => {
     })
     .listen(port, hostname, () => {
       console.log(`> Ready on http://${hostname}:${port}`);
+      const workerHost = ['0.0.0.0', '::'].includes(hostname) ? '127.0.0.1' : hostname;
+      require('./server/ai-comment-worker').startAICommentWorker(
+        `http://${workerHost.includes(':') ? '[' + workerHost + ']' : workerHost}:${port}`
+      );
       if (io) {
         console.log(`> Socket.IO ready on ws://${hostname}:${port}`);
       } else {
@@ -859,4 +876,7 @@ app.prepare().then(async () => {
 
   process.on('SIGINT', () => forceExit('SIGINT'));
   process.on('SIGTERM', () => forceExit('SIGTERM'));
+}).catch((error) => {
+  console.error('Server initialization failed:', error.code || error.name);
+  process.exit(1);
 });

@@ -68,6 +68,7 @@ public/workbox-*.js.map
 *.db
 *.db-shm
 *.db-wal
+*.dump
 
 # local scripts
 scripts/tvbox/

@@ -1,5 +1,7 @@
 # 本地 Docker 运行
 
+当前本地部署已切换为 **PostgreSQL + Redis**，配置、迁移、备份与回退步骤见 [PostgreSQL + Redis 部署说明](POSTGRES-REDIS.md)。下方带日期的 SQLite 升级记录属于历史操作，不能用于当前部署的数据回退。
+
 从 `D:\bbs\MoonTVPlus` 执行，使用当前工作区源码构建完整版。
 
 ```powershell
@@ -12,7 +14,7 @@ docker compose -f compose.local.yaml logs --tail 100 -f
 
 管理员用户名为 `admin`。随机生成的密码保存在项目 `.env.docker.local` 的 `PASSWORD` 项中；该文件已被 Git 和 Docker 构建上下文排除。站长密码由环境变量决定，需要修改时编辑该文件，然后执行 `docker compose -f compose.local.yaml up -d` 重新创建容器。
 
-数据库使用容器内的 SQLite，存储在 `moontvplus-local_database` 卷；离线下载存储在 `moontvplus-local_downloads` 卷。容器重建后数据保留。TV 遥控和内置观影室已启用，服务端自定义脚本默认关闭。
+业务数据使用 PostgreSQL，存储在 `moontvplus-local_postgres` 卷；Redis 用于搜索缓存。旧 SQLite 数据保留在 `moontvplus-local_database` 卷，离线下载存储在 `moontvplus-local_downloads` 卷。容器重建后业务数据保留。TV 遥控和内置观影室已启用，服务端自定义脚本默认关闭。
 
 停止并保留数据：
 
@@ -66,3 +68,10 @@ docker compose -f compose.local.yaml up -d --no-build
 ```
 
 数据库不会随镜像回退。新版管理入口为 <http://localhost:3000/admin>，已有页面请 Ctrl+F5 刷新。
+## 关闭弹幕获取
+
+当前 `compose.local.yaml` 配置了 `DANMAKU_ENABLED: "false"`，停止弹幕搜索、匹配、下载和自动预加载。此开关优先于浏览器中的旧偏好；旧页面仍调用接口时，服务器直接返回空结果，不请求上游弹幕服务。更新后刷新播放页生效。
+
+如需恢复，把该环境变量改为 `"true"`，再运行 `docker compose -f compose.local.yaml up -d --no-build`。
+
+2026-09-13 已部署镜像 `84e4b2f29011`，保留更新前镜像 `moontvplus:before-disable-danmaku`。181 项测试、类型检查和生产构建通过；部署后验证了搜索、匹配、剧集列表、按集数与视频 URL 获取弹幕的五种请求均返回关闭状态和空结果，浏览器运行时开关为关闭。AI 评论接口及 PostgreSQL、Redis 健康检查正常。

@@ -1,0 +1,10 @@
+export async function readCache(_key: string): Promise<string | null> {
+  return null;
+}
+export async function writeCache(
+  _key: string,
+  _value: string,
+  _ttl: number
+): Promise<void> {
+  /* Local cache only on edge. */
+}

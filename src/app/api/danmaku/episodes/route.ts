@@ -3,11 +3,16 @@ import { NextRequest, NextResponse } from 'next/server';
 
 import { getConfig } from '@/lib/config';
 import { getDanmakuApiBaseUrl } from '@/lib/danmaku/config';
+import { disabledDanmakuResult, isDanmakuEnabled } from '@/lib/danmaku/enabled';
 import { logger } from '@/lib/logger';
 
 export const runtime = 'nodejs';
 
 export async function GET(request: NextRequest) {
+  if (!isDanmakuEnabled())
+    return NextResponse.json(disabledDanmakuResult(), {
+      headers: { 'Cache-Control': 'no-store' },
+    });
   try {
     const searchParams = request.nextUrl.searchParams;
     const animeId = searchParams.get('animeId');

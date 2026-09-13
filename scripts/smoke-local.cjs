@@ -38,6 +38,10 @@ async function main() {
   fs.mkdirSync(work, { recursive: true });
   const log = fs.openSync(path.join(work, 'server.log'), 'w');
   const password = randomBytes(24).toString('hex');
+  const postgres = process.argv.includes('--postgres');
+  if (postgres && !process.env.PG_SMOKE_URL) {
+    throw new Error('--postgres requires PG_SMOKE_URL pointing to an empty disposable test database');
+  }
   const child = spawn(process.execPath, ['server.js'], {
     cwd: root,
     windowsHide: true,
@@ -51,7 +55,8 @@ async function main() {
       ADMIN_USERNAME: 'smoke-owner',
       PASSWORD: password,
       AUTH_SECRET: randomBytes(32).toString('hex'),
-      NEXT_PUBLIC_STORAGE_TYPE: 'd1',
+      NEXT_PUBLIC_STORAGE_TYPE: postgres ? 'postgres' : 'd1',
+      ...(postgres ? { POSTGRES_URL: process.env.PG_SMOKE_URL } : {}),
       SQLITE_DB_PATH: path.join(work, 'moontv.db'),
       WATCH_ROOM_ENABLED: 'true',
       WATCH_ROOM_SERVER_TYPE: 'internal',

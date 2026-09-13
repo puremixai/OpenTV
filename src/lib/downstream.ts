@@ -30,7 +30,9 @@ async function searchWithCache(
   timeoutMs = 8000
 ): Promise<{ results: SearchResult[]; pageCount?: number }> {
   // 先查缓存
-  const cached = getCachedSearchPage(apiSite.key, query, page);
+  // Source changes must not reuse results from an old endpoint or proxy mode.
+  const cacheSource = JSON.stringify([apiSite.key, apiSite.api, apiSite.name, apiSite.proxyMode]);
+  const cached = await getCachedSearchPage(cacheSource, query, page);
   if (cached) {
     if (cached.status === 'ok') {
       return { results: cached.data, pageCount: cached.pageCount };
@@ -53,7 +55,7 @@ async function searchWithCache(
 
     if (!response.ok) {
       if (response.status === 403) {
-        setCachedSearchPage(apiSite.key, query, page, 'forbidden', []);
+        await setCachedSearchPage(cacheSource, query, page, 'forbidden', []);
       }
       return { results: [] };
     }
@@ -126,14 +128,14 @@ async function searchWithCache(
 
     const pageCount = page === 1 ? data.pagecount || 1 : undefined;
     // 写入缓存（成功）
-    setCachedSearchPage(apiSite.key, query, page, 'ok', results, pageCount);
+    await setCachedSearchPage(cacheSource, query, page, 'ok', results, pageCount);
     return { results, pageCount };
   } catch (error: any) {
     clearTimeout(timeoutId);
     // 识别被 AbortController 中止（超时）
     const aborted = error?.name === 'AbortError' || error?.code === 20 || error?.message?.includes('aborted');
     if (aborted) {
-      setCachedSearchPage(apiSite.key, query, page, 'timeout', []);
+      await setCachedSearchPage(cacheSource, query, page, 'timeout', []);
     }
     return { results: [] };
   }
@@ -150,7 +152,7 @@ export async function searchFromApi(
 
     // 使用新的缓存搜索函数处理第一页
     const firstPageResult = await searchWithCache(apiSite, query, 1, apiUrl, 8000);
-    const results = firstPageResult.results;
+    const results = [...firstPageResult.results];
     const pageCountFromFirst = firstPageResult.pageCount;
 
     const config = await getConfig();

@@ -2040,6 +2040,8 @@ function PlayPageClient() {
       return false;
     }
 
+    if ((window as any).RUNTIME_CONFIG?.DANMAKU_ENABLED === false) return true;
+
     const saved = localStorage.getItem('disableAutoLoadDanmaku');
     if (saved !== null) {
       return saved === 'true';
@@ -9337,7 +9339,7 @@ function PlayPageClient() {
 
                   {/* 评论内容 */}
                   <div className='p-3 md:p-6'>
-                    <AIComments movieName={videoTitle} />
+                    <AIComments movieName={videoTitle} movieYear={videoYear} />
                   </div>
                 </div>
               </div>

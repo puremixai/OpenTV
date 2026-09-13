@@ -1,156 +1,84 @@
-/**
- * Vercel Postgres 数据库初始化脚本
- *
- * 创建数据库表结构并初始化默认管理员用户
- */
-
-const { sql } = require('@vercel/postgres');
+const fs = require('node:fs');
+const path = require('node:path');
+const { getPostgresPool, closePostgresPool } = require('../server/postgres');
 const { hashPassword } = require('./password-hash');
 
-// SHA-256 加密密码
-
-console.log('📦 Initializing Vercel Postgres database...');
-
-// 读取迁移脚本
-const fs = require('fs');
-const path = require('path');
-
-// 获取所有迁移文件
-const migrationsDir = path.join(__dirname, '../migrations/postgres');
-if (!fs.existsSync(migrationsDir)) {
-  console.error('❌ Migrations directory not found:', migrationsDir);
-  process.exit(1);
-}
-
-// 读取并排序所有 .sql 文件
-const migrationFiles = fs
-  .readdirSync(migrationsDir)
-  .filter((file) => file.endsWith('.sql'))
-  .sort(); // 按文件名排序，确保按顺序执行
-
-if (migrationFiles.length === 0) {
-  console.error('❌ No migration files found in:', migrationsDir);
-  process.exit(1);
-}
-
-console.log(
-  `📄 Found ${migrationFiles.length} migration file(s):`,
-  migrationFiles.join(', ')
-);
-
-const MIGRATION_BASELINE_CUTOFF = '008_web_push_notifications.sql';
-
-function splitSqlStatements(schemaSql) {
-  const withoutLineComments = schemaSql
-    .split('\n')
-    .filter((line) => !line.trim().startsWith('--'))
-    .join('\n');
-
-  return withoutLineComments
-    .split(';')
-    .map((statement) => statement.trim())
-    .filter((statement) => statement.length > 0);
-}
-
-async function tableExists(tableName) {
-  const result = await sql.query('SELECT to_regclass($1) AS table_name', [
-    `public.${tableName}`,
-  ]);
-  return Boolean(result.rows?.[0]?.table_name);
-}
-
-async function ensureMigrationTable() {
-  await sql.query(`
-    CREATE TABLE IF NOT EXISTS schema_migrations (
-      filename TEXT PRIMARY KEY,
-      applied_at BIGINT NOT NULL
-    )
-  `);
-}
-
-async function getAppliedMigrations() {
-  const result = await sql.query('SELECT filename FROM schema_migrations');
-  return new Set((result.rows || []).map((row) => row.filename));
-}
-
-async function markMigrationApplied(filename) {
-  await sql.query(
-    'INSERT INTO schema_migrations (filename, applied_at) VALUES ($1, $2) ON CONFLICT (filename) DO NOTHING',
-    [filename, Date.now()]
-  );
-}
-
-async function seedExistingMigrationBaseline(hadExistingSchema) {
-  const applied = await getAppliedMigrations();
-  if (!hadExistingSchema || applied.size > 0) return;
-
-  for (const file of migrationFiles) {
-    if (file.localeCompare(MIGRATION_BASELINE_CUTOFF) < 0) {
-      await markMigrationApplied(file);
-    }
-  }
-}
-
-async function init() {
+async function initPostgresDatabase({
+  seedOwner = true,
+  pool = getPostgresPool(),
+} = {}) {
+  const client = await pool.connect();
   try {
-    // 执行所有迁移脚本
-    console.log('🔧 Running database migrations...');
-    const hadExistingSchema = await tableExists('users');
-    await ensureMigrationTable();
-    await seedExistingMigrationBaseline(hadExistingSchema);
-
-    for (const migrationFile of migrationFiles) {
-      const applied = await getAppliedMigrations();
-      if (applied.has(migrationFile)) {
-        console.log(`  ⏭️ ${migrationFile} already applied`);
+    // Serialize schema changes across instances; record each file in the same transaction.
+    await client.query(
+      "SELECT pg_advisory_lock(hashtext('moontvplus:schema'))"
+    );
+    await client.query(
+      'CREATE TABLE IF NOT EXISTS schema_migrations (filename TEXT PRIMARY KEY, applied_at BIGINT NOT NULL)'
+    );
+    const migrationsDir = path.join(__dirname, '../migrations/postgres');
+    for (const filename of fs
+      .readdirSync(migrationsDir)
+      .filter((f) => f.endsWith('.sql'))
+      .sort()) {
+      if (
+        (
+          await client.query(
+            'SELECT 1 FROM schema_migrations WHERE filename=$1',
+            [filename]
+          )
+        ).rowCount
+      )
         continue;
+      await client.query('BEGIN');
+      try {
+        await client.query(
+          fs.readFileSync(path.join(migrationsDir, filename), 'utf8')
+        );
+        await client.query('INSERT INTO schema_migrations VALUES ($1, $2)', [
+          filename,
+          Date.now(),
+        ]);
+        await client.query('COMMIT');
+      } catch (error) {
+        await client.query('ROLLBACK');
+        throw error;
       }
-
-      const sqlPath = path.join(migrationsDir, migrationFile);
-      console.log(`  ⏳ Executing ${migrationFile}...`);
-
-      const schemaSql = fs.readFileSync(sqlPath, 'utf8');
-      const statements = splitSqlStatements(schemaSql);
-
-      for (const statement of statements) {
-        await sql.query(statement);
-      }
-
-      await markMigrationApplied(migrationFile);
-      console.log(`  ✅ ${migrationFile} executed successfully`);
     }
-
-    console.log('✅ All migrations completed successfully!');
-
-    // 创建默认管理员用户
-    const username = process.env.USERNAME || 'admin';
-    const password = process.env.PASSWORD;
-    if (!password)
-      throw new Error('PASSWORD must be set before creating an administrator');
-    const passwordHash = hashPassword(password);
-
-    console.log('👤 Creating default admin user...');
-    await sql`
-      INSERT INTO users (username, password_hash, role, created_at, playrecord_migrated, favorite_migrated, skip_migrated)
-      VALUES (${username}, ${passwordHash}, 'owner', ${Date.now()}, 1, 1, 1)
-      ON CONFLICT (username) DO NOTHING
-    `;
-    console.log(`✅ Default admin user created: ${username}`);
-
-    console.log('');
-    console.log('🎉 Vercel Postgres database initialized successfully!');
-    console.log('');
-    console.log('Next steps:');
-    console.log('1. Set NEXT_PUBLIC_STORAGE_TYPE=postgres in .env');
-    console.log('2. Set POSTGRES_URL environment variable');
-    console.log('3. Run: npm run dev');
-  } catch (err) {
-    console.error('❌ Initialization failed:', err);
-    process.exit(1);
+    if (seedOwner) {
+      const username =
+        process.env.ADMIN_USERNAME || process.env.USERNAME || 'admin';
+      const exists = await client.query(
+        'SELECT 1 FROM users WHERE username=$1',
+        [username]
+      );
+      if (!exists.rowCount) {
+        if (!process.env.PASSWORD)
+          throw new Error('PASSWORD is required to create the owner');
+        await client.query(
+          "INSERT INTO users (username,password_hash,role,created_at,playrecord_migrated,favorite_migrated,skip_migrated) VALUES ($1,$2,'owner',$3,1,1,1) ON CONFLICT (username) DO NOTHING",
+          [username, hashPassword(process.env.PASSWORD), Date.now()]
+        );
+      }
+    }
+    console.log('PostgreSQL schema ready.');
+  } finally {
+    await client
+      .query("SELECT pg_advisory_unlock(hashtext('moontvplus:schema'))")
+      .finally(() => client.release());
   }
 }
 
+module.exports = { initPostgresDatabase };
 if (require.main === module) {
   require('./load-env').loadAppEnv();
-  init();
+  initPostgresDatabase()
+    .catch((error) => {
+      console.error(
+        'PostgreSQL initialization failed:',
+        error.code || error.message
+      );
+      process.exitCode = 1;
+    })
+    .finally(closePostgresPool);
 }

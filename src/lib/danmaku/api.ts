@@ -1,6 +1,8 @@
 // 弹幕 API 服务封装（通过本地代理转发）
 import { logger } from '@/lib/logger';
 
+import { disabledDanmakuResult, isDanmakuEnabled } from './enabled';
+
 import {
   clearAllDanmakuCache,
   clearDanmakuCache,
@@ -57,6 +59,7 @@ export {
 export async function searchAnime(
   keyword: string
 ): Promise<DanmakuSearchResponse> {
+  if (!isDanmakuEnabled()) return disabledDanmakuResult();
   try {
     const url = `/api/danmaku/search?keyword=${encodeURIComponent(keyword)}`;
     const response = await fetch(url);
@@ -82,6 +85,7 @@ export async function searchAnime(
 export async function matchAnime(
   fileName: string
 ): Promise<DanmakuMatchResponse> {
+  if (!isDanmakuEnabled()) return disabledDanmakuResult();
   try {
     const url = '/api/danmaku/match';
     const requestBody: DanmakuMatchRequest = { fileName };
@@ -116,6 +120,7 @@ export async function matchAnime(
 export async function getEpisodes(
   animeId: number
 ): Promise<DanmakuEpisodesResponse> {
+  if (!isDanmakuEnabled()) return disabledDanmakuResult();
   try {
     const url = `/api/danmaku/episodes?animeId=${animeId}`;
     const response = await fetch(url);
@@ -157,6 +162,7 @@ export async function getDanmakuById(
     danmakuCount?: number;
   }
 ): Promise<DanmakuComment[]> {
+  if (!isDanmakuEnabled()) return [];
   try {
     // 1. 如果提供了 title 和 episodeIndex，先尝试从缓存读取
     if (title && episodeIndex !== undefined && !options?.bypassCache) {
@@ -233,6 +239,7 @@ export async function getDanmakuById(
 
 // 通过视频 URL 获取弹幕
 export async function getDanmakuByUrl(url: string): Promise<DanmakuComment[]> {
+  if (!isDanmakuEnabled()) return [];
   try {
     const apiUrl = `/api/danmaku/comment?url=${encodeURIComponent(url)}`;
     const response = await fetch(apiUrl);

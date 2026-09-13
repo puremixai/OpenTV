@@ -44,6 +44,7 @@ import {
   saveDanmakuDisplayState,
   searchAnime,
 } from '@/lib/danmaku/api';
+import { isDanmakuEnabled } from '@/lib/danmaku/enabled';
 import {
   deleteFavorite,
   generateStorageKey,
@@ -453,6 +454,7 @@ function TVPlayClient() {
   });
   const [danmakuEnabled, setDanmakuEnabled] = useState(() => {
     if (typeof window === 'undefined') return true;
+    if (!isDanmakuEnabled()) return false;
     const saved = loadDanmakuDisplayState();
     if (saved !== null) return saved;
     const legacySaved = localStorage.getItem('tv_danmaku_enabled');
@@ -638,7 +640,7 @@ function TVPlayClient() {
       setActiveDanmakuItems([]);
       spawnedDanmakuRef.current.clear();
       lastDanmakuTimeRef.current = timeRef.current.current;
-      if (!danmakuEnabled || !detail?.title) return;
+      if (!isDanmakuEnabled() || !danmakuEnabled || !detail?.title) return;
       try {
         const search = await searchAnime(title || detail.title);
         const anime = search.animes?.[0];

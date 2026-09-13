@@ -117,6 +117,7 @@ const createNextConfig = (phase) => {
       if (isEdgeBuild) {
         config.resolve.alias = {
           ...config.resolve.alias,
+          '@/lib/cache-backend': path.resolve(__dirname, 'src/lib/cloudflare-shims/cache-backend.ts'),
           '@/lib/server/public-fetch': path.resolve(
             __dirname,
             'src/lib/server/edge-public-fetch.ts'
