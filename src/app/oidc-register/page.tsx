@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { Suspense, useEffect, useState } from 'react';
 
 import { logger } from '@/lib/logger';
+import { PROJECT_NAME } from '@/lib/project';
 import { CURRENT_VERSION } from '@/lib/version';
 
 import { useSite } from '@/components/SiteProvider';
@@ -162,7 +163,7 @@ function OIDCRegisterPageClient() {
 
       {/* 版本信息 */}
       <div className='absolute bottom-4 left-1/2 transform -translate-x-1/2 text-xs text-gray-500 dark:text-gray-400'>
-        <span className='font-mono'>v{CURRENT_VERSION}</span>
+        <span className='font-mono'>{PROJECT_NAME} v{CURRENT_VERSION}</span>
       </div>
     </div>
   );

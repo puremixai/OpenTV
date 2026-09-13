@@ -3,6 +3,7 @@
 'use client';
 
 import {
+  AlertCircle,
   Bug,
   CheckCircle,
   ChevronDown,
@@ -15,8 +16,9 @@ import {
 import { useEffect, useState } from 'react';
 
 import { changelog, ChangelogEntry } from '@/lib/changelog';
+import { PROJECT_NAME, PROJECT_REPOSITORY_URL } from '@/lib/project';
 import { CURRENT_VERSION } from '@/lib/version';
-import { compareVersions, UpdateStatus } from '@/lib/version_check';
+import { compareVersions, fetchRemoteChangelog, UpdateStatus } from '@/lib/version_check';
 
 import { createCinemaPortal as createPortal } from '@/components/CinemaPortal';
 
@@ -39,7 +41,8 @@ export const VersionPanel: React.FC<VersionPanelProps> = ({
 }) => {
   const [mounted, setMounted] = useState(false);
   const [remoteChangelog, setRemoteChangelog] = useState<ChangelogEntry[]>([]);
-  const [hasUpdate, setIsHasUpdate] = useState(false);
+  const [updateStatus, setUpdateStatus] = useState<UpdateStatus | null>(null);
+  const hasUpdate = updateStatus === UpdateStatus.HAS_UPDATE;
   const [latestVersion, setLatestVersion] = useState<string>('');
   const [showRemoteContent, setShowRemoteContent] = useState(false);
 
@@ -71,111 +74,30 @@ export const VersionPanel: React.FC<VersionPanelProps> = ({
     }
   }, [isOpen]);
 
-  // 获取远程变更日志
+  // Ignore responses from a panel that was closed or reopened during the request.
   useEffect(() => {
-    if (isOpen) {
-      fetchRemoteChangelog();
-    }
+    if (!isOpen) return;
+    let active = true;
+    setUpdateStatus(null);
+    setRemoteChangelog([]);
+    setLatestVersion('');
+    setShowRemoteContent(false);
+
+    fetchRemoteChangelog()
+      .then((entries) => {
+        if (!active) return;
+        setRemoteChangelog(entries);
+        setLatestVersion(entries[0].version);
+        setUpdateStatus(compareVersions(entries[0].version));
+      })
+      .catch((error) => {
+        if (!active) return;
+        console.warn('获取 XTV 变更日志失败:', error);
+        setUpdateStatus(UpdateStatus.FETCH_FAILED);
+      });
+
+    return () => { active = false; };
   }, [isOpen]);
-
-  // 获取远程变更日志
-  const fetchRemoteChangelog = async () => {
-    try {
-      const response = await fetch(
-        'https://raw.githubusercontent.com/mtvpls/MoonTVPlus/main/CHANGELOG'
-      );
-      if (response.ok) {
-        const content = await response.text();
-        const parsed = parseChangelog(content);
-        setRemoteChangelog(parsed);
-
-        // 检查是否有更新
-        if (parsed.length > 0) {
-          const latest = parsed[0];
-          setLatestVersion(latest.version);
-          setIsHasUpdate(
-            compareVersions(latest.version) === UpdateStatus.HAS_UPDATE
-          );
-        }
-      } else {
-        console.error(
-          '获取远程变更日志失败:',
-          response.status,
-          response.statusText
-        );
-      }
-    } catch (error) {
-      console.error('获取远程变更日志失败:', error);
-    }
-  };
-
-  // 解析变更日志格式
-  const parseChangelog = (content: string): RemoteChangelogEntry[] => {
-    const lines = content.split('\n');
-    const versions: RemoteChangelogEntry[] = [];
-    let currentVersion: RemoteChangelogEntry | null = null;
-    let currentSection: string | null = null;
-    let inVersionContent = false;
-
-    for (const line of lines) {
-      const trimmedLine = line.trim();
-
-      // 匹配版本行: ## [X.Y.Z] - YYYY-MM-DD
-      const versionMatch = trimmedLine.match(
-        /^## \[([\d.]+)\] - (\d{4}-\d{2}-\d{2})$/
-      );
-      if (versionMatch) {
-        if (currentVersion) {
-          versions.push(currentVersion);
-        }
-
-        currentVersion = {
-          version: versionMatch[1],
-          date: versionMatch[2],
-          added: [],
-          changed: [],
-          fixed: [],
-        };
-        currentSection = null;
-        inVersionContent = true;
-        continue;
-      }
-
-      // 如果遇到下一个版本或到达文件末尾，停止处理当前版本
-      if (inVersionContent && currentVersion) {
-        // 匹配章节标题
-        if (trimmedLine === '### Added') {
-          currentSection = 'added';
-          continue;
-        } else if (trimmedLine === '### Changed') {
-          currentSection = 'changed';
-          continue;
-        } else if (trimmedLine === '### Fixed') {
-          currentSection = 'fixed';
-          continue;
-        }
-
-        // 匹配条目: - 内容
-        if (trimmedLine.startsWith('- ') && currentSection) {
-          const entry = trimmedLine.substring(2);
-          if (currentSection === 'added') {
-            currentVersion.added.push(entry);
-          } else if (currentSection === 'changed') {
-            currentVersion.changed.push(entry);
-          } else if (currentSection === 'fixed') {
-            currentVersion.fixed.push(entry);
-          }
-        }
-      }
-    }
-
-    // 添加最后一个版本
-    if (currentVersion) {
-      versions.push(currentVersion);
-    }
-
-    return versions;
-  };
 
   // 渲染变更日志条目
   const renderChangelogEntry = (
@@ -319,7 +241,7 @@ export const VersionPanel: React.FC<VersionPanelProps> = ({
         <div className='flex items-center justify-between p-3 sm:p-6 border-b border-gray-200 dark:border-gray-700'>
           <div className='flex items-center gap-2 sm:gap-3'>
             <h3 className='text-lg sm:text-xl font-bold text-gray-800 dark:text-gray-200'>
-              版本信息
+              {PROJECT_NAME} 版本信息
             </h3>
             <div className='flex flex-wrap items-center gap-1 sm:gap-2'>
               <span className='px-2 sm:px-3 py-1 text-xs sm:text-sm font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300 rounded-full'>
@@ -364,43 +286,53 @@ export const VersionPanel: React.FC<VersionPanelProps> = ({
                     </div>
                   </div>
                   <a
-                    href='https://github.com/mtvpls/MoonTVPlus.git'
+                    href={PROJECT_REPOSITORY_URL}
                     target='_blank'
                     rel='noopener noreferrer'
                     className='inline-flex items-center justify-center gap-2 px-3 py-2 bg-yellow-600 hover:bg-yellow-700 text-white text-xs sm:text-sm rounded-lg transition-colors shadow-sm w-full'
                   >
                     <Download className='w-3 h-3 sm:w-4 sm:h-4' />
-                    前往仓库
+                    前往 {PROJECT_NAME} 仓库
                   </a>
                 </div>
               </div>
             )}
 
-            {/* 当前为最新版本信息 */}
+            {/* Checking, failed, and confirmed results must remain distinct. */}
             {!hasUpdate && (
-              <div className='bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border border-green-200 dark:border-green-800 rounded-lg p-3 sm:p-4'>
+              <div className='bg-gray-50 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700 rounded-lg p-3 sm:p-4'>
                 <div className='flex flex-col gap-3'>
                   <div className='flex items-center gap-2 sm:gap-3'>
-                    <div className='w-8 h-8 sm:w-10 sm:h-10 bg-green-100 dark:bg-green-800/40 rounded-full flex items-center justify-center flex-shrink-0'>
-                      <CheckCircle className='w-4 h-4 sm:w-5 sm:h-5 text-green-600 dark:text-green-400' />
+                    <div className='w-8 h-8 sm:w-10 sm:h-10 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center flex-shrink-0'>
+                      {updateStatus === null ? (
+                        <RefreshCw className='w-4 h-4 sm:w-5 sm:h-5 animate-spin text-gray-500' />
+                      ) : updateStatus === UpdateStatus.FETCH_FAILED ? (
+                        <AlertCircle className='w-4 h-4 sm:w-5 sm:h-5 text-amber-500' />
+                      ) : (
+                        <CheckCircle className='w-4 h-4 sm:w-5 sm:h-5 text-green-600 dark:text-green-400' />
+                      )}
                     </div>
                     <div className='min-w-0 flex-1'>
-                      <h4 className='text-sm sm:text-base font-semibold text-green-800 dark:text-green-200'>
-                        当前为最新版本
+                      <h4 className='text-sm sm:text-base font-semibold text-gray-800 dark:text-gray-200' aria-live='polite'>
+                        {updateStatus === null
+                          ? '正在检查 XTV 更新'
+                          : updateStatus === UpdateStatus.FETCH_FAILED
+                            ? '暂时无法检查更新'
+                            : '未发现新版本'}
                       </h4>
-                      <p className='text-xs sm:text-sm text-green-700 dark:text-green-300 break-all'>
-                        已是最新版本 v{CURRENT_VERSION}
+                      <p className='text-xs sm:text-sm text-gray-600 dark:text-gray-300 break-all'>
+                        当前安装 {PROJECT_NAME} v{CURRENT_VERSION}
                       </p>
                     </div>
                   </div>
                   <a
-                    href='https://github.com/mtvpls/MoonTVPlus.git'
+                    href={PROJECT_REPOSITORY_URL}
                     target='_blank'
                     rel='noopener noreferrer'
                     className='inline-flex items-center justify-center gap-2 px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-xs sm:text-sm rounded-lg transition-colors shadow-sm w-full'
                   >
                     <CheckCircle className='w-3 h-3 sm:w-4 sm:h-4' />
-                    前往仓库
+                    前往 {PROJECT_NAME} 仓库
                   </a>
                 </div>
               </div>
@@ -535,7 +467,7 @@ export const VersionPanel: React.FC<VersionPanelProps> = ({
             {/* 变更日志标题 */}
             <div className='border-b border-gray-200 dark:border-gray-700 pb-4'>
               <h4 className='text-lg font-semibold text-gray-800 dark:text-gray-200 pb-3 sm:pb-4'>
-                变更日志
+                {PROJECT_NAME} 变更日志
               </h4>
 
               <div className='space-y-4'>

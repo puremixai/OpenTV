@@ -6,6 +6,8 @@
 
 > **XTV** 是一个影视聚合播放器，提供多源搜索、在线播放、私人影库、多人观影室与 Android TV 访问入口。
 
+主仓库：[puremixai/xtv](https://github.com/puremixai/xtv) · 当前版本：**1.0.0** · [更新记录](CHANGELOG) · [问题反馈](https://github.com/puremixai/xtv/issues)
+
 项目在 [上游增强版项目](https://github.com/mtvpls/MoonTVPlus) 与 [MoonTV v100](https://github.com/MoonTechLab/LunaTV) 的基础上迭代，使用统一的 XTV 名称与视觉标识。网页、PWA 和 Android TV 共用以青蓝色「X」和播放符号组成的品牌图标。
 
 <div align="center">
@@ -59,6 +61,7 @@
 
 ## 🗺 目录
 
+- [版本与更新记录](#版本与更新记录)
 - [品牌与图标](#品牌与图标)
 - [技术栈](#技术栈)
 - [部署](#部署)
@@ -75,6 +78,17 @@
 - [致谢](#致谢)
 
 
+## 版本与更新记录
+
+XTV 从 **1.0.0** 开始使用独立版本序列。当前版本号记录在 [VERSION.txt](VERSION.txt)，项目更新记录见 [CHANGELOG](CHANGELOG)。此前继承的上游版本与功能历史已保存在 [上游更新历史归档](docs/CHANGELOG-UPSTREAM.md)，不作为 XTV 的当前版本。
+
+修改版本号或更新记录后，在项目根目录执行以下命令，生成界面使用的版本文件；同时保持 `package.json` 的版本号一致：
+
+```powershell
+node scripts/convert-changelog.js
+node scripts/convert-changelog.js --sync-version
+```
+
 ## 品牌与图标
 
 默认站点名称为 **XTV**，可通过构建及运行环境中的 `NEXT_PUBLIC_SITE_NAME` 自定义。使用数据库存储时，网页站名以管理后台保存的站点设置为准；升级已有实例后，如仍显示旧名称，请在后台将站点名称改为 `XTV`。
@@ -90,7 +104,7 @@ PWA 名称与图标引用由 [scripts/generate-manifest.js](scripts/generate-man
 
 更新资源后需要重新构建并部署应用。Android TV 的 GitHub Actions 构建会将 `public/logo.png` 复制到 Android 图标目录；本地构建使用该目录中已同步的图标。
 
-仓库地址、镜像名称、数据卷、数据库键及客户端协议沿用现有标识，以保持链接有效和已有数据、客户端兼容；这些技术标识不影响 XTV 的界面名称。
+XTV 主仓库使用 [puremixai/xtv](https://github.com/puremixai/xtv)。上游镜像地址、数据卷、数据库键及客户端协议保留现有标识，以保持镜像引用有效和已有数据、客户端兼容；这些技术标识不影响 XTV 的界面名称。
 
 
 ## 技术栈
@@ -121,21 +135,25 @@ docker compose -f compose.local.yaml ps
 
 该 Compose 配置默认开启 TV 模式和内置观影室，关闭弹幕获取和服务端自定义脚本。电视或其他设备访问时，需要额外配置可达的服务地址，详见 [Android TV 使用](#android-tv-使用)。
 
-### 上游一键部署入口
+### 一键部署入口
 
-以下按钮及后文的 `ghcr.io/mtvpls/` 镜像地址指向上游项目，不包含本仓库尚未发布的 XTV 修改。部署自己的版本时，请使用自己的源码仓库与构建产物。
+Vercel、Netlify 和 Render 按钮使用 XTV 主仓库 [puremixai/xtv](https://github.com/puremixai/xtv)。各平台仍需配置所需的数据库与环境变量。
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/mtvpls/MoonTVPlus)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/puremixai/xtv)
 
-[![Deploy to Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start/deploy?repository=https://github.com/mtvpls/MoonTVPlus)
-
-**一键部署到 Zeabur**
-
-[![Deploy on Zeabur](https://zeabur.com/button.svg)](https://zeabur.com/templates/SCHCAY/deploy)
+[![Deploy to Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start/deploy?repository=https://github.com/puremixai/xtv)
 
 **一键部署到 Render**
 
-[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/mtvpls/MoonTVPlus)
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/puremixai/xtv)
+
+`render.yaml` 当前仍引用 `ghcr.io/mtvpls/moontvplus:latest` 上游镜像。要在 Render 使用当前 XTV 源码，需要将服务配置为从本仓库构建，或使用自行构建的 XTV 镜像。
+
+**上游 Zeabur 模板**
+
+[![Deploy on Zeabur](https://zeabur.com/button.svg)](https://zeabur.com/templates/SCHCAY/deploy)
+
+Zeabur 模板及后文的 `ghcr.io/mtvpls/` 镜像地址属于上游项目。使用本仓库的 XTV 修改时，请从当前源码构建应用；本仓库的版本号不代表这些上游镜像的版本。
 
 
 
@@ -716,8 +734,8 @@ XTV 提供 `/tv` 电视端页面，并包含 [Android TV 壳工程](apps/android
 - [CMLiussss](https://github.com/cmliu) — 提供豆瓣 CDN 服务
 - 感谢所有提供免费影视接口的站点。
 
-## 上游 Star History
+## Star History
 
-下图展示上游仓库的历史统计。
+下图展示 XTV 主仓库的历史统计。
 
-[![Star History Chart](https://star-history.dera.page/svg?repos=mtvpls/moontvplus&type=Date)](https://star-history.dera.page/#mtvpls/moontvplus&Date)
+[![Star History Chart](https://star-history.dera.page/svg?repos=puremixai/xtv&type=Date)](https://star-history.dera.page/#puremixai/xtv&Date)

@@ -53,8 +53,7 @@ export default function BannerCarousel({
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [shouldLoad, setShouldLoad] = useState(!delayLoad); // 是否应该开始加载数据
-  const [isPaused, setIsPaused] = useState(false);
-  const [skipNextAutoPlay, setSkipNextAutoPlay] = useState(false); // 跳过下一次自动播放
+  const [autoPlayReset, setAutoPlayReset] = useState(0);
   const [isYouTubeAccessible, setIsYouTubeAccessible] = useState(false); // YouTube连通性（默认false，检查后再决定）
   const [enableTrailers, setEnableTrailers] = useState(false); // 是否启用预告片（默认关闭）
   const [dataSource, setDataSource] = useState<string>(''); // 当前数据源
@@ -62,10 +61,11 @@ export default function BannerCarousel({
   const [isMuted, setIsMuted] = useState(true); // 视频是否静音（默认静音）
   const [bannerHeightScale, setBannerHeightScale] =
     useState<HomeBannerHeightScale>('1'); // 轮播图高度倍率
-  const [rotationPaused, setRotationPaused] = useState(false);
+  const [rotationEnabled, setRotationEnabled] = useState<boolean | null>(null);
   const [isFocusWithin, setIsFocusWithin] = useState(false);
   const [reducedMotion, setReducedMotion] = useState(false);
   const [pageVisible, setPageVisible] = useState(true);
+  const rotationPaused = !(rotationEnabled ?? !reducedMotion);
   const [portraitArtwork, setPortraitArtwork] = useState<
     Record<string, boolean>
   >({});
@@ -73,6 +73,8 @@ export default function BannerCarousel({
   const touchStartX = useRef(0);
   const touchEndX = useRef(0);
   const isManualChange = useRef(false); // 标记是否为手动切换
+  const keyboardNavigation = useRef(false);
+  const manualChangeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // LocalStorage 缓存配置
   const LOCALSTORAGE_DURATION = 24 * 60 * 60 * 1000; // 1天
@@ -154,6 +156,26 @@ export default function BannerCarousel({
     return () => {
       media.removeEventListener('change', updateMotion);
       document.removeEventListener('visibilitychange', updateVisibility);
+    };
+  }, []);
+
+  // Pointer clicks can keep focus on a slide control; only keyboard focus pauses rotation.
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Tab') keyboardNavigation.current = true;
+    };
+    const handlePointerDown = () => {
+      keyboardNavigation.current = false;
+      setIsFocusWithin(false);
+    };
+    document.addEventListener('keydown', handleKeyDown, true);
+    document.addEventListener('pointerdown', handlePointerDown, true);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown, true);
+      document.removeEventListener('pointerdown', handlePointerDown, true);
+      if (manualChangeTimer.current !== null) {
+        clearTimeout(manualChangeTimer.current);
+      }
     };
   }, []);
 
@@ -361,62 +383,58 @@ export default function BannerCarousel({
   useEffect(() => {
     if (
       items.length < 2 ||
-      isPaused ||
       rotationPaused ||
       isFocusWithin ||
-      reducedMotion ||
       !pageVisible
     )
       return;
 
-    const timer = setInterval(() => {
-      // 如果设置了跳过标志，跳过这一次自动播放
-      if (skipNextAutoPlay) {
-        setSkipNextAutoPlay(false);
-        return;
-      }
-
+    const timer = setTimeout(() => {
       setCurrentIndex((prev) => (prev + 1) % items.length);
     }, autoPlayInterval);
 
-    return () => clearInterval(timer);
+    return () => clearTimeout(timer);
   }, [
     items.length,
-    isPaused,
+    currentIndex,
     rotationPaused,
     isFocusWithin,
-    reducedMotion,
     pageVisible,
     autoPlayInterval,
-    skipNextAutoPlay,
+    autoPlayReset,
   ]);
 
-  const goToPrevious = useCallback(() => {
+  const markManualChange = useCallback(() => {
     isManualChange.current = true;
-    setSkipNextAutoPlay(true);
-    setCurrentIndex((prev) => (prev - 1 + items.length) % items.length);
-    setTimeout(() => {
+    setAutoPlayReset((value) => value + 1);
+    if (manualChangeTimer.current !== null) {
+      clearTimeout(manualChangeTimer.current);
+    }
+    manualChangeTimer.current = setTimeout(() => {
       isManualChange.current = false;
-    }, 100);
-  }, [items.length]);
-
-  const goToNext = useCallback(() => {
-    isManualChange.current = true;
-    setSkipNextAutoPlay(true);
-    setCurrentIndex((prev) => (prev + 1) % items.length);
-    setTimeout(() => {
-      isManualChange.current = false;
-    }, 100);
-  }, [items.length]);
-
-  const goToSlide = useCallback((index: number) => {
-    isManualChange.current = true;
-    setSkipNextAutoPlay(true);
-    setCurrentIndex(index);
-    setTimeout(() => {
-      isManualChange.current = false;
+      manualChangeTimer.current = null;
     }, 100);
   }, []);
+
+  const goToPrevious = useCallback(() => {
+    markManualChange();
+    setCurrentIndex((prev) => (prev - 1 + items.length) % items.length);
+  }, [items.length, markManualChange]);
+
+  const goToNext = useCallback(() => {
+    markManualChange();
+    setCurrentIndex((prev) => (prev + 1) % items.length);
+  }, [items.length, markManualChange]);
+
+  const goToSlide = useCallback((index: number) => {
+    markManualChange();
+    setCurrentIndex(index);
+  }, [markManualChange]);
+
+  const toggleRotation = () => {
+    setRotationEnabled(rotationPaused);
+    if (rotationPaused) setIsFocusWithin(false);
+  };
 
   // 触摸事件处理
   const handleTouchStart = (e: React.TouchEvent) => {
@@ -523,9 +541,7 @@ export default function BannerCarousel({
         data-poster={showPoster && !renderingTrailer}
         aria-roledescription='轮播图'
         aria-label='精选推荐'
-        onMouseEnter={() => setIsPaused(true)}
-        onMouseLeave={() => setIsPaused(false)}
-        onFocusCapture={() => setIsFocusWithin(true)}
+        onFocusCapture={() => setIsFocusWithin(keyboardNavigation.current)}
         onBlurCapture={(event) => {
           if (!event.currentTarget.contains(event.relatedTarget as Node | null))
             setIsFocusWithin(false);
@@ -685,15 +701,13 @@ export default function BannerCarousel({
               <button onClick={goToNext} aria-label='下一部推荐'>
                 <ChevronRight size={18} />
               </button>
-              {!reducedMotion && (
-                <button
-                  onClick={() => setRotationPaused((value) => !value)}
-                  aria-label={rotationPaused ? '继续自动轮播' : '暂停自动轮播'}
-                  aria-pressed={rotationPaused}
-                >
-                  {rotationPaused ? <Play size={14} /> : <Pause size={14} />}
-                </button>
-              )}
+              <button
+                onClick={toggleRotation}
+                aria-label={rotationPaused ? '继续自动轮播' : '暂停自动轮播'}
+                aria-pressed={rotationPaused}
+              >
+                {rotationPaused ? <Play size={14} /> : <Pause size={14} />}
+              </button>
             </div>
           )}
           {currentItem.trailer_url && showTrailer && (
@@ -710,9 +724,7 @@ export default function BannerCarousel({
       <nav
         className='cinema-feature-picker'
         aria-label='切换精选影片'
-        onMouseEnter={() => setIsPaused(true)}
-        onMouseLeave={() => setIsPaused(false)}
-        onFocusCapture={() => setIsFocusWithin(true)}
+        onFocusCapture={() => setIsFocusWithin(keyboardNavigation.current)}
         onBlurCapture={(event) => {
           if (!event.currentTarget.contains(event.relatedTarget as Node | null))
             setIsFocusWithin(false);

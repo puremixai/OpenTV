@@ -1,7 +1,15 @@
 {
-  "name": "moontv",
-  "version": "0.1.0",
+  "name": "xtv",
+  "version": "1.0.0",
   "private": true,
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/puremixai/xtv.git"
+  },
+  "homepage": "https://github.com/puremixai/xtv#readme",
+  "bugs": {
+    "url": "https://github.com/puremixai/xtv/issues"
+  },
   "scripts": {
     "dev": "pnpm gen:manifest && node server.js",
     "build": "pnpm gen:manifest && next build",
