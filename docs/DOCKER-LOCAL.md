@@ -2,9 +2,30 @@
 
 当前本地部署已切换为 **PostgreSQL + Redis**，配置、迁移、备份与回退步骤见 [PostgreSQL + Redis 部署说明](POSTGRES-REDIS.md)。下方带日期的 SQLite 升级记录属于历史操作，不能用于当前部署的数据回退。
 
+## 2026-09-13 Tailwind 4 与海报动效更新
+
+- 部署代码为 `upgrade/tailwind4` 分支的 `3f6995b`，已推送至 `origin`。当前镜像为 `moontvplus:local`，同时保留标签 `moontvplus:tailwind4-hero-3f6995b`，镜像 ID `8d00157feaf0`；镜像的 `org.opencontainers.image.revision` 标签记录完整代码提交号。
+- Tailwind CSS 4.3.3 已部署，运行时为 Next.js 16.3.5、React 19.3.0、Node.js 24.21.0。首页和详情新增海报缓慢缩放、环境色背景及滚动视差，并支持暂停与减少动态效果偏好。详见 [Tailwind 4 升级说明](TAILWIND4-UPGRADE.md) 和 [海报动效实现说明](CINEMATIC-HERO.md)。
+- 使用 `--no-build --no-deps --wait` 仅替换应用容器，PostgreSQL 和 Redis 的容器 ID 均未改变，原有数据卷保留。三个容器健康，`/api/health` 返回应用、数据库及缓存均正常，访问地址为 <http://localhost:3000>。
+- 实际部署后验证原登录会话继续访问与刷新、新登录和退出、首页/搜索/登录/管理页 SSR、匿名 API 拦截、媒体鉴权、Socket.IO 连接，以及 PWA 公共资源。首页 HTML 已包含新海报与轮播进度标记，匿名 CSS 请求返回 Tailwind 4.3.3 和海报动画样式；验证用会话均已注销。
+- 升级前后保留 2 个用户、3 条播放记录、2 个订阅及 34 个视频源，收藏与搜索记录数量也一致；订阅 ID/URL 和视频源 key/API 的摘要相同。
+- 提交前 PostgreSQL/Redis 全量测试 57 套、543 项全部通过。新镜像独立启动、登录、样式资源和注销验证通过后，再更新本地实例。
+- 升级前 PostgreSQL 备份为 `D:\bbs\xtv-before-tailwind4-hero-20260913-144808.dump`，大小 78398 字节，已用 `pg_restore --list` 验证归档可读取。备份存于仓库外，未提交。
+- 升级前应用镜像保留为 `moontvplus:before-tailwind4-hero-20260913-144808`，镜像 ID `f65af2033f32`。本次部署的检查日志位于本机被 Git 忽略的 `.data/hero-deploy/`。
+
+需要回退本次应用更新时，继续使用当前 PostgreSQL 数据，只替换应用容器：
+
+```powershell
+docker tag moontvplus:before-tailwind4-hero-20260913-144808 moontvplus:local
+docker compose -f compose.local.yaml up -d --no-build --no-deps --wait --wait-timeout 90 moontvplus
+docker compose -f compose.local.yaml ps
+```
+
+已有浏览器页面可按 Ctrl+F5 刷新样式。此次网页部署不包含 Android TV APK 构建或安装。
+
 ## 2026-09-13 Next.js 16 更新
 
-- 当前应用镜像：`moontvplus:local`，镜像 ID `f65af2033f32`；Next.js 16.3.5、React 19.3.0、Node.js 24.21.0。
+- 该次更新应用镜像：`moontvplus:local`，镜像 ID `f65af2033f32`；Next.js 16.3.5、React 19.3.0、Node.js 24.21.0。
 - 仅重建并替换 `moontvplus` 应用容器。PostgreSQL、Redis 及原有数据卷保留；三个容器健康，`/api/health` 返回应用、数据库和缓存均正常。
 - 核对保留 2 个订阅、34 个视频源、2 个用户、3 条播放记录，订阅 ID/URL 与视频源 key/API 的升级前后摘要一致。
 - 验证已有登录会话继续访问与刷新、新登录和退出、首页/搜索/管理页 SSR、匿名 API 拦截、媒体鉴权、PWA 公共资源及 Socket.IO 连接。独立 PostgreSQL / Redis 测试环境中的 53 套、478 项测试全部通过。
