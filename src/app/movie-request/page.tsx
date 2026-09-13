@@ -3,12 +3,12 @@
 import { AlertCircle, CheckCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect,useState } from 'react';
-import { createPortal } from 'react-dom';
 
 import { logger } from '@/lib/logger';
 import { getTMDBImageUrl } from '@/lib/tmdb.client';
 import { processImageUrl } from '@/lib/utils';
 
+import { createCinemaPortal as createPortal } from '@/components/CinemaPortal';
 import PageLayout from '@/components/PageLayout';
 
 interface TMDBResult {

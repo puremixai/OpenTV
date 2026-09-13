@@ -13,7 +13,6 @@ import {
   X,
 } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
-import { createPortal } from 'react-dom';
 
 import { getBangumiSubject, getBangumiSubjectUrl } from '@/lib/bangumi.client';
 import { logger } from '@/lib/logger';
@@ -21,6 +20,7 @@ import { appendSpecialSourceParam } from '@/lib/special-source.client';
 import { getTMDBImageUrl } from '@/lib/tmdb-image-base';
 import { processImageUrl } from '@/lib/utils';
 
+import { createCinemaPortal as createPortal } from '@/components/CinemaPortal';
 import ImageViewer from '@/components/ImageViewer';
 import ProxyImage from '@/components/ProxyImage';
 

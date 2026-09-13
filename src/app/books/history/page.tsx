@@ -11,7 +11,6 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
-import { createPortal } from 'react-dom';
 
 import {
   deleteBookReadRecord,
@@ -31,6 +30,8 @@ import {
   cacheBookShelfItem,
 } from '@/lib/book-route-cache.client';
 import { subscribeToDataUpdates } from '@/lib/db.client';
+
+import { createCinemaPortal as createPortal } from '@/components/CinemaPortal';
 
 function looksLikeInternalHref(value?: string) {
   if (!value) return false;

@@ -52,7 +52,7 @@ export default function TVLayout({
   }, [pathname, showNav]);
 
   return (
-    <main className='min-h-screen overflow-x-hidden bg-black text-slate-50'>
+    <main data-cinema-specialty='tv' className='min-h-screen overflow-x-hidden bg-black text-slate-50'>
       <div className='fixed inset-0 pointer-events-none bg-[radial-gradient(circle_at_20%_0%,rgba(225,29,72,0.22),transparent_34%),radial-gradient(circle_at_90%_10%,rgba(79,70,229,0.24),transparent_30%),linear-gradient(180deg,#05050b_0%,#000_55%)]' />
       {showNav && (
         <header className='fixed left-6 right-6 top-5 z-40 rounded-[28px] border border-white/10 bg-slate-950/78 px-5 py-3 shadow-2xl shadow-black/60 backdrop-blur-xl'>
@@ -67,6 +67,7 @@ export default function TVLayout({
                 <Link
                   key={item.href}
                   href={item.href}
+                  aria-current={active ? 'page' : undefined}
                   data-tv-home-nav={item.href === '/tv' ? 'true' : undefined}
                   className={`group flex shrink-0 cursor-pointer items-center gap-2 rounded-2xl px-5 py-3 text-xl font-semibold outline-none transition duration-200 tv-focusable ${
                     active

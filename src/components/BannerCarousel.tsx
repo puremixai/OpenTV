@@ -3,19 +3,14 @@
 import {
   ChevronLeft,
   ChevronRight,
+  Film,
+  Pause,
   Play,
   Volume2,
   VolumeX,
 } from 'lucide-react';
-import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import {
-  useCallback,
-  useEffect,
-  useLayoutEffect,
-  useRef,
-  useState,
-} from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { getDoubanDetail } from '@/lib/douban.client';
 import { logger } from '@/lib/logger';
@@ -33,12 +28,6 @@ interface BannerCarouselProps {
 }
 
 type HomeBannerHeightScale = '1' | '1.5' | '2';
-
-const bannerHeightClassMap: Record<HomeBannerHeightScale, string> = {
-  '1': 'h-[200px] sm:h-[300px] md:h-[400px] lg:h-[500px]',
-  '1.5': 'h-[300px] sm:h-[450px] md:h-[600px] lg:h-[750px]',
-  '2': 'h-[400px] sm:h-[600px] md:h-[800px] lg:h-[1000px]',
-};
 
 const getSavedBannerHeightScale = (): HomeBannerHeightScale => {
   if (typeof window === 'undefined') return '1';
@@ -73,19 +62,20 @@ export default function BannerCarousel({
   const [isMuted, setIsMuted] = useState(true); // 视频是否静音（默认静音）
   const [bannerHeightScale, setBannerHeightScale] =
     useState<HomeBannerHeightScale>('1'); // 轮播图高度倍率
-  const [isMobileView, setIsMobileView] = useState(false);
-  const [mobileTitleFontSize, setMobileTitleFontSize] = useState(30);
-  const videoRef = useRef<HTMLVideoElement>(null); // 视频元素引用
-  const videoRefs = useRef<Map<number, HTMLVideoElement>>(new Map()); // 所有视频元素的引用
-  const titleRef = useRef<HTMLHeadingElement>(null);
-  const titleTextRef = useRef<HTMLSpanElement>(null);
+  const [rotationPaused, setRotationPaused] = useState(false);
+  const [isFocusWithin, setIsFocusWithin] = useState(false);
+  const [reducedMotion, setReducedMotion] = useState(false);
+  const [pageVisible, setPageVisible] = useState(true);
+  const [portraitArtwork, setPortraitArtwork] = useState<
+    Record<string, boolean>
+  >({});
+  const videoRefs = useRef<Map<number, HTMLVideoElement>>(new Map());
   const touchStartX = useRef(0);
   const touchEndX = useRef(0);
   const isManualChange = useRef(false); // 标记是否为手动切换
 
   // LocalStorage 缓存配置
   const LOCALSTORAGE_DURATION = 24 * 60 * 60 * 1000; // 1天
-  const currentTitle = items[currentIndex]?.title || '';
 
   // 根据数据源获取缓存key
   const getLocalStorageKey = (source: string) => {
@@ -111,7 +101,7 @@ export default function BannerCarousel({
   };
 
   // 获取图片原始URL（处理TX完整URL和TMDB路径）
-  const getImageUrl = (path: string | null) => {
+  const getImageUrl = (path: string | null | undefined) => {
     if (!path) return '';
     // 如果是完整URL（TX数据源或豆瓣），直接返回原始地址
     if (path.startsWith('http://') || path.startsWith('https://')) {
@@ -153,48 +143,19 @@ export default function BannerCarousel({
     };
   }, []);
 
-  // 检测移动端视口，用于 1x 高度下的标题自适应
   useEffect(() => {
-    const updateIsMobileView = () => {
-      setIsMobileView(window.innerWidth < 768);
+    const media = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const updateMotion = () => setReducedMotion(media.matches);
+    const updateVisibility = () => setPageVisible(!document.hidden);
+    updateMotion();
+    updateVisibility();
+    media.addEventListener('change', updateMotion);
+    document.addEventListener('visibilitychange', updateVisibility);
+    return () => {
+      media.removeEventListener('change', updateMotion);
+      document.removeEventListener('visibilitychange', updateVisibility);
     };
-
-    updateIsMobileView();
-    window.addEventListener('resize', updateIsMobileView);
-    return () => window.removeEventListener('resize', updateIsMobileView);
   }, []);
-
-  // 手机界面且轮播图高度为 1x 时，仅在标题超过一行时自动缩小字号，不改变布局位置
-  useLayoutEffect(() => {
-    const titleElement = titleRef.current;
-    const titleTextElement = titleTextRef.current;
-    if (!titleElement || !titleTextElement) return;
-
-    if (bannerHeightScale !== '1' || !isMobileView) {
-      titleElement.style.fontSize = '';
-      setMobileTitleFontSize(30);
-      return;
-    }
-
-    const maxFontSize = 30;
-    const minFontSize = 12;
-    let nextFontSize = maxFontSize;
-
-    titleElement.style.fontSize = `${nextFontSize}px`;
-
-    while (
-      nextFontSize > minFontSize &&
-      titleTextElement.getClientRects().length > 1
-    ) {
-      nextFontSize -= 1;
-      titleElement.style.fontSize = `${nextFontSize}px`;
-    }
-
-    titleElement.style.fontSize = `${nextFontSize}px`;
-    setMobileTitleFontSize(nextFontSize);
-
-    return undefined;
-  }, [bannerHeightScale, currentTitle, isMobileView]);
 
   // 延迟加载：等待页面加载完毕后再开始加载轮播图数据
   useEffect(() => {
@@ -398,7 +359,15 @@ export default function BannerCarousel({
 
   // 自动播放
   useEffect(() => {
-    if (!items.length || isPaused) return;
+    if (
+      items.length < 2 ||
+      isPaused ||
+      rotationPaused ||
+      isFocusWithin ||
+      reducedMotion ||
+      !pageVisible
+    )
+      return;
 
     const timer = setInterval(() => {
       // 如果设置了跳过标志，跳过这一次自动播放
@@ -411,7 +380,16 @@ export default function BannerCarousel({
     }, autoPlayInterval);
 
     return () => clearInterval(timer);
-  }, [items.length, isPaused, autoPlayInterval, skipNextAutoPlay]);
+  }, [
+    items.length,
+    isPaused,
+    rotationPaused,
+    isFocusWithin,
+    reducedMotion,
+    pageVisible,
+    autoPlayInterval,
+    skipNextAutoPlay,
+  ]);
 
   const goToPrevious = useCallback(() => {
     isManualChange.current = true;
@@ -482,228 +460,286 @@ export default function BannerCarousel({
 
   if (isLoading || !shouldLoad) {
     return (
-      <div
-        className={`relative w-full ${bannerHeightClassMap[bannerHeightScale]} bg-gradient-to-b from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-900 overflow-hidden flex items-center justify-center`}
+      <section
+        className='cinema-hero cinema-hero-loading'
+        data-height={bannerHeightScale}
+        aria-label='正在加载精选推荐'
+        aria-busy='true'
       >
-        <Image
-          src='/logo.png'
-          alt='MoonTVPlus'
-          width={120}
-          height={120}
-          className='opacity-50'
-          priority
-        />
-      </div>
+        <div className='cinema-hero-loading-mark'>
+          <Film size={34} strokeWidth={1} />
+          <span>精彩，即将开场</span>
+        </div>
+      </section>
     );
   }
 
   if (!items.length) {
-    return null;
+    return (
+      <section className='cinema-hero cinema-hero-empty'>
+        <div className='cinema-hero-copy'>
+          <p className='cinema-eyebrow'>你的私人影院</p>
+          <h1>
+            下一部好故事，
+            <br />
+            就在这里。
+          </h1>
+          <p className='cinema-synopsis'>
+            搜索你想看的电影与剧集，开启今晚的观影时光。
+          </p>
+          <button
+            className='cinema-primary'
+            onClick={() => router.push('/search')}
+          >
+            <Play size={17} fill='currentColor' />
+            探索影片
+          </button>
+        </div>
+      </section>
+    );
   }
 
-  const currentItem = items[currentIndex];
+  const currentItem = items[currentIndex] || items[0];
+  const genres = currentItem.tags?.length
+    ? currentItem.tags
+    : currentItem.genres?.length
+    ? currentItem.genres
+    : getGenreNames(currentItem.genre_ids, 3);
+  const showTrailer = enableTrailers && !reducedMotion && pageVisible;
+  const renderingTrailer =
+    showTrailer &&
+    Boolean(
+      currentItem.trailer_url || (currentItem.video_key && isYouTubeAccessible)
+    );
+  const showPoster =
+    portraitArtwork[currentItem.id] ??
+    currentItem.backdrop_path === currentItem.poster_path;
 
   return (
-    <div
-      className={`relative w-full ${bannerHeightClassMap[bannerHeightScale]} overflow-hidden group`}
-      onMouseEnter={() => setIsPaused(true)}
-      onMouseLeave={() => setIsPaused(false)}
-      onTouchStart={handleTouchStart}
-      onTouchMove={handleTouchMove}
-      onTouchEnd={handleTouchEnd}
-      onClick={() => {
-        // 移动端点击整个轮播图跳转
-        if (window.innerWidth < 768) {
-          handlePlay(currentItem.title);
-        }
-      }}
-    >
-      {/* 背景图片或视频 */}
-      <div className='absolute inset-0'>
-        {items.map((item, index) => (
-          <div
-            key={item.id}
-            className={`absolute inset-0 transition-opacity duration-1000 ${
-              index === currentIndex ? 'opacity-100' : 'opacity-0'
-            }`}
-          >
-            {item.trailer_url && enableTrailers ? (
-              /* 显示豆瓣直链视频 */
-              <div className='absolute inset-0 overflow-hidden'>
-                <video
-                  ref={(el) => {
-                    if (el) {
-                      videoRefs.current.set(index, el);
-                    } else {
-                      videoRefs.current.delete(index);
+    <>
+      <section
+        className='cinema-hero'
+        data-height={bannerHeightScale}
+        data-poster={showPoster && !renderingTrailer}
+        aria-roledescription='轮播图'
+        aria-label='精选推荐'
+        onMouseEnter={() => setIsPaused(true)}
+        onMouseLeave={() => setIsPaused(false)}
+        onFocusCapture={() => setIsFocusWithin(true)}
+        onBlurCapture={(event) => {
+          if (!event.currentTarget.contains(event.relatedTarget as Node | null))
+            setIsFocusWithin(false);
+        }}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+      >
+        <div className='cinema-hero-media' aria-hidden='true'>
+          {items.map((item, index) => {
+            const active = index === currentIndex;
+            if (
+              !active &&
+              index !== (currentIndex + 1) % items.length &&
+              index !== (currentIndex - 1 + items.length) % items.length
+            )
+              return null;
+            return (
+              <div
+                key={item.id}
+                className='cinema-hero-slide'
+                data-active={active}
+              >
+                <ProxyImage
+                  originalSrc={getImageUrl(
+                    item.backdrop_path || item.poster_path
+                  )}
+                  alt=''
+                  className='cinema-backdrop'
+                  loading={active ? 'eager' : 'lazy'}
+                  fetchPriority={active ? 'high' : 'low'}
+                  onLoad={(event) => {
+                    const image = event.currentTarget;
+                    const portrait =
+                      image.naturalWidth / image.naturalHeight < 1.35;
+                    setPortraitArtwork((previous) =>
+                      previous[item.id] === portrait
+                        ? previous
+                        : { ...previous, [item.id]: portrait }
+                    );
+                  }}
+                />
+                {active && item.trailer_url && showTrailer ? (
+                  <video
+                    ref={(element) => {
+                      if (element) videoRefs.current.set(index, element);
+                      else videoRefs.current.delete(index);
+                    }}
+                    src={getVideoUrl(item.trailer_url) || undefined}
+                    className='cinema-backdrop cinema-trailer'
+                    autoPlay
+                    muted={isMuted}
+                    loop
+                    playsInline
+                    preload='metadata'
+                  />
+                ) : active &&
+                  item.video_key &&
+                  isYouTubeAccessible &&
+                  showTrailer ? (
+                  <iframe
+                    title={item.title + '预告片'}
+                    src={
+                      'https://www.youtube.com/embed/' +
+                      item.video_key +
+                      '?autoplay=1&mute=1&controls=0&loop=1&playlist=' +
+                      item.video_key +
+                      '&rel=0'
                     }
-                  }}
-                  src={getVideoUrl(item.trailer_url) || undefined}
-                  className='absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 min-w-full min-h-full w-auto h-auto object-cover'
-                  muted={isMuted}
-                  loop
-                  playsInline
-                  preload='metadata'
-                />
+                    className='cinema-trailer-frame'
+                    allow='autoplay; encrypted-media'
+                    tabIndex={-1}
+                  />
+                ) : null}
               </div>
-            ) : item.video_key && isYouTubeAccessible && enableTrailers ? (
-              /* 显示YouTube视频 */
-              <div className='absolute inset-0 overflow-hidden'>
-                <iframe
-                  src={`https://www.youtube.com/embed/${item.video_key}?listType=playlist&autoplay=1&mute=1&controls=0&loop=1&playlist=${item.video_key}&modestbranding=1&rel=0&showinfo=0&vq=hd1080&hd=1&disablekb=1&fs=0&iv_load_policy=3`}
-                  className='absolute top-1/2 left-1/2 pointer-events-none'
-                  allow='autoplay; encrypted-media'
-                  style={{
-                    border: 'none',
-                    width: '100vw',
-                    height: '100vh',
-                    minWidth: '100%',
-                    minHeight: '100%',
-                    transform: 'translate(-50%, -50%)',
-                  }}
-                />
-              </div>
-            ) : (
-              /* 显示图片 */
-              <ProxyImage
-                originalSrc={getImageUrl(
-                  item.backdrop_path || item.poster_path
-                )}
-                alt={item.title}
-                className='absolute inset-0 w-full h-full object-cover'
-                loading={index === 0 ? 'eager' : 'lazy'}
-              />
-            )}
-            {/* 渐变遮罩 */}
-            <div className='absolute inset-0 bg-gradient-to-r from-black/80 via-black/50 to-transparent'></div>
-            <div className='absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent'></div>
+            );
+          })}
+        </div>
+        <div className='cinema-hero-shade' />
+        {showPoster && !renderingTrailer && (
+          <div className='cinema-hero-poster' aria-hidden='true'>
+            <ProxyImage
+              originalSrc={getImageUrl(
+                currentItem.poster_path || currentItem.backdrop_path
+              )}
+              alt=''
+              loading='eager'
+            />
           </div>
-        ))}
-      </div>
-
-      {/* 内容信息 */}
-      <div className='absolute inset-0 flex items-end p-8 md:p-12 pointer-events-none'>
-        <div className='max-w-2xl space-y-4'>
-          <h2
-            ref={titleRef}
-            className='text-3xl md:text-5xl font-bold text-white drop-shadow-lg'
-            style={
-              isMobileView && bannerHeightScale === '1'
-                ? { fontSize: `${mobileTitleFontSize}px` }
-                : undefined
-            }
-          >
-            <span ref={titleTextRef}>{currentItem.title}</span>
-          </h2>
-
-          <div className='flex items-center gap-2 md:gap-3 text-sm md:text-base text-white/90 flex-wrap'>
+        )}
+        <div className='cinema-hero-copy'>
+          <p className='cinema-eyebrow'>
+            <span /> 今晚，值得一看
+          </p>
+          <h1 key={currentItem.id}>{currentItem.title}</h1>
+          <div className='cinema-meta'>
             {currentItem.vote_average > 0 && (
-              <span className='px-2 py-1 bg-yellow-500 text-black font-semibold rounded'>
-                {currentItem.vote_average.toFixed(1)}
+              <span className='cinema-score'>
+                {currentItem.vote_average.toFixed(1)} <span>评分</span>
               </span>
             )}
-            {/* 显示标签：优先TX的tags，其次豆瓣的genres，最后TMDB的genre_ids */}
-            {currentItem.tags && currentItem.tags.length > 0
-              ? currentItem.tags.slice(0, 3).map((tag, index) => (
-                  <span
-                    key={index}
-                    className='px-2 py-1 bg-white/20 backdrop-blur-sm rounded text-sm'
-                  >
-                    {tag}
-                  </span>
-                ))
-              : currentItem.genres &&
-                Array.isArray(currentItem.genres) &&
-                currentItem.genres.length > 0
-              ? /* 显示豆瓣数据源的标签 */
-                currentItem.genres.slice(0, 3).map((genre, index) => (
-                  <span
-                    key={index}
-                    className='px-2 py-1 bg-white/20 backdrop-blur-sm rounded text-sm'
-                  >
-                    {genre}
-                  </span>
-                ))
-              : /* 显示TMDB数据源的类型标签 */
-                getGenreNames(currentItem.genre_ids, 3).map((genre) => (
-                  <span
-                    key={genre}
-                    className='px-2 py-1 bg-white/20 backdrop-blur-sm rounded text-sm'
-                  >
-                    {genre}
-                  </span>
-                ))}
             {currentItem.release_date && (
-              <span>{currentItem.release_date}</span>
+              <span>{currentItem.release_date.split('-')[0]}</span>
             )}
+            {genres?.slice(0, 3).map((genre) => (
+              <span key={genre}>{genre}</span>
+            ))}
           </div>
-
-          {/* PC端播放按钮 */}
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              handlePlay(currentItem.title);
-            }}
-            className='hidden md:flex items-center gap-2 px-6 py-3 bg-gray-500/30 hover:bg-gray-500/50 backdrop-blur-sm text-white font-semibold rounded-lg transition-all pointer-events-auto'
-          >
-            <Play className='w-5 h-5 fill-white' />
-            立即播放
-          </button>
-
-          {currentItem.overview && (
-            <p className='text-sm md:text-base text-white/80 line-clamp-3 drop-shadow-md'>
-              {currentItem.overview}
+          {(currentItem.subtitle || currentItem.overview) && (
+            <p className='cinema-synopsis'>
+              {currentItem.subtitle || currentItem.overview}
             </p>
           )}
+          <div className='cinema-hero-actions'>
+            <button
+              className='cinema-primary'
+              onClick={() => handlePlay(currentItem.title)}
+            >
+              <Play size={18} fill='currentColor' />
+              立即观看
+            </button>
+            <button
+              className='cinema-secondary'
+              onClick={() =>
+                router.push(
+                  '/search?q=' + encodeURIComponent(currentItem.title)
+                )
+              }
+            >
+              搜索片源
+              <ChevronRight size={17} />
+            </button>
+          </div>
         </div>
-      </div>
-
-      {/* 左右切换按钮 - 只在桌面端显示 */}
-      <button
-        onClick={goToPrevious}
-        className='hidden md:flex absolute left-4 top-1/2 -translate-y-1/2 w-12 h-12 bg-black/30 hover:bg-black/60 text-white rounded-full items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300'
-        aria-label='上一张'
-      >
-        <ChevronLeft className='w-8 h-8' />
-      </button>
-      <button
-        onClick={goToNext}
-        className='hidden md:flex absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 bg-black/30 hover:bg-black/60 text-white rounded-full items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300'
-        aria-label='下一张'
-      >
-        <ChevronRight className='w-8 h-8' />
-      </button>
-
-      {/* 音量控制按钮 - 只在有豆瓣预告片时显示 */}
-      {currentItem.trailer_url && enableTrailers && (
-        <button
-          onClick={toggleMute}
-          className='absolute top-2 right-2 md:top-4 md:right-4 w-8 h-8 md:w-10 md:h-10 bg-black/30 hover:bg-black/60 text-white rounded-full flex items-center justify-center transition-all duration-300 z-10'
-          aria-label={isMuted ? '开启声音' : '关闭声音'}
-        >
-          {isMuted ? (
-            <VolumeX className='w-4 h-4 md:w-5 md:h-5' />
-          ) : (
-            <Volume2 className='w-4 h-4 md:w-5 md:h-5' />
+        <div className='cinema-hero-pagination'>
+          <div className='cinema-slide-position'>
+            <span>{String(currentIndex + 1).padStart(2, '0')}</span>
+            <span>/ {String(items.length).padStart(2, '0')}</span>
+          </div>
+          <div className='cinema-slide-dots'>
+            {items.map((item, index) => (
+              <button
+                key={item.id}
+                onClick={() => goToSlide(index)}
+                aria-label={'查看推荐：' + item.title}
+                aria-pressed={index === currentIndex}
+              >
+                <span data-active={index === currentIndex} />
+              </button>
+            ))}
+          </div>
+          {items.length > 1 && (
+            <div className='cinema-slide-controls'>
+              <button onClick={goToPrevious} aria-label='上一部推荐'>
+                <ChevronLeft size={18} />
+              </button>
+              <button onClick={goToNext} aria-label='下一部推荐'>
+                <ChevronRight size={18} />
+              </button>
+              {!reducedMotion && (
+                <button
+                  onClick={() => setRotationPaused((value) => !value)}
+                  aria-label={rotationPaused ? '继续自动轮播' : '暂停自动轮播'}
+                  aria-pressed={rotationPaused}
+                >
+                  {rotationPaused ? <Play size={14} /> : <Pause size={14} />}
+                </button>
+              )}
+            </div>
           )}
-        </button>
-      )}
-
-      {/* 指示器 */}
-      <div className='absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2'>
-        {items.map((_, index) => (
+          {currentItem.trailer_url && showTrailer && (
+            <button
+              className='cinema-mute'
+              onClick={toggleMute}
+              aria-label={isMuted ? '开启预告片声音' : '关闭预告片声音'}
+            >
+              {isMuted ? <VolumeX size={16} /> : <Volume2 size={16} />}
+            </button>
+          )}
+        </div>
+      </section>
+      <nav
+        className='cinema-feature-picker'
+        aria-label='切换精选影片'
+        onMouseEnter={() => setIsPaused(true)}
+        onMouseLeave={() => setIsPaused(false)}
+        onFocusCapture={() => setIsFocusWithin(true)}
+        onBlurCapture={(event) => {
+          if (!event.currentTarget.contains(event.relatedTarget as Node | null))
+            setIsFocusWithin(false);
+        }}
+      >
+        {items.map((item, index) => (
           <button
-            key={index}
+            key={item.id}
+            className='cinema-feature-pick'
             onClick={() => goToSlide(index)}
-            className={`h-1.5 rounded-full transition-all duration-300 ${
-              index === currentIndex
-                ? 'w-8 bg-white'
-                : 'w-1.5 bg-white/50 hover:bg-white/80'
-            }`}
-            aria-label={`跳转到第 ${index + 1} 张`}
-          />
+            aria-label={`选择精选影片：${item.title}`}
+            aria-pressed={index === currentIndex}
+          >
+            <ProxyImage
+              originalSrc={getImageUrl(item.backdrop_path || item.poster_path)}
+              alt=''
+            />
+            <span>
+              <span className='cinema-feature-index'>
+                {String(index + 1).padStart(2, '0')} /{' '}
+                {index === currentIndex ? '正在推荐' : '精选影片'}
+              </span>
+              <strong>{item.title}</strong>
+            </span>
+          </button>
         ))}
-      </div>
-    </div>
+      </nav>
+    </>
   );
 }

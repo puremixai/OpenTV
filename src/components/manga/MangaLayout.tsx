@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { BookOpen, ChevronLeft, Compass, History, List, Search, Settings2 } from 'lucide-react';
 import Link from 'next/link';
@@ -63,7 +63,7 @@ export default function MangaLayout({ children }: MangaLayoutProps) {
   const isActive = (href: string) => pathname === href;
 
   return (
-    <div className='min-h-screen bg-gray-50 text-gray-900 dark:bg-black dark:text-gray-100'>
+    <div data-cinema-specialty='manga' className='min-h-screen bg-gray-50 text-gray-900 dark:bg-black dark:text-gray-100'>
       <header
         className='fixed inset-x-0 top-0 z-[999] border-b border-gray-200/70 bg-white/85 backdrop-blur-xl shadow-sm dark:border-gray-800/80 dark:bg-gray-950/85'
         style={{ paddingTop: 'env(safe-area-inset-top)' }}
@@ -108,6 +108,7 @@ export default function MangaLayout({ children }: MangaLayoutProps) {
                 <Link
                   key={tab.href}
                   href={tab.href}
+                    aria-current={active ? 'page' : undefined}
                   className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm transition ${
                     active
                       ? 'bg-sky-600 text-white shadow-sm'
@@ -157,6 +158,7 @@ export default function MangaLayout({ children }: MangaLayoutProps) {
       </header>
 
       <main
+        data-cinema-reader={isReadingPage}
         className={`mx-auto max-w-7xl pt-[calc(5rem+env(safe-area-inset-top))] sm:pt-[calc(6rem+env(safe-area-inset-top))] ${
           isReadingPage
             ? 'px-0 pb-24 sm:px-0 sm:pb-28 lg:pb-10'
@@ -179,6 +181,7 @@ export default function MangaLayout({ children }: MangaLayoutProps) {
                 <Link
                   key={tab.href}
                   href={tab.href}
+                    aria-current={active ? 'page' : undefined}
                   className='flex min-h-16 flex-col items-center justify-center gap-1 py-2 text-xs'
                 >
                   <Icon

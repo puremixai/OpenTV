@@ -2,7 +2,6 @@
 
 import { Loader2, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { createPortal } from 'react-dom';
 
 import { adminFetch as fetch } from '@/lib/admin-fetch';
 import {
@@ -15,6 +14,8 @@ import {
   isExcludePresetActive,
   isFansubPresetActive,
 } from '@/lib/anime-filter-presets';
+
+import { createCinemaPortal as createPortal } from '@/components/CinemaPortal';
 
 export interface AnimeSubscribeModalProps {
   isOpen: boolean;

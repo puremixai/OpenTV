@@ -1,14 +1,14 @@
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: '安全警告 - MoonTVPlus',
+  title: '安全警告 - XTV',
   description: '站点安全配置警告',
 };
 
 export default function WarningPage() {
   return (
-    <div className='min-h-screen bg-gradient-to-br from-red-50 to-orange-50 flex items-center justify-center p-4'>
-      <div className='max-w-2xl w-full bg-white rounded-2xl shadow-2xl p-4 sm:p-8 border border-red-200'>
+    <div className='cinema-auth min-h-screen flex items-center justify-center p-4'>
+      <div className='cinema-auth-card max-w-2xl w-full rounded-2xl p-4 sm:p-8'>
         {/* 警告图标 */}
         <div className='flex justify-center mb-4 sm:mb-6'>
           <div className='w-16 h-16 sm:w-20 sm:h-20 bg-red-100 rounded-full flex items-center justify-center'>

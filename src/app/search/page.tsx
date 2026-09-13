@@ -21,7 +21,6 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import { createPortal } from 'react-dom';
 
 import { isAnimeCategoryText } from '@/lib/anime-keyword-expr';
 import { getAuthInfoFromBrowserCookie } from '@/lib/auth';
@@ -41,6 +40,7 @@ import { processImageUrl } from '@/lib/utils';
 
 import AcgSearch from '@/components/AcgSearch';
 import CapsuleSwitch from '@/components/CapsuleSwitch';
+import { createCinemaPortal as createPortal } from '@/components/CinemaPortal';
 import ImageViewer from '@/components/ImageViewer';
 import PageLayout from '@/components/PageLayout';
 import PansouSearch, { CLOUD_TYPE_NAMES } from '@/components/PansouSearch';
@@ -1798,14 +1798,20 @@ function SearchPageClient() {
 
   return (
     <PageLayout activePath='/search'>
-      <div className='px-4 sm:px-10 py-4 sm:py-8 overflow-visible mb-10'>
+      <div className='cinema-page px-4 sm:px-10 py-4 sm:py-8 overflow-visible mb-10'>
+        <div className='cinema-search-intro' data-results={showResults}>
+          <span className='cinema-eyebrow'>探索片库</span>
+          <h1>{showResults ? '找到下一部好片' : '今晚，想看什么？'}</h1>
+          <p>搜索片名，发现值得投入的一段时光。</p>
+        </div>
         {/* 搜索框 */}
         <div className='mb-0'>
-          <form onSubmit={handleSearch} className='max-w-2xl mx-auto'>
+          <form onSubmit={handleSearch} className='cinema-search-form' role='search'>
             <div className='relative'>
               <Search className='absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400 dark:text-gray-500' />
               <input
                 id='searchInput'
+                aria-label='搜索电影、电视剧'
                 type='text'
                 value={searchQuery}
                 onChange={handleInputChange}

@@ -81,7 +81,7 @@ interface EmbyView {
   CollectionType?: string;
 }
 
-const DEFAULT_EMBY_AUTHORIZATION_HEADER = 'MediaBrowser Client="moontvplus", Device="Web", DeviceId="moontvplus-web", Version="1.0.0"';
+const DEFAULT_EMBY_AUTHORIZATION_HEADER = 'MediaBrowser Client="XTV", Device="Web", DeviceId="moontvplus-web", Version="1.0.0"';
 
 export class EmbyClient {
   private serverUrl: string;

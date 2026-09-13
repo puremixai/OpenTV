@@ -251,7 +251,7 @@ function RegisterPageClient() {
   // 如果配置未加载或未开启注册，显示加载中
   if (!siteConfig) {
     return (
-      <div className='relative min-h-screen flex items-center justify-center px-4'>
+      <div className='cinema-auth relative min-h-screen flex items-center justify-center px-4'>
         <div className='text-gray-500 dark:text-gray-400'>加载中...</div>
       </div>
     );
@@ -259,7 +259,7 @@ function RegisterPageClient() {
 
   return (
     <div
-      className='relative min-h-screen flex items-center justify-center px-4 overflow-hidden'
+      className='cinema-auth relative min-h-screen flex items-center justify-center px-4 overflow-hidden'
       style={backgroundImage ? {
         backgroundImage: `url(${backgroundImage})`,
         backgroundSize: 'cover',
@@ -270,7 +270,7 @@ function RegisterPageClient() {
       <div className='absolute top-4 right-4'>
         <ThemeToggle />
       </div>
-      <div className='relative z-10 w-full max-w-md rounded-3xl bg-gradient-to-b from-white/90 via-white/70 to-white/40 dark:from-zinc-900/90 dark:via-zinc-900/70 dark:to-zinc-900/40 shadow-2xl p-10 dark:border dark:border-zinc-800'>
+      <div className='cinema-auth-card relative z-10 w-full max-w-md rounded-3xl bg-gradient-to-b from-white/90 via-white/70 to-white/40 dark:from-zinc-900/90 dark:via-zinc-900/70 dark:to-zinc-900/40 shadow-2xl p-10 dark:border dark:border-zinc-800'>
         <h1 className='text-green-600 tracking-tight text-center text-3xl font-extrabold mb-2 bg-clip-text drop-shadow-sm'>
           {siteName}
         </h1>

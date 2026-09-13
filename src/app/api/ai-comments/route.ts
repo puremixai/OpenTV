@@ -3,7 +3,6 @@ import { z } from 'zod';
 
 import { AIConfigurationError } from '@/lib/ai-model-config';
 import { getConfig } from '@/lib/config';
-import { hasFeaturePermission } from '@/lib/permissions';
 import {
   enqueueAIComments,
   readSavedAIComments,
@@ -31,6 +30,12 @@ async function handle(request: NextRequest, submit: boolean) {
   try {
     const auth = await getAuthenticatedUser(request);
     if (!auth?.username) return json({ error: 'Unauthorized' }, 401);
+    const canGenerate = auth.role === 'admin' || auth.role === 'owner';
+    if (submit && !canGenerate)
+      return json(
+        { error: '仅管理员和站长可以生成 AI 评论', canGenerate: false },
+        403
+      );
     const origin = request.headers.get('origin');
     // The custom server's nextUrl can contain its internal Docker port.
     // Host preserves the browser-facing authority; TLS proxies supply protocol.
@@ -46,8 +51,6 @@ async function handle(request: NextRequest, submit: boolean) {
     ) {
       return json({ error: '不允许跨站提交生成任务' }, 403);
     }
-    if (!(await hasFeaturePermission(auth.username, 'ai_ask')))
-      return json({ error: '无权限使用 AI 评论功能' }, 403);
     if (process.env.NEXT_PUBLIC_STORAGE_TYPE !== 'postgres')
       return json({ error: '保存 AI 评论需要 PostgreSQL 存储' }, 503);
     const search = request.nextUrl.searchParams;
@@ -68,9 +71,19 @@ async function handle(request: NextRequest, submit: boolean) {
     const { regenerate, ...movie } = data.data;
     const result = submit
       ? await enqueueAIComments(auth.username, movie, regenerate)
-      : await readSavedAIComments(auth.username, movie);
+      : await readSavedAIComments(movie);
     return json(
-      result,
+      canGenerate
+        ? { ...result, canGenerate }
+        : {
+            status: result.status,
+            comments: result.comments,
+            total: result.total,
+            movieName: result.movieName,
+            generatedAt: result.generatedAt,
+            isAiGenerated: true,
+            canGenerate: false,
+          },
       submit && ['queued', 'running'].includes(result.status) ? 202 : 200
     );
   } catch (error) {

@@ -118,7 +118,7 @@ export function getFavoriteUpdateEmailTemplate(
           <p style="color: #666; margin-top: 20px;">快去观看吧！</p>
         </div>
         <div class="footer">
-          <p>此邮件由 <a href="${siteUrl}">${siteName || 'MoonTVPlus'}</a> 自动发送</p>
+          <p>此邮件由 <a href="${siteUrl}">${siteName || 'XTV'}</a> 自动发送</p>
           <p>如不想接收此类邮件，请在用户设置中关闭邮件通知</p>
         </div>
       </div>
@@ -264,7 +264,7 @@ export function getBatchFavoriteUpdateEmailTemplate(
           <p style="color: #666; margin-top: 20px;">快去观看吧！</p>
         </div>
         <div class="footer">
-          <p>此邮件由 <a href="${siteUrl}">${siteName || 'MoonTVPlus'}</a> 自动发送</p>
+          <p>此邮件由 <a href="${siteUrl}">${siteName || 'XTV'}</a> 自动发送</p>
           <p>如不想接收此类邮件，请在用户设置中关闭邮件通知</p>
         </div>
       </div>
@@ -391,7 +391,7 @@ export function getBatchMangaUpdateEmailTemplate(
           ${updatesList}
         </div>
         <div class="footer">
-          <p>此邮件由 <a href="${siteUrl}">${siteName || 'MoonTVPlus'}</a> 自动发送</p>
+          <p>此邮件由 <a href="${siteUrl}">${siteName || 'XTV'}</a> 自动发送</p>
           <p>如不想接收此类邮件，请在用户设置中关闭邮件通知</p>
         </div>
       </div>

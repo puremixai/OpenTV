@@ -3,7 +3,6 @@
 
 import { AlertCircle, Loader2, Plus, RefreshCw, Trash2, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { createPortal } from 'react-dom';
 
 import { AdminConfig } from '@/lib/admin.types';
 import { adminFetch as fetch } from '@/lib/admin-fetch';
@@ -17,6 +16,8 @@ import {
   isExcludePresetActive,
   isFansubPresetActive,
 } from '@/lib/anime-filter-presets';
+
+import { createCinemaPortal as createPortal } from '@/components/CinemaPortal';
 
 import { AnimeSubscription, AnimeSubscriptionDownloadTool } from '@/types/anime-subscription';
 

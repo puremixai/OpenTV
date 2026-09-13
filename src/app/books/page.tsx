@@ -96,14 +96,12 @@ export default function BooksHomePage() {
 
   return (
     <div className='space-y-7'>
-      <section className='relative overflow-hidden rounded-[2.25rem] border border-emerald-100 bg-gradient-to-br from-emerald-50 via-white to-amber-50 p-6 shadow-sm dark:border-emerald-500/10 dark:from-emerald-950/30 dark:via-gray-950 dark:to-amber-950/20 sm:p-8'>
-        <div className='absolute -right-16 -top-20 h-56 w-56 rounded-full bg-emerald-300/20 blur-3xl dark:bg-emerald-500/10' />
-        <div className='absolute -bottom-24 left-1/3 h-56 w-56 rounded-full bg-amber-300/20 blur-3xl dark:bg-amber-500/10' />
+      <section className='cinema-library-intro relative overflow-hidden p-6 sm:p-8'>
         <div className='relative grid gap-8 lg:grid-cols-[1.25fr_0.75fr] lg:items-end'>
           <div>
             <div className='inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-white/70 px-3 py-1 text-xs font-medium text-emerald-700 shadow-sm backdrop-blur dark:border-emerald-500/20 dark:bg-gray-950/50 dark:text-emerald-200'>
               <Sparkles className='h-3.5 w-3.5' />
-              MoonTVPlus Reading Library
+              文字里的世界
             </div>
             <h1 className='mt-5 max-w-3xl text-4xl font-black tracking-[-0.06em] text-emerald-950 dark:text-emerald-50 sm:text-6xl lg:text-7xl'>
               电子书馆
@@ -166,9 +164,8 @@ export default function BooksHomePage() {
         {sources.map((source) => (
           <article
             key={source.id}
-            className='group relative overflow-hidden rounded-[2rem] border border-emerald-100/80 bg-white/85 p-5 shadow-sm transition-colors duration-200 hover:border-emerald-200 hover:bg-white dark:border-emerald-500/10 dark:bg-gray-950/70 dark:hover:border-emerald-500/30'
+            className='cinema-library-source group relative overflow-hidden rounded-2xl border p-5 transition-colors duration-200'
           >
-            <div className='absolute -right-10 -top-12 h-28 w-28 rounded-full bg-emerald-200/40 blur-2xl transition-opacity duration-200 group-hover:opacity-80 dark:bg-emerald-500/10' />
             <div className='relative flex items-start justify-between gap-4'>
               <div className='min-w-0'>
                 <div className='truncate text-base font-bold text-slate-950 dark:text-white'>

@@ -2,7 +2,6 @@
 
 import { Check, ChevronDown, Download, Trash2, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
-import { createPortal } from 'react-dom';
 
 import { CompletedTask,downloadDB } from '@/lib/download-db';
 import {
@@ -12,6 +11,8 @@ import {
   getIndexedDBVideoSegments,
 } from '@/lib/indexeddb-video-cache';
 import { logger } from '@/lib/logger';
+
+import { createCinemaPortal as createPortal } from '@/components/CinemaPortal';
 
 import { ConfirmDialog } from './ConfirmDialog';
 

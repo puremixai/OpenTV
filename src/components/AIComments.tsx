@@ -15,6 +15,7 @@ export default function AIComments({
 }: AICommentsProps) {
   const {
     job,
+    canGenerate,
     restoring,
     loading,
     error,
@@ -53,8 +54,16 @@ export default function AIComments({
     );
   }
 
+  if (!canGenerate && comments.length === 0) {
+    return (
+      <p className='py-12 text-center text-sm text-gray-500' role='status'>
+        {readFailed ? '评论暂时无法加载，请稍后再试' : '暂无评论'}
+      </p>
+    );
+  }
+
   // Reading a movie never starts a paid generation request.
-  if (job.status === 'idle' && !loading && !error) {
+  if (canGenerate && job.status === 'idle' && !loading && !error) {
     return (
       <div className='flex flex-col items-center justify-center py-12'>
         <div className='text-gray-500 dark:text-gray-400 mb-4'>
@@ -143,28 +152,30 @@ export default function AIComments({
       {/* 头部统计和操作 */}
       <div className='flex items-center justify-between'>
         <div className='text-sm text-gray-600 dark:text-gray-400'>
-          已保存 {comments.length} 条AI评论
+          {comments.length} 条 AI 评论
         </div>
-        <button
-          onClick={regenerate}
-          disabled={loading}
-          className='text-sm px-3 py-1 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1'
-        >
-          <svg
-            className='w-4 h-4'
-            fill='none'
-            stroke='currentColor'
-            viewBox='0 0 24 24'
+        {canGenerate && (
+          <button
+            onClick={regenerate}
+            disabled={loading}
+            className='text-sm px-3 py-1 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1'
           >
-            <path
-              strokeLinecap='round'
-              strokeLinejoin='round'
-              strokeWidth={2}
-              d='M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15'
-            />
-          </svg>
-          {loading ? '生成中...' : '重新生成'}
-        </button>
+            <svg
+              className='w-4 h-4'
+              fill='none'
+              stroke='currentColor'
+              viewBox='0 0 24 24'
+            >
+              <path
+                strokeLinecap='round'
+                strokeLinejoin='round'
+                strokeWidth={2}
+                d='M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15'
+              />
+            </svg>
+            {loading ? '生成中...' : '重新生成'}
+          </button>
+        )}
       </div>
 
       {job.generatedAt && (
@@ -172,12 +183,12 @@ export default function AIComments({
           保存于 {new Date(job.generatedAt).toLocaleString('zh-CN')}
         </p>
       )}
-      {loading && (
+      {canGenerate && loading && (
         <p className='text-sm text-blue-600' role='status'>
           新评论正在生成，完成后自动更新。可以刷新或稍后回来查看。
         </p>
       )}
-      {error && (
+      {canGenerate && error && (
         <p className='text-sm text-amber-600' role='alert'>
           {error}，已保留上一次生成的评论。
         </p>

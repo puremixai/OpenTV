@@ -1,8 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { usePathname } from 'next/navigation';
+import { Suspense, useEffect, useState } from 'react';
 
 import { BackButton } from './BackButton';
+import CinemaHeader from './home/CinemaHeader';
 import MobileBottomNav from './MobileBottomNav';
 import MobileHeader from './MobileHeader';
 import Sidebar from './Sidebar';
@@ -13,12 +15,22 @@ interface PageLayoutProps {
   children: React.ReactNode;
   activePath?: string;
   hideNavigation?: boolean; // 控制是否隐藏顶部和底部导航栏
+  cinematic?: boolean;
 }
 
-const PageLayout = ({ children, activePath = '/', hideNavigation = false }: PageLayoutProps) => {
+const PageLayout = ({
+  children,
+  activePath = '/',
+  hideNavigation = false,
+  cinematic,
+}: PageLayoutProps) => {
+  const pathname = usePathname();
+  const isCinema =
+    cinematic ?? !(pathname === '/admin' || pathname.startsWith('/admin/'));
+  const isHome = pathname === '/';
   const [backgroundImage, setBackgroundImage] = useState('');
-  const shouldShowSharedBackground = !hideNavigation && activePath !== '/play';
-
+  const shouldShowSharedBackground =
+    !isCinema && !hideNavigation && activePath !== '/play';
 
   useEffect(() => {
     if (typeof window === 'undefined' || !shouldShowSharedBackground) {
@@ -54,7 +66,13 @@ const PageLayout = ({ children, activePath = '/', hideNavigation = false }: Page
 
   return (
     <VersionCheckProvider>
-      <div className='relative w-full min-h-screen overflow-hidden'>
+      <div
+        className={`relative w-full min-h-screen overflow-hidden ${
+          isCinema ? 'cinema-layout' : ''
+        }`}
+        data-cinema-view={isHome ? 'home' : 'content'}
+        data-navigation-hidden={hideNavigation}
+      >
         {shouldShowSharedBackground && backgroundImage && (
           <>
             <div
@@ -66,14 +84,25 @@ const PageLayout = ({ children, activePath = '/', hideNavigation = false }: Page
         )}
 
         {/* 移动端头部 */}
-        {!hideNavigation && (
-          <MobileHeader showBackButton={['/play', '/live'].includes(activePath)} />
+        {!hideNavigation && isCinema && (
+          <Suspense>
+            <CinemaHeader />
+          </Suspense>
+        )}
+        {!hideNavigation && !isCinema && (
+          <MobileHeader
+            showBackButton={['/play', '/live'].includes(activePath)}
+          />
         )}
 
         {/* 主要布局容器 */}
-        <div className='relative z-10 flex md:grid md:grid-cols-[auto_1fr] w-full min-h-screen md:min-h-auto'>
+        <div
+          className={`relative z-10 flex md:grid ${
+            isCinema ? 'md:grid-cols-1' : 'md:grid-cols-[auto_1fr]'
+          } w-full min-h-screen md:min-h-auto`}
+        >
           {/* 侧边栏 - 桌面端显示，移动端隐藏 */}
-          {!hideNavigation && (
+          {!hideNavigation && !isCinema && (
             <div className='hidden md:block'>
               <Sidebar activePath={activePath} />
             </div>
@@ -82,14 +111,16 @@ const PageLayout = ({ children, activePath = '/', hideNavigation = false }: Page
           {/* 主内容区域 */}
           <div className='relative min-w-0 flex-1 transition-all duration-300'>
             {/* 桌面端左上角返回按钮 */}
-            {!hideNavigation && ['/play', '/live'].includes(activePath) && (
-              <div className='absolute top-3 left-1 z-20 hidden md:flex'>
-                <BackButton />
-              </div>
-            )}
+            {!hideNavigation &&
+              !isCinema &&
+              ['/play', '/live'].includes(activePath) && (
+                <div className='absolute top-3 left-1 z-20 hidden md:flex'>
+                  <BackButton />
+                </div>
+              )}
 
             {/* 桌面端更新通知 */}
-            {!hideNavigation && (
+            {!hideNavigation && !isCinema && (
               <div className='absolute top-2 right-4 z-20 hidden md:flex items-center gap-2'>
                 <UpdateNotification />
               </div>
@@ -97,6 +128,7 @@ const PageLayout = ({ children, activePath = '/', hideNavigation = false }: Page
 
             {/* 主内容 */}
             <main
+              data-page-content
               className='flex-1 md:min-h-0 mb-14 md:mb-0 md:mt-0 mt-[calc(3rem+env(safe-area-inset-top))]'
               style={{
                 paddingBottom: 'calc(3.5rem + env(safe-area-inset-bottom))',

@@ -1,12 +1,12 @@
-# MoonTVPlus
+# XTV
 
 <div align="center">
-  <img src="public/logo.png" alt="MoonTVPlus Logo" width="120">
+  <img src="public/logo.png" alt="XTV：融合播放符号的青蓝色 X 标识" width="144" height="144">
 </div>
 
-## ⚠️ 请某些人停止你的抄袭行为，不要我上什么功能你就抄什么，借鉴≠抄袭
+> **XTV** 是一个影视聚合播放器，提供多源搜索、在线播放、私人影库、多人观影室与 Android TV 访问入口。
 
-> 🎬 **MoonTVPlus** 是基于 [MoonTV v100](https://github.com/MoonTechLab/LunaTV) 二次开发的增强版影视聚合播放器。它在原版基础上新增了外部播放器支持、视频超分、弹幕系统、评论抓取等实用功能，提供更强大的观影体验。
+项目在 [上游增强版项目](https://github.com/mtvpls/MoonTVPlus) 与 [MoonTV v100](https://github.com/MoonTechLab/LunaTV) 的基础上迭代，使用统一的 XTV 名称与视觉标识。网页、PWA 和 Android TV 共用以青蓝色「X」和播放符号组成的品牌图标。
 
 <div align="center">
 
@@ -21,7 +21,7 @@
 
 ---
 
-## 🎉 相对原版新增内容
+## 🎉 主要功能
 
 - 🎮 **外部播放器跳转**：支持 PotPlayer、VLC、MPV、MX Player、nPlayer、IINA 等多种外部播放器
 - ✨ **视频超分 (Anime4K)**：使用 WebGPU 技术实现实时视频画质增强（支持 1.5x/2x/3x/4x 超分）
@@ -59,6 +59,7 @@
 
 ## 🗺 目录
 
+- [品牌与图标](#品牌与图标)
 - [技术栈](#技术栈)
 - [部署](#部署)
 - [配置文件](#配置文件)
@@ -67,12 +68,29 @@
 - [外部观影室服务器部署](#外部观影室服务器部署)
 - [弹幕后端部署](#弹幕后端部署)
 - [超分功能说明](#超分功能说明)
-- [AndroidTV 使用](#androidtv-使用)
+- [Android TV 使用](#android-tv-使用)
 - [TVBOX 订阅功能](#tvbox-订阅功能)
 - [安全与隐私提醒](#安全与隐私提醒)
 - [License](#license)
 - [致谢](#致谢)
 
+
+## 品牌与图标
+
+默认站点名称为 **XTV**，可通过构建及运行环境中的 `NEXT_PUBLIC_SITE_NAME` 自定义。使用数据库存储时，网页站名以管理后台保存的站点设置为准；升级已有实例后，如仍显示旧名称，请在后台将站点名称改为 `XTV`。
+
+| 资源 | 文件 | 规格与用途 |
+| --- | --- | --- |
+| Logo | [public/logo.png](public/logo.png) | 500 × 500，项目介绍与客户端菜单 |
+| 浏览器图标 | [public/favicon.ico](public/favicon.ico) | 包含 16、24、32、48、64、128、256 像素尺寸 |
+| PWA 图标 | [public/icons](public/icons) 中的 `icon-*.png` | 192、256、384、512 像素；192 像素版本也用于 Apple 主屏幕和通知 |
+| Android TV 图标 | [drawable/logo.png](apps/android-tv/app/src/main/res/drawable/logo.png) | 500 × 500，用于启动器、圆形图标入口和 TV 横幅 |
+
+PWA 名称与图标引用由 [scripts/generate-manifest.js](scripts/generate-manifest.js) 生成，开发和构建命令会自动执行，也可运行 `pnpm gen:manifest` 单独更新。浏览器、PWA 和通知的品牌图标引用带有 `v=xtv` 缓存版本。
+
+更新资源后需要重新构建并部署应用。Android TV 的 GitHub Actions 构建会将 `public/logo.png` 复制到 Android 图标目录；本地构建使用该目录中已同步的图标。
+
+仓库地址、镜像名称、数据卷、数据库键及客户端协议沿用现有标识，以保持链接有效和已有数据、客户端兼容；这些技术标识不影响 XTV 的界面名称。
 
 
 ## 技术栈
@@ -89,6 +107,23 @@
 ## 部署
 
 本项目**支持 Docker、Vercel、Netlify、Cloudflare Workers 和 EdgeOne Pages 平台** 部署。
+
+### 使用当前 XTV 源码部署
+
+要使用本仓库的 XTV 文案、Logo 和图标，请从当前源码构建。本地 Compose 配置使用 PostgreSQL 保存业务数据、Redis 提供缓存，仅向本机开放 `3000` 端口。先按 [PostgreSQL + Redis 部署说明](docs/POSTGRES-REDIS.md) 配置 `.env.docker.local`、`.env.postgres.local` 和 `.env.redis.local`，再在项目根目录执行：
+
+```powershell
+docker compose -f compose.local.yaml up -d --build
+docker compose -f compose.local.yaml ps
+```
+
+启动后访问 <http://localhost:3000>。升级、备份和回退步骤见 [本地 Docker 运行说明](docs/DOCKER-LOCAL.md)。
+
+该 Compose 配置默认开启 TV 模式和内置观影室，关闭弹幕获取和服务端自定义脚本。电视或其他设备访问时，需要额外配置可达的服务地址，详见 [Android TV 使用](#android-tv-使用)。
+
+### 上游一键部署入口
+
+以下按钮及后文的 `ghcr.io/mtvpls/` 镜像地址指向上游项目，不包含本仓库尚未发布的 XTV 修改。部署自己的版本时，请使用自己的源码仓库与构建产物。
 
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/mtvpls/MoonTVPlus)
 
@@ -454,7 +489,7 @@ custom_category 支持的自定义分类已知如下：
 
 也可输入如 "哈利波特" 效果等同于豆瓣搜索
 
-MoonTV 支持标准的苹果 CMS V10 API 格式。
+XTV 支持标准的苹果 CMS V10 API 格式。
 
 ## 自动更新
 
@@ -472,7 +507,7 @@ dockge/komodo 等 docker compose UI 也有自动更新功能
 | CRON_WAIT_FOR_COMPLETION                 | 定时任务接口是否等待任务完全结束后再返回响应（true 时返回 200，false 时立即返回 202）。部署在 serverless 平台（如 Vercel）时建议设置为 true，否则响应返回后异步执行可能会被平台杀后台导致任务中断 | true/false                  | false                                                        |
 | CRON_USER_BATCH_SIZE                     | 定时任务用户批处理大小（控制并发处理的用户数量，影响播放记录和收藏更新任务的并发性能） | 正整数                      | 3                                                            |
 | SITE_BASE                                | 站点 url                                                     | 形如 https://example.com    | 空                                                           |
-| NEXT_PUBLIC_SITE_NAME                    | 站点名称                                                     | 任意字符串                  | MoonTV                                                       |
+| NEXT_PUBLIC_SITE_NAME                    | 站点名称                                                     | 任意字符串                  | XTV                                                       |
 | ANNOUNCEMENT                             | 站点公告                                                     | 任意字符串                  | 本网站仅提供影视信息搜索服务，所有内容均来自第三方网站。本站不存储任何视频资源，不对任何内容的准确性、合法性、完整性负责。 |
 | ANNOUNCEMENT_DISPLAY_MODE                | 公告显示模式                                                 | once、every                 | once                                                        |
 | NEXT_PUBLIC_STORAGE_TYPE                 | 播放记录/收藏的存储方式                                      | redis、kvrocks、upstash、d1、turso、postgres | 无默认，必填字段                                             |
@@ -577,7 +612,7 @@ NEXT_PUBLIC_VOICE_CHAT_STRATEGY 选项解释：
 
 1. 按照 [watch-room-server](https://github.com/tgs9915/watch-room-server) 的文档部署外部服务器
 
-2. 在 MoonTVPlus 中设置以下环境变量：
+2. 在 XTV 中设置以下环境变量：
 
    ```env
    WATCH_ROOM_ENABLED=true
@@ -610,11 +645,15 @@ NEXT_PUBLIC_VOICE_CHAT_STRATEGY 选项解释：
 
 
 
-## AndroidTV 使用
+## Android TV 使用
 
-目前该项目可以配合 [OrionTV](https://github.com/zimplexing/OrionTV) 在 Android TV 上使用，可以直接作为 OrionTV 后端
+XTV 提供 `/tv` 电视端页面，并包含 [Android TV 壳工程](apps/android-tv/README.md)，可使用系统 WebView 或 GeckoView 打开电视端页面。默认桌面名称为 `XTV TV`，支持通过 `APP_NAME` 自定义，启动器图标使用统一的 XTV Logo。
 
-已实现播放记录和网页端同步
+构建参数、版本选择和局域网遥控能力见 [Android TV 使用说明](apps/android-tv/README.md)。
+
+`BASE_URL` 必须是电视可访问的服务地址。本地 Compose 默认只监听电脑的 `127.0.0.1:3000`；用于电视访问时，需要配置可达的反向代理地址，或按需调整端口绑定及防火墙。电视中的 `localhost` 指向电视自身。
+
+也可配合 [OrionTV](https://github.com/zimplexing/OrionTV) 使用，将 XTV 作为后端，同步网页端播放记录。
 
 ## TVBOX 订阅功能
 
@@ -668,6 +707,7 @@ NEXT_PUBLIC_VOICE_CHAT_STRATEGY 选项解释：
 ## 致谢
 
 - [ts-nextjs-tailwind-starter](https://github.com/theodorusclarence/ts-nextjs-tailwind-starter) — 项目最初基于该脚手架。
+- [上游增强版项目](https://github.com/mtvpls/MoonTVPlus) — 本项目的迭代基础。
 - [MoonTV](https://github.com/MoonTechLab/LunaTV)— 由此启发，再次站在巨人的肩膀上。
 - [LibreTV](https://github.com/LibreSpark/LibreTV) — 由此启发，站在巨人的肩膀上。
 - [ArtPlayer](https://github.com/zhw2590582/ArtPlayer) — 提供强大的网页视频播放器。
@@ -676,6 +716,8 @@ NEXT_PUBLIC_VOICE_CHAT_STRATEGY 选项解释：
 - [CMLiussss](https://github.com/cmliu) — 提供豆瓣 CDN 服务
 - 感谢所有提供免费影视接口的站点。
 
-## Star History
+## 上游 Star History
+
+下图展示上游仓库的历史统计。
 
 [![Star History Chart](https://star-history.dera.page/svg?repos=mtvpls/moontvplus&type=Date)](https://star-history.dera.page/#mtvpls/moontvplus&Date)

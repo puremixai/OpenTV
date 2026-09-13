@@ -11,7 +11,7 @@ on:
       app_name:
         description: 'Android TV 应用名称'
         required: true
-        default: 'MoonTVPlus TV'
+        default: 'XTV TV'
         type: string
       version_name:
         description: '版本名'

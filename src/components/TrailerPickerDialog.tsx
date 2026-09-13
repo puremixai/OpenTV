@@ -2,9 +2,10 @@
 
 import { ExternalLink, Film, Loader2, PlayCircle, X,Youtube } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
-import { createPortal } from 'react-dom';
 
 import type { TMDBVideoItem } from '@/lib/tmdb.client';
+
+import { createCinemaPortal as createPortal } from '@/components/CinemaPortal';
 
 interface TrailerPickerDialogProps {
   isOpen: boolean;

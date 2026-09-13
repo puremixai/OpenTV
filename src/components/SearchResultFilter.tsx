@@ -2,7 +2,8 @@
 
 import { ArrowDownWideNarrow, ArrowUpDown,ArrowUpNarrowWide } from 'lucide-react';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
+
+import { createCinemaPortal as createPortal } from '@/components/CinemaPortal';
 
 export type SearchFilterKey = 'source' | 'title' | 'year' | 'yearOrder';
 

@@ -2,7 +2,8 @@
 
 import { Bell, Info, Mail, MonitorSmartphone, Send, X } from 'lucide-react';
 import { useState } from 'react';
-import { createPortal } from 'react-dom';
+
+import { createCinemaPortal as createPortal } from '@/components/CinemaPortal';
 
 interface EmailSettingsPanelProps {
   isOpen: boolean;

@@ -1,7 +1,8 @@
 'use client';
 
 import { AlertTriangle, X } from 'lucide-react';
-import { createPortal } from 'react-dom';
+
+import { createCinemaPortal as createPortal } from '@/components/CinemaPortal';
 
 interface ConfirmDialogProps {
   isOpen: boolean;

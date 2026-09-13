@@ -3,10 +3,11 @@
 
 import { AlertCircle, AlertTriangle, CheckCircle, Download, FileCheck, Lock, Upload } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
 
 import { adminFetch as fetch } from '@/lib/admin-fetch';
 import { logger } from '@/lib/logger';
+
+import { createCinemaPortal as createPortal } from '@/components/CinemaPortal';
 
 interface DataMigrationProps {
   onRefreshConfig?: () => Promise<void>;
@@ -234,7 +235,7 @@ const DataMigration = ({ onRefreshConfig }: DataMigrationProps) => {
       // 获取文件名
       const contentDisposition = response.headers.get('content-disposition');
       const filenameMatch = contentDisposition?.match(/filename="(.+)"/);
-      const filename = filenameMatch?.[1] || 'moontv-backup.dat';
+      const filename = filenameMatch?.[1] || 'xtv-backup.dat';
 
       // 下载文件
       const blob = await response.blob();

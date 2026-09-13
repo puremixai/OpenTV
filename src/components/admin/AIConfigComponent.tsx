@@ -687,7 +687,7 @@ export const AIConfigComponent = ({
           {
             key: 'aicomments',
             label: 'AI评论功能',
-            desc: '使用上方当前模式的 AI 配置，在播放页生成评论',
+            desc: '管理员和站长可在播放页生成评论，所有用户均可查看已保存的评论',
             state: enableAIComments,
             setState: setEnableAIComments,
           },
@@ -806,7 +806,7 @@ export const AIConfigComponent = ({
               value={defaultMessageNoVideo}
               onChange={(e) => setDefaultMessageNoVideo(e.target.value)}
               rows={3}
-              placeholder='例如：你好！我是MoonTVPlus的AI影视助手。想看什么电影或剧集？需要推荐吗？'
+              placeholder='例如：你好！我是XTV的AI影视助手。想看什么电影或剧集？需要推荐吗？'
               className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100'
             />
             <p className='mt-2 text-sm text-gray-600 dark:text-gray-400'>

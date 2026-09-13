@@ -11,7 +11,7 @@ const publicDir = path.join(projectRoot, 'public');
 const manifestPath = path.join(publicDir, 'manifest.json');
 
 // 从环境变量获取站点名称
-const siteName = process.env.NEXT_PUBLIC_SITE_NAME || 'MoonTVPlus';
+const siteName = process.env.NEXT_PUBLIC_SITE_NAME || 'XTV';
 
 // manifest.json 模板
 // Apple 状态栏等配置应写在 HTML meta（layout appleWebApp），非标准 manifest 字段浏览器会忽略
@@ -25,22 +25,22 @@ const manifestTemplate = {
   background_color: '#000000',
   icons: [
     {
-      src: '/icons/icon-192x192.png',
+      src: '/icons/icon-192x192.png?v=xtv',
       sizes: '192x192',
       type: 'image/png',
     },
     {
-      src: '/icons/icon-256x256.png',
+      src: '/icons/icon-256x256.png?v=xtv',
       sizes: '256x256',
       type: 'image/png',
     },
     {
-      src: '/icons/icon-384x384.png',
+      src: '/icons/icon-384x384.png?v=xtv',
       sizes: '384x384',
       type: 'image/png',
     },
     {
-      src: '/icons/icon-512x512.png',
+      src: '/icons/icon-512x512.png?v=xtv',
       sizes: '512x512',
       type: 'image/png',
     },

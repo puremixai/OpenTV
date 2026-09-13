@@ -2,6 +2,7 @@ const { act, renderHook } = require('@testing-library/react');
 const { useSavedAIComments } = require('../src/hooks/useSavedAIComments');
 const nativeFetch = global.fetch;
 const saved = {
+  canGenerate: true,
   status: 'completed',
   comments: [{ id: '1', content: '持久评论', isAiGenerated: true }],
   total: 1,
@@ -144,5 +145,42 @@ test('uncertain submission is recovered by reading instead of paying for another
   expect(
     global.fetch.mock.calls.filter((call) => call[1].method === 'POST')
   ).toHaveLength(1);
+  hook.unmount();
+});
+
+test('read-only viewers cannot submit through hook actions', async () => {
+  global.fetch.mockResolvedValue(response({ ...saved, canGenerate: false }));
+  const hook = renderHook(() => useSavedAIComments('电影'));
+  await flush();
+  await act(async () => {
+    await hook.result.current.start();
+    await hook.result.current.regenerate();
+  });
+  expect(hook.result.current.canGenerate).toBe(false);
+  expect(hook.result.current.job.comments).toEqual(saved.comments);
+  expect(global.fetch).toHaveBeenCalledTimes(1);
+  expect(global.fetch.mock.calls[0][1].method).toBe('GET');
+  hook.unmount();
+});
+
+test('revoked generation permission hides actions and blocks further submissions', async () => {
+  global.fetch
+    .mockResolvedValueOnce(response(saved))
+    .mockResolvedValueOnce({
+      ok: false,
+      status: 403,
+      json: async () => ({ error: '仅管理员可以生成', canGenerate: false }),
+    });
+  const hook = renderHook(() => useSavedAIComments('电影'));
+  await flush();
+  await act(async () => {
+    await hook.result.current.regenerate();
+  });
+  expect(hook.result.current.canGenerate).toBe(false);
+  await act(async () => {
+    await hook.result.current.start();
+  });
+  expect(global.fetch).toHaveBeenCalledTimes(2);
+  expect(hook.result.current.job.comments).toEqual(saved.comments);
   hook.unmount();
 });

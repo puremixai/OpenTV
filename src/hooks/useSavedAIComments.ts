@@ -23,6 +23,7 @@ export function useSavedAIComments(
   const [canRetry, setCanRetry] = useState(true);
   const sequence = useRef(0);
   const controller = useRef<AbortController | null>(null);
+  const canGenerate = useRef(false);
   const cancelRequests = useCallback(() => {
     sequence.current++;
     controller.current?.abort();
@@ -30,6 +31,7 @@ export function useSavedAIComments(
 
   const request = useCallback(
     async (action: 'read' | 'generate' | 'regenerate') => {
+      if (action !== 'read' && !canGenerate.current) return;
       const current = ++sequence.current;
       controller.current?.abort();
       const abort = new AbortController();
@@ -70,9 +72,14 @@ export function useSavedAIComments(
         const data = await response.json();
         if (current !== sequence.current) return;
         if (!response.ok) {
+          if (response.status === 401 || response.status === 403) {
+            canGenerate.current = false;
+            setJob((previous) => ({ ...previous, canGenerate: false }));
+          }
           setCanRetry(response.status >= 500 || response.status === 429);
           throw new Error(data.error || '读取评论失败');
         }
+        canGenerate.current = data.canGenerate === true;
         setJob(data);
       } catch (error) {
         if (current === sequence.current && !abort.signal.aborted) {
@@ -92,6 +99,7 @@ export function useSavedAIComments(
   );
 
   useEffect(() => {
+    canGenerate.current = false;
     setJob({
       status: 'idle',
       comments: [],
@@ -134,6 +142,7 @@ export function useSavedAIComments(
 
   return {
     job,
+    canGenerate: job.canGenerate === true,
     restoring,
     loading: submitting || pending,
     error: requestError || job.error || null,

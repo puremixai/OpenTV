@@ -6,12 +6,12 @@ const metadata =
 
 function createAICommentsStore(pool = getPostgresPool()) {
   return {
-    async get(username, key) {
+    async get(key) {
       return (
         (
           await pool.query(
-            `SELECT ${metadata} FROM ai_comment_jobs WHERE username=$1 AND movie_key=$2`,
-            [username, key]
+            `SELECT ${metadata} FROM ai_comment_jobs WHERE movie_key=$1 AND is_shared`,
+            [key]
           )
         ).rows[0] || null
       );
@@ -29,14 +29,17 @@ function createAICommentsStore(pool = getPostgresPool()) {
       const client = await pool.connect();
       try {
         await client.query('BEGIN');
-        // Serialize submissions by user, including two simultaneous first clicks.
+        // Keep the per-admin queue limit and deduplicate different admins' clicks.
         await client.query('SELECT pg_advisory_xact_lock(hashtext($1))', [
           'ai-comments:' + username,
         ]);
+        await client.query('SELECT pg_advisory_xact_lock(hashtext($1))', [
+          'ai-comments:movie:' + key,
+        ]);
         const existing = (
           await client.query(
-            `SELECT ${metadata} FROM ai_comment_jobs WHERE username=$1 AND movie_key=$2 FOR UPDATE`,
-            [username, key]
+            `SELECT ${metadata} FROM ai_comment_jobs WHERE movie_key=$1 AND is_shared FOR UPDATE`,
+            [key]
           )
         ).rows[0];
         if (
@@ -65,16 +68,16 @@ function createAICommentsStore(pool = getPostgresPool()) {
           row = (
             await client.query(
               `UPDATE ai_comment_jobs SET status='queued', generation_id=$2, movie_info=$3,
-            lease_token=NULL, lease_until=NULL, attempts=0, error=NULL, updated_at=$4 WHERE id=$1 RETURNING ${metadata}`,
-              [existing.id, randomUUID(), movie.info, now]
+            lease_token=NULL, lease_until=NULL, attempts=0, error=NULL, updated_at=$4, username=$5 WHERE id=$1 RETURNING ${metadata}`,
+              [existing.id, randomUUID(), movie.info, now, username]
             )
           ).rows[0];
         } else {
           row = (
             await client.query(
               `INSERT INTO ai_comment_jobs
-            (id,username,movie_key,movie_name,movie_year,movie_info,requested_count,status,generation_id,created_at,updated_at)
-            VALUES ($1,$2,$3,$4,$5,$6,$7,'queued',$8,$9,$9) RETURNING ${metadata}`,
+            (id,username,movie_key,movie_name,movie_year,movie_info,requested_count,status,generation_id,created_at,updated_at,is_shared)
+            VALUES ($1,$2,$3,$4,$5,$6,$7,'queued',$8,$9,$9,TRUE) RETURNING ${metadata}`,
               [
                 randomUUID(),
                 username,
@@ -109,7 +112,7 @@ function createAICommentsStore(pool = getPostgresPool()) {
         (
           await pool.query(
             `WITH candidate AS (
-        SELECT id FROM ai_comment_jobs WHERE attempts < 2 AND (status='queued' OR (status='running' AND lease_until < $1))
+        SELECT id FROM ai_comment_jobs WHERE is_shared AND attempts < 2 AND (status='queued' OR (status='running' AND lease_until < $1))
         ORDER BY updated_at FOR UPDATE SKIP LOCKED LIMIT 1
       ) UPDATE ai_comment_jobs j SET status='running', lease_token=$2, lease_until=$3,
         attempts=j.attempts+1, updated_at=$1 FROM candidate WHERE j.id=candidate.id RETURNING j.*`,

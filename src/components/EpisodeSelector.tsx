@@ -9,7 +9,6 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import { createPortal } from 'react-dom';
 
 import type { DanmakuComment,DanmakuSelection } from '@/lib/danmaku/types';
 import { generateStorageKey, getCachedPlayRecordsSnapshot } from '@/lib/db.client';
@@ -21,6 +20,7 @@ import { EpisodeFilterConfig,SearchResult } from '@/lib/types';
 import { getVideoResolutionFromM3u8 } from '@/lib/utils';
 import { useLongPress } from '@/hooks/useLongPress';
 
+import { createCinemaPortal as createPortal } from '@/components/CinemaPortal';
 import DanmakuPanel from '@/components/DanmakuPanel';
 import EpisodeFilterSettings from '@/components/EpisodeFilterSettings';
 import ProxyImage from '@/components/ProxyImage';

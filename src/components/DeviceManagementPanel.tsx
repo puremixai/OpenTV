@@ -1,7 +1,8 @@
 'use client';
 
 import { LucideIcon, Monitor, X } from 'lucide-react';
-import { createPortal } from 'react-dom';
+
+import { createCinemaPortal as createPortal } from '@/components/CinemaPortal';
 
 interface DeviceItem {
   tokenId: string;

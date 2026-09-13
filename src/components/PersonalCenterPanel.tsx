@@ -1,7 +1,8 @@
 'use client';
 
 import { Bell, KeyRound, Monitor, X } from 'lucide-react';
-import { createPortal } from 'react-dom';
+
+import { createCinemaPortal as createPortal } from '@/components/CinemaPortal';
 
 interface PersonalCenterPanelProps {
   isOpen: boolean;

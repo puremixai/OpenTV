@@ -2,7 +2,7 @@ import { logger } from '@/lib/logger';
 /**
  * IndexedDB 视频缓存（独立库）
  *
- * 注意：视频分片/播放列表不存入现有 MoonTVPlus 元信息库，避免大体积 Blob
+ * 注意：视频分片/播放列表不存入现有 XTV 元信息库，避免大体积 Blob
  * 与任务/用户元信息混在一起。
  */
 

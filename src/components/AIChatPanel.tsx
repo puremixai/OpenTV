@@ -5,12 +5,13 @@ import { Bot, Loader2, RefreshCw, Send, Sparkles, Trash2, X } from 'lucide-react
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
 import ReactMarkdown from 'react-markdown';
 
 import { VideoContext } from '@/lib/ai-orchestrator';
 import { getAuthInfoFromBrowserCookie } from '@/lib/auth';
 import { logger } from '@/lib/logger';
+
+import { createCinemaPortal as createPortal } from '@/components/CinemaPortal';
 
 interface ChatMessage {
   role: 'user' | 'assistant';
@@ -246,7 +247,7 @@ export default function AIChatPanel({
   isOpen,
   onClose,
   context,
-  welcomeMessage = '你好！我是MoonTVPlus的AI影视助手，有什么可以帮你的吗？',
+  welcomeMessage = '你好！我是XTV的AI影视助手，有什么可以帮你的吗？',
   onStreamingChange,
   useDrawer = false,
   drawerWidth = 'w-full md:w-[25%]',

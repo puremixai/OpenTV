@@ -198,13 +198,13 @@ integration('real PostgreSQL and Redis', () => {
     );
     expect(result.status).toBe('completed');
     expect(result.result_revision).toBe(1);
-    expect(await jobs.get('another-user', 'jobs-test-main')).toBeNull();
+    expect((await jobs.get('jobs-test-main')).id).toBe(result.id);
     expect(
       (await jobs.enqueue('pg-test-owner', 'jobs-test-main', movie)).status
     ).toBe('completed');
     expect(await jobs.claim()).toBeNull();
     const script =
-      "const {createAICommentsStore}=require('./server/ai-comments-store');const {closePostgresPool}=require('./server/postgres');(async()=>{const s=createAICommentsStore();const j=await s.get('pg-test-owner','jobs-test-main');console.log(JSON.stringify(await s.getResult(j.id,j.result_revision)));await closePostgresPool()})()";
+      "const {createAICommentsStore}=require('./server/ai-comments-store');const {closePostgresPool}=require('./server/postgres');(async()=>{const s=createAICommentsStore();const j=await s.get('jobs-test-main');console.log(JSON.stringify(await s.getResult(j.id,j.result_revision)));await closePostgresPool()})()";
     const output = require('node:child_process').execFileSync(
       process.execPath,
       ['-e', script],
@@ -216,7 +216,7 @@ integration('real PostgreSQL and Redis', () => {
   test('lease recovery fences stale workers and failed regeneration preserves saved comments', async () => {
     const jobs = createAICommentsStore(pool);
     const movie = { name: '持久化测试影片', year: '2024', info: '', count: 10 };
-    const previous = await jobs.get('pg-test-owner', 'jobs-test-main');
+    const previous = await jobs.get('jobs-test-main');
     const pending = await jobs.enqueue(
       'pg-test-owner',
       'jobs-test-main',
@@ -243,7 +243,7 @@ integration('real PostgreSQL and Redis', () => {
       )
     ).toBeNull();
     await jobs.fail(recovered.id, recovered.lease_token, 'AI测试失败');
-    const failed = await jobs.get('pg-test-owner', 'jobs-test-main');
+    const failed = await jobs.get('jobs-test-main');
     expect(failed.status).toBe('failed');
     expect(
       (await jobs.getResult(failed.id, failed.result_revision))[0].content
@@ -256,9 +256,7 @@ integration('real PostgreSQL and Redis', () => {
       ]);
     }
     expect(await jobs.claim()).toBeNull();
-    expect((await jobs.get('pg-test-owner', 'jobs-test-main')).status).toBe(
-      'failed'
-    );
+    expect((await jobs.get('jobs-test-main')).status).toBe('failed');
   });
 
   test('comment queue limit cannot be bypassed by simultaneous submissions', async () => {
@@ -280,6 +278,125 @@ integration('real PostgreSQL and Redis', () => {
     await pool.query(
       "DELETE FROM ai_comment_jobs WHERE username='pg-test-owner' AND movie_key LIKE 'jobs-test-limit-%'"
     );
+  });
+
+  test('different administrators share one movie task and can regenerate each others saved result', async () => {
+    await pool.query(
+      "INSERT INTO users (username,password_hash,role,created_at) VALUES ('comments-test-admin','unused','admin',$1)",
+      [Date.now()]
+    );
+    const jobs = createAICommentsStore(pool);
+    const movie = { name: '共享影评', year: '2024', info: '', count: 10 };
+    const submitted = await Promise.all([
+      jobs.enqueue('pg-test-owner', 'jobs-shared-admins', movie),
+      jobs.enqueue('comments-test-admin', 'jobs-shared-admins', movie),
+    ]);
+    expect(submitted[0].id).toBe(submitted[1].id);
+    const claimed = (await Promise.all([jobs.claim(), jobs.claim()])).filter(
+      Boolean
+    );
+    expect(claimed).toHaveLength(1);
+    await jobs.complete(
+      claimed[0].id,
+      claimed[0].lease_token,
+      [{ content: '共享结果', isAiGenerated: true }],
+      { model: 'mock', protocol: 'mock' }
+    );
+    const regenerated = await jobs.enqueue(
+      'comments-test-admin',
+      'jobs-shared-admins',
+      movie,
+      true
+    );
+    expect(regenerated.id).toBe(submitted[0].id);
+    expect(regenerated.username).toBe('comments-test-admin');
+    expect(
+      (await jobs.getResult(regenerated.id, regenerated.result_revision))[0]
+        .content
+    ).toBe('共享结果');
+    const retry = await jobs.claim();
+    await jobs.fail(retry.id, retry.lease_token, 'mock failed');
+    await pool.query("DELETE FROM users WHERE username='comments-test-admin'");
+    const orphaned = await jobs.get('jobs-shared-admins');
+    expect(orphaned.username).toBeNull();
+    expect(
+      (await jobs.getResult(orphaned.id, orphaned.result_revision))[0].content
+    ).toBe('共享结果');
+  });
+
+  test('shared comment migration preserves legacy results and publishes the newest administrator result only', async () => {
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+      await client.query('CREATE SCHEMA ai_comment_migration_test');
+      await client.query('SET LOCAL search_path TO ai_comment_migration_test');
+      await client.query(
+        'CREATE TABLE users (username TEXT PRIMARY KEY, role TEXT NOT NULL)'
+      );
+      await client.query(
+        "INSERT INTO users VALUES ('owner','owner'),('admin','admin'),('viewer','user')"
+      );
+      await client.query(
+        fs.readFileSync(
+          path.resolve('migrations/postgres/014_ai_comment_jobs.sql'),
+          'utf8'
+        )
+      );
+      for (const [id, user, key, stamp, status, revision] of [
+        ['older', 'owner', 'movie', 100, 'completed', 1],
+        ['latest-admin', 'admin', 'movie', 200, 'failed', 2],
+        ['private', 'viewer', 'movie', 300, 'completed', 1],
+        ['private-queued', 'viewer', 'queued', 300, 'queued', 0],
+        ['admin-queued', 'admin', 'queued', 200, 'queued', 0],
+      ]) {
+        await client.query(
+          `INSERT INTO ai_comment_jobs (id,username,movie_key,movie_name,requested_count,status,generation_id,comments,result_revision,generated_at,created_at,updated_at)
+          VALUES ($1,$2,$3,'电影',10,$4,$1,'[{"content":"legacy"}]'::jsonb,$5,$6,$6,$6)`,
+          [id, user, key, status, revision, stamp]
+        );
+      }
+      await client.query(
+        fs.readFileSync(
+          path.resolve('migrations/postgres/015_shared_ai_comments.sql'),
+          'utf8'
+        )
+      );
+      expect(
+        (
+          await client.query(
+            'SELECT id FROM ai_comment_jobs WHERE is_shared ORDER BY id'
+          )
+        ).rows.map((r) => r.id)
+      ).toEqual(['admin-queued', 'latest-admin']);
+      expect(
+        (
+          await client.query(
+            "SELECT status FROM ai_comment_jobs WHERE id='private-queued'"
+          )
+        ).rows[0].status
+      ).toBe('failed');
+      expect(
+        (await client.query('SELECT comments FROM ai_comment_jobs')).rows
+      ).toHaveLength(5);
+      expect(
+        (
+          await client.query(
+            "SELECT comments FROM ai_comment_jobs WHERE id='private'"
+          )
+        ).rows[0].comments
+      ).toEqual([{ content: 'legacy' }]);
+      await client.query("DELETE FROM users WHERE username='admin'");
+      expect(
+        (
+          await client.query(
+            "SELECT username,comments FROM ai_comment_jobs WHERE id='latest-admin'"
+          )
+        ).rows[0]
+      ).toEqual({ username: null, comments: [{ content: 'legacy' }] });
+    } finally {
+      await client.query('ROLLBACK');
+      client.release();
+    }
   });
 
   test('Redis cache is shared across processes and cached pages cannot be mutated by callers', async () => {

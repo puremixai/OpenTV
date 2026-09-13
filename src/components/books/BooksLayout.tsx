@@ -118,7 +118,7 @@ export default function BooksLayout({
   }, [pathname, searchParams, isRead, readHeader]);
 
   return (
-    <div className='min-h-screen bg-[radial-gradient(circle_at_top_left,#fce7f3_0,transparent_34rem),linear-gradient(180deg,#fff7fb_0%,#f8fafc_44%,#f8fafc_100%)] text-slate-900 dark:bg-[radial-gradient(circle_at_top_left,rgba(6,95,70,0.26)_0,transparent_32rem),linear-gradient(180deg,#050505_0%,#09090b_100%)] dark:text-gray-100'>
+    <div data-cinema-specialty='books' className='min-h-screen text-slate-900 dark:text-gray-100'>
       <header
         className='fixed inset-x-0 top-0 z-40 border-b border-emerald-100/80 bg-white/85 shadow-sm shadow-emerald-950/5 backdrop-blur-xl dark:border-emerald-500/10 dark:bg-gray-950/85 dark:shadow-black/20'
         style={{ paddingTop: 'env(safe-area-inset-top)' }}
@@ -227,6 +227,7 @@ export default function BooksLayout({
                   <Link
                     key={tab.href}
                     href={tab.href}
+                    aria-current={active ? 'page' : undefined}
                     className={`inline-flex cursor-pointer items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
                       active
                         ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-600/20'
@@ -243,6 +244,7 @@ export default function BooksLayout({
         </div>
       </header>
       <main
+        data-cinema-reader={isRead}
         className={`mx-auto max-w-6xl ${
           isRead
             ? 'pt-[calc(4rem+env(safe-area-inset-top))]'
@@ -260,6 +262,7 @@ export default function BooksLayout({
               <Link
                 key={tab.href}
                 href={tab.href}
+                    aria-current={active ? 'page' : undefined}
                 className='flex min-h-16 cursor-pointer flex-col items-center justify-center gap-1 text-xs transition-colors duration-200 hover:bg-emerald-50 dark:hover:bg-emerald-500/10'
               >
                 <Icon

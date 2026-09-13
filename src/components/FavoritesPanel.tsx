@@ -4,7 +4,6 @@
 
 import { AlertTriangle,Star, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { createPortal } from 'react-dom';
 
 import {
   clearAllFavorites,
@@ -14,6 +13,7 @@ import {
 } from '@/lib/db.client';
 import { logger } from '@/lib/logger';
 
+import { createCinemaPortal as createPortal } from '@/components/CinemaPortal';
 import VideoCard from '@/components/VideoCard';
 
 interface FavoriteItem {

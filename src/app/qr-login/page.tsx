@@ -43,8 +43,8 @@ function QrLoginClient() {
   };
 
   return (
-    <main className='min-h-screen bg-black px-5 py-10 text-white'>
-      <section className='mx-auto max-w-md rounded-[32px] border border-white/10 bg-slate-950 p-7 shadow-2xl shadow-black'>
+    <main className='cinema-auth min-h-screen px-5 py-10 text-white'>
+      <section className='cinema-auth-card mx-auto max-w-md p-7'>
         <h1 className='text-3xl font-black'>确认登录电视端</h1>
         <p className='mt-3 text-slate-300'>请确认电视屏幕上的二维码来自你正在使用的设备。</p>
         {!authed ? (

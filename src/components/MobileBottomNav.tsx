@@ -162,6 +162,8 @@ const MobileBottomNav = ({ activePath }: MobileBottomNavProps) => {
 
   return (
     <nav
+      data-mobile-navigation
+      aria-label='移动导航'
       className='md:hidden fixed left-0 right-0 z-[600] bg-white/90 backdrop-blur-xl border-t border-gray-200/50 overflow-hidden dark:bg-gray-900/80 dark:border-gray-700/50'
       style={{
         /* 紧贴视口底部，同时在内部留出安全区高度 */
@@ -181,6 +183,7 @@ const MobileBottomNav = ({ activePath }: MobileBottomNavProps) => {
             >
               <Link
                 href={item.href}
+                aria-current={active ? 'page' : undefined}
                 prefetch={false}
                 className='flex flex-col items-center justify-center w-full h-14 gap-1 text-xs'
               >

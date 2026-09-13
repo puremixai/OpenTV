@@ -941,6 +941,7 @@ const VideoCard = forwardRef<VideoCardHandle, VideoCardProps>(
     return (
       <>
         <div
+          data-video-card
           className={`group relative w-full rounded-lg bg-transparent transition-all duration-300 ease-in-out hover:scale-[1.05] hover:z-[500] ${
             isUpcoming ? 'cursor-default' : 'cursor-pointer'
           } ${showUpcomingInfo ? 'scale-[1.05] z-[500]' : ''}`}
@@ -1274,6 +1275,7 @@ const VideoCard = forwardRef<VideoCardHandle, VideoCardProps>(
             {/* 徽章 */}
             {config.showRating && rate && (
               <div
+                data-video-rating
                 className='absolute top-2 right-2 bg-pink-500 text-white text-xs font-bold w-7 h-7 rounded-full flex items-center justify-center shadow-md transition-all duration-300 ease-out group-hover:scale-110'
                 style={
                   {

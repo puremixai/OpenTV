@@ -24,13 +24,13 @@ import { CSS } from '@dnd-kit/utilities';
 import { GripVertical, SlidersHorizontal } from 'lucide-react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
 
 import { logger } from '@/lib/logger';
 import { getSourceDisplayLabel, normalizeSource, SourcePill } from '@/lib/music/shared';
 import type { MusicQuality, MusicSource, Song } from '@/lib/music/types';
 
 import AddToPlaylistModal from '@/components/AddToPlaylistModal';
+import { createCinemaPortal as createPortal } from '@/components/CinemaPortal';
 import LyricsPiPWindow from '@/components/LyricsPiPWindow';
 import MusicSidebarDrawer from '@/components/music/MusicSidebarDrawer';
 import Toast, { ToastProps } from '@/components/Toast';
@@ -2259,7 +2259,7 @@ export default function MusicClient({ children: _children }: { children?: React.
   }, [playlist, playRecords, currentSong, quality, currentSource]);
 
   return (
-    <div className="music-theme min-h-screen bg-zinc-950 text-white">
+    <div data-cinema-specialty="music" className="music-theme min-h-screen bg-zinc-950 text-white">
       <>
       <style jsx global>{`
         @keyframes vinyl-spin {
@@ -3552,7 +3552,7 @@ export default function MusicClient({ children: _children }: { children?: React.
         }
 
         .music-theme {
-          background: linear-gradient(180deg, var(--music-bg) 0%, color-mix(in srgb, var(--music-bg) 82%, #22c55e 18%) 100%);
+          background: linear-gradient(180deg, #141820 0%, #090b0f 70%);
           color: var(--music-text);
         }
 

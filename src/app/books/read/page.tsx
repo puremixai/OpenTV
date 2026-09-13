@@ -20,7 +20,6 @@ import {
 } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
 
 import { saveBookReadRecord } from '@/lib/book.db.client';
 import {
@@ -53,6 +52,8 @@ import {
   getBookTtsProgress,
   saveBookTtsProgress,
 } from '@/lib/book-tts-progress.client';
+
+import { createCinemaPortal as createPortal } from '@/components/CinemaPortal';
 
 declare global {
   interface Window {

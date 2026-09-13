@@ -5,11 +5,11 @@
 import { ArrowDownWideNarrow, ArrowUpNarrowWide,Film } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useMemo,useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
 
 import { base58Encode } from '@/lib/utils';
 
 import CapsuleSwitch from '@/components/CapsuleSwitch';
+import { createCinemaPortal as createPortal } from '@/components/CinemaPortal';
 import PageLayout from '@/components/PageLayout';
 import VideoCard from '@/components/VideoCard';
 

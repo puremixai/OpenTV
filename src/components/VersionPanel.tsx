@@ -13,11 +13,12 @@ import {
   X,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { createPortal } from 'react-dom';
 
 import { changelog, ChangelogEntry } from '@/lib/changelog';
 import { CURRENT_VERSION } from '@/lib/version';
 import { compareVersions, UpdateStatus } from '@/lib/version_check';
+
+import { createCinemaPortal as createPortal } from '@/components/CinemaPortal';
 
 interface VersionPanelProps {
   isOpen: boolean;

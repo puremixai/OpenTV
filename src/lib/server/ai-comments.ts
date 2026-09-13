@@ -9,7 +9,6 @@ import {
 import { readCache, writeCache } from '@/lib/cache-backend';
 import { getConfig } from '@/lib/config';
 import { db } from '@/lib/db';
-import { hasFeaturePermission } from '@/lib/permissions';
 
 import { createAICommentsStore } from '../../../server/ai-comments-store';
 
@@ -32,13 +31,12 @@ function cacheKey(id: string, revision: number) {
 }
 
 export async function readSavedAIComments(
-  username: string,
   movie: AICommentMovie
 ): Promise<SavedAIComments> {
   const store = createAICommentsStore();
   // A regeneration can finish between reading metadata and loading the result.
   for (let attempt = 0; attempt < 3; attempt++) {
-    const row = await store.get(username, aiCommentMovieKey(movie));
+    const row = await store.get(aiCommentMovieKey(movie));
     if (!row)
       return {
         status: 'idle',
@@ -96,7 +94,7 @@ export async function enqueueAIComments(
   regenerate: boolean
 ) {
   const store = createAICommentsStore();
-  const existing = await store.get(username, aiCommentMovieKey(movie));
+  const existing = await store.get(aiCommentMovieKey(movie));
   if (
     !existing ||
     (regenerate && !['queued', 'running'].includes(existing.status))
@@ -107,7 +105,7 @@ export async function enqueueAIComments(
     resolveAIModelConfig(config.AIConfig);
   }
   await store.enqueue(username, aiCommentMovieKey(movie), movie, regenerate);
-  return readSavedAIComments(username, movie);
+  return readSavedAIComments(movie);
 }
 
 export async function runAICommentJob() {
@@ -117,12 +115,12 @@ export async function runAICommentJob() {
   try {
     const [config, user] = await Promise.all([
       getConfig(),
-      db.getUserInfoV2(job.username),
+      job.username ? db.getUserInfoV2(job.username, true) : null,
     ]);
     if (
       !user ||
       user.banned ||
-      !(await hasFeaturePermission(job.username, 'ai_ask'))
+      (user.role !== 'admin' && user.role !== 'owner')
     )
       throw new Error('AI评论生成权限已关闭');
     const aiConfig = config.AIConfig;

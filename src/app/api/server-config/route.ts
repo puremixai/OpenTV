@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
   // 如果使用 localStorage，返回默认配置
   if (storageType === 'localstorage') {
     return NextResponse.json({
-      SiteName: process.env.NEXT_PUBLIC_SITE_NAME || 'MoonTVPlus',
+      SiteName: process.env.NEXT_PUBLIC_SITE_NAME || 'XTV',
       StorageType: 'localstorage',
       Version: CURRENT_VERSION,
       TVModeEnabled: process.env.ENABLE_TV_MODE !== 'false',

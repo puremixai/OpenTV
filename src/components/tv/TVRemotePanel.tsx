@@ -18,13 +18,14 @@ import {
   X,
 } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
 
 import type {
   TVRemoteDevice,
   TVRemoteKey,
   TVRemoteTextMode,
 } from '@/lib/tv-remote-types';
+
+import { createCinemaPortal as createPortal } from '@/components/CinemaPortal';
 
 type TVRemotePanelProps = {
   isOpen: boolean;

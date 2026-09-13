@@ -3,7 +3,6 @@
 
 import { AlertTriangle, ChevronRight } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { createPortal } from 'react-dom';
 
 import type { PlayRecord } from '@/lib/db.client';
 import {
@@ -13,6 +12,7 @@ import {
   subscribeToDataUpdates,
 } from '@/lib/db.client';
 
+import { createCinemaPortal as createPortal } from '@/components/CinemaPortal';
 import PlayRecordsPanel from '@/components/PlayRecordsPanel';
 import VideoCard from '@/components/VideoCard';
 import VirtualScrollableRow from '@/components/VirtualScrollableRow';

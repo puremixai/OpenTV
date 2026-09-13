@@ -5,12 +5,15 @@ import { Inter } from 'next/font/google';
 import { cookies } from 'next/headers';
 
 import './globals.css';
+import './home.css';
+import './cinema-ui.css';
 
 import { parseAuthInfo } from '@/lib/auth';
 import { getConfig } from '@/lib/config';
 import { getUserFeatureAccess } from '@/lib/permissions';
 import { listEnabledSourceScripts } from '@/lib/source-script';
 
+import CinematicScope from '../components/CinematicScope';
 import { StartupCacheCleanup } from '../components/DanmakuCacheCleanup';
 import { DownloadBubble } from '../components/DownloadBubble';
 import { DownloadPanel } from '../components/DownloadPanel';
@@ -31,7 +34,7 @@ export const dynamic = 'force-dynamic';
 export async function generateMetadata(): Promise<Metadata> {
   const storageType = process.env.NEXT_PUBLIC_STORAGE_TYPE || 'localstorage';
   const config = await getConfig();
-  let siteName = process.env.NEXT_PUBLIC_SITE_NAME || 'MoonTVPlus';
+  let siteName = process.env.NEXT_PUBLIC_SITE_NAME || 'XTV';
   if (storageType !== 'localstorage') {
     siteName = config.SiteConfig.SiteName;
   }
@@ -40,6 +43,9 @@ export async function generateMetadata(): Promise<Metadata> {
     title: siteName,
     description: '影视聚合',
     manifest: '/manifest.json',
+    icons: {
+      icon: '/favicon.ico?v=xtv',
+    },
     // 供配套浏览器扩展（moontvplus-extension）识别本站部署（勿删）
     other: {
       'moontvplus-site': '1',
@@ -64,7 +70,7 @@ export default async function RootLayout({
 }) {
   const storageType = process.env.NEXT_PUBLIC_STORAGE_TYPE || 'localstorage';
 
-  let siteName = process.env.NEXT_PUBLIC_SITE_NAME || 'MoonTVPlus';
+  let siteName = process.env.NEXT_PUBLIC_SITE_NAME || 'XTV';
   let announcement =
     process.env.ANNOUNCEMENT ||
     '本网站仅提供影视信息搜索服务，所有内容均来自第三方网站。本站不存储任何视频资源，不对任何内容的准确性、合法性、完整性负责。';
@@ -325,6 +331,7 @@ export default async function RootLayout({
     ENABLE_TELEGRAM_LOGIN: telegramLoginEnabled,
     TELEGRAM_BOT_USERNAME: telegramBotUsername,
     AI_ENABLED: aiEnabled && userFeatureAccess.ai_ask,
+    AI_COMMENTS_ENABLED: aiEnabled && aiEnableComments,
     AI_ENABLE_HOMEPAGE_ENTRY: aiEnableHomepageEntry,
     AI_ENABLE_VIDEOCARD_ENTRY: aiEnableVideoCardEntry,
     AI_ENABLE_PLAYPAGE_ENTRY: aiEnablePlayPageEntry,
@@ -360,7 +367,7 @@ export default async function RootLayout({
           name='viewport'
           content='width=device-width, initial-scale=1.0, viewport-fit=cover'
         />
-        <link rel='apple-touch-icon' href='/icons/icon-192x192.png' />
+        <link rel='apple-touch-icon' href='/icons/icon-192x192.png?v=xtv' />
         {/* 主题CSS */}
         <link rel='stylesheet' href='/api/theme/css' />
         {/* 将配置序列化后直接写入脚本，浏览器端可通过 window.RUNTIME_CONFIG 获取 */}
@@ -429,12 +436,14 @@ export default async function RootLayout({
           >
             <WatchRoomProvider>
               <DownloadProvider>
-                <StartupCacheCleanup />
-                {children}
-                <GlobalErrorIndicator />
-                <ChatFloatingWindow />
-                <DownloadBubble />
-                <DownloadPanel />
+                <CinematicScope>
+                  <StartupCacheCleanup />
+                  {children}
+                  <GlobalErrorIndicator />
+                  <ChatFloatingWindow />
+                  <DownloadBubble />
+                  <DownloadPanel />
+                </CinematicScope>
               </DownloadProvider>
             </WatchRoomProvider>
           </SiteProvider>

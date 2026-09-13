@@ -17,6 +17,7 @@ export interface AICommentMovie {
 }
 
 export interface SavedAIComments {
+  canGenerate?: boolean;
   status: 'idle' | 'queued' | 'running' | 'completed' | 'failed';
   jobId?: string;
   generationId?: string;

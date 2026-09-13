@@ -246,7 +246,7 @@ export default function WatchRoomMusicPage() {
   const [duration, setDuration] = useState(0);
   const [needsActivation, setNeedsActivation] = useState(true);
   const [volume, setVolume] = useState(100);
-  const [isDark, setIsDark] = useState(true);
+  const isDark = true;
   const [showVolumeSlider, setShowVolumeSlider] = useState(false);
   const [mobilePanel, setMobilePanel] = useState<'cover' | 'lyrics'>('cover');
   const [bars, setBars] = useState<number[]>(() => Array.from({ length: SPECTRUM_BIN_COUNT }, () => SPECTRUM_IDLE_LEVEL));
@@ -303,17 +303,6 @@ export default function WatchRoomMusicPage() {
       router.replace('/watch-room');
     }
   }, [currentRoom, isOwner, router]);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-
-    const syncTheme = () => setIsDark(document.documentElement.classList.contains('dark'));
-    syncTheme();
-
-    const observer = new MutationObserver(syncTheme);
-    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
-    return () => observer.disconnect();
-  }, []);
 
   useEffect(() => {
     const handlePointerDown = (event: PointerEvent) => {

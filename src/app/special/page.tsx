@@ -33,9 +33,9 @@ function SpecialPageClient() {
   };
 
   return (
-    <main className='min-h-screen bg-gray-50 text-gray-900 dark:bg-black dark:text-slate-100'>
+    <main className='cinema-auth min-h-screen text-gray-900 dark:text-slate-100'>
       <section className='mx-auto flex min-h-screen w-full max-w-xl items-center px-5 py-10'>
-        <div className='w-full rounded-2xl border border-gray-200 bg-white p-6 shadow-xl dark:border-white/10 dark:bg-zinc-950 sm:p-8'>
+        <div className='cinema-auth-card w-full p-6 sm:p-8'>
           <div className='space-y-3'>
             <h1 className='text-2xl font-semibold tracking-tight text-gray-900 dark:text-white'>
               特殊源

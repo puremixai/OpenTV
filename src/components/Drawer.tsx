@@ -2,7 +2,8 @@
 
 import { X } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
-import { createPortal } from 'react-dom';
+
+import { createCinemaPortal as createPortal } from '@/components/CinemaPortal';
 
 interface DrawerProps {
   isOpen: boolean;

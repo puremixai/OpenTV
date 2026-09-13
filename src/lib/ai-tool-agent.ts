@@ -299,7 +299,7 @@ export function buildAgentSystemPrompt(opts: {
 }): string {
   let p = opts.customSystemPrompt ? `${opts.customSystemPrompt}\n\n` : '';
 
-  p += `你是 MoonTVPlus 的 AI 影视助手，专门帮助用户发现和了解影视内容。
+  p += `你是 XTV 的 AI 影视助手，专门帮助用户发现和了解影视内容。
 
 ## 可用工具
 你可以调用以下工具获取实时或权威数据（仅在需要时调用）：
@@ -404,7 +404,7 @@ async function fetchPageText(urlStr: string): Promise<string> {
   try {
     const res = await fetch(urlStr, {
       headers: {
-        'User-Agent': 'Mozilla/5.0 (compatible; MoonTVPlusBot/1.0)',
+        'User-Agent': 'Mozilla/5.0 (compatible; XTVBot/1.0)',
         Accept: 'text/html,application/xhtml+xml',
       },
       redirect: 'follow',

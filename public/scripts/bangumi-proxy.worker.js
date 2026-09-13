@@ -1,6 +1,6 @@
 /* eslint-disable */
 /**
- * MoonTVPlus Bangumi 代理 - Cloudflare Workers 版
+ * XTV Bangumi 代理 - Cloudflare Workers 版
  *
  * 项目配置方式：
  * 1. 后台 -> 动漫数据源配置：
@@ -61,7 +61,7 @@ async function handleRequest(request) {
   if (requestUrl.pathname === '/' && !requestUrl.searchParams.has('url')) {
     return jsonResponse({
       ok: true,
-      name: 'MoonTVPlus Bangumi Proxy',
+      name: 'XTV Bangumi Proxy',
       apiBaseUrl: requestUrl.origin,
       imageBaseUrl: requestUrl.origin,
       examples: {
@@ -153,7 +153,7 @@ function buildUpstreamHeaders(inputHeaders, targetUrl) {
   headers.set('Accept', inputHeaders.get('Accept') || (isImage ? 'image/avif,image/webp,image/apng,image/*,*/*;q=0.8' : 'application/json, text/plain, */*'));
   headers.set('Referer', 'https://bgm.tv/');
   headers.set('Origin', 'https://bgm.tv');
-  headers.set('User-Agent', inputHeaders.get('User-Agent') || 'MoonTVPlus/1.0 CloudflareWorker (+https://github.com)');
+  headers.set('User-Agent', inputHeaders.get('User-Agent') || 'XTV/1.0 CloudflareWorker (+https://github.com)');
 
   return headers;
 }
@@ -181,7 +181,7 @@ function buildProxyResponse(upstreamResponse, workerOrigin) {
   }
 
   setCors(headers);
-  headers.set('X-Proxy-By', 'MoonTVPlus Bangumi Proxy');
+  headers.set('X-Proxy-By', 'XTV Bangumi Proxy');
 
   if (!headers.has('Cache-Control')) {
     headers.set('Cache-Control', 'public, max-age=300');

@@ -3,12 +3,13 @@
 
 import { Plus, ToggleLeft, ToggleRight,Trash2, X } from 'lucide-react';
 import { useEffect, useRef,useState } from 'react';
-import { createPortal } from 'react-dom';
 
 import { getEpisodeFilterConfig, saveEpisodeFilterConfig } from '@/lib/db.client';
 import { normalizeEpisodeFilterConfig } from '@/lib/episode-filter';
 import { logger } from '@/lib/logger';
 import { EpisodeFilterConfig, EpisodeFilterRule } from '@/lib/types';
+
+import { createCinemaPortal as createPortal } from '@/components/CinemaPortal';
 
 interface EpisodeFilterSettingsProps {
   isOpen: boolean;
