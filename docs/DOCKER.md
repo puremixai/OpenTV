@@ -6,6 +6,8 @@
 
 使用本仓库的 [Dockerfile](../Dockerfile) 和 [compose.local.yaml](../compose.local.yaml) 构建并运行 OpenTV。默认部署包含应用、PostgreSQL 17 和 Redis 7：PostgreSQL 保存账号、会话、配置、收藏和播放记录，Redis 提供可重新生成的搜索缓存。
 
+服务器已有 Nginx 容器时，可使用[服务器部署配置](SERVER-DEPLOYMENT.md)接入现有代理网络，并为 OpenTV 创建独立数据卷。
+
 ## 1. 获取源码
 
 准备 Git、Docker 和 Docker Compose v2；Windows 可使用 Docker Desktop 的 Linux 容器模式。Node.js 和 pnpm 由 Docker 构建阶段提供，无需在宿主机另行安装。
