@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 import { API_CONFIG, getAvailableApiSites, getConfig } from '@/lib/config';
 import { logger } from '@/lib/logger';
+import { fetchCmsResponse } from '@/lib/server/go-cms';
 import { getAuthenticatedUser } from '@/lib/session';
 import { yellowWords } from '@/lib/yellow';
 
@@ -28,30 +29,35 @@ export async function GET(request: NextRequest) {
   const includeSpecialSources = searchParams.get('special') === '1';
 
   if (!sourceKey) {
-    return NextResponse.json(
-      { error: '缺少参数: source' },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: '缺少参数: source' }, { status: 400 });
   }
 
   try {
     const config = await getConfig();
-    const apiSites = await getAvailableApiSites(authInfo.username, includeSpecialSources);
+    const apiSites = await getAvailableApiSites(
+      authInfo.username,
+      includeSpecialSources,
+    );
     const targetSite = apiSites.find((site) => site.key === sourceKey);
 
     if (!targetSite) {
       return NextResponse.json(
         { error: `未找到指定的视频源: ${sourceKey}` },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
     // 请求分类列表
     const classUrl = `${targetSite.api}?ac=list`;
-    const classResponse = await fetch(classUrl, {
-      headers: API_CONFIG.search.headers,
-      signal: AbortSignal.timeout(10000),
-    });
+    const classResponse = await fetchCmsResponse(
+      classUrl,
+      {
+        headers: API_CONFIG.search.headers,
+        signal: request.signal,
+      },
+      10000,
+      'categories',
+    );
 
     if (!classResponse.ok) {
       throw new Error('获取分类列表失败');
@@ -82,9 +88,6 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     logger.error('Failed to get categories:', error);
-    return NextResponse.json(
-      { error: '获取分类列表失败' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: '获取分类列表失败' }, { status: 500 });
   }
 }

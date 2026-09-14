@@ -2,12 +2,15 @@ import { NextRequest, NextResponse } from 'next/server';
 
 import { API_CONFIG, getAvailableApiSites } from '@/lib/config';
 import { logger } from '@/lib/logger';
+import { fetchCmsResponse } from '@/lib/server/go-cms';
 import { getAuthenticatedUser } from '@/lib/session';
 import { SearchResult } from '@/lib/types';
 
 export const runtime = 'nodejs';
 
 interface CmsVideoItem {
+  opentv_episodes?: string[];
+  opentv_episode_titles?: string[];
   vod_id: string | number;
   vod_name: string;
   vod_pic: string;
@@ -39,37 +42,43 @@ export async function GET(request: NextRequest) {
   const page = searchParams.get('page') || '1';
 
   if (!sourceKey) {
-    return NextResponse.json(
-      { error: '缺少参数: source' },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: '缺少参数: source' }, { status: 400 });
   }
 
   if (!categoryId) {
     return NextResponse.json(
       { error: '缺少参数: categoryId' },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
   try {
-    const includeSpecialSources = request.nextUrl.searchParams.get('special') === '1';
-    const apiSites = await getAvailableApiSites(authInfo.username, includeSpecialSources);
+    const includeSpecialSources =
+      request.nextUrl.searchParams.get('special') === '1';
+    const apiSites = await getAvailableApiSites(
+      authInfo.username,
+      includeSpecialSources,
+    );
     const targetSite = apiSites.find((site) => site.key === sourceKey);
 
     if (!targetSite) {
       return NextResponse.json(
         { error: `未找到指定的视频源: ${sourceKey}` },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
     // 请求分类视频列表
     const videoUrl = `${targetSite.api}?ac=videolist&t=${categoryId}&pg=${page}`;
-    const videoResponse = await fetch(videoUrl, {
-      headers: API_CONFIG.search.headers,
-      signal: AbortSignal.timeout(10000),
-    });
+    const videoResponse = await fetchCmsResponse(
+      videoUrl,
+      {
+        headers: API_CONFIG.search.headers,
+        signal: request.signal,
+      },
+      10000,
+      'videos',
+    );
 
     if (!videoResponse.ok) {
       throw new Error('获取视频列表失败');
@@ -87,12 +96,15 @@ export async function GET(request: NextRequest) {
     }
 
     // 转换为 SearchResult 格式
+    const nativeCms = videoResponse.headers.get('x-opentv-cms-native') === '1';
     const results: SearchResult[] = videoData.list.map((item) => {
-      const episodes: string[] = [];
-      const episodes_titles: string[] = [];
+      const episodes: string[] = nativeCms ? item.opentv_episodes || [] : [];
+      const episodes_titles: string[] = nativeCms
+        ? item.opentv_episode_titles || []
+        : [];
 
       // 解析播放信息
-      if (item.vod_play_url && item.vod_play_from) {
+      if (!nativeCms && item.vod_play_url && item.vod_play_from) {
         const playUrls = item.vod_play_url.split('#');
         playUrls.forEach((episodeStr) => {
           if (episodeStr.trim()) {
@@ -125,9 +137,6 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     logger.error('Failed to get videos:', error);
-    return NextResponse.json(
-      { error: '获取视频列表失败' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: '获取视频列表失败' }, { status: 500 });
   }
 }

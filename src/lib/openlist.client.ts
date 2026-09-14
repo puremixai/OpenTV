@@ -1,6 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { logger } from '@/lib/logger';
+import { executeGoOpenList } from '@/lib/server/go-openlist';
+import { isGoWorkerEnabled } from '@/lib/server/go-worker';
 import { normalizeApiBaseUrl } from '@/lib/url';
 
 // Token 内存缓存
@@ -42,7 +44,7 @@ export class OpenListClient {
   constructor(
     baseURL: string,
     private username: string,
-    private password: string
+    private password: string,
   ) {
     this.baseURL = normalizeApiBaseUrl(baseURL);
   }
@@ -53,7 +55,7 @@ export class OpenListClient {
   static async login(
     baseURL: string,
     username: string,
-    password: string
+    password: string,
   ): Promise<string> {
     const normalizedBaseURL = normalizeApiBaseUrl(baseURL);
     const response = await fetch(`${normalizedBaseURL}/api/auth/login`, {
@@ -97,7 +99,7 @@ export class OpenListClient {
     this.token = await OpenListClient.login(
       this.baseURL,
       this.username,
-      this.password
+      this.password,
     );
 
     // 缓存 Token，设置 1 小时过期
@@ -125,8 +127,17 @@ export class OpenListClient {
   private async fetchWithRetry(
     url: string,
     options: RequestInit,
-    retried = false
+    retried = false,
   ): Promise<Response> {
+    if (isGoWorkerEnabled('openlistScan')) {
+      return executeGoOpenList(
+        this.baseURL,
+        this.username,
+        this.password,
+        url,
+        options,
+      );
+    }
     // 获取 Token
     const token = await this.getToken();
 
@@ -156,7 +167,9 @@ export class OpenListClient {
         const data = await clonedResponse.json();
 
         if (data.code === 401) {
-          logger.debug('[OpenListClient] 响应体 code 为 401，Token 已过期，清除缓存并重试');
+          logger.debug(
+            '[OpenListClient] 响应体 code 为 401，Token 已过期，清除缓存并重试',
+          );
           this.clearTokenCache();
           return this.fetchWithRetry(url, options, true);
         }
@@ -168,11 +181,13 @@ export class OpenListClient {
     return response;
   }
 
-  private async getHeaders() {
+  private async getHeaders(): Promise<Record<string, string>> {
+    if (isGoWorkerEnabled('openlistScan'))
+      return { 'Content-Type': 'application/json' };
     const token = await this.getToken();
     return {
       Authorization: token, // 不带 bearer
-      'Content-Type': 'application/json'
+      'Content-Type': 'application/json',
     };
   }
 
@@ -181,7 +196,7 @@ export class OpenListClient {
     path: string,
     page = 1,
     perPage = 100,
-    refresh = false
+    refresh = false,
   ): Promise<OpenListListResponse> {
     const response = await this.fetchWithRetry(`${this.baseURL}/api/fs/list`, {
       method: 'POST',
@@ -222,7 +237,9 @@ export class OpenListClient {
 
   // 上传文件
   async uploadFile(path: string, content: string): Promise<void> {
-    const token = await this.getToken();
+    const token = isGoWorkerEnabled('openlistScan')
+      ? ''
+      : await this.getToken();
     const response = await this.fetchWithRetry(`${this.baseURL}/api/fs/put`, {
       method: 'PUT',
       headers: {
@@ -247,17 +264,20 @@ export class OpenListClient {
   // 刷新目录缓存
   async refreshDirectory(path: string): Promise<void> {
     try {
-      const response = await this.fetchWithRetry(`${this.baseURL}/api/fs/list`, {
-        method: 'POST',
-        headers: await this.getHeaders(),
-        body: JSON.stringify({
-          path,
-          password: '',
-          refresh: true,
-          page: 1,
-          per_page: 1,
-        }),
-      });
+      const response = await this.fetchWithRetry(
+        `${this.baseURL}/api/fs/list`,
+        {
+          method: 'POST',
+          headers: await this.getHeaders(),
+          body: JSON.stringify({
+            path,
+            password: '',
+            refresh: true,
+            page: 1,
+            per_page: 1,
+          }),
+        },
+      );
 
       if (!response.ok) {
         logger.warn(`刷新目录缓存失败: ${response.status}`);
@@ -272,14 +292,17 @@ export class OpenListClient {
     const dir = path.substring(0, path.lastIndexOf('/')) || '/';
     const fileName = path.substring(path.lastIndexOf('/') + 1);
 
-    const response = await this.fetchWithRetry(`${this.baseURL}/api/fs/remove`, {
-      method: 'POST',
-      headers: await this.getHeaders(),
-      body: JSON.stringify({
-        names: [fileName],
-        dir: dir,
-      }),
-    });
+    const response = await this.fetchWithRetry(
+      `${this.baseURL}/api/fs/remove`,
+      {
+        method: 'POST',
+        headers: await this.getHeaders(),
+        body: JSON.stringify({
+          names: [fileName],
+          dir: dir,
+        }),
+      },
+    );
 
     if (!response.ok) {
       throw new Error(`OpenList 删除失败: ${response.status}`);

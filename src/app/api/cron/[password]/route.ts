@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from 'next/server';
 
 import { checkAnimeSubscriptions } from '@/lib/anime-subscription';
@@ -23,9 +22,14 @@ import { logger } from '@/lib/logger';
 import { MangaChapter, MangaShelfItem } from '@/lib/manga.types';
 import { startOpenListRefresh } from '@/lib/openlist-refresh';
 import { refreshSubscriptions } from '@/lib/server/config-subscriptions';
+import { acquireGoJob, GoJobError } from '@/lib/server/go-jobs';
 import { refreshSourceHealth } from '@/lib/server/source-health';
 import { updateConfig } from '@/lib/server/update-config';
-import { getSuwayomiConfig, loginWithSimpleAuth, SuwayomiClient } from '@/lib/suwayomi.client';
+import {
+  getSuwayomiConfig,
+  loginWithSimpleAuth,
+  SuwayomiClient,
+} from '@/lib/suwayomi.client';
 import { SearchResult } from '@/lib/types';
 
 import { isCronAuthorized } from '../../../../../server/cron-auth';
@@ -35,11 +39,16 @@ const MAX_INLINE_MANGA_COVERS = 3;
 const MAX_INLINE_MANGA_COVER_BYTES = 350 * 1024;
 const TARGET_INLINE_MANGA_COVER_WIDTH = 480;
 
-function buildSuwayomiBasicAuthHeader(username: string, password: string): string {
+function buildSuwayomiBasicAuthHeader(
+  username: string,
+  password: string,
+): string {
   return `Basic ${Buffer.from(`${username}:${password}`).toString('base64')}`;
 }
 
-async function fetchMangaCoverAsDataUri(coverUrl?: string): Promise<string | undefined> {
+async function fetchMangaCoverAsDataUri(
+  coverUrl?: string,
+): Promise<string | undefined> {
   if (!coverUrl) return undefined;
 
   try {
@@ -70,7 +79,10 @@ async function fetchMangaCoverAsDataUri(coverUrl?: string): Promise<string | und
       if (config.authMode === 'basic_auth') {
         if (!config.username || !config.password) return undefined;
         headers = new Headers({
-          Authorization: buildSuwayomiBasicAuthHeader(config.username, config.password),
+          Authorization: buildSuwayomiBasicAuthHeader(
+            config.username,
+            config.password,
+          ),
         });
       } else if (config.authMode === 'simple_login') {
         headers = new Headers({
@@ -109,12 +121,14 @@ async function fetchMangaCoverAsDataUri(coverUrl?: string): Promise<string | und
       const metadata = await transformer.metadata();
 
       if (metadata.hasAlpha) {
-        buffer = await transformer.png({
-          compressionLevel: 9,
-          palette: true,
-          quality: 80,
-          effort: 10,
-        }).toBuffer();
+        buffer = await transformer
+          .png({
+            compressionLevel: 9,
+            palette: true,
+            quality: 80,
+            effort: 10,
+          })
+          .toBuffer();
         finalContentType = 'image/png';
       } else {
         const qualities = [72, 60, 48];
@@ -158,13 +172,15 @@ const COOLDOWN_MS = 10 * 60 * 1000; // 10分钟冷却时间
 
 export async function GET(
   request: NextRequest,
-  { params: paramsPromise }: { params: Promise<{ password: string }> }
+  { params: paramsPromise }: { params: Promise<{ password: string }> },
 ) {
   const params = await paramsPromise;
-  if (!isCronAuthorized(request.headers.get('authorization'), params.password)) {
+  if (
+    !isCronAuthorized(request.headers.get('authorization'), params.password)
+  ) {
     return NextResponse.json(
       { success: false, message: 'Unauthorized' },
-      { status: 401 }
+      { status: 401 },
     );
   }
 
@@ -173,23 +189,33 @@ export async function GET(
   const timeSinceLastExecution = now - lastExecutionTime;
 
   if (lastExecutionTime > 0 && timeSinceLastExecution < COOLDOWN_MS) {
-    const remainingSeconds = Math.ceil((COOLDOWN_MS - timeSinceLastExecution) / 1000);
+    const remainingSeconds = Math.ceil(
+      (COOLDOWN_MS - timeSinceLastExecution) / 1000,
+    );
     const remainingMinutes = Math.floor(remainingSeconds / 60);
     const seconds = remainingSeconds % 60;
 
-    logger.debug(`Cron job skipped: cooldown period active. Remaining: ${remainingMinutes}m ${seconds}s`);
+    logger.debug(
+      `Cron job skipped: cooldown period active. Remaining: ${remainingMinutes}m ${seconds}s`,
+    );
 
-    return NextResponse.json({
-      success: false,
-      message: 'Cron job is in cooldown period',
-      remainingSeconds,
-      nextAvailableTime: new Date(lastExecutionTime + COOLDOWN_MS).toISOString(),
-      timestamp: new Date().toISOString(),
-    }, { status: 429 });
+    return NextResponse.json(
+      {
+        success: false,
+        message: 'Cron job is in cooldown period',
+        remainingSeconds,
+        nextAvailableTime: new Date(
+          lastExecutionTime + COOLDOWN_MS,
+        ).toISOString(),
+        timestamp: new Date().toISOString(),
+      },
+      { status: 429 },
+    );
   }
 
   try {
     logger.debug('Cron job triggered:', new Date().toISOString());
+    const lease = await acquireGoJob('cron', COOLDOWN_MS);
 
     // 更新最后执行时间
     lastExecutionTime = now;
@@ -200,7 +226,13 @@ export async function GET(
 
     if (waitForCompletion) {
       // 等待定时任务完成后再返回 200
-      await cronJob();
+      try {
+        await cronJob(() => lease?.assertActive());
+        await lease?.finish(true);
+      } catch (error) {
+        await lease?.finish(false).catch(() => undefined);
+        throw error;
+      }
       return NextResponse.json({
         success: true,
         message: 'Cron job executed successfully',
@@ -208,15 +240,35 @@ export async function GET(
       });
     } else {
       // 立即返回 202，定时任务在后台执行
-      cronJob();
-      return NextResponse.json({
-        success: true,
-        message: 'Cron job accepted and running in background',
-        timestamp: new Date().toISOString(),
-      }, { status: 202 });
+      void cronJob(() => lease?.assertActive())
+        .then(() => lease?.finish(true))
+        .catch(async (error) => {
+          await lease?.finish(false).catch(() => undefined);
+          logger.error('Cron background job failed:', error);
+        });
+      return NextResponse.json(
+        {
+          success: true,
+          message: 'Cron job accepted and running in background',
+          timestamp: new Date().toISOString(),
+        },
+        { status: 202 },
+      );
     }
   } catch (error) {
     logger.error('Cron job failed:', error);
+
+    if (error instanceof GoJobError) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: error.message,
+          remainingSeconds: error.remainingSeconds,
+          timestamp: new Date().toISOString(),
+        },
+        { status: error.status === 409 ? 429 : 503 },
+      );
+    }
 
     return NextResponse.json(
       {
@@ -225,48 +277,62 @@ export async function GET(
         error: error instanceof Error ? error.message : 'Unknown error',
         timestamp: new Date().toISOString(),
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
 
-async function cronJob() {
+async function cronJob(assertActive: () => void = () => undefined) {
+  assertActive();
   // 先刷新配置，确保其他任务使用最新配置
-  await refreshConfig();
+  await refreshConfig(assertActive);
+  assertActive();
 
   // 其余任务并行执行
-  await Promise.all([
-    refreshAllLiveChannels(),
+  const outcomes = await Promise.allSettled([
+    refreshAllLiveChannels(assertActive),
     refreshOpenList(),
-    refreshRecordAndFavorites(),
-    checkAnimeSubscriptions(),
-    getConfig().then(config => refreshSourceHealth(config.SourceConfig)),
+    refreshRecordAndFavorites(assertActive),
+    checkAnimeSubscriptions(assertActive),
+    getConfig().then((config) => refreshSourceHealth(config.SourceConfig)),
   ]);
+  const failed = outcomes.find((outcome) => outcome.status === 'rejected');
+  if (failed?.status === 'rejected') throw failed.reason;
+  assertActive();
 }
 
-async function refreshAllLiveChannels() {
+async function refreshAllLiveChannels(assertActive: () => void) {
   const config = await getConfig();
-  const refreshIntervalHours = getLiveRefreshIntervalHours(config.LiveRefreshIntervalHours);
+  const refreshIntervalHours = getLiveRefreshIntervalHours(
+    config.LiveRefreshIntervalHours,
+  );
   const lastRefreshTime = getLastGlobalLiveRefreshTime();
   const now = Date.now();
   const intervalMs = refreshIntervalHours * 60 * 60 * 1000;
   const timeSinceLastRefresh = now - lastRefreshTime;
 
   if (lastRefreshTime > 0 && timeSinceLastRefresh < intervalMs) {
-    const remainingHours = Math.ceil((intervalMs - timeSinceLastRefresh) / (60 * 60 * 1000));
-    logger.debug(`跳过刷新电视直播：距离上次刷新仅 ${Math.floor(timeSinceLastRefresh / (60 * 60 * 1000))} 小时，还需等待 ${remainingHours} 小时`);
+    const remainingHours = Math.ceil(
+      (intervalMs - timeSinceLastRefresh) / (60 * 60 * 1000),
+    );
+    logger.debug(
+      `跳过刷新电视直播：距离上次刷新仅 ${Math.floor(timeSinceLastRefresh / (60 * 60 * 1000))} 小时，还需等待 ${remainingHours} 小时`,
+    );
     return;
   }
 
   // 并发刷新所有启用的直播源
   const refreshPromises = (config.LiveConfig || [])
-    .filter(liveInfo => !liveInfo.disabled)
+    .filter((liveInfo) => !liveInfo.disabled)
     .map(async (liveInfo) => {
       try {
         const nums = await refreshLiveChannels(liveInfo);
         liveInfo.channelNumber = nums;
       } catch (error) {
-        logger.error(`刷新直播源失败 [${liveInfo.name || liveInfo.key}]:`, error);
+        logger.error(
+          `刷新直播源失败 [${liveInfo.name || liveInfo.key}]:`,
+          error,
+        );
         liveInfo.channelNumber = 0;
       }
     });
@@ -277,38 +343,55 @@ async function refreshAllLiveChannels() {
   setLastGlobalLiveRefreshTime(Date.now());
 
   // 保存配置
-  await updateConfig(current => {
+  await updateConfig((current) => {
+    assertActive();
     for (const live of current.LiveConfig || []) {
-      const result = config.LiveConfig?.find(item => item.key === live.key && item.url === live.url);
+      const result = config.LiveConfig?.find(
+        (item) => item.key === live.key && item.url === live.url,
+      );
       if (result && !live.disabled) live.channelNumber = result.channelNumber;
     }
   });
 }
 
-async function refreshConfig() {
+async function refreshConfig(assertActive: () => void) {
   try {
     const snapshot = structuredClone(await getConfig());
     const subscriptions = snapshot.ConfigSubscriptions || [];
     if (!subscriptions.some((sub) => sub.Enabled && sub.AutoUpdate)) return;
-    const updated = await refreshSubscriptions(subscriptions, { automatic: true });
+    const updated = await refreshSubscriptions(subscriptions, {
+      automatic: true,
+    });
     // Fetches may take time. Preserve settings saved while a refresh was in flight.
-    await updateConfig(config => {
-    const next = (config.ConfigSubscriptions || []).map((sub) => {
-      const result = updated.find((item) => item.ID === sub.ID && item.URL === sub.URL);
-      if (!result || !sub.Enabled || !sub.AutoUpdate) return sub;
-      if (result.LastCheck < sub.LastCheck) return sub;
-      return { ...sub, ConfigContent: result.ConfigContent, LastCheck: result.LastCheck, LastAttempt: result.LastAttempt, LastError: result.LastError };
+    await updateConfig((config) => {
+      assertActive();
+      const next = (config.ConfigSubscriptions || []).map((sub) => {
+        const result = updated.find(
+          (item) => item.ID === sub.ID && item.URL === sub.URL,
+        );
+        if (!result || !sub.Enabled || !sub.AutoUpdate) return sub;
+        if (result.LastCheck < sub.LastCheck) return sub;
+        return {
+          ...sub,
+          ConfigContent: result.ConfigContent,
+          LastCheck: result.LastCheck,
+          LastAttempt: result.LastAttempt,
+          LastError: result.LastError,
+        };
+      });
+      config = refineConfig(
+        applySubscriptionConfig(config, config.ConfigFileLocal || '{}', next),
+      );
+      return config;
     });
-    config = refineConfig(applySubscriptionConfig(config, config.ConfigFileLocal || '{}', next));
-    return config;
-    });
+    assertActive();
     await db.deleteGlobalValue('duanju');
   } catch (error) {
     logger.error('刷新配置订阅失败:', error);
   }
 }
 
-async function refreshRecordAndFavorites() {
+async function refreshRecordAndFavorites(assertActive: () => void) {
   try {
     const users = await db.getAllUsers();
     if (process.env.USERNAME && !users.includes(process.env.USERNAME)) {
@@ -316,7 +399,8 @@ async function refreshRecordAndFavorites() {
     }
 
     // 环境变量控制是否跳过特定源（默认为 false，即默认跳过）
-    const includeSpecialSources = process.env.CRON_INCLUDE_SPECIAL_SOURCES === 'true';
+    const includeSpecialSources =
+      process.env.CRON_INCLUDE_SPECIAL_SOURCES === 'true';
 
     // 检查是否应该跳过该源
     const shouldSkipSource = (source: string): boolean => {
@@ -324,14 +408,22 @@ async function refreshRecordAndFavorites() {
         return false; // 如果开启了包含特殊源，则不跳过任何源
       }
       // 默认跳过 emby 开头、openlist、xiaoya 和 live 开头的源
-      return source.startsWith('emby') || source === 'openlist' || source === 'xiaoya' || source.startsWith('live');
+      return (
+        source.startsWith('emby') ||
+        source === 'openlist' ||
+        source === 'xiaoya' ||
+        source.startsWith('live')
+      );
     };
 
     // 函数级缓存：key 为 `${source}+${id}`，值为 Promise<VideoDetail | null>
     const detailCache = new Map<string, Promise<SearchResult | null>>();
     const mangaDetailCache = new Map<
       string,
-      Promise<{ chapters: MangaChapter[]; shelfItem: Partial<MangaShelfItem> } | null>
+      Promise<{
+        chapters: MangaChapter[];
+        shelfItem: Partial<MangaShelfItem>;
+      } | null>
     >();
     const suwayomiClient = new SuwayomiClient();
 
@@ -339,7 +431,7 @@ async function refreshRecordAndFavorites() {
     const getDetail = async (
       source: string,
       id: string,
-      fallbackTitle: string
+      fallbackTitle: string,
     ): Promise<SearchResult | null> => {
       const key = `${source}+${id}`;
       let promise = detailCache.get(key);
@@ -365,8 +457,11 @@ async function refreshRecordAndFavorites() {
     };
 
     const getMangaDetail = async (
-      item: MangaShelfItem
-    ): Promise<{ chapters: MangaChapter[]; shelfItem: Partial<MangaShelfItem> } | null> => {
+      item: MangaShelfItem,
+    ): Promise<{
+      chapters: MangaChapter[];
+      shelfItem: Partial<MangaShelfItem>;
+    } | null> => {
       const key = `${item.sourceId}+${item.mangaId}`;
       let promise = mangaDetailCache.get(key);
       if (!promise) {
@@ -448,13 +543,16 @@ async function refreshRecordAndFavorites() {
             const episodeCount = detail.episodes?.length || 0;
             if (episodeCount > 0 && episodeCount !== record.total_episodes) {
               // 计算新增的剧集数量
-              const newEpisodesCount = episodeCount > record.total_episodes
-                ? episodeCount - record.total_episodes
-                : 0;
+              const newEpisodesCount =
+                episodeCount > record.total_episodes
+                  ? episodeCount - record.total_episodes
+                  : 0;
 
               // 如果有新增剧集，累加到现有的 new_episodes 字段
-              const updatedNewEpisodes = (record.new_episodes || 0) + newEpisodesCount;
+              const updatedNewEpisodes =
+                (record.new_episodes || 0) + newEpisodesCount;
 
+              assertActive();
               await db.savePlayRecord(user, source, id, {
                 title: detail.title || record.title,
                 source_name: record.source_name,
@@ -466,11 +564,12 @@ async function refreshRecordAndFavorites() {
                 total_time: record.total_time,
                 save_time: record.save_time,
                 search_title: record.search_title,
-                new_episodes: updatedNewEpisodes > 0 ? updatedNewEpisodes : undefined,
+                new_episodes:
+                  updatedNewEpisodes > 0 ? updatedNewEpisodes : undefined,
                 is_anime: record.is_anime,
               });
               logger.debug(
-                `更新播放记录: ${record.title} (${record.total_episodes} -> ${episodeCount}, 新增 ${newEpisodesCount} 集)`
+                `更新播放记录: ${record.title} (${record.total_episodes} -> ${episodeCount}, 新增 ${newEpisodesCount} 集)`,
               );
             }
 
@@ -490,7 +589,7 @@ async function refreshRecordAndFavorites() {
       try {
         let favorites = await db.getAllFavorites(user);
         favorites = Object.fromEntries(
-          Object.entries(favorites).filter(([_, fav]) => fav.origin !== 'live')
+          Object.entries(favorites).filter(([_, fav]) => fav.origin !== 'live'),
         );
         const totalFavorites = Object.keys(favorites).length;
         let processedFavorites = 0;
@@ -520,6 +619,7 @@ async function refreshRecordAndFavorites() {
 
             const favEpisodeCount = favDetail.episodes?.length || 0;
             if (favEpisodeCount > 0 && favEpisodeCount !== fav.total_episodes) {
+              assertActive();
               await db.saveFavorite(user, source, id, {
                 title: favDetail.title || fav.title,
                 source_name: fav.source_name,
@@ -530,7 +630,7 @@ async function refreshRecordAndFavorites() {
                 search_title: fav.search_title,
               });
               logger.debug(
-                `更新收藏: ${fav.title} (${fav.total_episodes} -> ${favEpisodeCount})`
+                `更新收藏: ${fav.title} (${fav.total_episodes} -> ${favEpisodeCount})`,
               );
 
               // 创建通知
@@ -550,11 +650,13 @@ async function refreshRecordAndFavorites() {
                 },
               };
 
+              assertActive();
               await storage.addNotification(user, notification);
               logger.debug(`已为用户 ${user} 创建收藏更新通知: ${fav.title}`);
 
               // 收集更新信息用于邮件
-              const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+              const siteUrl =
+                process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
               const playUrl = `${siteUrl}/play?source=${source}&id=${id}&title=${encodeURIComponent(fav.title)}`;
               userUpdates.push({
                 title: fav.title,
@@ -574,11 +676,13 @@ async function refreshRecordAndFavorites() {
 
         logger.debug(`收藏处理完成: ${processedFavorites}/${totalFavorites}`);
 
-        // 如果有更新，异步发送汇总邮件（不阻塞主流程）
+        // 等待邮件完成，保持任务租约覆盖通知的整个生命周期。
         if (userUpdates.length > 0) {
-          (async () => {
+          await (async () => {
             try {
-              const userEmail = storage.getUserEmail ? await storage.getUserEmail(user) : null;
+              const userEmail = storage.getUserEmail
+                ? await storage.getUserEmail(user)
+                : null;
               const emailNotifications = storage.getEmailNotificationPreference
                 ? await storage.getEmailNotificationPreference(user)
                 : false;
@@ -588,9 +692,11 @@ async function refreshRecordAndFavorites() {
                 const emailConfig = config?.EmailConfig;
 
                 if (emailConfig?.enabled) {
-                  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+                  const siteUrl =
+                    process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
                   const siteName = config?.SiteConfig?.SiteName || 'OpenTV';
 
+                  assertActive();
                   await EmailService.send(emailConfig, {
                     to: userEmail,
                     subject: `📺 收藏更新汇总 - ${userUpdates.length} 部影片有更新`,
@@ -598,17 +704,21 @@ async function refreshRecordAndFavorites() {
                       user,
                       userUpdates,
                       siteUrl,
-                      siteName
+                      siteName,
                     ),
                   });
 
-                  logger.debug(`邮件汇总已发送至: ${userEmail} (${userUpdates.length} 个更新)`);
+                  logger.debug(
+                    `邮件汇总已发送至: ${userEmail} (${userUpdates.length} 个更新)`,
+                  );
                 }
               }
             } catch (emailError) {
               logger.error(`发送邮件汇总失败 (${user}):`, emailError);
             }
-          })().catch(err => logger.error(`邮件发送异步任务失败 (${user}):`, err));
+          })().catch((err) =>
+            logger.error(`邮件发送异步任务失败 (${user}):`, err),
+          );
         }
       } catch (err) {
         logger.error(`获取用户收藏失败 (${user}):`, err);
@@ -640,6 +750,7 @@ async function refreshRecordAndFavorites() {
             };
 
             if (!latestChapterId || latestChapterCount <= 0) {
+              assertActive();
               await db.saveMangaShelf(user, item.sourceId, item.mangaId, {
                 ...baseItem,
                 unreadChapterCount: item.unreadChapterCount ?? 0,
@@ -650,6 +761,7 @@ async function refreshRecordAndFavorites() {
 
             // 首次为老数据补齐基线，不触发通知
             if (!previousChapterCount || !item.latestChapterId) {
+              assertActive();
               await db.saveMangaShelf(user, item.sourceId, item.mangaId, {
                 ...baseItem,
                 latestChapterId,
@@ -662,10 +774,11 @@ async function refreshRecordAndFavorites() {
             }
 
             const addedChapters = latestChapterCount - previousChapterCount;
-            const hasNewChapters = addedChapters > 0 && latestChapterId !== item.latestChapterId;
+            const hasNewChapters =
+              addedChapters > 0 && latestChapterId !== item.latestChapterId;
             const nextUnreadChapterCount = hasNewChapters
               ? Math.max((item.unreadChapterCount || 0) + addedChapters, 0)
-              : item.unreadChapterCount ?? 0;
+              : (item.unreadChapterCount ?? 0);
 
             const nextItem: MangaShelfItem = {
               ...baseItem,
@@ -676,6 +789,7 @@ async function refreshRecordAndFavorites() {
             };
 
             if (hasNewChapters) {
+              assertActive();
               await storage.addNotification(user, {
                 id: `manga_update_${item.sourceId}_${item.mangaId}_${now}`,
                 type: 'manga_update',
@@ -697,7 +811,9 @@ async function refreshRecordAndFavorites() {
 
               const inlineCover =
                 inlinedCoverCount < MAX_INLINE_MANGA_COVERS
-                  ? await fetchMangaCoverAsDataUri(detail.shelfItem.cover || item.cover)
+                  ? await fetchMangaCoverAsDataUri(
+                      detail.shelfItem.cover || item.cover,
+                    )
                   : undefined;
               if (inlineCover) {
                 inlinedCoverCount++;
@@ -713,19 +829,29 @@ async function refreshRecordAndFavorites() {
               });
             }
 
-            await db.saveMangaShelf(user, item.sourceId, item.mangaId, nextItem);
+            assertActive();
+            await db.saveMangaShelf(
+              user,
+              item.sourceId,
+              item.mangaId,
+              nextItem,
+            );
             processedShelfItems++;
           } catch (err) {
             logger.error(`处理漫画书架失败 (${key}):`, err);
           }
         }
 
-        logger.debug(`漫画书架处理完成: ${processedShelfItems}/${totalShelfItems}`);
+        logger.debug(
+          `漫画书架处理完成: ${processedShelfItems}/${totalShelfItems}`,
+        );
 
         if (mangaUpdates.length > 0) {
-          (async () => {
+          await (async () => {
             try {
-              const userEmail = storage.getUserEmail ? await storage.getUserEmail(user) : null;
+              const userEmail = storage.getUserEmail
+                ? await storage.getUserEmail(user)
+                : null;
               const emailNotifications = storage.getEmailNotificationPreference
                 ? await storage.getEmailNotificationPreference(user)
                 : false;
@@ -735,9 +861,11 @@ async function refreshRecordAndFavorites() {
                 const emailConfig = config?.EmailConfig;
 
                 if (emailConfig?.enabled) {
-                  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+                  const siteUrl =
+                    process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
                   const siteName = config?.SiteConfig?.SiteName || 'OpenTV';
 
+                  assertActive();
                   await EmailService.send(emailConfig, {
                     to: userEmail,
                     subject: `漫画书架更新汇总 - ${mangaUpdates.length} 部漫画有新章节`,
@@ -745,7 +873,7 @@ async function refreshRecordAndFavorites() {
                       user,
                       mangaUpdates,
                       siteUrl,
-                      siteName
+                      siteName,
                     ),
                   });
                 }
@@ -753,7 +881,9 @@ async function refreshRecordAndFavorites() {
             } catch (emailError) {
               logger.error(`发送漫画更新邮件失败 (${user}):`, emailError);
             }
-          })().catch((err) => logger.error(`漫画更新邮件异步任务失败 (${user}):`, err));
+          })().catch((err) =>
+            logger.error(`漫画更新邮件异步任务失败 (${user}):`, err),
+          );
         }
       } catch (err) {
         logger.error(`获取用户漫画书架失败 (${user}):`, err);
@@ -765,8 +895,10 @@ async function refreshRecordAndFavorites() {
     const BATCH_SIZE = parseInt(process.env.CRON_USER_BATCH_SIZE || '3', 10);
     for (let i = 0; i < users.length; i += BATCH_SIZE) {
       const batch = users.slice(i, i + BATCH_SIZE);
-      logger.debug(`处理用户批次 ${Math.floor(i / BATCH_SIZE) + 1}/${Math.ceil(users.length / BATCH_SIZE)}: ${batch.join(', ')}`);
-      await Promise.all(batch.map(user => processUser(user)));
+      logger.debug(
+        `处理用户批次 ${Math.floor(i / BATCH_SIZE) + 1}/${Math.ceil(users.length / BATCH_SIZE)}: ${batch.join(', ')}`,
+      );
+      await Promise.all(batch.map((user) => processUser(user)));
     }
 
     logger.debug('刷新播放记录/收藏任务完成');
@@ -787,7 +919,11 @@ async function refreshOpenList() {
     }
 
     // 检查是否配置了 OpenList 和定时扫描
-    if (!openListConfig.URL || !openListConfig.Username || !openListConfig.Password) {
+    if (
+      !openListConfig.URL ||
+      !openListConfig.Username ||
+      !openListConfig.Password
+    ) {
       logger.debug('跳过 OpenList 扫描：未配置');
       return;
     }
@@ -800,7 +936,9 @@ async function refreshOpenList() {
 
     // 检查间隔时间是否满足最低要求（60分钟）
     if (scanInterval < 60) {
-      logger.debug(`跳过 OpenList 扫描：间隔时间 ${scanInterval} 分钟小于最低要求 60 分钟`);
+      logger.debug(
+        `跳过 OpenList 扫描：间隔时间 ${scanInterval} 分钟小于最低要求 60 分钟`,
+      );
       return;
     }
 
@@ -811,8 +949,12 @@ async function refreshOpenList() {
     const intervalMs = scanInterval * 60 * 1000;
 
     if (timeSinceLastRefresh < intervalMs) {
-      const remainingMinutes = Math.ceil((intervalMs - timeSinceLastRefresh) / 60000);
-      logger.debug(`跳过 OpenList 扫描：距离上次扫描仅 ${Math.floor(timeSinceLastRefresh / 60000)} 分钟，还需等待 ${remainingMinutes} 分钟`);
+      const remainingMinutes = Math.ceil(
+        (intervalMs - timeSinceLastRefresh) / 60000,
+      );
+      logger.debug(
+        `跳过 OpenList 扫描：距离上次扫描仅 ${Math.floor(timeSinceLastRefresh / 60000)} 分钟，还需等待 ${remainingMinutes} 分钟`,
+      );
       return;
     }
 

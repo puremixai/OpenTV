@@ -2,11 +2,10 @@
 
 import { HttpsProxyAgent } from 'https-proxy-agent';
 
+import { fetchGoMetadata, isGoWorkerEnabled } from './server/go-media';
+
 export type AnimeDataSource =
-  | 'direct'
-  | 'server-proxy'
-  | 'custom-baseurl'
-  | 'sakura';
+  'direct' | 'server-proxy' | 'custom-baseurl' | 'sakura';
 
 export const DEFAULT_BANGUMI_BASE_URL = 'https://api.bgm.tv';
 /** 桜色镜像站 API */
@@ -27,11 +26,21 @@ export function normalizeBangumiBaseUrl(baseUrl?: string): string {
 
 export async function fetchBangumiFromServer(
   path: string,
-  options?: { baseUrl?: string; proxy?: string }
+  options?: { baseUrl?: string; proxy?: string },
 ): Promise<Response> {
   const normalizedPath = path.startsWith('/') ? path : `/${path}`;
   const url = `${normalizeBangumiBaseUrl(options?.baseUrl)}${normalizedPath}`;
   const proxy = options?.proxy?.trim();
+
+  if (isGoWorkerEnabled('metadata'))
+    return fetchGoMetadata(
+      url,
+      {
+        Accept: 'application/json',
+        'User-Agent': 'OpenTV/1.0 (https://github.com)',
+      },
+      proxy,
+    );
 
   if (isCloudflareEnvironment()) {
     return fetch(url, {

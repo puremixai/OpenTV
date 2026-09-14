@@ -2,11 +2,18 @@
 
 import { API_CONFIG, ApiSite, getConfig } from '@/lib/config';
 import { getCachedSearchPage, setCachedSearchPage } from '@/lib/search-cache';
-import { checkSearchSignal, fetchSearchResponse, mapSearchTasks, searchScope } from '@/lib/server/search-control';
+import { fetchCmsResponse } from '@/lib/server/go-cms';
+import {
+  checkSearchSignal,
+  mapSearchTasks,
+  searchScope,
+} from '@/lib/server/search-control';
 import { SearchResult } from '@/lib/types';
 import { cleanHtmlTags } from '@/lib/utils';
 
 interface ApiSearchItem {
+  opentv_episodes?: string[];
+  opentv_episode_titles?: string[];
   vod_id: string;
   vod_name: string;
   vod_pic: string;
@@ -29,11 +36,16 @@ async function searchWithCache(
   page: number,
   url: string,
   timeoutMs = 8000,
-  signal?: AbortSignal
+  signal?: AbortSignal,
 ): Promise<{ results: SearchResult[]; pageCount?: number }> {
   // 先查缓存
   // Source changes must not reuse results from an old endpoint or proxy mode.
-  const cacheSource = JSON.stringify([apiSite.key, apiSite.api, apiSite.name, apiSite.proxyMode]);
+  const cacheSource = JSON.stringify([
+    apiSite.key,
+    apiSite.api,
+    apiSite.name,
+    apiSite.proxyMode,
+  ]);
   const cached = await getCachedSearchPage(cacheSource, query, page);
   checkSearchSignal(signal);
   if (cached) {
@@ -46,10 +58,14 @@ async function searchWithCache(
 
   // 缓存未命中，发起网络请求
   try {
-    const response = await fetchSearchResponse(url, {
-      headers: API_CONFIG.search.headers,
-      signal,
-    }, timeoutMs);
+    const response = await fetchCmsResponse(
+      url,
+      {
+        headers: API_CONFIG.search.headers,
+        signal,
+      },
+      timeoutMs,
+    );
 
     if (!response.ok) {
       if (response.status === 403) {
@@ -70,12 +86,13 @@ async function searchWithCache(
     }
 
     // 处理结果数据
+    const nativeCms = response.headers.get('x-opentv-cms-native') === '1';
     const allResults = data.list.map((item: ApiSearchItem) => {
-      let episodes: string[] = [];
-      let titles: string[] = [];
+      let episodes: string[] = nativeCms ? item.opentv_episodes || [] : [];
+      let titles: string[] = nativeCms ? item.opentv_episode_titles || [] : [];
 
       // 使用正则表达式从 vod_play_url 提取 m3u8 链接
-      if (item.vod_play_url) {
+      if (!nativeCms && item.vod_play_url) {
         // 先用 $$$ 分割
         const vod_play_url_array = item.vod_play_url.split('$$$');
         // 分集之间#分割，标题和播放链接 $ 分割
@@ -122,17 +139,27 @@ async function searchWithCache(
     });
 
     // 过滤掉集数为 0 的结果
-    const results = allResults.filter((result: SearchResult) => result.episodes.length > 0);
+    const results = allResults.filter(
+      (result: SearchResult) => result.episodes.length > 0,
+    );
 
     const pageCount = page === 1 ? data.pagecount || 1 : undefined;
     // 写入缓存（成功）
-    await setCachedSearchPage(cacheSource, query, page, 'ok', results, pageCount);
+    await setCachedSearchPage(
+      cacheSource,
+      query,
+      page,
+      'ok',
+      results,
+      pageCount,
+    );
     return { results, pageCount };
   } catch (error: any) {
     // User cancellation must not poison the shared cache with a timeout entry.
     checkSearchSignal(signal);
     // 识别被 AbortController 中止（超时）
-    const aborted = error?.name === 'AbortError' || error?.name === 'TimeoutError';
+    const aborted =
+      error?.name === 'AbortError' || error?.name === 'TimeoutError';
     if (aborted) {
       await setCachedSearchPage(cacheSource, query, page, 'timeout', []);
     }
@@ -143,7 +170,7 @@ async function searchWithCache(
 export async function searchFromApi(
   apiSite: ApiSite,
   query: string,
-  signal?: AbortSignal
+  signal?: AbortSignal,
 ): Promise<SearchResult[]> {
   const scope = searchScope(signal, 20000);
   try {
@@ -159,7 +186,7 @@ export async function searchFromApi(
       1,
       apiUrl,
       8000,
-      scope.signal
+      scope.signal,
     );
     const results = [...firstPageResult.results];
     const pageCountFromFirst = firstPageResult.pageCount;
@@ -167,7 +194,7 @@ export async function searchFromApi(
     const config = await getConfig();
     const MAX_SEARCH_PAGES = Math.max(
       1,
-      Math.min(20, Number(config.SiteConfig.SearchDownstreamMaxPage) || 1)
+      Math.min(20, Number(config.SiteConfig.SearchDownstreamMaxPage) || 1),
     );
 
     // 获取总页数
@@ -179,7 +206,7 @@ export async function searchFromApi(
     if (pagesToFetch > 0) {
       const pages = Array.from(
         { length: pagesToFetch },
-        (_, index) => index + 2
+        (_, index) => index + 2,
       );
       const additionalResults = await mapSearchTasks(
         pages,
@@ -197,11 +224,11 @@ export async function searchFromApi(
             page,
             pageUrl,
             8000,
-            scope.signal
+            scope.signal,
           );
           return pageResult.results;
         },
-        2
+        2,
       );
 
       // 合并所有页的结果
@@ -226,7 +253,7 @@ const M3U8_PATTERN = /(https?:\/\/[^"'\s]+?\.m3u8)/g;
 
 export async function getDetailFromApi(
   apiSite: ApiSite,
-  id: string
+  id: string,
 ): Promise<SearchResult> {
   if (apiSite.detail) {
     return handleSpecialSourceDetail(id, apiSite);
@@ -318,7 +345,7 @@ export async function getDetailFromApi(
 
 export async function getDetailFromApiV2(
   apiSite: ApiSite,
-  id: string
+  id: string,
 ): Promise<SearchResult> {
   const detailUrl = `${apiSite.api}${API_CONFIG.detail.path}${id}`;
 
@@ -402,7 +429,7 @@ export async function getDetailFromApiV2(
 
 async function handleSpecialSourceDetail(
   id: string,
-  apiSite: ApiSite
+  apiSite: ApiSite,
 ): Promise<SearchResult> {
   const detailUrl = `${apiSite.detail}/index.php/vod/detail/id/${id}.html`;
 
@@ -443,7 +470,7 @@ async function handleSpecialSourceDetail(
 
   // 根据 matches 数量生成剧集标题
   const episodes_titles = Array.from({ length: matches.length }, (_, i) =>
-    (i + 1).toString()
+    (i + 1).toString(),
   );
 
   // 提取标题
@@ -452,7 +479,7 @@ async function handleSpecialSourceDetail(
 
   // 提取描述
   const descMatch = html.match(
-    /<div[^>]*class=["']sketch["'][^>]*>([\s\S]*?)<\/div>/
+    /<div[^>]*class=["']sketch["'][^>]*>([\s\S]*?)<\/div>/,
   );
   const descText = descMatch ? cleanHtmlTags(descMatch[1]) : '';
 

@@ -12,11 +12,17 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/puremixai/OpenTV/services/go-worker/internal/cms"
 	"github.com/puremixai/OpenTV/services/go-worker/internal/config"
 	"github.com/puremixai/OpenTV/services/go-worker/internal/downloads"
 	"github.com/puremixai/OpenTV/services/go-worker/internal/httpapi"
+	"github.com/puremixai/OpenTV/services/go-worker/internal/jobs"
+	"github.com/puremixai/OpenTV/services/go-worker/internal/localfiles"
+	"github.com/puremixai/OpenTV/services/go-worker/internal/mediafetch"
+	"github.com/puremixai/OpenTV/services/go-worker/internal/netdisk"
 	"github.com/puremixai/OpenTV/services/go-worker/internal/openlist"
 	"github.com/puremixai/OpenTV/services/go-worker/internal/outbound"
+	"github.com/puremixai/OpenTV/services/go-worker/internal/receipts"
 )
 
 func main() {
@@ -74,7 +80,61 @@ func run(healthcheck bool) error {
 		_ = closeDownloads(context.Background())
 		return errors.New("scanner configuration is invalid")
 	}
-	router, err := httpapi.NewRouter(httpapi.Options{Token: cfg.Token, Downloads: downloadHandler, OpenList: scanner})
+	extra := map[string]http.Handler{"/v1/local-files": nil, "/v1/jobs": nil,
+		"/v1/netdisk/check/start": nil, "/v1/netdisk/check/task": nil, "/v1/netdisk/check/cancel": nil,
+		"/v1/openlist/operations": scanner.Operations()}
+	if cfg.LocalFilesEnabled {
+		extra["/v1/local-files"] = localfiles.New(cfg.DownloadDir)
+	}
+	// Danmaku historically permits two minutes for headers/body. Each other
+	// media operation still applies its shorter total request context deadline.
+	mediaClient, err := outbound.NewClient(outbound.Options{AllowedOrigins: cfg.AllowedOrigins, Timeout: 120 * time.Second})
+	if err != nil {
+		_ = closeDownloads(context.Background())
+		return errors.New("invalid media outbound configuration")
+	}
+	media := mediafetch.New(mediaClient, cfg.AllowedOrigins)
+	extra["/v1/anime/download"] = nil
+	extra["/v1/anime/receipts/resolve"] = nil
+	closeReceipts := func(context.Context) error { return nil }
+	if cfg.AnimeDownloadsEnabled {
+		manager, openErr := receipts.New(receipts.Options{StateDir: cfg.StateDir, Handler: scanner.Operations()})
+		if openErr != nil {
+			_ = closeDownloads(context.Background())
+			return errors.New("download receipt storage could not be opened")
+		}
+		extra["/v1/anime/download"] = manager
+		extra["/v1/anime/receipts/resolve"] = manager
+		closeReceipts = manager.Close
+		defer func() { _ = closeReceipts(context.Background()) }()
+	}
+	extra["/v1/cms"] = cms.New(scanClient)
+	for _, path := range []string{"/v1/live/precheck", "/v1/live/epg", "/v1/live/epg/download", "/v1/danmaku/comment", "/v1/metadata/fetch", "/v1/subscriptions/fetch"} {
+		extra[path] = media
+	}
+	closeNetdisk := func(context.Context) error { return nil }
+	if cfg.NetdiskEnabled {
+		manager, openErr := netdisk.New(netdisk.Options{StateDir: cfg.StateDir, Client: scanClient})
+		if openErr != nil {
+			_ = closeDownloads(context.Background())
+			return errors.New("netdisk storage could not be opened")
+		}
+		closeNetdisk = manager.Close
+		defer func() { _ = closeNetdisk(context.Background()) }()
+		for _, path := range []string{"/v1/netdisk/check/start", "/v1/netdisk/check/task", "/v1/netdisk/check/cancel"} {
+			extra[path] = manager
+		}
+	}
+	if cfg.TasksEnabled {
+		manager, openErr := jobs.New(cfg.StateDir)
+		if openErr != nil {
+			_ = closeDownloads(context.Background())
+			return errors.New("job storage could not be opened")
+		}
+		defer manager.Close()
+		extra["/v1/jobs"] = manager
+	}
+	router, err := httpapi.NewRouter(httpapi.Options{Token: cfg.Token, Downloads: downloadHandler, OpenList: scanner, Extra: extra})
 	if err != nil {
 		_ = closeDownloads(context.Background())
 		return err
@@ -104,8 +164,10 @@ func run(healthcheck bool) error {
 	// Stop accepting new work, cancel active downloads, then drain HTTP requests.
 	_ = listener.Close()
 	closeErr := closeDownloads(shutdownCtx)
+	netdiskErr := closeNetdisk(shutdownCtx)
+	receiptsErr := closeReceipts(shutdownCtx)
 	serverErr := server.Shutdown(shutdownCtx)
-	if closeErr != nil || serverErr != nil {
+	if closeErr != nil || netdiskErr != nil || receiptsErr != nil || serverErr != nil {
 		return errors.New("worker shutdown did not finish within its deadline")
 	}
 	return nil

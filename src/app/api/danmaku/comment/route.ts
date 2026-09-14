@@ -5,12 +5,13 @@ import { getConfig } from '@/lib/config';
 import { getDanmakuApiBaseUrl } from '@/lib/danmaku/config';
 import { disabledDanmakuResult, isDanmakuEnabled } from '@/lib/danmaku/enabled';
 import { logger } from '@/lib/logger';
+import { isGoWorkerEnabled, requestGoMedia } from '@/lib/server/go-media';
 
 export const runtime = 'nodejs';
 
 // 解析弹幕 XML 为 JSON
 function parseXmlDanmaku(
-  xmlText: string
+  xmlText: string,
 ): Array<{ p: string; m: string; cid: number }> {
   const comments: Array<{ p: string; m: string; cid: number }> = [];
 
@@ -53,7 +54,7 @@ export async function GET(request: NextRequest) {
           count: 0,
           comments: [],
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -69,8 +70,27 @@ export async function GET(request: NextRequest) {
     } else {
       // 通过视频 URL 获取弹幕 - 使用 XML 格式
       apiUrl = `${baseUrl}/api/v2/comment?url=${encodeURIComponent(
-        url!
+        url!,
       )}&format=xml`;
+    }
+
+    if (isGoWorkerEnabled('danmaku')) {
+      const response = await requestGoMedia(
+        '/v1/danmaku/comment',
+        {
+          url: apiUrl,
+          headers: { Accept: 'application/xml, text/xml' },
+        },
+        request.signal,
+        125_000,
+      );
+      if (!response.ok) {
+        void response.body?.cancel();
+        throw new Error('Go danmaku request failed');
+      }
+      return new NextResponse(response.body, {
+        headers: { 'Content-Type': 'application/json' },
+      });
     }
 
     // 添加超时控制
@@ -120,7 +140,7 @@ export async function GET(request: NextRequest) {
         count: 0,
         comments: [],
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

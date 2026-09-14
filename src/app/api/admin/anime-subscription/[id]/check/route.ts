@@ -3,9 +3,11 @@ import { NextRequest, NextResponse } from 'next/server';
 
 import { checkSubscription } from '@/lib/anime-subscription';
 import { getConfig } from '@/lib/config';
-import { db } from '@/lib/db';
 import { logger } from '@/lib/logger';
-import { checkMutationVersion, withConfigMutation } from '@/lib/server/config-mutation';
+import {
+  checkMutationVersion,
+  withConfigMutation,
+} from '@/lib/server/config-mutation';
 import { getAuthenticatedUser } from '@/lib/session';
 
 export const runtime = 'nodejs';
@@ -16,7 +18,7 @@ export const runtime = 'nodejs';
  */
 export const POST = withConfigMutation(async function POST(
   req: NextRequest,
-  { params: paramsPromise }: { params: Promise<{ id: string }> }
+  { params: paramsPromise }: { params: Promise<{ id: string }> },
 ) {
   const params = await paramsPromise;
   try {
@@ -38,9 +40,6 @@ export const POST = withConfigMutation(async function POST(
     // 执行检查逻辑（忽略时间间隔限制）
     const result = await checkSubscription(subscription);
 
-    // 保存配置
-    await db.saveAdminConfig(config);
-
     return NextResponse.json({
       success: true,
       ...result,
@@ -49,7 +48,7 @@ export const POST = withConfigMutation(async function POST(
     logger.error('检查追番订阅失败:', error);
     return NextResponse.json(
       { error: error.message || '检查失败' },
-      { status: 500 }
+      { status: 500 },
     );
   }
 });

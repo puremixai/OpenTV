@@ -2,12 +2,15 @@ import { NextRequest, NextResponse } from 'next/server';
 
 import { API_CONFIG, getAvailableApiSites } from '@/lib/config';
 import { logger } from '@/lib/logger';
+import { fetchCmsResponse } from '@/lib/server/go-cms';
 import { getAuthenticatedUser } from '@/lib/session';
 import { SearchResult } from '@/lib/types';
 
 export const runtime = 'nodejs';
 
 interface CmsVideoItem {
+  opentv_episodes?: string[];
+  opentv_episode_titles?: string[];
   vod_id: string | number;
   vod_name: string;
   vod_pic: string;
@@ -39,37 +42,40 @@ export async function GET(request: NextRequest) {
   const page = searchParams.get('page') || '1';
 
   if (!sourceKey) {
-    return NextResponse.json(
-      { error: '缺少参数: source' },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: '缺少参数: source' }, { status: 400 });
   }
 
   if (!keyword || keyword.trim() === '') {
-    return NextResponse.json(
-      { error: '缺少参数: keyword' },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: '缺少参数: keyword' }, { status: 400 });
   }
 
   try {
-    const includeSpecialSources = request.nextUrl.searchParams.get('special') === '1';
-    const apiSites = await getAvailableApiSites(authInfo.username, includeSpecialSources);
+    const includeSpecialSources =
+      request.nextUrl.searchParams.get('special') === '1';
+    const apiSites = await getAvailableApiSites(
+      authInfo.username,
+      includeSpecialSources,
+    );
     const targetSite = apiSites.find((site) => site.key === sourceKey);
 
     if (!targetSite) {
       return NextResponse.json(
         { error: `未找到指定的视频源: ${sourceKey}` },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
     // 请求搜索结果
     const searchUrl = `${targetSite.api}?ac=videolist&wd=${encodeURIComponent(keyword)}&pg=${page}`;
-    const searchResponse = await fetch(searchUrl, {
-      headers: API_CONFIG.search.headers,
-      signal: AbortSignal.timeout(10000),
-    });
+    const searchResponse = await fetchCmsResponse(
+      searchUrl,
+      {
+        headers: API_CONFIG.search.headers,
+        signal: request.signal,
+      },
+      10000,
+      'search',
+    );
 
     if (!searchResponse.ok) {
       throw new Error('搜索失败');
@@ -87,12 +93,15 @@ export async function GET(request: NextRequest) {
     }
 
     // 转换为 SearchResult 格式
+    const nativeCms = searchResponse.headers.get('x-opentv-cms-native') === '1';
     const results: SearchResult[] = searchData.list.map((item) => {
-      const episodes: string[] = [];
-      const episodes_titles: string[] = [];
+      const episodes: string[] = nativeCms ? item.opentv_episodes || [] : [];
+      const episodes_titles: string[] = nativeCms
+        ? item.opentv_episode_titles || []
+        : [];
 
       // 解析播放信息
-      if (item.vod_play_url && item.vod_play_from) {
+      if (!nativeCms && item.vod_play_url && item.vod_play_from) {
         const playUrls = item.vod_play_url.split('#');
         playUrls.forEach((episodeStr) => {
           if (episodeStr.trim()) {

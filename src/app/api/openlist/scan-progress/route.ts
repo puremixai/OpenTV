@@ -1,10 +1,10 @@
-
-
 import { NextRequest, NextResponse } from 'next/server';
 
 import { logger } from '@/lib/logger';
 import { requireFeaturePermission } from '@/lib/permissions';
 import { getScanTask } from '@/lib/scan-task';
+import { readGoJob } from '@/lib/server/go-jobs';
+import { isGoWorkerEnabled } from '@/lib/server/go-worker';
 import { getAuthenticatedUser } from '@/lib/session';
 
 export const runtime = 'nodejs';
@@ -15,7 +15,11 @@ export const runtime = 'nodejs';
  */
 export async function GET(request: NextRequest) {
   try {
-    const authResult = await requireFeaturePermission(request, 'private_library', '无权限访问私人影库');
+    const authResult = await requireFeaturePermission(
+      request,
+      'private_library',
+      '无权限访问私人影库',
+    );
     if (authResult instanceof NextResponse) return authResult;
     const authInfo = await getAuthenticatedUser(request);
     if (!authInfo || !authInfo.username) {
@@ -29,7 +33,21 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: '缺少 taskId' }, { status: 400 });
     }
 
-    const task = getScanTask(taskId);
+    let task = getScanTask(taskId);
+    if (isGoWorkerEnabled('tasks')) {
+      const job = await readGoJob(taskId);
+      if (!job || !job.payload || typeof job.payload !== 'object') {
+        task = null;
+      } else {
+        task = {
+          ...(job.payload as NonNullable<typeof task>),
+          id: job.id,
+          status: job.status,
+        };
+        if (job.status === 'failed' && !task.error)
+          task.error = '扫描已中断，请重新发起刷新';
+      }
+    }
 
     if (!task) {
       return NextResponse.json({ error: '任务不存在' }, { status: 404 });
@@ -43,7 +61,7 @@ export async function GET(request: NextRequest) {
     logger.error('获取扫描进度失败:', error);
     return NextResponse.json(
       { error: '获取失败', details: (error as Error).message },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

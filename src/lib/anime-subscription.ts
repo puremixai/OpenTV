@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { createHash } from 'crypto';
 import parseTorrentName from 'parse-torrent-name';
 import { parseStringPromise } from 'xml2js';
 
@@ -8,6 +9,8 @@ import {
   pickOnePerEpisode,
 } from '@/lib/anime-keyword-expr';
 import { getConfig, setCachedConfig } from '@/lib/config';
+import { ConfigConflictError } from '@/lib/config-revisions';
+import { configWriteRegistry } from '@/lib/config-write-context';
 import { db, getStorage } from '@/lib/db';
 import { EmailService } from '@/lib/email.service';
 import { logger } from '@/lib/logger';
@@ -17,8 +20,13 @@ import {
   getOfflineDownloadBasePath,
   joinOpenListPath,
 } from '@/lib/openlist-offline-download';
+import { AnimeDownloadUncertainError } from '@/lib/server/go-anime-download';
+import { GoJobError } from '@/lib/server/go-jobs';
 
-import { AnimeSubscription, AnimeSubscriptionDownloadTool } from '@/types/anime-subscription';
+import {
+  AnimeSubscription,
+  AnimeSubscriptionDownloadTool,
+} from '@/types/anime-subscription';
 
 // 兼容外部从本模块引用匹配工具（仅服务端使用本文件；客户端请直接 import anime-keyword-expr）
 export {
@@ -30,18 +38,26 @@ export {
   validateKeywordExpr,
 } from '@/lib/anime-keyword-expr';
 
-const downloadTools: AnimeSubscriptionDownloadTool[] = ['aria2', 'qBittorrent', 'Transmission'];
+const downloadTools: AnimeSubscriptionDownloadTool[] = [
+  'aria2',
+  'qBittorrent',
+  'Transmission',
+];
 
 const pickRssText = (value: any): string => {
   if (value === undefined || value === null) return '';
   const first = Array.isArray(value) ? value[0] : value;
   if (first === undefined || first === null) return '';
-  if (typeof first === 'object') return String(first._ ?? first.$?.url ?? first.$?.href ?? '');
+  if (typeof first === 'object')
+    return String(first._ ?? first.$?.url ?? first.$?.href ?? '');
   return String(first);
 };
 
-function getAnimeSubscriptionDownloadTool(tool: unknown): AnimeSubscriptionDownloadTool {
-  return typeof tool === 'string' && downloadTools.includes(tool as AnimeSubscriptionDownloadTool)
+function getAnimeSubscriptionDownloadTool(
+  tool: unknown,
+): AnimeSubscriptionDownloadTool {
+  return typeof tool === 'string' &&
+    downloadTools.includes(tool as AnimeSubscriptionDownloadTool)
     ? (tool as AnimeSubscriptionDownloadTool)
     : 'aria2';
 }
@@ -67,7 +83,10 @@ export function titleContainsEpisode(title: string, episode: number): boolean {
 
   // 先挖掉分辨率/常见非集数数字，降低误判
   const cleaned = title
-    .replace(/(?:^|[^0-9])(?:240|360|480|720|1080|1440|2160|4k|8k)(?:p|P|i|I)?(?![0-9])/g, ' ')
+    .replace(
+      /(?:^|[^0-9])(?:240|360|480|720|1080|1440|2160|4k|8k)(?:p|P|i|I)?(?![0-9])/g,
+      ' ',
+    )
     .replace(/(?:19|20)\d{2}/g, ' '); // 年份
 
   const patterns: RegExp[] = [
@@ -148,7 +167,7 @@ type AcgSearchItem = {
 function filterAndParseEpisodes(
   results: AcgSearchItem[],
   subscription: AnimeSubscription,
-  opts?: { onlyEpisode?: number; minEpisodeExclusive?: number }
+  opts?: { onlyEpisode?: number; minEpisodeExclusive?: number },
 ): AcgSearchItem[] {
   const only = opts?.onlyEpisode;
   const minExclusive = opts?.minEpisodeExclusive ?? -Infinity;
@@ -163,9 +182,7 @@ function filterAndParseEpisodes(
     .filter((item) => {
       if (!item.episode) return false;
       if (only != null) {
-        return (
-          item.episode === only && titleContainsEpisode(item.title, only)
-        );
+        return item.episode === only && titleContainsEpisode(item.title, only);
       }
       return item.episode > minExclusive;
     })
@@ -177,13 +194,13 @@ function filterAndParseEpisodes(
  */
 async function refillMissingEpisodeResults(
   subscription: AnimeSubscription,
-  existing: AcgSearchItem[]
+  existing: AcgSearchItem[],
 ): Promise<AcgSearchItem[]> {
   const last = subscription.lastEpisode || 0;
   const foundEps = new Set(
     existing
       .map((i) => i.episode)
-      .filter((ep): ep is number => typeof ep === 'number' && ep > last)
+      .filter((ep): ep is number => typeof ep === 'number' && ep > last),
   );
   if (foundEps.size === 0) return existing;
 
@@ -198,8 +215,8 @@ async function refillMissingEpisodeResults(
   const toSearch = missing.slice(0, 24);
   logger.debug(
     `[AnimeSubscription] ${subscription.title}: 缺集重新检索 ${toSearch.join(
-      ','
-    )}（上限内；总缺 ${missing.length}）`
+      ',',
+    )}（上限内；总缺 ${missing.length}）`,
   );
 
   const merged = [...existing];
@@ -215,7 +232,7 @@ async function refillMissingEpisodeResults(
       });
       if (matched.length === 0) {
         logger.debug(
-          `[AnimeSubscription] ${subscription.title}: 补搜「${keyword}」未命中第${ep}集`
+          `[AnimeSubscription] ${subscription.title}: 补搜「${keyword}」未命中第${ep}集`,
         );
         continue;
       }
@@ -227,12 +244,12 @@ async function refillMissingEpisodeResults(
       }
       haveEp.add(ep);
       logger.debug(
-        `[AnimeSubscription] ${subscription.title}: 补搜第${ep}集命中 ${matched.length} 条`
+        `[AnimeSubscription] ${subscription.title}: 补搜第${ep}集命中 ${matched.length} 条`,
       );
     } catch (err) {
       logger.error(
         `[AnimeSubscription] ${subscription.title}: 补搜第${ep}集失败`,
-        err
+        err,
       );
     }
   }
@@ -242,7 +259,7 @@ async function refillMissingEpisodeResults(
       (item) =>
         item.episode &&
         item.episode > last &&
-        titleContainsEpisode(item.title, item.episode)
+        titleContainsEpisode(item.title, item.episode),
     )
     .sort((a, b) => (a.episode || 0) - (b.episode || 0));
 }
@@ -252,7 +269,7 @@ async function refillMissingEpisodeResults(
  */
 export async function searchACG(
   keyword: string,
-  source: 'acgrip' | 'mikan' | 'dmhy' | 'nyaa'
+  source: 'acgrip' | 'mikan' | 'dmhy' | 'nyaa',
 ) {
   const trimmedKeyword = keyword.trim();
   const config = await getConfig();
@@ -263,7 +280,7 @@ export async function searchACG(
     case 'mikan': {
       const baseUrl = getMagnetBaseUrl(
         'https://mikanani.me',
-        config.SiteConfig.MagnetMikanReverseProxy
+        config.SiteConfig.MagnetMikanReverseProxy,
       );
       searchUrl = `${baseUrl}/RSS/Search?searchstr=${encodeURIComponent(trimmedKeyword)}`;
       break;
@@ -271,7 +288,7 @@ export async function searchACG(
     case 'dmhy': {
       const baseUrl = getMagnetBaseUrl(
         'http://share.dmhy.org',
-        config.SiteConfig.MagnetDmhyReverseProxy
+        config.SiteConfig.MagnetDmhyReverseProxy,
       );
       searchUrl = `${baseUrl}/topics/rss/rss.xml?keyword=${encodeURIComponent(trimmedKeyword)}`;
       break;
@@ -279,7 +296,7 @@ export async function searchACG(
     case 'nyaa': {
       const baseUrl = getMagnetBaseUrl(
         'https://nyaa.si',
-        config.SiteConfig.MagnetNyaaReverseProxy
+        config.SiteConfig.MagnetNyaaReverseProxy,
       );
       searchUrl = `${baseUrl}/?page=rss&q=${encodeURIComponent(trimmedKeyword)}&c=1_0&f=0`;
       break;
@@ -288,19 +305,23 @@ export async function searchACG(
     default: {
       const baseUrl = getMagnetBaseUrl(
         'https://acg.rip',
-        config.SiteConfig.MagnetAcgripReverseProxy
+        config.SiteConfig.MagnetAcgripReverseProxy,
       );
       searchUrl = `${baseUrl}/page/1.xml?term=${encodeURIComponent(trimmedKeyword)}`;
       break;
     }
   }
 
-  const response = await universalMagnetFetch(searchUrl, config.SiteConfig.MagnetProxy, {
-    headers: {
-      'User-Agent':
-        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+  const response = await universalMagnetFetch(
+    searchUrl,
+    config.SiteConfig.MagnetProxy,
+    {
+      headers: {
+        'User-Agent':
+          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+      },
     },
-  });
+  );
 
   if (!response.ok) {
     throw new Error(`${source} API 请求失败: ${response.status}`);
@@ -321,13 +342,14 @@ export async function searchACG(
     const rawLink = pickRssText(item.link);
     const rawGuid = pickRssText(item.guid);
     const pubDate = pickRssText(item.pubDate);
-    const description = pickRssText(item.description) || pickRssText(item['content:encoded']);
+    const description =
+      pickRssText(item.description) || pickRssText(item['content:encoded']);
     const enclosureUrl =
       pickRssText(item.enclosure?.[0]?.$?.url) ||
       pickRssText(item.enclosure?.[0]?.$?.href);
 
     const isNyaa = source === 'nyaa';
-    const link = isNyaa ? (rawGuid || rawLink) : rawLink;
+    const link = isNyaa ? rawGuid || rawLink : rawLink;
     const torrentUrl = isNyaa ? rawLink : enclosureUrl;
     const guid = rawGuid || link || torrentUrl || `${title}-${pubDate}`;
 
@@ -347,14 +369,22 @@ export async function searchACG(
  */
 export async function addOfflineDownload(
   torrentUrl: string,
-  downloadPath: string
+  downloadPath: string,
+  receipt?: { owner: string; key: string; assertActive?: () => void },
 ) {
   const config = await getConfig();
   const downloadTool = getAnimeSubscriptionDownloadTool(
-    config.AnimeSubscriptionConfig?.DownloadTool
+    config.AnimeSubscriptionConfig?.DownloadTool,
   );
 
-  await addOpenListOfflineDownload(config, downloadPath, torrentUrl, downloadTool);
+  receipt?.assertActive?.();
+  return await addOpenListOfflineDownload(
+    config,
+    downloadPath,
+    torrentUrl,
+    downloadTool,
+    receipt,
+  );
 }
 
 /**
@@ -362,7 +392,8 @@ export async function addOfflineDownload(
  */
 async function sendAnimeUpdateNotifications(
   subscription: AnimeSubscription,
-  episodes: number[]
+  episodes: number[],
+  assertActive: () => void = () => undefined,
 ) {
   const config = await getConfig();
   const storage = getStorage();
@@ -379,6 +410,12 @@ async function sendAnimeUpdateNotifications(
       }
     }
   } catch (error) {
+    if (
+      error instanceof GoJobError ||
+      error instanceof AnimeDownloadUncertainError ||
+      error instanceof ConfigConflictError
+    )
+      throw error;
     logger.error('[AnimeSubscription] 获取站长用户名失败:', error);
   }
 
@@ -403,6 +440,7 @@ async function sendAnimeUpdateNotifications(
   // 发送站内通知
   for (const username of usersToNotify) {
     try {
+      assertActive();
       await storage.addNotification(username, {
         id: crypto.randomUUID(),
         type: 'anime_subscription_update',
@@ -418,7 +456,16 @@ async function sendAnimeUpdateNotifications(
       });
       logger.debug(`[AnimeSubscription] 已发送站内通知给用户: ${username}`);
     } catch (error) {
-      logger.error(`[AnimeSubscription] 发送站内通知失败 (${username}):`, error);
+      if (
+        error instanceof GoJobError ||
+        error instanceof AnimeDownloadUncertainError ||
+        error instanceof ConfigConflictError
+      )
+        throw error;
+      logger.error(
+        `[AnimeSubscription] 发送站内通知失败 (${username}):`,
+        error,
+      );
     }
   }
 
@@ -440,7 +487,16 @@ async function sendAnimeUpdateNotifications(
         emailsToSend.push({ username, email });
       }
     } catch (error) {
-      logger.error(`[AnimeSubscription] 获取用户邮箱失败 (${username}):`, error);
+      if (
+        error instanceof GoJobError ||
+        error instanceof AnimeDownloadUncertainError ||
+        error instanceof ConfigConflictError
+      )
+        throw error;
+      logger.error(
+        `[AnimeSubscription] 获取用户邮箱失败 (${username}):`,
+        error,
+      );
     }
   }
 
@@ -464,12 +520,14 @@ async function sendAnimeUpdateNotifications(
       `;
 
       if (emailConfig.provider === 'smtp' && emailConfig.smtp) {
+        assertActive();
         await EmailService.sendViaSMTP(emailConfig.smtp, {
           to: email,
           subject: notificationTitle,
           html: emailHtml,
         });
       } else if (emailConfig.provider === 'resend' && emailConfig.resend) {
+        assertActive();
         await EmailService.sendViaResend(emailConfig.resend, {
           to: email,
           subject: notificationTitle,
@@ -479,6 +537,12 @@ async function sendAnimeUpdateNotifications(
 
       logger.debug(`[AnimeSubscription] 已发送邮件通知给: ${email}`);
     } catch (error) {
+      if (
+        error instanceof GoJobError ||
+        error instanceof AnimeDownloadUncertainError ||
+        error instanceof ConfigConflictError
+      )
+        throw error;
       logger.error(`[AnimeSubscription] 发送邮件失败 (${email}):`, error);
     }
   }
@@ -487,7 +551,11 @@ async function sendAnimeUpdateNotifications(
 /**
  * 检查单个订阅的更新
  */
-export async function checkSubscription(subscription: AnimeSubscription) {
+export async function checkSubscription(
+  subscription: AnimeSubscription,
+  assertActive: () => void = () => undefined,
+) {
+  assertActive();
   const config = await getConfig();
   if (!config.OpenListConfig?.OfflineDownloadPath) {
     throw new Error('OpenList 离线下载路径未配置');
@@ -512,16 +580,16 @@ export async function checkSubscription(subscription: AnimeSubscription) {
     newEpisodes = pickOnePerEpisode(
       newEpisodes.filter(
         (item): item is AcgSearchItem & { episode: number; title: string } =>
-          typeof item.episode === 'number' && !!item.title
-      )
+          typeof item.episode === 'number' && !!item.title,
+      ),
     );
     if (before > newEpisodes.length) {
       logger.debug(
-        `[AnimeSubscription] ${subscription.title}: 单集只下一次，${before} → ${newEpisodes.length} 条`
+        `[AnimeSubscription] ${subscription.title}: 单集只下一次，${before} → ${newEpisodes.length} 条`,
       );
       for (const item of newEpisodes) {
         logger.debug(
-          `[AnimeSubscription] ${subscription.title}: 第${item.episode}集选用「${item.title}」`
+          `[AnimeSubscription] ${subscription.title}: 第${item.episode}集选用「${item.title}」`,
         );
       }
     }
@@ -536,36 +604,95 @@ export async function checkSubscription(subscription: AnimeSubscription) {
     try {
       const downloadPath = joinOpenListPath(
         getOfflineDownloadBasePath(config),
-        subscription.title
+        subscription.title,
       );
-      await addOfflineDownload(item.torrentUrl, downloadPath);
+      const current = await getConfig(true);
+      assertActive();
+      const saved = current.AnimeSubscriptionConfig?.Subscriptions.find(
+        (sub) => sub.id === subscription.id,
+      );
+      if (
+        !saved ||
+        saved.createdBy !== subscription.createdBy ||
+        saved.updatedAt !== subscription.updatedAt ||
+        !saved.enabled
+      )
+        throw new ConfigConflictError();
+      const key = createHash('sha256')
+        .update(
+          JSON.stringify([
+            subscription.id,
+            subscription.createdAt,
+            item.episode,
+            subscription.onePerEpisode ? '' : item.torrentUrl,
+          ]),
+        )
+        .digest('hex');
+      const submission = await addOfflineDownload(
+        item.torrentUrl,
+        downloadPath,
+        {
+          owner: subscription.createdBy || 'anime-system',
+          key,
+          assertActive,
+        },
+      );
+      assertActive();
+      await persistSubscriptionProgress(
+        subscription,
+        item.episode,
+        assertActive,
+      );
 
       // 成功后更新 lastEpisode
-      subscription.lastEpisode = item.episode;
-      downloaded.push(item.episode);
+      subscription.lastEpisode = Math.max(
+        subscription.lastEpisode || 0,
+        item.episode,
+      );
+      if (!submission.replayed) downloaded.push(item.episode);
 
       logger.debug(
-        `[AnimeSubscription] ${subscription.title}: 已添加第${item.episode}集到下载队列`
+        `[AnimeSubscription] ${subscription.title}: 已添加第${item.episode}集到下载队列`,
       );
     } catch (error) {
+      if (
+        error instanceof GoJobError ||
+        error instanceof AnimeDownloadUncertainError ||
+        error instanceof ConfigConflictError
+      )
+        throw error;
       // 失败则停止，下次继续尝试这一集
       logger.error(
         `[AnimeSubscription] ${subscription.title}: 下载第${item.episode}集失败`,
-        error
+        error,
       );
       break;
     }
   }
 
   // 4. 更新检查时间
-  subscription.lastCheckTime = Date.now();
+  assertActive();
+  await persistSubscriptionProgress(subscription, undefined, assertActive);
 
   // 5. 发送通知和邮件（如果有下载成功的集数）
   if (downloaded.length > 0) {
     try {
-      await sendAnimeUpdateNotifications(subscription, downloaded);
+      await sendAnimeUpdateNotifications(
+        subscription,
+        downloaded,
+        assertActive,
+      );
     } catch (error) {
-      logger.error(`[AnimeSubscription] ${subscription.title}: 发送通知失败`, error);
+      if (
+        error instanceof GoJobError ||
+        error instanceof AnimeDownloadUncertainError ||
+        error instanceof ConfigConflictError
+      )
+        throw error;
+      logger.error(
+        `[AnimeSubscription] ${subscription.title}: 发送通知失败`,
+        error,
+      );
     }
   }
 
@@ -579,7 +706,10 @@ export async function checkSubscription(subscription: AnimeSubscription) {
 /**
  * 检查所有订阅（定时任务调用）
  */
-export async function checkAnimeSubscriptions() {
+export async function checkAnimeSubscriptions(
+  assertActive: () => void = () => undefined,
+) {
+  assertActive();
   logger.debug('[AnimeSubscription] 开始检查动漫订阅');
 
   const config = await getConfig();
@@ -595,7 +725,7 @@ export async function checkAnimeSubscriptions() {
 
   const now = Date.now();
   const MIN_CHECK_INTERVAL = 30 * 60 * 1000; // 30分钟
-  let configChanged = false;
+
   let checkedCount = 0;
   let skippedCount = 0;
   let errorCount = 0;
@@ -610,30 +740,71 @@ export async function checkAnimeSubscriptions() {
     // 检查是否距离上次检查超过30分钟
     const timeSinceLastCheck = now - sub.lastCheckTime;
     if (timeSinceLastCheck < MIN_CHECK_INTERVAL) {
-      const remainingMinutes = Math.ceil((MIN_CHECK_INTERVAL - timeSinceLastCheck) / 60000);
-      logger.debug(`[AnimeSubscription] 跳过 ${sub.title}: 距离上次检查仅 ${Math.floor(timeSinceLastCheck / 60000)} 分钟，还需等待 ${remainingMinutes} 分钟`);
+      const remainingMinutes = Math.ceil(
+        (MIN_CHECK_INTERVAL - timeSinceLastCheck) / 60000,
+      );
+      logger.debug(
+        `[AnimeSubscription] 跳过 ${sub.title}: 距离上次检查仅 ${Math.floor(timeSinceLastCheck / 60000)} 分钟，还需等待 ${remainingMinutes} 分钟`,
+      );
       skippedCount++;
       continue;
     }
 
     try {
-      logger.debug(`[AnimeSubscription] 检查订阅: ${sub.title} (源: ${sub.source}, 上次集数: ${sub.lastEpisode})`);
-      const result = await checkSubscription(sub);
-      logger.debug(`[AnimeSubscription] ${sub.title}: 找到 ${result.found} 个新集数，成功下载 ${result.downloaded} 个`);
-      configChanged = true;
+      logger.debug(
+        `[AnimeSubscription] 检查订阅: ${sub.title} (源: ${sub.source}, 上次集数: ${sub.lastEpisode})`,
+      );
+      const result = await checkSubscription(sub, assertActive);
+      logger.debug(
+        `[AnimeSubscription] ${sub.title}: 找到 ${result.found} 个新集数，成功下载 ${result.downloaded} 个`,
+      );
+
       checkedCount++;
     } catch (error) {
+      if (
+        error instanceof GoJobError ||
+        error instanceof AnimeDownloadUncertainError ||
+        error instanceof ConfigConflictError
+      )
+        throw error;
       logger.error(`[AnimeSubscription] ${sub.title}: 检查失败`, error);
       errorCount++;
     }
   }
 
-  // 5. 保存配置并刷新缓存
-  if (configChanged) {
-    await db.saveAdminConfig(config);
-    await setCachedConfig(config);
-    logger.debug('[AnimeSubscription] 配置已更新并保存');
-  }
+  logger.debug(
+    `[AnimeSubscription] 检查完成 - 总计: ${subscriptions.length}, 已检查: ${checkedCount}, 跳过: ${skippedCount}, 失败: ${errorCount}`,
+  );
+}
 
-  logger.debug(`[AnimeSubscription] 检查完成 - 总计: ${subscriptions.length}, 已检查: ${checkedCount}, 跳过: ${skippedCount}, 失败: ${errorCount}`);
+/** Merge only this subscription's progress into a fresh version and use the existing DB CAS. */
+async function persistSubscriptionProgress(
+  subscription: AnimeSubscription,
+  episode: number | undefined,
+  assertActive: () => void,
+) {
+  const latest = await getConfig(true);
+  assertActive();
+  const saved = latest.AnimeSubscriptionConfig?.Subscriptions.find(
+    (item) => item.id === subscription.id,
+  );
+  if (
+    !saved ||
+    saved.createdBy !== subscription.createdBy ||
+    saved.updatedAt !== subscription.updatedAt
+  )
+    throw new ConfigConflictError();
+  saved.lastEpisode = Math.max(
+    saved.lastEpisode || 0,
+    episode ?? subscription.lastEpisode ?? 0,
+  );
+  saved.lastCheckTime = Date.now();
+  assertActive();
+  await db.saveAdminConfig(latest);
+  assertActive();
+  const mutation = configWriteRegistry.__moonConfigWrites?.getStore();
+  if (mutation) mutation.version = String(latest.ConfigVersion || 0);
+  await setCachedConfig(latest);
+  subscription.lastEpisode = saved.lastEpisode;
+  subscription.lastCheckTime = saved.lastCheckTime;
 }

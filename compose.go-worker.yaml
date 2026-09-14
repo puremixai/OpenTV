@@ -7,11 +7,23 @@ services:
       OPENTV_GO_TOKEN: ${OPENTV_GO_TOKEN:?Set an independent worker token of at least 32 characters}
       OPENTV_GO_OFFLINE_DOWNLOADS: ${OPENTV_GO_OFFLINE_DOWNLOADS:-false}
       OPENTV_GO_OPENLIST_SCAN: ${OPENTV_GO_OPENLIST_SCAN:-true}
+      OPENTV_GO_LOCAL_FILES: ${OPENTV_GO_LOCAL_FILES:-false}
+      OPENTV_GO_LIVE: ${OPENTV_GO_LIVE:-false}
+      OPENTV_GO_NETDISK_CHECK: ${OPENTV_GO_NETDISK_CHECK:-false}
+      OPENTV_GO_SEARCH: ${OPENTV_GO_SEARCH:-false}
+      OPENTV_GO_SUBSCRIPTIONS: ${OPENTV_GO_SUBSCRIPTIONS:-false}
+      OPENTV_GO_ANIME_DOWNLOADS: ${OPENTV_GO_ANIME_DOWNLOADS:-false}
+      OPENTV_GO_DANMAKU: ${OPENTV_GO_DANMAKU:-false}
+      OPENTV_GO_METADATA: ${OPENTV_GO_METADATA:-false}
+      OPENTV_GO_TASKS: ${OPENTV_GO_TASKS:-false}
     depends_on:
       opentv-go:
         condition: service_healthy
 
   opentv-go:
+    depends_on:
+      opentv-go-state-init:
+        condition: service_completed_successfully
     build:
       context: ./services/go-worker
     image: opentv-go-worker:local
@@ -22,6 +34,11 @@ services:
       OPENTV_GO_TOKEN: ${OPENTV_GO_TOKEN:?Set an independent worker token of at least 32 characters}
       OPENTV_GO_LISTEN_ADDR: 0.0.0.0:8081
       OPENTV_GO_OFFLINE_DOWNLOADS: ${OPENTV_GO_OFFLINE_DOWNLOADS:-false}
+      OPENTV_GO_LOCAL_FILES: ${OPENTV_GO_LOCAL_FILES:-false}
+      OPENTV_GO_NETDISK_CHECK: ${OPENTV_GO_NETDISK_CHECK:-false}
+      OPENTV_GO_TASKS: ${OPENTV_GO_TASKS:-false}
+      OPENTV_GO_STATE_DIR: /state
+      OPENTV_GO_ANIME_DOWNLOADS: ${OPENTV_GO_ANIME_DOWNLOADS:-false}
       OPENTV_GO_ALLOWED_ORIGINS: ${OPENTV_GO_ALLOWED_ORIGINS:-[]}
       OPENTV_GO_MAX_DOWNLOADS: ${OPENTV_GO_MAX_DOWNLOADS:-2}
       OPENTV_GO_SEGMENT_CONCURRENCY: ${OPENTV_GO_SEGMENT_CONCURRENCY:-6}
@@ -31,6 +48,7 @@ services:
       TZ: Asia/Shanghai
     volumes:
       - downloads:/data
+      - go-worker-state:/state
     read_only: true
     tmpfs:
       - /tmp
@@ -39,3 +57,33 @@ services:
     cap_drop:
       - ALL
     stop_grace_period: 30s
+
+  # Initialize only this worker's state volume for the configured runtime IDs.
+  # The service shares the worker image built above and exits before it starts.
+  opentv-go-state-init:
+    image: opentv-go-worker:local
+    pull_policy: never
+    user: '0:0'
+    restart: 'no'
+    entrypoint: ['/bin/sh', '-ec']
+    command:
+      - |
+        case "$$PUID" in ''|*[!0-9]*) exit 1;; esac
+        case "$$PGID" in ''|*[!0-9]*) exit 1;; esac
+        chown -R "$$PUID:$$PGID" /state
+    environment:
+      PUID: '${PUID:-1001}'
+      PGID: '${PGID:-1001}'
+    volumes:
+      - go-worker-state:/state
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - DAC_OVERRIDE
+
+volumes:
+  go-worker-state:

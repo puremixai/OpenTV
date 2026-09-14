@@ -4,16 +4,24 @@ import type { OpenListFile } from '@/lib/openlist.client';
 
 import { readLimitedText } from './media-body';
 
-type WorkerFeature = 'offlineDownloads' | 'openlistScan';
+const workerFeatures = {
+  offlineDownloads: 'OPENTV_GO_OFFLINE_DOWNLOADS',
+  localFiles: 'OPENTV_GO_LOCAL_FILES',
+  openlistScan: 'OPENTV_GO_OPENLIST_SCAN',
+  live: 'OPENTV_GO_LIVE',
+  netdiskCheck: 'OPENTV_GO_NETDISK_CHECK',
+  search: 'OPENTV_GO_SEARCH',
+  subscriptions: 'OPENTV_GO_SUBSCRIPTIONS',
+  danmaku: 'OPENTV_GO_DANMAKU',
+  metadata: 'OPENTV_GO_METADATA',
+  tasks: 'OPENTV_GO_TASKS',
+  animeDownloads: 'OPENTV_GO_ANIME_DOWNLOADS',
+} as const;
+
+type WorkerFeature = keyof typeof workerFeatures;
 
 export function isGoWorkerEnabled(feature: WorkerFeature): boolean {
-  return (
-    process.env[
-      feature === 'offlineDownloads'
-        ? 'OPENTV_GO_OFFLINE_DOWNLOADS'
-        : 'OPENTV_GO_OPENLIST_SCAN'
-    ] === 'true'
-  );
+  return process.env[workerFeatures[feature]] === 'true';
 }
 
 function workerConnection() {
@@ -45,7 +53,7 @@ class WorkerBodyError extends Error {
   }
 }
 
-async function readWorkerBody(
+export async function readWorkerBody(
   request: NextRequest,
 ): Promise<ArrayBuffer | undefined> {
   if (!request.body) return undefined;
@@ -86,7 +94,7 @@ async function readWorkerBody(
   }
 }
 
-async function requestWorker(
+export async function requestWorker(
   path: string,
   init: RequestInit,
   timeoutMs: number,
@@ -96,7 +104,9 @@ async function requestWorker(
   return fetch(`${connection.origin}${path}`, {
     ...init,
     headers: {
-      'Content-Type': 'application/json',
+      ...Object.fromEntries(new Headers(init.headers)),
+      'Content-Type':
+        new Headers(init.headers).get('Content-Type') || 'application/json',
       Authorization: `Bearer ${connection.token}`,
     },
     signal: init.signal ? AbortSignal.any([init.signal, signal]) : signal,

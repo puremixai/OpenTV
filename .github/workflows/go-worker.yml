@@ -4,7 +4,22 @@ on:
     paths:
       - 'services/go-worker/**'
       - 'compose.go-worker.yaml'
-      - 'src/lib/server/go-worker.ts'
+      - 'src/lib/server/go-*.ts'
+      - 'src/lib/server/config-subscriptions.ts'
+      - 'src/lib/openlist*.ts'
+      - 'src/lib/anime-subscription.ts'
+      - 'src/lib/downstream.ts'
+      - 'src/lib/live.ts'
+      - 'src/lib/tmdb.client.ts'
+      - 'src/lib/tmdb.search.ts'
+      - 'src/app/api/admin/anime-subscription/**'
+      - 'src/lib/bangumi.server.ts'
+      - 'src/app/api/live/**'
+      - 'src/app/api/netdisk/check/**'
+      - 'src/app/api/source-search/**'
+      - 'src/app/api/openlist/**'
+      - 'src/app/api/cron/**'
+      - 'src/app/api/danmaku/**'
       - 'src/lib/openlist-refresh.ts'
       - 'src/app/api/offline-download/**'
       - 'tests/go-*.test.js'
@@ -13,7 +28,22 @@ on:
     paths:
       - 'services/go-worker/**'
       - 'compose.go-worker.yaml'
-      - 'src/lib/server/go-worker.ts'
+      - 'src/lib/server/go-*.ts'
+      - 'src/lib/server/config-subscriptions.ts'
+      - 'src/lib/openlist*.ts'
+      - 'src/lib/anime-subscription.ts'
+      - 'src/lib/downstream.ts'
+      - 'src/lib/live.ts'
+      - 'src/lib/tmdb.client.ts'
+      - 'src/lib/tmdb.search.ts'
+      - 'src/app/api/admin/anime-subscription/**'
+      - 'src/lib/bangumi.server.ts'
+      - 'src/app/api/live/**'
+      - 'src/app/api/netdisk/check/**'
+      - 'src/app/api/source-search/**'
+      - 'src/app/api/openlist/**'
+      - 'src/app/api/cron/**'
+      - 'src/app/api/danmaku/**'
       - 'src/lib/openlist-refresh.ts'
       - 'src/app/api/offline-download/**'
       - 'tests/go-*.test.js'
@@ -54,6 +84,6 @@ jobs:
           node-version: 24
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm exec jest --runTestsByPath tests/go-worker-bridge.test.js tests/go-openlist-scan.test.js tests/go-worker.integration.test.js --runInBand
+      - run: pnpm exec jest --testPathPatterns="go-" --runInBand
         env:
           OPENTV_GO_TEST_BINARY: ${{ github.workspace }}/services/go-worker/bin/opentv-worker.exe

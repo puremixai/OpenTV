@@ -8,10 +8,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import * as path from 'path';
 
 import { logger } from '@/lib/logger';
+import { forwardLocalFile } from '@/lib/server/go-local-files';
+import { isGoWorkerEnabled } from '@/lib/server/go-worker';
 import { getAuthenticatedUser } from '@/lib/session';
 
 // 检查是否启用离线下载功能
-const OFFLINE_DOWNLOAD_ENABLED = process.env.NEXT_PUBLIC_ENABLE_OFFLINE_DOWNLOAD === 'true';
+const OFFLINE_DOWNLOAD_ENABLED =
+  process.env.NEXT_PUBLIC_ENABLE_OFFLINE_DOWNLOAD === 'true';
 const OFFLINE_DOWNLOAD_DIR = process.env.OFFLINE_DOWNLOAD_DIR || '/data';
 
 /**
@@ -36,7 +39,16 @@ async function checkPermission(request: NextRequest): Promise<boolean> {
  */
 export async function GET(
   request: NextRequest,
-  { params: paramsPromise }: { params: Promise<{ source: string; videoId: string; episodeIndex: string; file: string[] }> }
+  {
+    params: paramsPromise,
+  }: {
+    params: Promise<{
+      source: string;
+      videoId: string;
+      episodeIndex: string;
+      file: string[];
+    }>;
+  },
 ) {
   const params = await paramsPromise;
   if (!(await checkPermission(request))) {
@@ -51,12 +63,20 @@ export async function GET(
       return NextResponse.json({ error: '参数不完整' }, { status: 400 });
     }
 
+    if (isGoWorkerEnabled('localFiles')) {
+      return forwardLocalFile(
+        request,
+        { source, videoId, episodeIndex, file: fileName },
+        'path',
+      );
+    }
+
     // 构建文件路径
     const downloadDir = path.join(
       OFFLINE_DOWNLOAD_DIR,
       source,
       videoId,
-      `ep${parseInt(episodeIndex) + 1}`
+      `ep${parseInt(episodeIndex) + 1}`,
     );
     const filePath = path.join(downloadDir, fileName);
 
@@ -88,14 +108,14 @@ export async function GET(
         if (trimmedLine.startsWith('#EXT-X-KEY:')) {
           const modifiedLine = trimmedLine.replace(
             /URI="([^"]+)"/,
-            `URI="/api/offline-download/local/${source}/${videoId}/${episodeIndex}/$1"`
+            `URI="/api/offline-download/local/${source}/${videoId}/${episodeIndex}/$1"`,
           );
           modifiedLines.push(modifiedLine);
         }
         // 处理 ts 片段
         else if (trimmedLine && !trimmedLine.startsWith('#')) {
           modifiedLines.push(
-            `/api/offline-download/local/${source}/${videoId}/${episodeIndex}/${trimmedLine}`
+            `/api/offline-download/local/${source}/${videoId}/${episodeIndex}/${trimmedLine}`,
           );
         } else {
           modifiedLines.push(line);
@@ -104,7 +124,7 @@ export async function GET(
 
       content = modifiedLines.join('\n');
 
-      return new NextResponse(content, {
+      return new NextResponse(request.method === 'HEAD' ? null : content, {
         headers: {
           'Content-Type': 'application/vnd.apple.mpegurl',
           'Cache-Control': 'no-cache',
@@ -119,7 +139,7 @@ export async function GET(
         ? 'application/octet-stream'
         : 'application/octet-stream';
 
-    return new NextResponse(fileBuffer, {
+    return new NextResponse(request.method === 'HEAD' ? null : fileBuffer, {
       headers: {
         'Content-Type': contentType,
         'Cache-Control': 'public, max-age=31536000',
@@ -130,7 +150,10 @@ export async function GET(
     logger.error('代理本地文件失败:', error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : '代理失败' },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
+
+// Next uses the same permission checks and delegates HEAD without a response body.
+export const HEAD = GET;

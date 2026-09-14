@@ -18,11 +18,13 @@ import {
   completeScanTask,
   createScanTask,
   failScanTask,
+  getScanTask,
   updateScanTaskProgress,
 } from '@/lib/scan-task';
 import { parseSeasonFromTitle } from '@/lib/season-parser';
+import { type GoJobLease, acquireGoJob } from '@/lib/server/go-jobs';
 import { isGoWorkerEnabled, scanGoOpenListRoots } from '@/lib/server/go-worker';
-import { getTVSeasonDetails,searchTMDB } from '@/lib/tmdb.search';
+import { getTVSeasonDetails, searchTMDB } from '@/lib/tmdb.search';
 
 /**
  * 获取根目录列表（兼容新旧配置）
@@ -61,7 +63,10 @@ function getRootPaths(openListConfig: AdminConfig['OpenListConfig']): string[] {
 /**
  * 迁移旧版单根目录配置到多根目录
  */
-async function migrateToMultiRoot(openListConfig: NonNullable<AdminConfig['OpenListConfig']>): Promise<void> {
+async function migrateToMultiRoot(
+  openListConfig: NonNullable<AdminConfig['OpenListConfig']>,
+  lease?: GoJobLease,
+): Promise<void> {
   const oldRootPath = openListConfig.RootPath!;
 
   logger.debug('[OpenList Migration] 检测到旧版配置，开始迁移...');
@@ -81,6 +86,7 @@ async function migrateToMultiRoot(openListConfig: NonNullable<AdminConfig['OpenL
     }
 
     // 3. 保存迁移后的 metainfo
+    lease?.assertActive();
     await db.setGlobalValue('video.metainfo', JSON.stringify(metaInfo));
     logger.debug('[OpenList Migration] MetaInfo 迁移完成');
   }
@@ -89,6 +95,7 @@ async function migrateToMultiRoot(openListConfig: NonNullable<AdminConfig['OpenL
   const config = await getConfig();
   config.OpenListConfig!.RootPaths = [oldRootPath];
   delete config.OpenListConfig!.RootPath;
+  lease?.assertActive();
   await db.saveAdminConfig(config);
 
   logger.debug('[OpenList Migration] 配置迁移完成');
@@ -97,7 +104,9 @@ async function migrateToMultiRoot(openListConfig: NonNullable<AdminConfig['OpenL
 /**
  * 启动 OpenList 刷新任务
  */
-export async function startOpenListRefresh(clearMetaInfo = false): Promise<{ taskId: string }> {
+export async function startOpenListRefresh(
+  clearMetaInfo = false,
+): Promise<{ taskId: string }> {
   const config = await getConfig();
   const openListConfig = config.OpenListConfig;
 
@@ -119,37 +128,66 @@ export async function startOpenListRefresh(clearMetaInfo = false): Promise<{ tas
     throw new Error('TMDB API Key 未配置');
   }
 
-  // 检测是否需要迁移
-  if (openListConfig.RootPath && !openListConfig.RootPaths) {
-    await migrateToMultiRoot(openListConfig);
-    // 重新加载配置
-    const newConfig = await getConfig();
-    Object.assign(openListConfig, newConfig.OpenListConfig);
-  }
-
-  cleanupOldTasks();
-  const taskId = createScanTask();
-
-  const rootPaths = getRootPaths(openListConfig);
-
-  // 顺序扫描多个根目录
-  performMultiRootScan(
-    taskId,
-    openListConfig.URL,
-    rootPaths,
+  const signature = JSON.stringify([
+    openListConfig,
     tmdbApiKey,
     tmdbProxy,
     tmdbReverseProxy,
-    openListConfig.Username,
-    openListConfig.Password,
-    clearMetaInfo,
-    openListConfig.ScanMode || 'hybrid'
-  ).catch((error) => {
-    logger.error('[OpenList Refresh] 后台扫描失败:', error);
-    failScanTask(taskId, (error as Error).message);
-  });
+  ]);
+  const lease = await acquireGoJob('openlist-refresh');
 
-  return { taskId };
+  try {
+    if (lease) {
+      const latest = await getConfig(true);
+      lease.assertActive();
+      if (
+        JSON.stringify([
+          latest.OpenListConfig,
+          latest.SiteConfig.TMDBApiKey,
+          latest.SiteConfig.TMDBProxy,
+          latest.SiteConfig.TMDBReverseProxy,
+        ]) !== signature
+      ) {
+        throw new Error('扫描配置已变更，请重新发起刷新');
+      }
+    }
+    // 检测是否需要迁移
+    if (openListConfig.RootPath && !openListConfig.RootPaths) {
+      await migrateToMultiRoot(openListConfig, lease);
+      // 重新加载配置
+      const newConfig = await getConfig();
+      Object.assign(openListConfig, newConfig.OpenListConfig);
+    }
+
+    cleanupOldTasks();
+    const taskId = createScanTask(lease?.id);
+    await lease?.renew(getScanTask(taskId));
+
+    const rootPaths = getRootPaths(openListConfig);
+
+    // 顺序扫描多个根目录
+    performMultiRootScan(
+      taskId,
+      openListConfig.URL,
+      rootPaths,
+      tmdbApiKey,
+      tmdbProxy,
+      tmdbReverseProxy,
+      openListConfig.Username,
+      openListConfig.Password,
+      clearMetaInfo,
+      openListConfig.ScanMode || 'hybrid',
+      lease,
+    ).catch((error) => {
+      logger.error('[OpenList Refresh] 后台扫描失败:', error);
+      failScanTask(taskId, (error as Error).message);
+    });
+
+    return { taskId };
+  } catch (error) {
+    await lease?.finish(false).catch(() => undefined);
+    throw error;
+  }
 }
 
 async function loadMetaInfo(clearMetaInfo: boolean): Promise<MetaInfo> {
@@ -177,7 +215,7 @@ async function loadMetaInfo(clearMetaInfo: boolean): Promise<MetaInfo> {
 
 async function listRootFolders(
   client: OpenListClient,
-  rootPath: string
+  rootPath: string,
 ): Promise<any[]> {
   const folders: any[] = [];
   let currentPage = 1;
@@ -188,7 +226,7 @@ async function listRootFolders(
       rootPath,
       currentPage,
       pageSize,
-      true
+      true,
     );
     if (listResponse.code !== 200) {
       throw new Error(`OpenList 列表获取失败: ${rootPath}`);
@@ -220,7 +258,8 @@ async function performMultiRootScan(
   username: string,
   password: string,
   clearMetaInfo: boolean,
-  scanMode: 'torrent' | 'name' | 'hybrid'
+  scanMode: 'torrent' | 'name' | 'hybrid',
+  lease?: GoJobLease,
 ): Promise<void> {
   updateScanTaskProgress(taskId, 0, 0);
 
@@ -232,9 +271,17 @@ async function performMultiRootScan(
     let totalFolders = 0;
 
     if (isGoWorkerEnabled('openlistScan')) {
-      const result = await scanGoOpenListRoots({ url, username, password, rootPaths });
+      const result = await scanGoOpenListRoots({
+        url,
+        username,
+        password,
+        rootPaths,
+      });
       rootFolderGroups.push(...result.groups);
-      totalFolders = result.groups.reduce((total, group) => total + group.folders.length, 0);
+      totalFolders = result.groups.reduce(
+        (total, group) => total + group.folders.length,
+        0,
+      );
       for (const failure of result.errors) {
         logger.error(`[OpenList Refresh] 根目录 ${failure.rootPath} 列举失败`);
       }
@@ -243,7 +290,7 @@ async function performMultiRootScan(
       for (let i = 0; i < rootPaths.length; i++) {
         const rootPath = rootPaths[i];
         logger.debug(
-          `[OpenList Refresh] 列举根目录 (${i + 1}/${rootPaths.length}): ${rootPath}`
+          `[OpenList Refresh] 列举根目录 (${i + 1}/${rootPaths.length}): ${rootPath}`,
         );
 
         try {
@@ -251,10 +298,13 @@ async function performMultiRootScan(
           rootFolderGroups.push({ rootPath, folders });
           totalFolders += folders.length;
           logger.debug(
-            `[OpenList Refresh] 根目录 ${rootPath} 发现 ${folders.length} 个文件夹`
+            `[OpenList Refresh] 根目录 ${rootPath} 发现 ${folders.length} 个文件夹`,
           );
         } catch (error) {
-          logger.error(`[OpenList Refresh] 根目录 ${rootPath} 列举失败:`, error);
+          logger.error(
+            `[OpenList Refresh] 根目录 ${rootPath} 列举失败:`,
+            error,
+          );
         }
       }
     }
@@ -264,6 +314,7 @@ async function performMultiRootScan(
     }
 
     updateScanTaskProgress(taskId, 0, totalFolders);
+    await lease?.renew(getScanTask(taskId));
 
     let processed = 0;
     let newCount = 0;
@@ -278,17 +329,14 @@ async function performMultiRootScan(
 
     for (const { rootPath, folders } of rootFolderGroups) {
       logger.debug(
-        `[OpenList Refresh] 处理根目录: ${rootPath} (${folders.length} 个文件夹)`
+        `[OpenList Refresh] 处理根目录: ${rootPath} (${folders.length} 个文件夹)`,
       );
 
       for (const folder of folders) {
+        lease?.assertActive();
         processed++;
-        updateScanTaskProgress(
-          taskId,
-          processed,
-          totalFolders,
-          folder.name
-        );
+        updateScanTaskProgress(taskId, processed, totalFolders, folder.name);
+        await lease?.renew(getScanTask(taskId));
 
         const fullFolderPath = `${rootPath}${rootPath.endsWith('/') ? '' : '/'}${folder.name}`;
 
@@ -312,9 +360,11 @@ async function performMultiRootScan(
             seasonNumber = torrentInfo.season || null;
             year = torrentInfo.year || null;
 
-            logger.debug(`[OpenList Refresh] 种子库模式 - 文件夹: ${folder.name}`);
             logger.debug(
-              `[OpenList Refresh] 解析结果 - 标题: ${searchQuery}, 季度: ${seasonNumber}, 年份: ${year}`
+              `[OpenList Refresh] 种子库模式 - 文件夹: ${folder.name}`,
+            );
+            logger.debug(
+              `[OpenList Refresh] 解析结果 - 标题: ${searchQuery}, 季度: ${seasonNumber}, 年份: ${year}`,
             );
 
             searchResult = await searchTMDB(
@@ -322,7 +372,7 @@ async function performMultiRootScan(
               searchQuery,
               tmdbProxy,
               year || undefined,
-              tmdbReverseProxy
+              tmdbReverseProxy,
             );
           }
 
@@ -338,9 +388,11 @@ async function performMultiRootScan(
             seasonNumber = seasonInfo.seasonNumber;
             year = seasonInfo.year;
 
-            logger.debug(`[OpenList Refresh] 名字匹配模式 - 文件夹: ${folder.name}`);
             logger.debug(
-              `[OpenList Refresh] 清理后标题: ${searchQuery}, 季度: ${seasonNumber}, 年份: ${year}`
+              `[OpenList Refresh] 名字匹配模式 - 文件夹: ${folder.name}`,
+            );
+            logger.debug(
+              `[OpenList Refresh] 清理后标题: ${searchQuery}, 季度: ${seasonNumber}, 年份: ${year}`,
             );
 
             searchResult = await searchTMDB(
@@ -348,7 +400,7 @@ async function performMultiRootScan(
               searchQuery,
               tmdbProxy,
               year || undefined,
-              tmdbReverseProxy
+              tmdbReverseProxy,
             );
           }
 
@@ -375,12 +427,11 @@ async function performMultiRootScan(
                   result.id,
                   seasonNumber,
                   tmdbProxy,
-                  tmdbReverseProxy
+                  tmdbReverseProxy,
                 );
 
                 if (seasonDetails.code === 200 && seasonDetails.season) {
-                  folderInfo.season_number =
-                    seasonDetails.season.season_number;
+                  folderInfo.season_number = seasonDetails.season.season_number;
                   folderInfo.season_name = seasonDetails.season.name;
 
                   if (seasonDetails.season.season_number > 1) {
@@ -398,7 +449,7 @@ async function performMultiRootScan(
                   }
                 } else {
                   logger.warn(
-                    `[OpenList Refresh] 获取季度 ${seasonNumber} 详情失败`
+                    `[OpenList Refresh] 获取季度 ${seasonNumber} 详情失败`,
                   );
                   folderInfo.season_number = seasonNumber;
                 }
@@ -432,7 +483,7 @@ async function performMultiRootScan(
         } catch (error) {
           logger.error(
             `[OpenList Refresh] 处理文件夹失败: ${folder.name}`,
-            error
+            error,
           );
           metaInfo.folders[folderKey] = {
             folderName: fullFolderPath,
@@ -454,6 +505,7 @@ async function performMultiRootScan(
 
     metaInfo.last_refresh = Date.now();
 
+    await lease?.renew(getScanTask(taskId));
     await db.setGlobalValue('video.metainfo', JSON.stringify(metaInfo));
     invalidateMetaInfoCache();
     setCachedMetaInfo(metaInfo);
@@ -461,6 +513,7 @@ async function performMultiRootScan(
     const config = await getConfig();
     config.OpenListConfig!.LastRefreshTime = Date.now();
     config.OpenListConfig!.ResourceCount = Object.keys(metaInfo.folders).length;
+    lease?.assertActive();
     await db.saveAdminConfig(config);
 
     completeScanTask(taskId, {
@@ -469,9 +522,11 @@ async function performMultiRootScan(
       existing: existingCount,
       errors: errorCount,
     });
+    await lease?.finish(true, getScanTask(taskId));
   } catch (error) {
     logger.error('[OpenList Refresh] 扫描失败:', error);
     failScanTask(taskId, (error as Error).message);
+    await lease?.finish(false, getScanTask(taskId)).catch(() => undefined);
     throw error;
   }
 }

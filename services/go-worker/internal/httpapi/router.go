@@ -12,6 +12,8 @@ type Options struct {
 	Token     string
 	Downloads http.Handler
 	OpenList  http.Handler
+	// Extra contains exact internal routes, all protected by the same token gate.
+	Extra map[string]http.Handler
 }
 
 func NewRouter(options Options) (http.Handler, error) {
@@ -53,6 +55,14 @@ func NewRouter(options Options) (http.Handler, error) {
 				return
 			}
 		default:
+			if handler, ok := options.Extra[r.URL.Path]; ok {
+				if handler == nil {
+					jsonError(w, "Worker module unavailable", http.StatusServiceUnavailable)
+				} else {
+					handler.ServeHTTP(w, r)
+				}
+				return
+			}
 			jsonError(w, "Not found", http.StatusNotFound)
 			return
 		}

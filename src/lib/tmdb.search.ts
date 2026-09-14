@@ -3,6 +3,7 @@
 import { logger } from '@/lib/logger';
 
 import { safeFetch } from './safe-http';
+import { fetchGoMetadata, isGoWorkerEnabled } from './server/go-media';
 import { getNextApiKey } from './tmdb.client';
 import { getTmdbImageBaseUrl } from './tmdb-image-base';
 
@@ -20,6 +21,9 @@ function isCloudflareEnvironment(): boolean {
  * 统一的 fetch 函数，根据环境选择使用 node-fetch 或原生 fetch
  */
 async function universalFetch(url: string, proxy?: string): Promise<Response> {
+  if (typeof window === 'undefined' && isGoWorkerEnabled('metadata')) {
+    return fetchGoMetadata(url, undefined, proxy);
+  }
   const isCloudflare = isCloudflareEnvironment();
 
   if (isCloudflare) {

@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 /**
  * 后台扫描任务管理
  */
@@ -26,8 +24,9 @@ export interface ScanTask {
 
 const tasks = new Map<string, ScanTask>();
 
-export function createScanTask(): string {
-  const id = `scan_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+export function createScanTask(taskId?: string): string {
+  const id =
+    taskId || `scan_${Date.now()}_${Math.random().toString(36).substring(7)}`;
   const task: ScanTask = {
     id,
     status: 'running',
@@ -49,7 +48,7 @@ export function updateScanTaskProgress(
   id: string,
   current: number,
   total: number,
-  currentFolder?: string
+  currentFolder?: string,
 ): void {
   let task = tasks.get(id);
   if (!task) {
@@ -69,10 +68,7 @@ export function updateScanTaskProgress(
   task.progress = { current, total, currentFolder };
 }
 
-export function completeScanTask(
-  id: string,
-  result: ScanTask['result']
-): void {
+export function completeScanTask(id: string, result: ScanTask['result']): void {
   let task = tasks.get(id);
   if (!task) {
     // 如果任务不存在（可能因为模块重新加载），重新创建任务

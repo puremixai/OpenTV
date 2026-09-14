@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import { logger } from '@/lib/logger';
+import { isGoWorkerEnabled, requestGoMedia } from '@/lib/server/go-media';
 
 export const runtime = 'nodejs';
 
@@ -15,6 +16,24 @@ export async function GET(request: NextRequest) {
 
     logger.debug('[EPG Download] Fetching:', epgUrl);
 
+    if (isGoWorkerEnabled('live')) {
+      const response = await requestGoMedia(
+        '/v1/live/epg/download',
+        { url: epgUrl, ua: 'Mozilla/5.0' },
+        request.signal,
+      );
+      if (!response.ok) {
+        void response.body?.cancel();
+        return NextResponse.json({ error: 'EPG文件下载失败' }, { status: 500 });
+      }
+      return new NextResponse(response.body, {
+        headers: {
+          'Content-Type': 'application/xml; charset=utf-8',
+          'Content-Disposition': 'attachment; filename="epg.xml"',
+        },
+      });
+    }
+
     // 获取EPG文件
     const response = await fetch(epgUrl, {
       headers: {
@@ -27,7 +46,9 @@ export async function GET(request: NextRequest) {
     }
 
     // 检查是否是gzip压缩
-    const isGzip = epgUrl.endsWith('.gz') || response.headers.get('content-encoding') === 'gzip';
+    const isGzip =
+      epgUrl.endsWith('.gz') ||
+      response.headers.get('content-encoding') === 'gzip';
 
     if (isGzip) {
       logger.debug('[EPG Download] Decompressing gzip...');
@@ -61,7 +82,11 @@ export async function GET(request: NextRequest) {
       const decompressed = zlib.gunzipSync(Buffer.from(allChunks));
       const decompressedText = decompressed.toString('utf-8');
 
-      logger.debug('[EPG Download] Decompressed size:', decompressedText.length, 'bytes');
+      logger.debug(
+        '[EPG Download] Decompressed size:',
+        decompressedText.length,
+        'bytes',
+      );
 
       // 返回解压后的XML
       return new NextResponse(decompressedText, {
@@ -82,9 +107,6 @@ export async function GET(request: NextRequest) {
     }
   } catch (error) {
     logger.error('[EPG Download] Error:', error);
-    return NextResponse.json(
-      { error: '下载EPG文件失败' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: '下载EPG文件失败' }, { status: 500 });
   }
 }

@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-import { getNetdiskCheckCooldownRemainingMs, getNetdiskCheckTask } from '@/lib/netdisk-check-task';
+import {
+  getNetdiskCheckCooldownRemainingMs,
+  getNetdiskCheckTask,
+} from '@/lib/netdisk-check-task';
 import { requireFeaturePermission } from '@/lib/permissions';
+import { forwardGoNetdisk } from '@/lib/server/go-netdisk';
+import { isGoWorkerEnabled } from '@/lib/server/go-worker';
 
 export const runtime = 'nodejs';
 
@@ -10,9 +15,12 @@ export async function GET(request: NextRequest) {
     const authResult = await requireFeaturePermission(
       request,
       'netdisk_search',
-      '无权限使用网盘有效性检测'
+      '无权限使用网盘有效性检测',
     );
     if (authResult instanceof NextResponse) return authResult;
+    if (isGoWorkerEnabled('netdiskCheck')) {
+      return forwardGoNetdisk(request, 'task', authResult.username);
+    }
 
     const taskId = request.nextUrl.searchParams.get('id') || '';
     if (!taskId) {
@@ -29,7 +37,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : '获取检测任务失败' },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

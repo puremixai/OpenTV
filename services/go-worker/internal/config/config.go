@@ -10,20 +10,38 @@ import (
 )
 
 type Config struct {
-	DownloadsEnabled   bool
-	ListenAddr         string
-	Token              string
-	DownloadDir        string
-	ProxyURL           string
-	AllowedOrigins     []string
-	MaxDownloads       int
-	SegmentConcurrency int
-	ScanConcurrency    int
+	DownloadsEnabled      bool
+	LocalFilesEnabled     bool
+	NetdiskEnabled        bool
+	TasksEnabled          bool
+	AnimeDownloadsEnabled bool
+	StateDir              string
+	ListenAddr            string
+	Token                 string
+	DownloadDir           string
+	ProxyURL              string
+	AllowedOrigins        []string
+	MaxDownloads          int
+	SegmentConcurrency    int
+	ScanConcurrency       int
 }
 
 func Load(getenv func(string) string) (Config, error) {
 	cfg := Config{ListenAddr: "127.0.0.1:8081", Token: getenv("OPENTV_GO_TOKEN"), DownloadDir: getenv("OFFLINE_DOWNLOAD_DIR"), ProxyURL: getenv("OFFLINE_DOWNLOAD_PROXY")}
 	cfg.DownloadsEnabled = getenv("OPENTV_GO_OFFLINE_DOWNLOADS") == "true"
+	cfg.LocalFilesEnabled = getenv("OPENTV_GO_LOCAL_FILES") == "true"
+	cfg.NetdiskEnabled = getenv("OPENTV_GO_NETDISK_CHECK") == "true"
+	cfg.TasksEnabled = getenv("OPENTV_GO_TASKS") == "true"
+	cfg.AnimeDownloadsEnabled = getenv("OPENTV_GO_ANIME_DOWNLOADS") == "true"
+	cfg.StateDir = getenv("OPENTV_GO_STATE_DIR")
+	if cfg.StateDir == "" {
+		cfg.StateDir = filepath.Join(".data", "worker")
+	}
+	var stateErr error
+	cfg.StateDir, stateErr = filepath.Abs(cfg.StateDir)
+	if stateErr != nil {
+		return Config{}, errors.New("invalid worker state directory")
+	}
 	if len(cfg.Token) < 32 || strings.ContainsAny(cfg.Token, " \t\r\n") {
 		return Config{}, errors.New("OPENTV_GO_TOKEN must contain at least 32 characters without whitespace")
 	}

@@ -77,3 +77,29 @@ func TestRouterRequiresStrongToken(t *testing.T) {
 		}
 	}
 }
+
+func TestExtraRoutesUseAuthenticationAndDisabledModulesFailClosed(t *testing.T) {
+	called := false
+	token := strings.Repeat("k", 32)
+	h, _ := NewRouter(Options{Token: token, Extra: map[string]http.Handler{
+		"/v1/jobs":        http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { called = true; w.WriteHeader(202) }),
+		"/v1/local-files": nil,
+	}})
+	for _, tc := range []struct {
+		path, authorization string
+		want                int
+	}{
+		{"/v1/jobs", "", 401}, {"/v1/jobs", "Bearer " + token, 202}, {"/v1/local-files", "Bearer " + token, 503}, {"/v1/jobs/extra", "Bearer " + token, 404},
+	} {
+		r := httptest.NewRequest("POST", tc.path, nil)
+		r.Header.Set("Authorization", tc.authorization)
+		w := httptest.NewRecorder()
+		h.ServeHTTP(w, r)
+		if w.Code != tc.want {
+			t.Errorf("%s status%d", tc.path, w.Code)
+		}
+		if tc.authorization == "" && called {
+			t.Fatal("anonymous dispatch")
+		}
+	}
+}
