@@ -79,7 +79,7 @@ export function AdminWorkspace({
         </span>
         <div className='min-w-0 flex-1'>
           <p className='truncate text-sm font-semibold text-slate-900 dark:text-slate-100'>
-            {siteName || 'XTV'}
+            {siteName || 'OpenTV'}
           </p>
           <p className='mt-0.5 text-xs text-slate-500'>管理控制台</p>
         </div>

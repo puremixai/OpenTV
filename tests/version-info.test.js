@@ -26,9 +26,9 @@ const { VersionPanel } = require('../src/components/VersionPanel');
 
 const originalFetch = global.fetch;
 const changelogUrl =
-  'https://raw.githubusercontent.com/puremixai/xtv/main/CHANGELOG';
+  'https://raw.githubusercontent.com/puremixai/OpenTV/main/CHANGELOG';
 const release = (version) =>
-  `# XTV\n\n## [${version}] - 2026-09-13\n### Changed\n- XTV 界面更新\n`;
+  `# OpenTV\n\n## [${version}] - 2026-09-13\n### Changed\n- OpenTV 界面更新\n`;
 const response = (body, ok = true) => ({
   ok,
   status: ok ? 200 : 404,
@@ -46,7 +46,7 @@ afterEach(() => {
   jest.restoreAllMocks();
 });
 
-test('checks the XTV release feed rather than an upstream release with a larger number', async () => {
+test('checks the OpenTV release feed rather than an upstream release with a larger number', async () => {
   global.fetch = jest.fn(async (url) =>
     response(
       String(url).split('?')[0] === changelogUrl
@@ -57,15 +57,15 @@ test('checks the XTV release feed rather than an upstream release with a larger 
   expect(await checkForUpdates()).toBe(UpdateStatus.NO_UPDATE);
 });
 
-test('recognizes a newer release from the XTV changelog', async () => {
+test('recognizes a newer release from the OpenTV changelog', async () => {
   global.fetch = jest.fn(async () => response(release('999.0.0')));
   expect(await checkForUpdates()).toBe(UpdateStatus.HAS_UPDATE);
 });
 
 test.each([
   '## [999.0.0] - 2026-09-13\n### Added\n- 上游版本\n',
-  '# XTV\n\n尚无发布记录',
-  '# XTV\n\n## [1..0] - 2026-09-13\n### Changed\n- 无效版本\n',
+  '# OpenTV\n\n尚无发布记录',
+  '# OpenTV\n\n## [1..0] - 2026-09-13\n### Changed\n- 无效版本\n',
 ])(
   'rejects an unbranded or malformed feed instead of advertising an update: %s',
   async (body) => {
@@ -74,7 +74,7 @@ test.each([
   },
 );
 
-test('reports an unavailable XTV feed as a failed check', async () => {
+test('reports an unavailable OpenTV feed as a failed check', async () => {
   global.fetch = jest.fn(async () => response('Not Found', false));
   expect(await checkForUpdates()).toBe(UpdateStatus.FETCH_FAILED);
 });
@@ -114,7 +114,7 @@ test.each([
   },
 );
 
-test('accepts prerelease notes with build metadata from the XTV feed', async () => {
+test('accepts prerelease notes with build metadata from the OpenTV feed', async () => {
   global.fetch = jest.fn(async () =>
     response(release('0.1.0-dev.10+build.001')),
   );
@@ -123,7 +123,7 @@ test('accepts prerelease notes with build metadata from the XTV feed', async () 
       version: '0.1.0-dev.10+build.001',
       date: '2026-09-13',
       added: [],
-      changed: ['XTV 界面更新'],
+      changed: ['OpenTV 界面更新'],
       fixed: [],
     },
   ]);
@@ -138,21 +138,21 @@ test.each(['0.1.0-dev.01', '0.1.0-dev..1', '01.0.0', '0.1.0+'])(
   },
 );
 
-test('the panel shows the installed XTV version and the current repository', async () => {
+test('the panel shows the installed OpenTV version and the current repository', async () => {
   global.fetch = jest.fn(async () => response(release(CURRENT_VERSION)));
   render(
     React.createElement(VersionPanel, { isOpen: true, onClose: jest.fn() }),
   );
   expect(await screen.findByText('未发现新版本')).toBeInTheDocument();
   expect(
-    screen.getByRole('heading', { name: 'XTV 版本信息' }),
+    screen.getByRole('heading', { name: 'OpenTV 版本信息' }),
   ).toBeInTheDocument();
-  expect(screen.getByRole('link', { name: '前往 XTV 仓库' })).toHaveAttribute(
+  expect(screen.getByRole('link', { name: '前往 OpenTV 仓库' })).toHaveAttribute(
     'href',
-    'https://github.com/puremixai/xtv',
+    'https://github.com/puremixai/OpenTV',
   );
   expect(
-    screen.getByText(`当前安装 XTV v${CURRENT_VERSION}`),
+    screen.getByText(`当前安装 OpenTV v${CURRENT_VERSION}`),
   ).toBeInTheDocument();
 });
 
@@ -177,23 +177,23 @@ test('the panel distinguishes a pending check from a confirmed result', async ()
   render(
     React.createElement(VersionPanel, { isOpen: true, onClose: jest.fn() }),
   );
-  expect(screen.getByText('正在检查 XTV 更新')).toBeInTheDocument();
+  expect(screen.getByText('正在检查 OpenTV 更新')).toBeInTheDocument();
   expect(screen.queryByText('当前为最新版本')).not.toBeInTheDocument();
   await act(async () => finish(response(release(CURRENT_VERSION))));
   expect(screen.getByText('未发现新版本')).toBeInTheDocument();
 });
 
-test('the panel displays newer XTV release notes and links to the XTV repository', async () => {
+test('the panel displays newer OpenTV release notes and links to the OpenTV repository', async () => {
   global.fetch = jest.fn(async () => response(release('999.0.0')));
   render(
     React.createElement(VersionPanel, { isOpen: true, onClose: jest.fn() }),
   );
   expect(await screen.findByText('发现新版本')).toBeInTheDocument();
   fireEvent.click(screen.getByRole('button', { name: '查看更新内容' }));
-  expect(screen.getByText('XTV 界面更新')).toBeInTheDocument();
-  expect(screen.getByRole('link', { name: '前往 XTV 仓库' })).toHaveAttribute(
+  expect(screen.getByText('OpenTV 界面更新')).toBeInTheDocument();
+  expect(screen.getByRole('link', { name: '前往 OpenTV 仓库' })).toHaveAttribute(
     'href',
-    'https://github.com/puremixai/xtv',
+    'https://github.com/puremixai/OpenTV',
   );
 });
 
@@ -208,7 +208,7 @@ test('the panel displays a newer development build and its release notes', async
   expect(
     screen.getByRole('heading', { name: 'v0.1.0-dev.10' }),
   ).toBeInTheDocument();
-  expect(screen.getByText('XTV 界面更新')).toBeInTheDocument();
+  expect(screen.getByText('OpenTV 界面更新')).toBeInTheDocument();
 });
 
 test('a reopened panel ignores an older pending response', async () => {

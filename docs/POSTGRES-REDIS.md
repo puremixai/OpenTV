@@ -19,6 +19,8 @@ CACHE_KEY_PREFIX=xtv:cache
 
 示例中的密码是占位符。可运行 `node -e "console.log(require('crypto').randomBytes(24).toString('hex'))"` 分别生成两个随机密码。自行选择包含特殊字符的密码时，需要对 URL 中的密码进行百分号编码。`compose.local.yaml` 显式设置 `NEXT_PUBLIC_STORAGE_TYPE=postgres`，优先于环境文件。
 
+项目展示名称为 OpenTV；`xtv:cache`、Compose 服务名及数据卷名保留为兼容已有部署的技术标识。升级时沿用原有缓存前缀与数据卷。
+
 新安装且没有旧数据时：
 
 ```powershell

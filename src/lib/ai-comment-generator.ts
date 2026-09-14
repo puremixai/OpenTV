@@ -141,7 +141,7 @@ async function searchMovieInfo(
           signal: AbortSignal.timeout(15000),
           headers: {
             Accept: 'application/rss+xml, application/xml, text/xml',
-            'User-Agent': 'Mozilla/5.0 (compatible; XTVBot/1.0)',
+            'User-Agent': 'Mozilla/5.0 (compatible; OpenTVBot/1.0)',
           },
         }
       );

@@ -1,4 +1,4 @@
-# XTV Next.js 16 与前端优化实施计划
+# OpenTV Next.js 16 与前端优化实施计划
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox syntax for tracking.
 
@@ -13,7 +13,7 @@
 ## Global Constraints
 
 - Windows PowerShell，所有源码与文档 UTF-8。
-- 保留 XTV 品牌、现有数据、接口鉴权、PWA API NetworkOnly、Socket.IO 与 TV 功能。
+- 保留 OpenTV 品牌、现有数据、接口鉴权、PWA API NetworkOnly、Socket.IO 与 TV 功能。
 - 不自动提交、推送或远程部署；本地运行使用独立端口和临时测试数据库。
 - 行为变更先编写可失败的回归测试，再修复并验证；配置与低风险懒加载通过类型、lint、构建和浏览器验证。
 - 当前已有轮播键盘/点击/暂停逻辑、图片优先级、播放器插件懒加载继续保留。

@@ -35,7 +35,7 @@ export const dynamic = 'force-dynamic';
 export async function generateMetadata(): Promise<Metadata> {
   const storageType = process.env.NEXT_PUBLIC_STORAGE_TYPE || 'localstorage';
   const config = await getConfig();
-  let siteName = process.env.NEXT_PUBLIC_SITE_NAME || 'XTV';
+  let siteName = process.env.NEXT_PUBLIC_SITE_NAME || 'OpenTV';
   if (storageType !== 'localstorage') {
     siteName = config.SiteConfig.SiteName;
   }
@@ -45,7 +45,7 @@ export async function generateMetadata(): Promise<Metadata> {
     description: '影视聚合',
     manifest: '/manifest.json',
     icons: {
-      icon: '/favicon.ico?v=xtv',
+      icon: '/favicon.ico?v=opentv',
     },
     // 供配套浏览器扩展（moontvplus-extension）识别本站部署（勿删）
     other: {
@@ -71,7 +71,7 @@ export default async function RootLayout({
 }) {
   const storageType = process.env.NEXT_PUBLIC_STORAGE_TYPE || 'localstorage';
 
-  let siteName = process.env.NEXT_PUBLIC_SITE_NAME || 'XTV';
+  let siteName = process.env.NEXT_PUBLIC_SITE_NAME || 'OpenTV';
   let announcement =
     process.env.ANNOUNCEMENT ||
     '本网站仅提供影视信息搜索服务，所有内容均来自第三方网站。本站不存储任何视频资源，不对任何内容的准确性、合法性、完整性负责。';
@@ -368,7 +368,7 @@ export default async function RootLayout({
           name='viewport'
           content='width=device-width, initial-scale=1.0, viewport-fit=cover'
         />
-        <link rel='apple-touch-icon' href='/icons/icon-192x192.png?v=xtv' />
+        <link rel='apple-touch-icon' href='/icons/icon-192x192.png?v=opentv' />
         {/* 主题CSS */}
         <link rel='stylesheet' href='/api/theme/css' />
         {/* 将配置序列化后直接写入脚本，浏览器端可通过 window.RUNTIME_CONFIG 获取 */}

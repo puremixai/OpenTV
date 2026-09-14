@@ -1494,7 +1494,7 @@ export const VideoSourceConfig = ({
                     客户端去广告配置
                   </h3>
                   <p className='mt-1 text-sm text-gray-600 dark:text-gray-400'>
-                    勾选后，用户使用 XTV APP 或 OrionTV
+                    勾选后，用户使用 OpenTV APP 或 OrionTV
                     观看这些视频源时，会自动过滤片头/插播广告。
                   </p>
                 </div>

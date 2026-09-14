@@ -34,7 +34,7 @@ const run = (...args) =>
 test('generates prerelease notes and safely escapes their text', () => {
   fs.writeFileSync(
     path.join(fixture, 'CHANGELOG'),
-    '# XTV\n\n## [0.1.0-dev.1] - 2026-09-14\n### Changed\n- Keeps "quoted" text and C:\\video paths\n',
+    '# OpenTV\n\n## [0.1.0-dev.1] - 2026-09-14\n### Changed\n- Keeps "quoted" text and C:\\video paths\n',
   );
   const result = run();
   expect(result.status).toBe(0);
@@ -82,7 +82,7 @@ test.each(['1..0', '0.1.0-dev.01', '0.1', '0.1.0;process.exit(0)'])(
 test('fails on a malformed release heading rather than merging its notes into the previous version', () => {
   fs.writeFileSync(
     path.join(fixture, 'CHANGELOG'),
-    '# XTV\n\n## [0.1.0] - 2026-09-14\n### Added\n- First release\n\n## [0.1.0-dev.01] - 2026-09-13\n### Changed\n- Invalid release\n',
+    '# OpenTV\n\n## [0.1.0] - 2026-09-14\n### Added\n- First release\n\n## [0.1.0-dev.01] - 2026-09-13\n### Changed\n- Invalid release\n',
   );
   fs.writeFileSync(path.join(fixture, 'src/lib/changelog.ts'), 'unchanged');
   expect(run().status).not.toBe(0);

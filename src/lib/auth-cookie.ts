@@ -44,7 +44,7 @@ export async function generateAuthSignature(
 export function getDeviceInfoFromUserAgent(userAgent: string): string {
   const ua = userAgent.toLowerCase();
 
-  if (ua.includes('moontvplus')) return 'XTV APP';
+  if (ua.includes('moontvplus')) return 'OpenTV APP';
   if (ua.includes('oriontv')) return 'OrionTV';
   if (ua.includes('chrome')) return 'Chrome';
   if (ua.includes('firefox')) return 'Firefox';

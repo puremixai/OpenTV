@@ -78,7 +78,7 @@ function HomeClient({
   const [aiChatLoaded, setAIChatLoaded] = useState(false);
   const [aiEnabled, setAiEnabled] = useState(false);
   const [aiDefaultMessageNoVideo, setAiDefaultMessageNoVideo] = useState(
-    '你好！我是XTV的AI影视助手。想看什么电影或剧集？需要推荐吗？'
+    '你好！我是OpenTV的AI影视助手。想看什么电影或剧集？需要推荐吗？'
   );
   const [sourceSearchEnabled, setSourceSearchEnabled] = useState(true);
   const [musicEnabled, setMusicEnabled] = useState(false);

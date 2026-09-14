@@ -79,7 +79,7 @@ PWA 资源由独立 Workbox 脚本生成。版本升级与前端实现细节见 
 
 ## 版本维护
 
-XTV 目前处于 `0.x` 开发周期，使用独立的语义化版本序列，版本格式与排序遵循 [SemVer 2.0.0](https://semver.org/)。当前版本为 `0.1.0-alpha.1`，表示 `0.1.0` 阶段的首个早期测试版本；功能、配置和数据结构仍可能调整，兼容性变化会在更新记录中说明。
+OpenTV 目前处于 `0.x` 开发周期，使用独立的语义化版本序列，版本格式与排序遵循 [SemVer 2.0.0](https://semver.org/)。当前版本为 `0.1.0-alpha.1`，表示 `0.1.0` 阶段的首个早期测试版本；功能、配置和数据结构仍可能调整，兼容性变化会在更新记录中说明。
 
 | 版本形式                  | 用途                                                                     |
 | ------------------------- | ------------------------------------------------------------------------ |
@@ -105,9 +105,11 @@ node scripts/convert-changelog.js --sync-version
 
 第一条命令生成 `src/lib/changelog.ts`，第二条从 `VERSION.txt` 生成 `src/lib/version.ts`。执行后检查生成文件与源码版本一致，并将它们一并提交。Android TV 默认读取同一版本文件，独立 APK 的 `VERSION_NAME` 与递增 `VERSION_CODE` 规则见 [Android TV 构建参数](../apps/android-tv/README.md#构建参数)。
 
-继承的上游更新记录位于 [CHANGELOG-UPSTREAM.md](CHANGELOG-UPSTREAM.md)，与 XTV 的发布记录分别维护。历史升级和部署记录保留执行当时的版本标记，不代表当前实例已经切换到新的源码版本。
+继承的上游更新记录位于 [CHANGELOG-UPSTREAM.md](CHANGELOG-UPSTREAM.md)，与 OpenTV 的发布记录分别维护。历史升级和部署记录保留执行当时的版本标记，不代表当前实例已经切换到新的源码版本。
 
 ## 品牌资源
+
+OpenTV 的标志以首字母 O 为主体：青蓝渐变的环在右侧断开，与向右的播放三角负空间连通，表达开放与循环。各端图标使用同一轮廓和深海军蓝背景，保持小尺寸下的辨识度。
 
 | 资源            | 文件                                                                       | 用途                   |
 | --------------- | -------------------------------------------------------------------------- | ---------------------- |
@@ -118,4 +120,4 @@ node scripts/convert-changelog.js --sync-version
 
 PWA 名称与图标引用由 [generate-manifest.js](../scripts/generate-manifest.js) 生成，开发和构建命令会自动执行，也可单独运行 `pnpm gen:manifest`。替换资源后需重新构建部署；Android TV 的 GitHub Actions 构建会复制根目录 Logo，本地构建需自行同步对应文件。
 
-默认站点名称为 `XTV`。`NEXT_PUBLIC_SITE_NAME` 可设置初始名称；已有数据库中的站点设置以管理后台保存值为准。Compose 服务名、数据卷、数据库键和客户端协议保留已有技术标识，以兼容现有部署。
+默认站点名称为 `OpenTV`。`NEXT_PUBLIC_SITE_NAME` 可设置初始名称；已有数据库中的站点设置以管理后台保存值为准。Compose 服务名、数据卷、数据库键和客户端协议保留已有技术标识，以兼容现有部署。

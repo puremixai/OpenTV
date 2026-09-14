@@ -9,12 +9,12 @@ fun propOrEnv(propName: String, envName: String, defaultValue: String): String {
 }
 
 val rawBaseUrl = propOrEnv("BASE_URL", "BASE_URL", "http://192.168.1.10:3000")
-val appDisplayName = propOrEnv("APP_NAME", "APP_NAME", "XTV TV")
+val appDisplayName = propOrEnv("APP_NAME", "APP_NAME", "OpenTV")
 val versionNameValue = (project.findProperty("VERSION_NAME") as String?)
     ?.trim()?.takeIf { it.isNotEmpty() }
     ?: System.getenv("VERSION_NAME")?.trim()?.takeIf { it.isNotEmpty() }
     ?: rootProject.file("../../VERSION.txt").readText(Charsets.UTF_8).trim().also {
-        require(it.isNotEmpty()) { "VERSION.txt must contain the XTV version" }
+        require(it.isNotEmpty()) { "VERSION.txt must contain the OpenTV version" }
     }
 val versionCodeValue = propOrEnv("VERSION_CODE", "VERSION_CODE", "2").toIntOrNull() ?: 2
 val minSdkValue = propOrEnv("MIN_SDK", "MIN_SDK", "23").toIntOrNull() ?: 23

@@ -1,4 +1,4 @@
-/* XTV Web Push handlers */
+/* OpenTV Web Push handlers */
 
 self.addEventListener('install', (event) => {
   event.waitUntil(self.skipWaiting());
@@ -26,14 +26,14 @@ self.addEventListener('push', (event) => {
   try {
     payload = event.data.json();
   } catch (error) {
-    payload = { title: 'XTV', body: event.data.text() };
+    payload = { title: 'OpenTV', body: event.data.text() };
   }
 
-  const title = payload.title || 'XTV';
+  const title = payload.title || 'OpenTV';
   const options = {
     body: payload.body || payload.message || '',
-    icon: '/icons/icon-192x192.png?v=xtv',
-    badge: '/icons/icon-192x192.png?v=xtv',
+    icon: '/icons/icon-192x192.png?v=opentv',
+    badge: '/icons/icon-192x192.png?v=opentv',
     tag: payload.notificationId || undefined,
     data: {
       url: payload.url || '/',

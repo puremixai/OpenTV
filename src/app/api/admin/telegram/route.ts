@@ -119,7 +119,7 @@ export async function POST(request: NextRequest) {
         ? overrideConfig.botToken
         : savedConfig.botToken;
 
-    const siteName = (await getConfig()).SiteConfig.SiteName || 'XTV';
+    const siteName = (await getConfig()).SiteConfig.SiteName || 'OpenTV';
     await sendTelegramMessage(
       String(testChatId),
       `${siteName} Telegram Bot 测试消息发送成功。`,

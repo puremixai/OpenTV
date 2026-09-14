@@ -11,7 +11,7 @@ on:
       app_name:
         description: 'Android TV 应用名称'
         required: true
-        default: 'XTV TV'
+        default: 'OpenTV'
         type: string
       version_name:
         description: '版本名；留空使用所选源码的 VERSION.txt'
@@ -153,13 +153,13 @@ jobs:
           mkdir -p /tmp/android-tv-apks
           cp \
             "apps/android-tv/app/build/outputs/apk/${{ matrix.flavor }}/${{ steps.signing.outputs.build_type }}/app-${{ matrix.flavor }}-${{ steps.signing.outputs.apk_suffix }}.apk" \
-            "/tmp/android-tv-apks/moontvplus-tv-${{ steps.version.outputs.version_name }}-${{ matrix.label }}-${{ steps.signing.outputs.artifact_suffix }}.apk"
+            "/tmp/android-tv-apks/opentv-tv-${{ steps.version.outputs.version_name }}-${{ matrix.label }}-${{ steps.signing.outputs.artifact_suffix }}.apk"
           ls -lh /tmp/android-tv-apks
 
       - name: Upload APK artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: moontvplus-android-tv-${{ steps.version.outputs.version_name }}-${{ matrix.label }}
+          name: opentv-android-tv-${{ steps.version.outputs.version_name }}-${{ matrix.label }}
           path: /tmp/android-tv-apks/*.apk
           if-no-files-found: error
           retention-days: 30

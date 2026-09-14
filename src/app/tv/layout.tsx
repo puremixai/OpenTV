@@ -6,7 +6,7 @@ import { isTVModeEnabled } from '@/lib/tv-mode';
 import TVRemoteReceiver from '@/components/tv/TVRemoteReceiver';
 
 export const metadata = {
-  title: 'TV - XTV',
+  title: 'TV - OpenTV',
 };
 
 export default function Layout({ children }: { children: ReactNode }) {

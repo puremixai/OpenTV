@@ -17,7 +17,7 @@ export default function RouteError({ reset }: { reset: () => void }) {
     >
       <div>
         <p style={{ color: '#22d3ee', letterSpacing: 4, fontWeight: 700 }}>
-          XTV
+          OpenTV
         </p>
         <h1 style={{ fontSize: 24, margin: '16px 0 8px' }}>暂时无法加载</h1>
         <p style={{ opacity: 0.7 }}>请稍后重试，或返回首页继续浏览。</p>

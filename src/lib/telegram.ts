@@ -363,7 +363,7 @@ export async function requestTelegramLoginConfirm(token: string, telegramUserId:
   const binding = await getTelegramBindingByTelegramUser(telegramUserId);
   if (!binding) throw new Error('当前 Telegram 账号尚未绑定站内账号');
 
-  const siteName = (await getConfig()).SiteConfig.SiteName || 'XTV';
+  const siteName = (await getConfig()).SiteConfig.SiteName || 'OpenTV';
 
   session.status = 'awaiting_confirm';
   session.telegramUserId = telegramUserId;
@@ -629,7 +629,7 @@ function parseMessageText(update: any) {
 }
 
 async function buildTelegramHelpText(config: TelegramConfig) {
-  const siteName = (await getConfig()).SiteConfig.SiteName || 'XTV';
+  const siteName = (await getConfig()).SiteConfig.SiteName || 'OpenTV';
   const commands: string[] = [
     `${siteName} Telegram Bot 已连接。`,
     '',

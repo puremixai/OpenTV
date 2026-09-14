@@ -4,15 +4,15 @@
 
 ## 部署方式
 
-使用本仓库的 [Dockerfile](../Dockerfile) 和 [compose.local.yaml](../compose.local.yaml) 构建并运行 XTV。默认部署包含应用、PostgreSQL 17 和 Redis 7：PostgreSQL 保存账号、会话、配置、收藏和播放记录，Redis 提供可重新生成的搜索缓存。
+使用本仓库的 [Dockerfile](../Dockerfile) 和 [compose.local.yaml](../compose.local.yaml) 构建并运行 OpenTV。默认部署包含应用、PostgreSQL 17 和 Redis 7：PostgreSQL 保存账号、会话、配置、收藏和播放记录，Redis 提供可重新生成的搜索缓存。
 
 ## 1. 获取源码
 
 准备 Git、Docker 和 Docker Compose v2；Windows 可使用 Docker Desktop 的 Linux 容器模式。Node.js 和 pnpm 由 Docker 构建阶段提供，无需在宿主机另行安装。
 
 ```powershell
-git clone --branch main https://github.com/puremixai/xtv.git
-cd xtv
+git clone --branch main https://github.com/puremixai/OpenTV.git
+cd OpenTV
 ```
 
 已有本仓库工作目录时，直接进入该目录。后续命令均在项目根目录执行。
@@ -46,7 +46,7 @@ REDIS_PASSWORD=REPLACE_WITH_REDIS_PASSWORD
 ADMIN_USERNAME=admin
 PASSWORD=REPLACE_WITH_ADMIN_PASSWORD
 AUTH_SECRET=REPLACE_WITH_RANDOM_AUTH_SECRET
-NEXT_PUBLIC_SITE_NAME=XTV
+NEXT_PUBLIC_SITE_NAME=OpenTV
 SITE_BASE=http://localhost:3000
 POSTGRES_URL=postgresql://moontv:REPLACE_WITH_POSTGRES_PASSWORD@postgres:5432/moontv
 POSTGRES_POOL_MAX=10
@@ -82,7 +82,7 @@ Invoke-RestMethod http://localhost:3000/api/health
 | 离线下载        | `moontvplus-local_downloads` | 服务器下载的视频文件                              |
 | SQLite 兼容目录 | `moontvplus-local_database`  | 保留已有 SQLite 数据；当前业务数据使用 PostgreSQL |
 
-Compose 项目名 `moontvplus-local`、应用服务名 `moontvplus` 和本地镜像名 `moontvplus:local` 沿用现有技术标识，以复用已有数据卷。应用镜像使用 XTV 源码构建。
+Compose 项目名 `moontvplus-local`、应用服务名 `moontvplus` 和本地镜像名 `moontvplus:local` 沿用现有技术标识，以复用已有数据卷。缓存示例中的 `xtv:cache` 也保留为兼容标识，升级时沿用已有缓存前缀。应用镜像使用 OpenTV 源码构建。
 
 查看应用日志，或停止并保留数据：
 
@@ -96,6 +96,8 @@ docker compose -f compose.local.yaml down
 已有 SQLite 实例应先按 [PostgreSQL + Redis 部署说明](POSTGRES-REDIS.md) 备份并迁移数据。日常数据库备份也见该文档，应用镜像回退步骤见下方。
 
 ## 更新应用
+
+从 XTV 更名前的源码升级时，请手动执行本节的拉取与重建流程一次。旧版本的更新检查不识别 OpenTV 日志标题，可能显示检查失败；更新后将使用新的品牌与仓库地址。若要同步已部署实例的站名，请将环境文件中的 `NEXT_PUBLIC_SITE_NAME` 和管理后台保存的站点名称设为 `OpenTV`，后台已有设置优先。
 
 从当前仓库获取更新后重新构建本地应用镜像。更新前按 [PostgreSQL + Redis 部署说明](POSTGRES-REDIS.md) 备份数据库，并保留三个环境文件和数据卷。旧版本用户还应阅读[升级兼容说明](SECURITY-UPGRADE.md)。
 

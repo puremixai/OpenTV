@@ -13,9 +13,9 @@ export const runtime = 'nodejs';
 function getDeviceInfo(userAgent: string): string {
   const ua = userAgent.toLowerCase();
 
-  // 检查是否为 XTV APP
+  // 检查是否为 OpenTV APP
   if (ua.includes('moontvplus')) {
-    return 'XTV APP';
+    return 'OpenTV APP';
   }
 
   // 检查是否为 OrionTV

@@ -1012,12 +1012,12 @@ export const EmbyConfigComponent = ({
                       embyAuthorizationHeader: e.target.value,
                     })
                   }
-                  placeholder='留空使用默认 XTV 认证头'
+                  placeholder='留空使用默认 OpenTV 认证头'
                   className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-xs focus:outline-hidden focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white text-sm'
                 />
                 <p className='text-xs text-gray-500 dark:text-gray-400 mt-1'>
                   仅用于账号认证登录请求，示例：MediaBrowser
-                  Client=&quot;XTV&quot;, Device=&quot;Web&quot;,
+                  Client=&quot;OpenTV&quot;, Device=&quot;Web&quot;,
                   DeviceId=&quot;moontvplus-web&quot;, Version=&quot;{CURRENT_VERSION}&quot;
                 </p>
               </div>

@@ -1,21 +1,21 @@
 <div align="center">
-  <img src="public/logo.png" alt="XTV Logo" width="112" height="112">
+  <img src="public/logo.png" alt="OpenTV Logo" width="112" height="112">
 </div>
 
-# XTV
+# OpenTV
 
 可自行部署的影视聚合播放器，面向桌面浏览器、移动端与 Android TV。统一管理视频源、搜索与播放、个人影库和观看记录。项目目前处于 Alpha 测试阶段，功能与配置仍在迭代，详见[版本策略](docs/DEVELOPMENT.md#版本维护)。
 
-[快速开始](#快速开始) · [使用文档](#文档) · [更新记录](CHANGELOG) · [反馈问题](https://github.com/puremixai/xtv/issues)
+[快速开始](#快速开始) · [使用文档](#文档) · [更新记录](CHANGELOG) · [反馈问题](https://github.com/puremixai/OpenTV/issues)
 
 ![Next.js](https://img.shields.io/badge/Next.js-16-000?logo=nextdotjs)
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-4-38bdf8?logo=tailwindcss)
 ![Docker](https://img.shields.io/badge/Docker-Compose-2496ed?logo=docker)
 [![License](https://img.shields.io/badge/License-CC_BY--NC--SA_4.0-555)](LICENSE)
 
-**当前版本：0.1.0-alpha.1（Alpha 测试）。** XTV 使用独立版本序列，版本以 [VERSION.txt](VERSION.txt) 为准。项目基于 MoonTVPlus 与 MoonTV 迭代，上游来源见[致谢](#致谢)。
+**当前版本：0.1.0-alpha.1（Alpha 测试）。** OpenTV 使用独立版本序列，版本以 [VERSION.txt](VERSION.txt) 为准。项目基于 MoonTVPlus 与 MoonTV 迭代，上游来源见[致谢](#致谢)。
 
-> XTV 不内置视频源或直播源。首次部署后，需要由管理员配置有权访问的媒体来源或订阅。
+> OpenTV 不内置视频源或直播源。首次部署后，需要由管理员配置有权访问的媒体来源或订阅。
 
 ## 核心功能
 
@@ -40,8 +40,8 @@
 ### 1. 获取源码
 
 ```sh
-git clone --branch main https://github.com/puremixai/xtv.git
-cd xtv
+git clone --branch main https://github.com/puremixai/OpenTV.git
+cd OpenTV
 ```
 
 ### 2. 配置环境
@@ -58,7 +58,7 @@ cd xtv
 ADMIN_USERNAME=admin
 PASSWORD=REPLACE_WITH_ADMIN_PASSWORD
 AUTH_SECRET=REPLACE_WITH_RANDOM_AUTH_SECRET
-NEXT_PUBLIC_SITE_NAME=XTV
+NEXT_PUBLIC_SITE_NAME=OpenTV
 SITE_BASE=http://localhost:3000
 POSTGRES_URL=postgresql://moontv:REPLACE_WITH_POSTGRES_PASSWORD@postgres:5432/moontv
 CACHE_REDIS_URL=redis://:REPLACE_WITH_REDIS_PASSWORD@redis:6379/0
@@ -142,7 +142,7 @@ pnpm start
 
 问题反馈请包含版本或提交号、部署方式、复现步骤、预期行为与实际结果。提交日志前请移除密码、令牌、会话信息和私有订阅地址。
 
-欢迎通过 [Issues](https://github.com/puremixai/xtv/issues) 报告问题或讨论改进，通过 Pull Request 提交代码和文档。涉及行为变更时，请说明兼容性影响并提供验证结果。更多验证命令见[开发指南](docs/DEVELOPMENT.md)。
+欢迎通过 [Issues](https://github.com/puremixai/OpenTV/issues) 报告问题或讨论改进，通过 Pull Request 提交代码和文档。涉及行为变更时，请说明兼容性影响并提供验证结果。更多验证命令见[开发指南](docs/DEVELOPMENT.md)。
 
 ## 使用约定
 

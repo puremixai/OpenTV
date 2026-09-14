@@ -1,23 +1,23 @@
-# XTV Android TV
+# OpenTV Android TV
 
 <div align="center">
-  <img src="../../public/logo.png" alt="XTV Android TV Logo" width="120" height="120">
+  <img src="../../public/logo.png" alt="OpenTV Android TV Logo" width="120" height="120">
 </div>
 
-这是 XTV 的 Android TV 壳工程，支持系统 WebView 和 GeckoView 两种浏览器内核，用于打开 XTV 的 `/tv` 电视端页面。
+这是 OpenTV 的 Android TV 壳工程，支持系统 WebView 和 GeckoView 两种浏览器内核，用于打开 OpenTV 的 `/tv` 电视端页面。
 
-默认桌面名称为 `XTV TV`。启动器、圆形图标入口和 TV 横幅使用与网页、PWA 一致的 XTV 标识。
+默认桌面名称为 `OpenTV`。启动器、圆形图标入口和 TV 横幅使用与网页、PWA 一致的 OpenTV 标识。
 
 ## 构建参数
 
 - `BASE_URL`: 服务端 Base URL，不需要带 `/tv`，例如 `https://example.com` 或 `http://192.168.1.10:3000`
-- `APP_NAME`: Android TV 桌面显示名称，默认 `XTV TV`
+- `APP_NAME`: Android TV 桌面显示名称，默认 `OpenTV`
 - `VERSION_NAME`: APK 展示版本名，默认读取仓库根目录的 [VERSION.txt](../../VERSION.txt)；可通过 Gradle 属性或环境变量覆盖，空值回退到源码版本
 - `VERSION_CODE`: Android 安装更新使用的整数版本号，默认 `2`；每次向已有安装分发更新时必须递增，不随展示版本重新编号或降级
 - `MIN_SDK`: Android 外壳的最低 API，标准版为 `23`（Android 6+），兼容版为 `21`（Android 5+）；网页兼容性还取决于浏览器内核，见下文
 - `GECKOVIEW_VERSION`: GeckoView 依赖版本，仅 GeckoView 版本使用，默认 `128.0.20240725162350`
 
-XTV 采用 `0.x` 开发版本体系，详见[版本策略](../../docs/DEVELOPMENT.md#版本维护)。GitHub Actions 的 `version_name` 留空时使用所选源码的版本，并统一用于 APK 构建和产物名称。`VERSION_NAME` 从初始化标记 `1.0.0` 调整为 `0.1.0-alpha.1` 不代表 Android 安装版本倒退；本次将默认 `VERSION_CODE` 从 `1` 提升至 `2`。如果已安装的 APK 使用了 `2` 或更大的版本号，构建下一次更新时必须显式传入更大的整数，并保持包名及签名一致。
+OpenTV 采用 `0.x` 开发版本体系，详见[版本策略](../../docs/DEVELOPMENT.md#版本维护)。GitHub Actions 的 `version_name` 留空时使用所选源码的版本，并统一用于 APK 构建和产物名称。`VERSION_NAME` 从初始化标记 `1.0.0` 调整为 `0.1.0-alpha.1` 不代表 Android 安装版本倒退；本次将默认 `VERSION_CODE` 从 `1` 提升至 `2`。如果已安装的 APK 使用了 `2` 或更大的版本号，构建下一次更新时必须显式传入更大的整数，并保持包名及签名一致。
 
 App 启动时会自动打开：
 
@@ -50,7 +50,7 @@ GeckoView 内核随 APK 打包，更新网页或服务端 Docker 不会更新电
 
 Android 使用 [app/src/main/res/drawable/logo.png](app/src/main/res/drawable/logo.png) 作为图标资源。GitHub Actions 构建会从仓库根目录的 `public/logo.png` 自动复制；本地替换 Logo 后，也需同步该文件再构建 APK。
 
-为兼容已有安装和网页遥控桥接，Android 包名、JavaScript 桥接标识及 User-Agent 标识沿用原值。`webview` 版本仍在 User-Agent 中追加 `MoonTVPlusAndroidTV WebView`，应用展示名称和图标统一使用 XTV。
+为兼容已有安装和网页遥控桥接，Android 包名、JavaScript 桥接标识及 User-Agent 标识沿用原值。`webview` 版本仍在 User-Agent 中追加 `MoonTVPlusAndroidTV WebView`，应用展示名称和图标统一使用 OpenTV。
 
 ## 本地构建
 

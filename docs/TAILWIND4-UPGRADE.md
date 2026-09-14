@@ -1,6 +1,6 @@
 # Tailwind 4 升级说明
 
-本轮将 XTV 的样式框架从 Tailwind CSS 3 升级至 4，保持现有页面布局与功能。框架迁移阶段未引入 `apple-tv-hero`，未发布新的 XTV 项目版本；当时沿用初始化阶段暂用的 `1.0.0` 标记。项目现已改用[开发预览版本体系](DEVELOPMENT.md#版本维护)，本记录保留当时的验证事实，不表示已有部署自动更新了版本。后续海报动效见 [实现说明](CINEMATIC-HERO.md)，本地部署记录见 [Docker 运行说明](DOCKER-LOCAL.md)。
+本轮将 OpenTV 的样式框架从 Tailwind CSS 3 升级至 4，保持现有页面布局与功能。框架迁移阶段未引入 `apple-tv-hero`，未发布新的 OpenTV 项目版本；当时沿用初始化阶段暂用的 `1.0.0` 标记。项目现已改用[开发预览版本体系](DEVELOPMENT.md#版本维护)，本记录保留当时的验证事实，不表示已有部署自动更新了版本。后续海报动效见 [实现说明](CINEMATIC-HERO.md)，本地部署记录见 [Docker 运行说明](DOCKER-LOCAL.md)。
 
 ## 依赖与配置
 

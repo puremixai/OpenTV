@@ -92,7 +92,7 @@ export const VersionPanel: React.FC<VersionPanelProps> = ({
       })
       .catch((error) => {
         if (!active) return;
-        console.warn('获取 XTV 变更日志失败:', error);
+        console.warn('获取 OpenTV 变更日志失败:', error);
         setUpdateStatus(UpdateStatus.FETCH_FAILED);
       });
 
@@ -315,7 +315,7 @@ export const VersionPanel: React.FC<VersionPanelProps> = ({
                     <div className='min-w-0 flex-1'>
                       <h4 className='text-sm sm:text-base font-semibold text-gray-800 dark:text-gray-200' aria-live='polite'>
                         {updateStatus === null
-                          ? '正在检查 XTV 更新'
+                          ? '正在检查 OpenTV 更新'
                           : updateStatus === UpdateStatus.FETCH_FAILED
                             ? '暂时无法检查更新'
                             : '未发现新版本'}

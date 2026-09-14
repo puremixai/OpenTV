@@ -11,6 +11,6 @@ services:
       - key: PASSWORD
         sync: false
       - key: NEXT_PUBLIC_SITE_NAME
-        value: XTV
+        value: OpenTV
       - key: CRON_PASSWORD
         value: mtvpls

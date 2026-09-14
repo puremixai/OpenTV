@@ -49,9 +49,9 @@ async function verifyTurnstileToken(token: string, secretKey: string): Promise<b
 function getDeviceInfo(request: NextRequest): string {
   const userAgent = request.headers.get('user-agent') || 'Unknown';
 
-  // 检查是否为 XTV APP
+  // 检查是否为 OpenTV APP
   if (userAgent.toLowerCase().includes('moontvplus')) {
-    return 'XTV APP';
+    return 'OpenTV APP';
   }
 
   // 检查是否为 OrionTV

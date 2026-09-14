@@ -38,7 +38,7 @@ export async function fetchBangumiFromServer(
       headers: {
         Accept: 'application/json',
         'Accept-Encoding': 'identity',
-        'User-Agent': 'XTV/1.0 (https://github.com)',
+        'User-Agent': 'OpenTV/1.0 (https://github.com)',
       },
       signal: AbortSignal.timeout(15000),
     }) as Promise<Response>;
@@ -48,7 +48,7 @@ export async function fetchBangumiFromServer(
     headers: {
       Accept: 'application/json',
       'Accept-Encoding': 'identity',
-      'User-Agent': 'XTV/1.0 (https://github.com)',
+      'User-Agent': 'OpenTV/1.0 (https://github.com)',
     },
     signal: AbortSignal.timeout(proxy ? 30000 : 15000),
   };

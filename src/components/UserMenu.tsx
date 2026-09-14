@@ -5648,7 +5648,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({
                     </div>
                   </div>
                   <p className='mt-5 text-sm leading-6 text-slate-600 dark:text-slate-400'>
-                    可直接作为 XTV 电视端使用，适合安装到 Android TV /
+                    可直接作为 OpenTV 电视端使用，适合安装到 Android TV /
                     电视盒子。
                   </p>
                   <div className='mt-5'>
@@ -6006,13 +6006,13 @@ export const UserMenu: React.FC<UserMenuProps> = ({
           {/* 应用列表 */}
           <div className='flex-1 overflow-y-auto p-6'>
             <div className='grid gap-6 md:grid-cols-1'>
-              {/* XTV-PC 客户端 */}
+              {/* OpenTV-PC 客户端 */}
               <div className='bg-gray-50 dark:bg-gray-800 rounded-lg p-5 border border-gray-200 dark:border-gray-700'>
                 <div className='flex items-start gap-4'>
                   <div className='shrink-0 relative'>
                     <img
-                      src='/logo.png?v=xtv'
-                      alt='XTV-PC'
+                      src='/logo.png?v=opentv'
+                      alt='OpenTV-PC'
                       className='w-16 h-16 rounded-xl object-cover'
                     />
                     <div className='absolute -bottom-1 -right-1 w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center shadow-lg'>
@@ -6021,7 +6021,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({
                   </div>
                   <div className='flex-1 min-w-0'>
                     <h4 className='text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2'>
-                      XTV-PC客户端
+                      OpenTV-PC客户端
                     </h4>
                     <p className='text-sm text-gray-600 dark:text-gray-400 mb-3'>
                       专为Windows开发的客户端，完美支持私人影库mkv视频
@@ -6143,7 +6143,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({
                 </div>
               </div>
 
-              {/* XTV 插件 */}
+              {/* OpenTV 插件 */}
               <div className='bg-gray-50 dark:bg-gray-800 rounded-lg p-5 border border-gray-200 dark:border-gray-700'>
                 <div className='flex items-start gap-4'>
                   <div className='shrink-0 relative'>
@@ -6156,10 +6156,10 @@ export const UserMenu: React.FC<UserMenuProps> = ({
                   </div>
                   <div className='flex-1 min-w-0'>
                     <h4 className='text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2'>
-                      XTV 插件
+                      OpenTV 插件
                     </h4>
                     <p className='text-sm text-gray-600 dark:text-gray-400 mb-3'>
-                      为 XTV
+                      为 OpenTV
                       提供增强性功能，目前拥有解决私人影库超分跨域能力
                     </p>
                     <a

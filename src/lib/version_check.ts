@@ -15,9 +15,9 @@ export enum UpdateStatus {
 
 function parseProjectChangelog(content: string): ChangelogEntry[] {
   const lines = content.trim().split(/\r?\n/);
-  // A fork can still contain upstream history before its first XTV release.
+  // A fork can still contain upstream history before its first OpenTV release.
   if (lines[0].trim() !== '# ' + PROJECT_NAME) {
-    throw new Error('远程日志尚未包含 XTV 发布记录');
+    throw new Error('远程日志尚未包含 OpenTV 发布记录');
   }
 
   const entries: ChangelogEntry[] = [];
@@ -58,7 +58,7 @@ function parseProjectChangelog(content: string): ChangelogEntry[] {
   return entries;
 }
 
-/** Notifications and the version panel share the same XTV release feed. */
+/** Notifications and the version panel share the same OpenTV release feed. */
 export async function fetchRemoteChangelog(): Promise<ChangelogEntry[]> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 5000);
@@ -81,7 +81,7 @@ export async function checkForUpdates(): Promise<UpdateStatus> {
     const entries = await fetchRemoteChangelog();
     return compareVersions(entries[0].version);
   } catch (error) {
-    console.warn('XTV 版本检查失败:', error);
+    console.warn('OpenTV 版本检查失败:', error);
     return UpdateStatus.FETCH_FAILED;
   }
 }

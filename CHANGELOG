@@ -1,6 +1,6 @@
-# XTV
+# OpenTV
 
-XTV 开发版本更新记录。项目当前处于 0.x 开发阶段；仓库初始化时暂用的 1.0.0 标记已重新定义为 Alpha 测试版本，不代表稳定版发布。版本规则见 [开发指南](docs/DEVELOPMENT.md#版本维护)，继承的上游历史见 [归档](docs/CHANGELOG-UPSTREAM.md)。
+OpenTV 开发版本更新记录。项目当前处于 0.x 开发阶段；仓库初始化时暂用的 1.0.0 标记已重新定义为 Alpha 测试版本，不代表稳定版发布。版本规则见 [开发指南](docs/DEVELOPMENT.md#版本维护)，继承的上游历史见 [归档](docs/CHANGELOG-UPSTREAM.md)。
 
 ## [0.1.0-alpha.1] - 2026-09-14
 
@@ -11,15 +11,15 @@ XTV 开发版本更新记录。项目当前处于 0.x 开发阶段；仓库初�
 - 增加 PostgreSQL 业务存储、Redis 搜索缓存和迁移、备份与验证流程。
 
 ### Changed
-- 统一网页、默认站名、AI 助手、通知和 Android TV 的 XTV 品牌文案。
-- 更新 XTV Logo、浏览器图标、PWA、Apple 主屏幕、通知和 Android TV 图标。
+- 项目由 XTV 更名为 OpenTV，统一网页、默认站名、AI 助手、通知和 Android TV 的品牌文案。
+- OpenTV Logo 采用断开的 O 形环与播放三角负空间，同步浏览器、PWA、Apple 主屏幕、通知和 Android TV 图标。
 - 更新 README 的品牌说明、图标资源、本地部署与 Android TV 使用入口。
-- 将项目仓库、问题反馈、部署源码入口及 Star History 关联到 puremixai/xtv。
+- 将项目仓库、问题反馈、部署源码入口及 Star History 关联到 puremixai/OpenTV。
 - 升级至 Next.js 16、React 19 和 Tailwind CSS 4，并调整前端加载与轮播交互。
 - README 按公开项目组织，部署、配置及开发说明分别维护；Docker 使用当前源码构建。
 - Android TV 默认版本名跟随仓库版本，保留显式覆盖和独立递增的安装版本号。
 
 ### Fixed
-- 统一 package.json、VERSION.txt、生成的版本文件和更新记录中的 XTV 版本号。
-- 修正版本面板与更新检查的仓库来源，避免将上游版本识别为 XTV 更新。
+- 统一 package.json、VERSION.txt、生成的版本文件和更新记录中的 OpenTV 版本号。
+- 修正版本面板与更新检查的仓库来源，避免将上游版本识别为 OpenTV 更新。
 - 版本生成和更新检查支持预发布标识，并正确比较开发序号与阶段版本。

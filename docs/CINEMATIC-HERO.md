@@ -1,6 +1,6 @@
 # 首页与详情的电影海报动效
 
-参考 [DerekCounihan/apple-tv-hero](https://github.com/DerekCounihan/apple-tv-hero/) 的视觉顺序，在 XTV 现有首页和详情弹层中实现图片氛围、渐显、缓慢缩放及滚动视差。使用 XTV 自有组件和图片来源，无新增运行时依赖。
+参考 [DerekCounihan/apple-tv-hero](https://github.com/DerekCounihan/apple-tv-hero/) 的视觉顺序，在 OpenTV 现有首页和详情弹层中实现图片氛围、渐显、缓慢缩放及滚动视差。使用 OpenTV 自有组件和图片来源，无新增运行时依赖。
 
 ## 使用效果
 

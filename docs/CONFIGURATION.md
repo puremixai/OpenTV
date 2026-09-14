@@ -1,4 +1,4 @@
-# XTV 配置参考
+# OpenTV 配置参考
 
 本文说明视频源配置、环境变量及可选功能接入。首次安装和更新步骤见 [Docker 部署](DOCKER.md)，项目概览见 [README](../README.md)，电视客户端见 [Android TV 使用说明](../apps/android-tv/README.md)。
 
@@ -78,8 +78,8 @@ docker compose -f compose.local.yaml up -d --no-build --no-deps --force-recreate
 | `ADMIN_USERNAME` / `USERNAME`   | 站长账号。Docker / Node 启动时优先将 `ADMIN_USERNAME` 映射为 `USERNAME`，避免 Windows 系统同名变量干扰。 | 必填；部署示例为 `admin` |
 | `PASSWORD`                      | 站长密码。                                                                                               | 必填                     |
 | `AUTH_SECRET`                   | 认证签名密钥。应独立设置并在升级时保留；修改后现有认证信息会失效。                                       | 未设置时使用 `PASSWORD`  |
-| `SITE_BASE`                     | 用户访问的站点 URL，例如 `https://xtv.example.com`。                                                     | 空                       |
-| `NEXT_PUBLIC_SITE_NAME`         | 站点名称；已有实例检查后台保存的名称，构建品牌资源时也使用此变量。                                       | `XTV`                    |
+| `SITE_BASE`                     | 用户访问的站点 URL，例如 `https://opentv.example.com`。                                                     | 空                       |
+| `NEXT_PUBLIC_SITE_NAME`         | 站点名称；已有实例检查后台保存的名称，构建品牌资源时也使用此变量。                                       | `OpenTV`                    |
 | `ANNOUNCEMENT`                  | 初始化站点公告。                                                                                         | 下方默认公告             |
 | `ANNOUNCEMENT_DISPLAY_MODE`     | 公告显示频率：`once`、`every`。                                                                          | `once`                   |
 | `CRON_SECRET` / `CRON_PASSWORD` | 定时任务凭据，优先使用 `CRON_SECRET`，兼容旧变量 `CRON_PASSWORD`。                                       | 空；不启用调度           |
@@ -98,7 +98,7 @@ docker compose -f compose.local.yaml up -d --no-build --no-deps --force-recreate
 | `POSTGRES_URL`               | PostgreSQL 连接 URL，例如 `postgresql://user:password@postgres:5432/database`。                                             | PostgreSQL 模式必填                          |
 | `POSTGRES_POOL_MAX`          | 每个 Node 进程的连接池上限，范围 `1`–`100`。                                                                                | `10`                                         |
 | `CACHE_REDIS_URL`            | 独立 Redis 缓存连接 URL，例如 `redis://:password@redis:6379/0`。                                                            | 空；不启用共享缓存                           |
-| `CACHE_KEY_PREFIX`           | Redis 缓存键前缀。                                                                                                          | `moontvplus:cache`；部署示例使用 `xtv:cache` |
+| `CACHE_KEY_PREFIX`           | Redis 缓存键前缀；沿用已有值，默认值与部署示例保留品牌更名前的兼容标识。                                                      | `moontvplus:cache`；部署示例使用 `xtv:cache` |
 | `REDIS_URL`                  | Redis 业务存储连接 URL；与 `CACHE_REDIS_URL` 的用途不同。                                                                   | 空                                           |
 | `KVROCKS_URL`                | Kvrocks 业务存储连接 URL。                                                                                                  | 空                                           |
 | `UPSTASH_URL`                | Upstash Redis 连接 URL。                                                                                                    | 空                                           |
@@ -181,7 +181,7 @@ docker compose -f compose.local.yaml up -d --no-build --no-deps --force-recreate
 
 | 值                      | 请求方式                                             |
 | ----------------------- | ---------------------------------------------------- |
-| `direct`                | XTV 服务端直接请求豆瓣。                             |
+| `direct`                | OpenTV 服务端直接请求豆瓣。                             |
 | `cors-proxy-zwei`       | 浏览器通过 Zwei 提供的 CORS 代理请求数据。           |
 | `cmliussss-cdn-tencent` | 浏览器通过 CMLiussss 提供的腾讯云 CDN 入口请求数据。 |
 | `cmliussss-cdn-ali`     | 浏览器通过 CMLiussss 提供的阿里云 CDN 入口请求数据。 |
@@ -194,7 +194,7 @@ docker compose -f compose.local.yaml up -d --no-build --no-deps --force-recreate
 | 值                      | 请求方式                                           |
 | ----------------------- | -------------------------------------------------- |
 | `direct`                | 浏览器直接请求豆瓣返回的图片域名。                 |
-| `server`                | XTV 服务端代理请求图片。                           |
+| `server`                | OpenTV 服务端代理请求图片。                           |
 | `img3`                  | 浏览器使用豆瓣 `img3` 图片域名。                   |
 | `cmliussss-cdn-tencent` | 浏览器使用 CMLiussss 提供的腾讯云 CDN 图片入口。   |
 | `cmliussss-cdn-ali`     | 浏览器使用 CMLiussss 提供的阿里云 CDN 图片入口。   |
@@ -213,7 +213,7 @@ docker compose -f compose.local.yaml up -d --no-build --no-deps --force-recreate
 
 ## 外部观影室
 
-仓库 Compose 默认开启内置观影室。如需独立运行，可按 [watch-room-server 项目文档](https://github.com/tgs9915/watch-room-server) 准备兼容的外部服务器，然后配置 XTV。
+仓库 Compose 默认开启内置观影室。如需独立运行，可按 [watch-room-server 项目文档](https://github.com/tgs9915/watch-room-server) 准备兼容的外部服务器，然后配置 OpenTV。
 
 先在 `compose.local.yaml` 的应用服务 `environment` 中，将对应字段改为：
 
@@ -239,7 +239,7 @@ WATCH_ROOM_EXTERNAL_SERVER_AUTH=REPLACE_WITH_ROOM_AUTH_TOKEN
 DANMAKU_ENABLED: 'true'
 ```
 
-重新创建应用容器后，在管理后台选择弹幕来源。使用自定义后端时，可按 [danmu_api 项目文档](https://github.com/huangxd-/danmu_api) 部署，并在后台填写 XTV 服务端可访问的地址及令牌。首次初始化也可使用：
+重新创建应用容器后，在管理后台选择弹幕来源。使用自定义后端时，可按 [danmu_api 项目文档](https://github.com/huangxd-/danmu_api) 部署，并在后台填写 OpenTV 服务端可访问的地址及令牌。首次初始化也可使用：
 
 ```dotenv
 DANMAKU_API_BASE=https://danmaku.example.com
@@ -255,13 +255,13 @@ DANMAKU_API_TOKEN=REPLACE_WITH_DANMAKU_TOKEN
 1. 通过 Telegram 的 BotFather 创建 Bot，取得 Bot Token 和用户名。
 2. 在管理后台填写 Bot 配置；首次部署也可在环境文件中设置 `TELEGRAM_BOT_TOKEN`、`TELEGRAM_BOT_USERNAME` 和 `TELEGRAM_WEBHOOK_SECRET` 后重新创建应用容器。
 3. 如需代理，填写 `TELEGRAM_API_PROXY` 或 `TELEGRAM_API_BASE_URL`。
-4. 在管理后台的 Telegram Bot 配置页使用“设置 Webhook”功能。Webhook 地址格式为 `https://xtv.example.com/api/telegram/webhook/<secret>`，需要能被 Telegram 服务访问。
+4. 在管理后台的 Telegram Bot 配置页使用“设置 Webhook”功能。Webhook 地址格式为 `https://opentv.example.com/api/telegram/webhook/<secret>`，需要能被 Telegram 服务访问。
 
 也可在已设置对应环境变量的 PowerShell 会话中手动注册 Webhook，将示例域名替换为实际站点：
 
 ```powershell
 $telegramWebhook = @{
-  url = "https://xtv.example.com/api/telegram/webhook/$env:TELEGRAM_WEBHOOK_SECRET"
+  url = "https://opentv.example.com/api/telegram/webhook/$env:TELEGRAM_WEBHOOK_SECRET"
   secret_token = $env:TELEGRAM_WEBHOOK_SECRET
 }
 Invoke-RestMethod -Method Post `
@@ -291,4 +291,4 @@ TVBOX_SUBSCRIBE_TOKEN=REPLACE_WITH_RANDOM_SUBSCRIPTION_TOKEN
 TVBOX_BLOCKED_SOURCES=source1,source2
 ```
 
-`TVBOX_BLOCKED_SOURCES` 为可选项，填写配置中的视频源键名，以逗号分隔。设置独立的随机令牌并重新创建应用容器后，登录 XTV，在用户菜单的“订阅”入口复制链接，再导入 TVBOX 客户端。订阅链接包含访问凭据，应按令牌管理。
+`TVBOX_BLOCKED_SOURCES` 为可选项，填写配置中的视频源键名，以逗号分隔。设置独立的随机令牌并重新创建应用容器后，登录 OpenTV，在用户菜单的“订阅”入口复制链接，再导入 TVBOX 客户端。订阅链接包含访问凭据，应按令牌管理。

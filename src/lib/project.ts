@@ -1,5 +1,5 @@
-export const PROJECT_NAME = 'XTV';
-export const PROJECT_REPOSITORY = 'puremixai/xtv';
+export const PROJECT_NAME = 'OpenTV';
+export const PROJECT_REPOSITORY = 'puremixai/OpenTV';
 export const PROJECT_BRANCH = 'main';
 
 export const PROJECT_REPOSITORY_URL = `https://github.com/${PROJECT_REPOSITORY}`;

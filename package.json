@@ -1,14 +1,14 @@
 {
-  "name": "xtv",
+  "name": "opentv",
   "version": "0.1.0-alpha.1",
   "private": true,
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/puremixai/xtv.git"
+    "url": "git+https://github.com/puremixai/OpenTV.git"
   },
-  "homepage": "https://github.com/puremixai/xtv#readme",
+  "homepage": "https://github.com/puremixai/OpenTV#readme",
   "bugs": {
-    "url": "https://github.com/puremixai/xtv/issues"
+    "url": "https://github.com/puremixai/OpenTV/issues"
   },
   "scripts": {
     "dev": "pnpm gen:manifest && node server.js",

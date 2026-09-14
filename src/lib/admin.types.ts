@@ -122,7 +122,7 @@ export interface AdminConfig {
     }[];
   };
   SpecialSourceApis?: string[]; // 特殊源 key 列表，默认对普通入口隐藏
-  ClientAdSourceApis?: string[]; // 客户端去广告源 key 列表：XTV APP / OrionTV 请求 source-detail 时 m3u8 套 proxy-m3u8
+  ClientAdSourceApis?: string[]; // 客户端去广告源 key 列表：OpenTV APP / OrionTV 请求 source-detail 时 m3u8 套 proxy-m3u8
   SourceConfig: {
     key: string;
     name: string;
