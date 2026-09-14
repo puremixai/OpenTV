@@ -1,9 +1,10 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, no-console */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { NextRequest, NextResponse } from 'next/server';
 
 import { getConfig } from '@/lib/config';
 import { db } from '@/lib/db';
+import { logger } from '@/lib/logger';
 import { OpenListClient } from '@/lib/openlist.client';
 import {
   getCachedMetaInfo,
@@ -79,14 +80,14 @@ export async function POST(request: NextRequest) {
 
     if (!metaInfo) {
       try {
-        console.log('[OpenList Correct] 尝试从数据库读取 metainfo');
+        logger.debug('[OpenList Correct] 尝试从数据库读取 metainfo');
         const metainfoJson = await db.getGlobalValue('video.metainfo');
 
         if (metainfoJson) {
           metaInfo = JSON.parse(metainfoJson);
         }
       } catch (error) {
-        console.error('[OpenList Correct] 从数据库读取 metainfo 失败:', error);
+        logger.error('[OpenList Correct] 从数据库读取 metainfo 失败:', error);
         return NextResponse.json(
           { error: 'metainfo 读取失败' },
           { status: 500 }
@@ -142,7 +143,7 @@ export async function POST(request: NextRequest) {
       message: '纠错成功',
     });
   } catch (error) {
-    console.error('视频纠错失败:', error);
+    logger.error('视频纠错失败:', error);
     return NextResponse.json(
       { error: '纠错失败', details: (error as Error).message },
       { status: 500 }

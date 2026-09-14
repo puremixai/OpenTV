@@ -1,5 +1,6 @@
+import { logger } from '@/lib/logger';
+
 import { signAuthData } from './auth-signature';
-/* eslint-disable no-console */
 import { TOKEN_CONFIG, verifyRefreshToken } from './refresh-token';
 
 // 生成签名
@@ -38,7 +39,7 @@ export async function refreshAccessToken(
   const isValid = await verifyRefreshToken(username, tokenId, refreshToken);
 
   if (!isValid) {
-    console.log(`Refresh token invalid for ${username}:${tokenId}`);
+    logger.debug(`Refresh token invalid for ${username}:${tokenId}`);
     return null;
   }
 
@@ -50,7 +51,7 @@ export async function refreshAccessToken(
   };
   authData.signature = await signAuthData(authData);
 
-  console.log(`Refreshed access token for ${username}`);
+  logger.debug(`Refreshed access token for ${username}`);
 
   return encodeURIComponent(JSON.stringify(authData));
 }

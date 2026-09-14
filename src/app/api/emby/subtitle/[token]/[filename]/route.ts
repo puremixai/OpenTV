@@ -1,8 +1,9 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, no-console */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { NextRequest, NextResponse } from 'next/server';
 
 import { getConfig } from '@/lib/config';
+import { logger } from '@/lib/logger';
 import { hasFeaturePermission } from '@/lib/permissions';
 import { getAuthenticatedUser } from '@/lib/session';
 
@@ -154,7 +155,7 @@ export async function GET(
     }
 
     if (!subtitleResponse.ok) {
-      console.error('[Emby Subtitle] 获取字幕失败:', {
+      logger.error('[Emby Subtitle] 获取字幕失败:', {
         itemId,
         mediaSourceId,
         streamIndex,
@@ -190,7 +191,7 @@ export async function GET(
       return NextResponse.json({ error: '字幕请求超时' }, { status: 504 });
     }
 
-    console.error('[Emby Subtitle] 错误:', error);
+    logger.error('[Emby Subtitle] 错误:', error);
     return NextResponse.json(
       { error: '字幕代理失败: ' + (error as Error).message },
       { status: 500 }

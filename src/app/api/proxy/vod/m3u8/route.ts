@@ -1,7 +1,8 @@
-/* eslint-disable no-console,@typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from "next/server";
 
 import { getConfig } from "@/lib/config";
+import { logger } from '@/lib/logger';
 import { isMediaProxyAuthorized } from '@/lib/server/media-proxy-auth';
 import { buildProxyM3u8Headers, buildProxyStreamHeaders } from '@/lib/server/proxy-headers';
 import { fetchPublicUrl, readLimitedText } from '@/lib/server/public-fetch';
@@ -96,7 +97,7 @@ export async function GET(request: NextRequest) {
         response.body?.cancel();
       } catch (error) {
         // 忽略关闭时的错误
-        console.warn('Failed to close response body:', error);
+        logger.warn('Failed to close response body:', error);
       }
     }
   }

@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any,no-console */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -15,6 +15,7 @@ import {
   ToolDataSources,
 } from '@/lib/ai-tool-agent';
 import { getConfig } from '@/lib/config';
+import { logger } from '@/lib/logger';
 import { hasFeaturePermission } from '@/lib/permissions';
 import { getAuthenticatedUser } from '@/lib/session';
 
@@ -163,7 +164,7 @@ function transformToSSE(
               } catch (e) {
                 // 只在非空数据解析失败时打印错误
                 if (data.length > 0) {
-                  console.error('Parse stream chunk error:', e, 'Data:', data.substring(0, 100));
+                  logger.error('Parse stream chunk error:', e, 'Data:', data.substring(0, 100));
                 }
               }
             }
@@ -197,13 +198,13 @@ function transformToSSE(
                   }
                 }
               } catch (e) {
-                console.error('Parse final buffer error:', e);
+                logger.error('Parse final buffer error:', e);
               }
             }
           }
         }
       } catch (error) {
-        console.error('Stream error:', error);
+        logger.error('Stream error:', error);
         const message = error instanceof Error ? error.message : String(error);
         controller.enqueue(
           new TextEncoder().encode(`data: ${JSON.stringify({ error: `AI请求失败: ${message}` })}\n\n`)
@@ -347,7 +348,7 @@ export async function POST(request: NextRequest) {
       return await handleNewMode(aiConfig, adminConfig, body, request, authInfo.username);
     }
 
-    console.log('📨 收到AI聊天请求:', {
+    logger.debug('📨 收到AI聊天请求:', {
       message: message.slice(0, 50),
       context,
       historyLength: history.length,
@@ -376,7 +377,7 @@ export async function POST(request: NextRequest) {
       }
     );
 
-    console.log('🎯 数据协调完成, systemPrompt长度:', orchestrationResult.systemPrompt.length);
+    logger.debug('🎯 数据协调完成, systemPrompt长度:', orchestrationResult.systemPrompt.length);
 
     // 5. 构建消息列表（旧模式无工具式调用，历史需剥离 toolCalls 字段）
     const systemPrompt = aiConfig.SystemPrompt
@@ -434,7 +435,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ content });
     }
   } catch (error) {
-    console.error('❌ AI聊天API错误:', error);
+    logger.error('❌ AI聊天API错误:', error);
     return NextResponse.json(
       {
         error: 'AI聊天请求失败',

@@ -34,8 +34,49 @@ export interface Favorite {
   vod_remarks?: string; // 视频备注信息
 }
 
-// 存储接口
-export interface IStorage {
+export interface StoredUserInfo {
+  role: 'owner' | 'admin' | 'user';
+  banned: boolean;
+  tags?: string[];
+  oidcSub?: string;
+  enabledApis?: string[];
+  created_at: number;
+  playrecord_migrated?: boolean;
+  favorite_migrated?: boolean;
+  skip_migrated?: boolean;
+  last_movie_request_time?: number;
+  email?: string;
+  emailNotifications?: boolean;
+}
+
+export interface UserInfoUpdates {
+  role?: StoredUserInfo['role'];
+  banned?: boolean;
+  tags?: string[];
+  oidcSub?: string;
+  enabledApis?: string[];
+}
+
+export interface StoredUserList {
+  users: Array<StoredUserInfo & { username: string }>;
+  total: number;
+}
+
+/** Optional user V2 capability, shared by the facade and backend implementations. */
+export interface UserV2Storage {
+  createUserV2(userName: string, password: string, role: StoredUserInfo['role'], tags?: string[], oidcSub?: string, enabledApis?: string[]): Promise<void>;
+  verifyUserV2(userName: string, password: string): Promise<boolean>;
+  getUserInfoV2(userName: string, fresh?: boolean): Promise<StoredUserInfo | null>;
+  updateUserInfoV2(userName: string, updates: UserInfoUpdates): Promise<void>;
+  changePasswordV2(userName: string, newPassword: string): Promise<void>;
+  checkUserExistV2(userName: string): Promise<boolean>;
+  getUserByOidcSub(oidcSub: string): Promise<string | null>;
+  getUserListV2(offset?: number, limit?: number, ownerUsername?: string, search?: string): Promise<StoredUserList>;
+  deleteUserV2(userName: string): Promise<void>;
+  getUsersByTag(tagName: string): Promise<string[]>;
+}
+
+export interface PlayRecordStorage {
   // 播放记录相关
   getPlayRecord(userName: string, key: string): Promise<PlayRecord | null>;
   setPlayRecord(
@@ -48,14 +89,31 @@ export interface IStorage {
   deletePlayRecords(userName: string, keys: string[]): Promise<void>;
   // 清理超出限制的旧播放记录
   cleanupOldPlayRecords(userName: string): Promise<void>;
-  // 迁移播放记录
-  migratePlayRecords(userName: string): Promise<void>;
+}
 
+export interface FavoriteStorage {
   // 收藏相关
   getFavorite(userName: string, key: string): Promise<Favorite | null>;
   setFavorite(userName: string, key: string, favorite: Favorite): Promise<void>;
   getAllFavorites(userName: string): Promise<{ [key: string]: Favorite }>;
   deleteFavorite(userName: string, key: string): Promise<void>;
+}
+
+export interface LocalSettingsStorage {
+  // 本地设置云同步相关（可选，各存储后端按需实现）
+  getUserLocalSettings(userName: string): Promise<LocalSettingsSyncRecord | null>;
+  setUserLocalSettings(
+    userName: string,
+    payload: string,
+    opts: SetLocalSettingsSyncOptions
+  ): Promise<SetLocalSettingsSyncResult>;
+}
+
+// 存储接口
+export interface IStorage extends PlayRecordStorage, FavoriteStorage, Partial<UserV2Storage>, Partial<LocalSettingsStorage> {
+  // 迁移播放记录
+  migratePlayRecords(userName: string): Promise<void>;
+
   // 迁移收藏
   migrateFavorites(userName: string): Promise<void>;
 
@@ -213,22 +271,6 @@ export interface IStorage {
   addUserMovieRequest(userName: string, requestId: string): Promise<void>;
   removeUserMovieRequest(userName: string, requestId: string): Promise<void>;
 
-  // 新版用户存储（V2）- 可选方法
-  getUserInfoV2?(userName: string): Promise<{
-    role: 'owner' | 'admin' | 'user';
-    banned: boolean;
-    tags?: string[];
-    oidcSub?: string;
-    enabledApis?: string[];
-    created_at: number;
-    playrecord_migrated?: boolean;
-    favorite_migrated?: boolean;
-    skip_migrated?: boolean;
-    last_movie_request_time?: number;
-    email?: string; // 用户邮箱
-    emailNotifications?: boolean; // 是否接收邮件通知
-  } | null>;
-
   // 用户邮箱相关
   getUserEmail?(userName: string): Promise<string | null>;
   setUserEmail?(userName: string, email: string): Promise<void>;
@@ -279,13 +321,7 @@ export interface IStorage {
   setTvboxSubscribeToken?(userName: string, token: string): Promise<void>;
   getUsernameByTvboxToken?(token: string): Promise<string | null>;
 
-  // 本地设置云同步相关（可选，各存储后端按需实现）
-  getUserLocalSettings?(userName: string): Promise<LocalSettingsSyncRecord | null>;
-  setUserLocalSettings?(
-    userName: string,
-    payload: string,
-    opts: SetLocalSettingsSyncOptions
-  ): Promise<SetLocalSettingsSyncResult>;
+
 }
 
 // 本地设置云同步记录（与关系型表 user_local_settings 逐列对应；Redis 存为单 JSON 文档）

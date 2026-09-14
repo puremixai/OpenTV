@@ -1,10 +1,11 @@
-/* eslint-disable no-console */
+
 
 import { NextRequest, NextResponse } from 'next/server';
 
 import { getConfig } from '@/lib/config';
 import { db } from '@/lib/db';
 import { refreshLiveChannels } from '@/lib/live';
+import { logger } from '@/lib/logger';
 import { checkMutationVersion, withConfigMutation } from '@/lib/server/config-mutation';
 import { getAuthenticatedUser } from '@/lib/session';
 
@@ -47,7 +48,7 @@ export const POST = withConfigMutation(async function POST(request: NextRequest)
       message: '直播源刷新成功',
     });
   } catch (error) {
-    console.error('直播源刷新失败:', error);
+    logger.error('直播源刷新失败:', error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : '刷新失败' },
       { status: 500 }

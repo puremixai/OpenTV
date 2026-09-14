@@ -1,7 +1,8 @@
-/* eslint-disable no-console */
+
 import { NextRequest, NextResponse } from 'next/server';
 
 import { getConfig } from '@/lib/config';
+import { logger } from '@/lib/logger';
 
 export const runtime = 'nodejs';
 
@@ -53,7 +54,7 @@ export async function GET(request: NextRequest) {
 
     return response;
   } catch (error) {
-    console.error('OIDC登录发起失败:', error);
+    logger.error('OIDC登录发起失败:', error);
     return NextResponse.json(
       { error: '服务器错误' },
       { status: 500 }

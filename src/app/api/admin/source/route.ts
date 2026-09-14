@@ -1,9 +1,10 @@
-/* eslint-disable @typescript-eslint/no-explicit-any,no-console */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { NextRequest, NextResponse } from 'next/server';
 
 import { getConfig } from '@/lib/config';
 import { db } from '@/lib/db';
+import { logger } from '@/lib/logger';
 import { checkMutationVersion, withConfigMutation } from '@/lib/server/config-mutation';
 import { getAuthenticatedUser } from '@/lib/session';
 
@@ -447,9 +448,9 @@ export const POST = withConfigMutation(async function POST(request: NextRequest)
     // 清除短剧视频源缓存（因为视频源发生了变动）
     try {
       await db.deleteGlobalValue('duanju');
-      console.log('已清除短剧视频源缓存');
+      logger.debug('已清除短剧视频源缓存');
     } catch (error) {
-      console.error('清除短剧视频源缓存失败:', error);
+      logger.error('清除短剧视频源缓存失败:', error);
       // 不影响主流程，继续执行
     }
 
@@ -468,7 +469,7 @@ export const POST = withConfigMutation(async function POST(request: NextRequest)
       },
     });
   } catch (error) {
-    console.error('视频源管理操作失败:', error);
+    logger.error('视频源管理操作失败:', error);
     return NextResponse.json(
       {
         error: '视频源管理操作失败',

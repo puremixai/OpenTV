@@ -1,8 +1,9 @@
-/* eslint-disable no-console,@typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from 'next/server';
 
 import { getConfig } from '@/lib/config';
 import { db } from '@/lib/db';
+import { logger } from '@/lib/logger';
 import { checkMutationVersion, withConfigMutation } from '@/lib/server/config-mutation';
 import { getAuthenticatedUser } from '@/lib/session';
 
@@ -66,7 +67,7 @@ export const POST = withConfigMutation(async function POST(request: NextRequest)
       }
     );
   } catch (error) {
-    console.error('用户数据迁移失败:', error);
+    logger.error('用户数据迁移失败:', error);
     return NextResponse.json(
       {
         error: '用户数据迁移失败',

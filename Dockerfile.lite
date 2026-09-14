@@ -63,5 +63,7 @@ RUN mkdir -p "$OFFLINE_DOWNLOAD_DIR" && chown -R nextjs:nodejs "$OFFLINE_DOWNLOA
 # 默认以 root 启动，由 entrypoint 按 PUID/PGID 环境变量调整后降权运行
 EXPOSE 3000
 
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 CMD ["node", "scripts/healthcheck.cjs"]
+
 ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
 CMD ["node", "start.js"]

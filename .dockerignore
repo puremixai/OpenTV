@@ -5,6 +5,7 @@ node_modules/
 .next-dev/
 .swc/
 .data/
+.codex/
 .git/
 .open-next/
 .edgeone/

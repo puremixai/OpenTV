@@ -16,7 +16,6 @@ import dynamic from 'next/dynamic';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 
-import { isAnimeCategoryText } from '@/lib/anime-keyword-expr';
 import { getAuthInfoFromBrowserCookie } from '@/lib/auth';
 import {
   clearDanmakuCacheByTitle,
@@ -106,6 +105,15 @@ import { useEnableComments } from '@/hooks/useEnableComments';
 import { usePlaySync } from '@/hooks/usePlaySync';
 
 import {
+  createPlaybackProgressGuard,
+  createProgressSnapshot,
+} from '@/components/player/playback-progress';
+import {
+  buildPlaybackSelectionUrl,
+  createPlaybackSwitchCoordinator,
+  findNextPlayableEpisode,
+} from '@/components/player/playback-switch';
+import {
   ADVANCED_SUBTITLE_FORMATS,
   CustomSubtitleState,
   HARMONY_HLS_PLAYBACK_MODE_KEY,
@@ -125,6 +133,7 @@ import {
   SourceSubtitleItem,
   WakeLockSentinel,
 } from '@/components/player/types';
+import { usePlaybackProgress } from '@/components/player/usePlaybackProgress';
 import { usePlayerEngine } from '@/components/player/usePlayerEngine';
 
 const AIChatPanel = dynamic(() => import('@/components/AIChatPanel'), {
@@ -893,27 +902,6 @@ function PlayPageClient() {
     return 0;
   });
 
-  // 监听 URL 参数变化，更新集数索引（用于房员跟随换集）
-  useEffect(() => {
-    const episodeParam = searchParams.get('episode');
-    if (episodeParam) {
-      const episode = parseInt(episodeParam, 10);
-      const newIndex = episode > 0 ? episode - 1 : 0;
-      console.log('[PlayPage] Checking episode from URL:', {
-        urlEpisode: episode,
-        currentIndex: currentEpisodeIndex,
-        newIndex,
-      });
-      if (newIndex !== currentEpisodeIndex) {
-        console.log(
-          '[PlayPage] URL episode changed, updating index to:',
-          newIndex
-        );
-        setCurrentEpisodeIndex(newIndex);
-      }
-    }
-  }, [searchParams, currentEpisodeIndex]);
-
   // 监听集数变化，移除已显示的跳转按钮
   useEffect(() => {
     // 移除已显示的跳转按钮
@@ -967,7 +955,10 @@ function PlayPageClient() {
   const videoYearRef = useRef(videoYear);
   const detailRef = useRef<SearchResult | null>(detail);
   const currentEpisodeIndexRef = useRef(currentEpisodeIndex);
+  const episodeProgressContentKeyRef = useRef(episodeProgressContentKey);
   const isSourceChangingRef = useRef(false); // 标记是否正在换源
+  const [playbackSwitchCoordinator] = useState(createPlaybackSwitchCoordinator);
+  useEffect(() => () => playbackSwitchCoordinator.cancel(), [playbackSwitchCoordinator]);
 
   // 同步最新值到 refs
   useEffect(() => {
@@ -975,6 +966,7 @@ function PlayPageClient() {
     currentIdRef.current = currentId;
     detailRef.current = detail;
     currentEpisodeIndexRef.current = currentEpisodeIndex;
+    episodeProgressContentKeyRef.current = episodeProgressContentKey;
     videoTitleRef.current = videoTitle;
     videoYearRef.current = videoYear;
   }, [
@@ -982,6 +974,7 @@ function PlayPageClient() {
     currentId,
     detail,
     currentEpisodeIndex,
+    episodeProgressContentKey,
     videoTitle,
     videoYear,
   ]);
@@ -1708,6 +1701,7 @@ function PlayPageClient() {
 
   // 视频播放地址
   const [videoUrl, setVideoUrl] = useState('');
+  const [videoProgressRevision, setVideoProgressRevision] = useState(0);
   const [playbackSourceBadge, setPlaybackSourceBadge] =
     useState<PlaybackSourceBadge>(null);
 
@@ -1815,6 +1809,7 @@ function PlayPageClient() {
 
   const handleCreateTranscodeSession = async () => {
     if (isTranscoding) return;
+    const progressRevision = playbackProgressGuard.revision();
 
     try {
       setIsTranscoding(true);
@@ -1870,6 +1865,7 @@ function PlayPageClient() {
       }
 
       await new Promise((resolve) => setTimeout(resolve, 3000));
+      if (!playbackProgressGuard.isCurrent(progressRevision)) return;
 
       currentXiaoyaUrlRef.current = '';
       proxyAttemptedRef.current = false;
@@ -1880,6 +1876,7 @@ function PlayPageClient() {
       setIsVideoLoading(true);
       setVideoLoadingStage('sourceChanging');
       setPlaybackSourceBadge(null);
+      setVideoProgressRevision(progressRevision);
       setVideoUrl(playUrl);
       setToast({
         message: '转码任务已创建，等待 3 秒后已切换到转码地址',
@@ -2143,6 +2140,7 @@ function PlayPageClient() {
 
   // 换源加载状态
   const [isVideoLoading, setIsVideoLoading] = useState(true);
+  const [playbackProgressGuard] = useState(createPlaybackProgressGuard);
   const [videoLoadingStage, setVideoLoadingStage] = useState<
     'initing' | 'sourceChanging' | 'episodeChanging'
   >('initing');
@@ -2243,7 +2241,6 @@ function PlayPageClient() {
   // 播放进度保存相关
   const saveIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const lastSaveTimeRef = useRef<number>(0);
-  const lastSavedPlayTimeRef = useRef<number | null>(null);
 
   // 下集预缓存相关
   const nextEpisodePreCacheTriggeredRef = useRef<boolean>(false);
@@ -3778,6 +3775,7 @@ function PlayPageClient() {
     detailData: SearchResult | null,
     episodeIndex: number
   ) => {
+    const progressRevision = playbackProgressGuard.revision();
     // 重置刷新相关状态
     retryCountRef.current = 0;
     lastRefreshTimeRef.current = 0;
@@ -3876,7 +3874,7 @@ function PlayPageClient() {
 
         const response = await fetch(fetchUrl);
         const data = await response.json();
-        if (requestSeq !== videoUrlRequestSeqRef.current) {
+        if (requestSeq !== videoUrlRequestSeqRef.current || !playbackProgressGuard.isCurrent(progressRevision)) {
           return;
         }
         if (data.url) {
@@ -3924,7 +3922,7 @@ function PlayPageClient() {
           currentXiaoyaUrlRef.current = '';
         }
       } catch (error) {
-        if (requestSeq !== videoUrlRequestSeqRef.current) {
+        if (requestSeq !== videoUrlRequestSeqRef.current || !playbackProgressGuard.isCurrent(progressRevision)) {
           return;
         }
         console.error('获取播放链接失败:', error);
@@ -3945,7 +3943,7 @@ function PlayPageClient() {
       currentId || undefined,
       episodeIndex
     );
-    if (requestSeq !== videoUrlRequestSeqRef.current) {
+    if (requestSeq !== videoUrlRequestSeqRef.current || !playbackProgressGuard.isCurrent(progressRevision)) {
       return;
     }
 
@@ -4042,7 +4040,7 @@ function PlayPageClient() {
         episodeIndex,
         { preferServiceWorker: true }
       );
-      if (requestSeq !== videoUrlRequestSeqRef.current) {
+      if (requestSeq !== videoUrlRequestSeqRef.current || !playbackProgressGuard.isCurrent(progressRevision)) {
         indexedDBCheck.objectUrls?.forEach((url) => URL.revokeObjectURL(url));
         return;
       }
@@ -4072,7 +4070,7 @@ function PlayPageClient() {
         currentId,
         episodeIndex
       );
-      if (requestSeq !== videoUrlRequestSeqRef.current) {
+      if (requestSeq !== videoUrlRequestSeqRef.current || !playbackProgressGuard.isCurrent(progressRevision)) {
         return;
       }
 
@@ -4112,9 +4110,10 @@ function PlayPageClient() {
     }
 
     if (isEpisodeSwitchRequest || newUrl !== videoUrl) {
-      if (requestSeq !== videoUrlRequestSeqRef.current) {
+      if (requestSeq !== videoUrlRequestSeqRef.current || !playbackProgressGuard.isCurrent(progressRevision)) {
         return;
       }
+      setVideoProgressRevision(progressRevision);
       setVideoUrl(newUrl);
     }
     setPlaybackSourceBadge(nextPlaybackSourceBadge);
@@ -5746,6 +5745,60 @@ function PlayPageClient() {
     initSkipConfig();
   }, []);
 
+  const saveCurrentEpisodeLocalProgressOnly = () => {
+    if (!artPlayerRef.current || !playbackProgressGuard.canCapture()) {
+      return;
+    }
+
+    const currentTime = artPlayerRef.current.currentTime || 0;
+    const duration = artPlayerRef.current.duration || 0;
+
+    if (currentTime < 1 || !duration) {
+      return;
+    }
+
+    try {
+      saveLocalEpisodeProgress(
+        episodeProgressContentKeyRef.current,
+        currentEpisodeIndexRef.current,
+        currentTime,
+        duration
+      );
+    } catch (error) {
+      console.warn(
+        '[Play] Failed to save local episode progress before episode switch:',
+        error
+      );
+    }
+  };
+
+  // 监听 URL 参数变化，更新集数索引（用于房员跟随换集）
+  useEffect(() => {
+    const episodeParam = searchParams.get('episode');
+    if (episodeParam) {
+      const episode = parseInt(episodeParam, 10);
+      const newIndex = episode > 0 ? episode - 1 : 0;
+      console.log('[PlayPage] Checking episode from URL:', {
+        urlEpisode: episode,
+        currentIndex: currentEpisodeIndex,
+        newIndex,
+      });
+      if (newIndex !== currentEpisodeIndex) {
+        console.log(
+          '[PlayPage] URL episode changed, updating index to:',
+          newIndex
+        );
+        saveCurrentEpisodeLocalProgressOnly();
+        resumeTimeRef.current = null;
+        resumePlayingAfterHlsModeSwitchRef.current = null;
+        playbackProgressGuard.suspend();
+        setIsVideoLoading(true);
+        playbackSwitchCoordinator.cancel();
+        setCurrentEpisodeIndex(newIndex);
+      }
+    }
+  }, [searchParams, currentEpisodeIndex]);
+
   // 监听 URL 参数变化，处理换源和换视频（用于房员跟随房主操作）
   useEffect(() => {
     const urlSource = normalizeNetdiskSource(searchParams.get('source'));
@@ -5768,8 +5821,16 @@ function PlayPageClient() {
       );
 
       if (targetSource) {
+        saveCurrentEpisodeLocalProgressOnly();
+        const previousPosition = playbackProgressGuard.sourcePosition({
+          currentTime: artPlayerRef.current?.currentTime || 0,
+          duration: artPlayerRef.current?.duration || 0,
+        }, resumeTimeRef.current);
+        playbackProgressGuard.suspend();
+        setIsVideoLoading(true);
+        playbackSwitchCoordinator.cancel();
         // 记录当前播放进度
-        const currentPlayTime = artPlayerRef.current?.currentTime || 0;
+        const currentPlayTime = previousPosition.currentTime;
 
         // 获取URL中的episode参数
         const episodeParam = searchParams.get('episode');
@@ -5843,251 +5904,109 @@ function PlayPageClient() {
     updateSubtitleSetting();
   }, [detail, currentEpisodeIndex]);
 
-  const getSourceSwitchResumeTime = async (
-    episodeIndex: number,
-    currentPlayTime: number
-  ): Promise<number | null> => {
-    if (currentPlayTime > 1) {
-      return currentPlayTime;
-    }
-
-    if (!currentSourceRef.current || !currentIdRef.current) {
-      return null;
-    }
-
-    try {
-      const allRecords = await getAllPlayRecords();
-      const currentRecord =
-        allRecords[
-          generateStorageKey(currentSourceRef.current, currentIdRef.current)
-        ];
-
-      if (
-        currentRecord &&
-        currentRecord.index - 1 === episodeIndex &&
-        currentRecord.play_time > 1
-      ) {
-        return currentRecord.play_time;
-      }
-    } catch (error) {
-      console.warn('[Play] Failed to read source-switch play record:', error);
-    }
-
-    return loadLocalEpisodeProgress(episodeProgressContentKey, episodeIndex);
-  };
-
-  // 处理换源
-  const handleSourceChange = async (
-    newSource: string,
-    newId: string,
-    newTitle: string
-  ) => {
-    try {
-      // 标记正在换源，防止 title 变化触发页面刷新
-      isSourceChangingRef.current = true;
-
-      // 显示换源加载状态
-      setVideoLoadingStage('sourceChanging');
-      setIsVideoLoading(true);
-      setVideoError(null);
-      setCorsFailedUrl(null);
-      proxyAttemptedRef.current = false;
-
-      // 记录当前播放进度（仅在同一集数切换时恢复）
-      const currentPlayTime = artPlayerRef.current?.currentTime || 0;
-      console.log('换源前当前播放时间:', currentPlayTime);
-
-      // 清除并设置下一个跳过片头片尾配置
-      if (currentSourceRef.current && currentIdRef.current) {
-        try {
-          await deleteSkipConfig(
-            currentSourceRef.current,
-            currentIdRef.current
-          );
-          await saveSkipConfig(newSource, newId, skipConfigRef.current);
-        } catch (err) {
-          console.error('清除跳过片头片尾配置失败:', err);
-        }
-      }
-
-      let newDetail: SearchResult | undefined = availableSources.find(
-        (source) => source.source === newSource && source.id === newId
-      );
-      if (!newDetail) {
-        setError('未找到匹配结果');
-        return;
-      }
-
-      // 这类源统一通过详情接口补全播放数据
-      if (
-        isLazyDetailSource(newDetail.source) &&
-        (!newDetail.episodes || newDetail.episodes.length === 0)
-      ) {
-        try {
-          const detailResponse = await fetch(
-            appendSpecialSourceParam(
-              `/api/source-detail?source=${newSource}&id=${newId}&title=${encodeURIComponent(
-                newTitle
-              )}`
-            )
-          );
-          if (detailResponse.ok) {
-            const detailData = await detailResponse.json();
-            if (!detailData) {
-              throw new Error('获取的详情数据为空');
-            }
-            newDetail = detailData;
-          } else {
-            throw new Error('获取视频详情失败');
-          }
-        } catch (err) {
-          console.error('获取视频详情失败:', err);
-          setIsVideoLoading(false);
-          setError('获取视频详情失败，请重试');
-          return;
-        }
-      }
-
-      // 再次确认 newDetail 不为空（类型守卫）
-      if (!newDetail) {
-        setError('视频详情数据无效');
-        return;
-      }
-
-      const newEpisodeProgressContentKey = buildEpisodeProgressContentKey({
-        doubanId: newDetail.douban_id,
-        tmdbId: newDetail.tmdb_id,
-        title: initialEpisodeProgressTitle,
-        year: initialEpisodeProgressYear,
-        searchType,
-      });
-
-      // 尝试跳转到当前正在播放的集数
-      const previousEpisodeIndex = currentEpisodeIndexRef.current;
-      const previousSource = currentSourceRef.current;
-      const previousId = currentIdRef.current;
-      let targetIndex = previousEpisodeIndex;
-
-      // 如果新源的集数跟旧源的集数不一致，清除当前剧集的所有弹幕缓存
-      const oldEpisodeCount = detail?.episodes?.length || 0;
-      const newEpisodeCount = newDetail.episodes?.length || 0;
-      if (
-        oldEpisodeCount > 0 &&
-        newEpisodeCount > 0 &&
-        oldEpisodeCount !== newEpisodeCount
-      ) {
-        const titleForCache = detail?.title || videoTitle;
-        console.log(
-          `换源集数不一致 (${oldEpisodeCount} -> ${newEpisodeCount})，清除弹幕缓存: ${titleForCache}`
-        );
-        clearDanmakuCacheByTitle(titleForCache).catch((err) => {
-          console.error('清除弹幕缓存失败:', err);
-        });
-      }
-
-      // 如果当前集数超出新源的范围，则跳转到第一集
-      if (!newDetail.episodes || targetIndex >= newDetail.episodes.length) {
-        targetIndex = 0;
-      }
-
-      const isSameEpisodeSwitch = targetIndex === previousEpisodeIndex;
-      const resumeTime = isSameEpisodeSwitch
-        ? await getSourceSwitchResumeTime(previousEpisodeIndex, currentPlayTime)
-        : loadLocalEpisodeProgress(newEpisodeProgressContentKey, targetIndex);
-      resumeTimeRef.current = resumeTime;
-
-      // 更新URL参数（不刷新页面）
-      const newUrl = new URL(window.location.href);
-      newUrl.searchParams.set('source', newSource);
-      newUrl.searchParams.set('id', newId);
-      newUrl.searchParams.set('year', newDetail.year);
-      newUrl.searchParams.set('title', newDetail.title || newTitle);
-      window.history.replaceState({}, '', newUrl.toString());
-
-      // 如果是小雅源，检查并应用纠错信息
-      let finalTitle = newDetail.title || newTitle;
-      let finalCover = newDetail.poster;
-      let finalDesc = '';
-
-      if (newDetail.source === 'xiaoya') {
-        const correction = getXiaoyaCorrection(newDetail.source, newDetail.id);
-        if (correction) {
-          console.log('换源到小雅源，发现纠错信息，正在应用...', correction);
-          if (correction.title) {
-            finalTitle = correction.title;
-          }
-          if (correction.posterPath) {
-            finalCover = processImageUrl(
-              getTMDBImageUrl(correction.posterPath)
-            );
-          }
-          if (correction.overview) {
-            finalDesc = correction.overview;
-          }
-          // 应用纠错信息到 newDetail
-          newDetail = applyCorrection(newDetail, correction);
-        }
-      }
-
-      setVideoTitle(finalTitle);
-      setVideoYear(newDetail.year);
-      setVideoCover(finalCover);
-      setCorrectedDesc(finalDesc);
-      setVideoDoubanId(newDetail.douban_id || 0);
-
-      if (isSameEpisodeSwitch && resumeTime && resumeTime > 1) {
-        const currentDuration = artPlayerRef.current?.duration || 0;
-        saveLocalEpisodeProgress(
-          newEpisodeProgressContentKey,
-          targetIndex,
-          resumeTime,
-          currentDuration
-        );
-
-        try {
-          const migratedRecord = {
-            title: finalTitle,
-            source_name: newDetail.source_name || '',
-            year: newDetail.year || '',
-            cover: finalCover || '',
-            index: targetIndex + 1,
-            total_episodes: newDetail.episodes?.length || 1,
-            play_time: Math.floor(resumeTime),
-            total_time: Math.floor(currentDuration),
-            save_time: Date.now(),
-            search_title: searchTitle,
-          };
-
-          if (previousSource && previousId) {
-            await migratePlayRecord(
-              previousSource,
-              previousId,
-              newSource,
-              newId,
-              migratedRecord
-            );
-          } else {
-            await savePlayRecord(newSource, newId, migratedRecord);
-          }
-        } catch (error) {
-          console.warn(
-            '[Play] Failed to migrate source-switch play record:',
-            error
-          );
-        }
-      }
-
-      // newSource 已经是完整格式
-      setCurrentSource(newSource);
-      setCurrentId(newId);
-      setDetail(newDetail);
-      setSourceProxyMode(newDetail.proxyMode || false); // 从 detail 数据中读取代理模式
-      setCurrentEpisodeIndex(targetIndex);
-    } catch (err) {
-      // 隐藏换源加载状态
-      setIsVideoLoading(false);
-      setError(err instanceof Error ? err.message : '换源失败');
-    }
+  // Selection preparation is isolated from UI state and persistence ordering.
+  const handleSourceChange = async (newSource: string, newId: string, newTitle: string) => {
+    saveCurrentEpisodeLocalProgressOnly();
+    resumePlayingAfterHlsModeSwitchRef.current = null;
+    isSourceChangingRef.current = true;
+    setVideoLoadingStage('sourceChanging');
+    setIsVideoLoading(true);
+    setVideoError(null);
+    setCorsFailedUrl(null);
+    proxyAttemptedRef.current = false;
+    const sourceSkipConfig = { ...skipConfigRef.current };
+    const position = playbackProgressGuard.sourcePosition({
+      currentTime: artPlayerRef.current?.currentTime || 0,
+      duration: artPlayerRef.current?.duration || 0,
+    }, resumeTimeRef.current);
+    await playbackSwitchCoordinator.switchSource({
+      target: { source: newSource, id: newId, title: newTitle },
+      previous: {
+        source: currentSourceRef.current, id: currentIdRef.current,
+        episodeIndex: currentEpisodeIndexRef.current,
+        ...position,
+        contentKey: episodeProgressContentKeyRef.current,
+        episodeCount: detailRef.current?.episodes.length || 0,
+        title: detailRef.current?.title || videoTitleRef.current,
+      },
+      searchTitle,
+    }, {
+      loadDetail: async target => {
+        const found = availableSources.find(item => item.source === target.source && item.id === target.id);
+        if (!found) throw new Error('未找到匹配结果');
+        if (!isLazyDetailSource(found.source) || found.episodes?.length) return found;
+        const response = await fetch(appendSpecialSourceParam(
+          '/api/source-detail?source=' + encodeURIComponent(target.source) + '&id=' + encodeURIComponent(target.id) + '&title=' + encodeURIComponent(target.title)
+        ));
+        if (!response.ok) throw new Error('获取视频详情失败，请重试');
+        const loaded: SearchResult | null = await response.json();
+        if (!loaded) throw new Error('获取的详情数据为空');
+        return loaded;
+      },
+      contentKey: nextDetail => buildEpisodeProgressContentKey({
+        doubanId: nextDetail.douban_id, tmdbId: nextDetail.tmdb_id,
+        title: initialEpisodeProgressTitle, year: initialEpisodeProgressYear, searchType,
+      }),
+      presentation: nextDetail => {
+        const correction = nextDetail.source === 'xiaoya'
+          ? getXiaoyaCorrection(nextDetail.source, nextDetail.id) : null;
+        return {
+          detail: correction ? applyCorrection(nextDetail, correction) : nextDetail,
+          title: correction?.title || nextDetail.title || newTitle,
+          cover: correction?.posterPath ? processImageUrl(getTMDBImageUrl(correction.posterPath)) : nextDetail.poster,
+          description: correction?.overview || '',
+        };
+      },
+      readRecord: async identity => {
+        const records = await getAllPlayRecords();
+        return records[generateStorageKey(identity.source, identity.id)] || null;
+      },
+      loadLocal: loadLocalEpisodeProgress,
+      commit: plan => {
+        saveCurrentEpisodeLocalProgressOnly();
+        playbackProgressGuard.suspend();
+        resumeTimeRef.current = plan.resumeTime;
+        window.history.replaceState({}, '', buildPlaybackSelectionUrl(window.location.href, {
+          ...plan.target, year: plan.detail.year, title: plan.title,
+          episodeIndex: plan.episodeIndex,
+        }));
+        // A second click must capture this committed selection before the next effect runs.
+        currentSourceRef.current = plan.target.source;
+        currentIdRef.current = plan.target.id;
+        currentEpisodeIndexRef.current = plan.episodeIndex;
+        episodeProgressContentKeyRef.current = plan.contentKey;
+        detailRef.current = plan.detail;
+        videoTitleRef.current = plan.title;
+        videoYearRef.current = plan.detail.year;
+        setVideoTitle(plan.title);
+        setVideoYear(plan.detail.year);
+        setVideoCover(plan.cover);
+        setCorrectedDesc(plan.description);
+        setVideoDoubanId(plan.detail.douban_id || 0);
+        setCurrentSource(plan.target.source);
+        setCurrentId(plan.target.id);
+        setDetail(plan.detail);
+        setSourceProxyMode(plan.detail.proxyMode || false);
+        setCurrentEpisodeIndex(plan.episodeIndex);
+      },
+      transferSkip: async (from, to) => {
+        if (!from.source || !from.id) return;
+        await deleteSkipConfig(from.source, from.id);
+        await saveSkipConfig(to.source, to.id, sourceSkipConfig);
+      },
+      saveLocal: saveLocalEpisodeProgress,
+      migrate: async ({ from, to, record }) => {
+        if (from.source && from.id) await migratePlayRecord(from.source, from.id, to.source, to.id, record);
+        else await savePlayRecord(to.source, to.id, record);
+      },
+      clearDanmaku: clearDanmakuCacheByTitle,
+      onError: error => {
+        isSourceChangingRef.current = false;
+        setIsVideoLoading(false);
+        setError(error instanceof Error ? error.message : '换源失败');
+      },
+      onPersistenceError: error => console.warn('[Play] Source-switch persistence failed:', error),
+    });
   };
 
   useEffect(() => {
@@ -6100,47 +6019,6 @@ function PlayPageClient() {
   // ---------------------------------------------------------------------------
   // 集数切换
   // ---------------------------------------------------------------------------
-  const saveCurrentEpisodeLocalProgressOnly = () => {
-    if (!artPlayerRef.current) {
-      return;
-    }
-
-    const currentTime = artPlayerRef.current.currentTime || 0;
-    const duration = artPlayerRef.current.duration || 0;
-
-    if (currentTime < 1 || !duration) {
-      return;
-    }
-
-    try {
-      saveLocalEpisodeProgress(
-        episodeProgressContentKey,
-        currentEpisodeIndexRef.current,
-        currentTime,
-        duration
-      );
-    } catch (error) {
-      console.warn(
-        '[Play] Failed to save local episode progress before episode switch:',
-        error
-      );
-    }
-  };
-
-  const primeEpisodeResumeState = (targetEpisodeIndex: number) => {
-    if (!currentSourceRef.current || !currentIdRef.current) {
-      resumeTimeRef.current = null;
-      return;
-    }
-
-    // 切集路径只读取本地单集进度，避免阻塞式读取全局播放记录/远端数据库。
-    // 首次进入页面的全局播放记录恢复逻辑保持不变。
-    resumeTimeRef.current = loadLocalEpisodeProgress(
-      episodeProgressContentKey,
-      targetEpisodeIndex
-    );
-  };
-
   const prepareEpisodeSwitch = () => {
     if (artPlayerRef.current) {
       lastPlaybackRateRef.current =
@@ -6152,68 +6030,50 @@ function PlayPageClient() {
       saveCurrentEpisodeLocalProgressOnly();
     }
 
+    playbackProgressGuard.suspend();
+
     suppressPlayRecordJumpOnNextEpisodeChangeRef.current = true;
     setVideoLoadingStage('episodeChanging');
     setIsVideoLoading(true);
     setVideoError(null);
   };
 
-  // 处理集数切换
-  const handleEpisodeChange = async (episodeNumber: number) => {
-    if (episodeNumber < 0 || episodeNumber >= totalEpisodes) {
-      return;
-    }
-
-    if (episodeNumber === currentEpisodeIndexRef.current) {
-      return;
-    }
-
-    prepareEpisodeSwitch();
-    primeEpisodeResumeState(episodeNumber);
-    setCurrentEpisodeIndex(episodeNumber);
+  // Switching episodes uses local checkpoints only; it never waits for the server.
+  const handleEpisodeChange = async (episodeNumber: number, resumePlayback = false) => {
+    playbackSwitchCoordinator.switchEpisode({
+      currentIndex: currentEpisodeIndexRef.current, targetIndex: episodeNumber,
+      totalEpisodes: detailRef.current?.episodes.length || totalEpisodes,
+      contentKey: episodeProgressContentKeyRef.current,
+      hasSource: !!currentSourceRef.current && !!currentIdRef.current,
+    }, {
+      loadLocal: loadLocalEpisodeProgress,
+      saveDeparting: prepareEpisodeSwitch,
+      commit: plan => {
+        resumePlayingAfterHlsModeSwitchRef.current = resumePlayback ? true : null;
+        resumeTimeRef.current = plan.resumeTime;
+        window.history.replaceState({}, '', buildPlaybackSelectionUrl(window.location.href, plan));
+        currentEpisodeIndexRef.current = plan.episodeIndex;
+        setCurrentEpisodeIndex(plan.episodeIndex);
+      },
+    });
   };
 
   const handlePreviousEpisode = async () => {
-    const d = detailRef.current;
-    const idx = currentEpisodeIndexRef.current;
-    if (d && d.episodes && idx > 0) {
-      const targetIndex = idx - 1;
-      prepareEpisodeSwitch();
-      primeEpisodeResumeState(targetIndex);
-      setCurrentEpisodeIndex(targetIndex);
-    }
+    await handleEpisodeChange(currentEpisodeIndexRef.current - 1);
   };
 
-  // 检查集数是否被过滤
-  const isEpisodeFilteredByTitle = (title: string): boolean => {
-    return isEpisodeHiddenByFilter(title, episodeFilterConfigRef.current);
-  };
+  const isEpisodeFilteredByTitle = (title: string): boolean =>
+    isEpisodeHiddenByFilter(title, episodeFilterConfigRef.current);
 
-  const handleNextEpisode = async () => {
-    const d = detailRef.current;
-    const idx = currentEpisodeIndexRef.current;
-
-    if (!d || !d.episodes || idx >= d.episodes.length - 1) {
-      return;
-    }
-
-    // 查找下一个未被过滤的集数
-    let nextIdx = idx + 1;
-    while (nextIdx < d.episodes.length) {
-      const episodeTitle = d.episodes_titles?.[nextIdx];
-      const isFiltered = episodeTitle && isEpisodeFilteredByTitle(episodeTitle);
-
-      if (!isFiltered) {
-        prepareEpisodeSwitch();
-        primeEpisodeResumeState(nextIdx);
-        setCurrentEpisodeIndex(nextIdx);
-        return;
-      }
-      nextIdx++;
-    }
-
-    // 所有后续集数都被屏蔽
-    if (artPlayerRef.current) {
+  const handleNextEpisode = async (resumePlayback = false) => {
+    const currentDetail = detailRef.current;
+    const currentIndex = currentEpisodeIndexRef.current;
+    if (!currentDetail?.episodes || currentIndex >= currentDetail.episodes.length - 1) return;
+    const nextIndex = findNextPlayableEpisode(currentIndex, currentDetail.episodes.length,
+      currentDetail.episodes_titles, isEpisodeFilteredByTitle);
+    if (nextIndex !== null) {
+      await handleEpisodeChange(nextIndex, resumePlayback);
+    } else if (artPlayerRef.current) {
       artPlayerRef.current.notice.show = '后续集数均已屏蔽';
       artPlayerRef.current.pause();
     }
@@ -7275,101 +7135,30 @@ function PlayPageClient() {
   // ---------------------------------------------------------------------------
   // 播放记录相关
   // ---------------------------------------------------------------------------
-  // 保存播放进度
-  const saveCurrentPlayProgress = async () => {
-    if (
-      !artPlayerRef.current ||
-      !currentSourceRef.current ||
-      !currentIdRef.current ||
-      !videoTitleRef.current ||
-      !detailRef.current?.source_name
-    ) {
-      return;
-    }
-
-    const player = artPlayerRef.current;
-    const currentTime = player.currentTime || 0;
-    const duration = player.duration || 0;
-    const playTime = Math.floor(currentTime);
-
-    // 如果播放时间太短（少于5秒）或者视频时长无效，不保存
-    if (currentTime < 1 || !duration) {
-      return;
-    }
-
-    if (lastSavedPlayTimeRef.current === playTime) {
-      return;
-    }
-
-    try {
-      saveLocalEpisodeProgress(
-        episodeProgressContentKey,
-        currentEpisodeIndexRef.current,
-        currentTime,
-        duration
-      );
-
-      await savePlayRecord(currentSourceRef.current, currentIdRef.current, {
-        title: videoTitleRef.current,
-        source_name: detailRef.current?.source_name || '',
-        year: detailRef.current?.year,
-        cover: detailRef.current?.poster || '',
-        index: currentEpisodeIndexRef.current + 1, // 转换为1基索引
-        total_episodes: detailRef.current?.episodes.length || 1,
-        play_time: playTime,
-        total_time: Math.floor(duration),
-        save_time: Date.now(),
-        search_title: searchTitle,
-        is_anime: isAnimeCategoryText(
-          detailRef.current?.type_name,
-          detailRef.current?.class
-        ),
+  const saveCurrentPlayProgress = usePlaybackProgress({
+    capture: () => {
+      const player = artPlayerRef.current;
+      if (!player || !playbackProgressGuard.canCapture()) return null;
+      return createProgressSnapshot({
+        source: currentSourceRef.current, id: currentIdRef.current,
+        title: videoTitleRef.current, detail: detailRef.current,
+        contentKey: episodeProgressContentKeyRef.current,
+        episodeIndex: currentEpisodeIndexRef.current, searchTitle,
+        currentTime: player.currentTime || 0, duration: player.duration || 0,
       });
-
-      lastSavedPlayTimeRef.current = playTime;
-      lastSaveTimeRef.current = Date.now();
-      console.log('播放进度已保存:', {
-        title: videoTitleRef.current,
-        episode: currentEpisodeIndexRef.current + 1,
-        year: detailRef.current?.year,
-        progress: `${Math.floor(currentTime)}/${Math.floor(duration)}`,
-      });
-    } catch (err) {
-      console.error('保存播放进度失败:', err);
-    }
-  };
-
-  useEffect(() => {
-    // 页面即将卸载时保存播放进度和清理资源
-    const handleBeforeUnload = () => {
-      saveCurrentPlayProgress();
-      releaseWakeLock();
-      cleanupPlayer();
-    };
-
-    // 页面可见性变化时保存播放进度和释放 Wake Lock
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'hidden') {
-        saveCurrentPlayProgress();
-        releaseWakeLock();
-      } else if (document.visibilityState === 'visible') {
-        // 页面重新可见时，如果正在播放则重新请求 Wake Lock
-        if (artPlayerRef.current && !artPlayerRef.current.paused) {
-          requestWakeLock();
-        }
-      }
-    };
-
-    // 添加事件监听器
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-
-    return () => {
-      // 清理事件监听器
-      window.removeEventListener('beforeunload', handleBeforeUnload);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-    };
-  }, [currentEpisodeIndex, detail]);
+    },
+    saveLocal: snapshot => saveLocalEpisodeProgress(snapshot.contentKey, snapshot.episodeIndex,
+      snapshot.currentTime, snapshot.duration),
+    persist: snapshot => savePlayRecord(snapshot.source, snapshot.id, snapshot.record),
+    enqueue: operation => playbackSwitchCoordinator.enqueuePersistence(operation),
+    onSaved: () => { lastSaveTimeRef.current = Date.now(); },
+    onError: error => console.error('保存播放进度失败:', error),
+    onExit: () => { releaseWakeLock(); cleanupPlayer(); },
+    onHidden: () => { releaseWakeLock(); },
+    onVisible: () => {
+      if (artPlayerRef.current && !artPlayerRef.current.paused) requestWakeLock();
+    },
+  });
 
   // 清理定时器
   useEffect(() => {
@@ -7492,6 +7281,8 @@ function PlayPageClient() {
   };
   usePlayerEngine({
     videoUrl,
+    videoProgressRevision,
+    playbackProgressGuard,
     loading,
     currentEpisodeIndex,
     artRef,
@@ -7585,8 +7376,6 @@ function PlayPageClient() {
     currentIdRef,
     lastSkipCheckRef,
     proxyAttemptedRef,
-    isEpisodeFilteredByTitle,
-    setCurrentEpisodeIndex,
     lastSaveTimeRef,
     nextEpisodePreCacheTriggeredRef,
     nextEpisodeDanmakuPreloadTriggeredRef,
@@ -8097,6 +7886,7 @@ function PlayPageClient() {
                                     setCorsFailedUrl(null);
                                     setIsVideoLoading(true);
                                     proxyAttemptedRef.current = true;
+                                    setVideoProgressRevision(playbackProgressGuard.revision());
                                     setVideoUrl(proxyUrl);
                                   }}
                                   className='mt-4 ml-3 px-6 py-2 bg-linear-to-r from-blue-500 to-indigo-600 text-white rounded-lg hover:from-blue-600 hover:to-indigo-700 transition-all duration-200'

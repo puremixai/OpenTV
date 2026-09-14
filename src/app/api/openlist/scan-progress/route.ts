@@ -1,7 +1,8 @@
-/* eslint-disable no-console */
+
 
 import { NextRequest, NextResponse } from 'next/server';
 
+import { logger } from '@/lib/logger';
 import { requireFeaturePermission } from '@/lib/permissions';
 import { getScanTask } from '@/lib/scan-task';
 import { getAuthenticatedUser } from '@/lib/session';
@@ -39,7 +40,7 @@ export async function GET(request: NextRequest) {
       task,
     });
   } catch (error) {
-    console.error('获取扫描进度失败:', error);
+    logger.error('获取扫描进度失败:', error);
     return NextResponse.json(
       { error: '获取失败', details: (error as Error).message },
       { status: 500 }

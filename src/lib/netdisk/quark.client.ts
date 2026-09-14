@@ -1,7 +1,8 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, no-console */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { getConfig, setCachedConfig } from '@/lib/config';
 import { db } from '@/lib/db';
+import { logger } from '@/lib/logger';
 
 const QUARK_SHARE_API_BASE = 'https://drive-h.quark.cn/1/clouddrive';
 const QUARK_DRIVE_API_BASE = 'https://drive-pc.quark.cn/1/clouddrive';
@@ -120,9 +121,9 @@ async function persistRenewedQuarkCookie(
 
         await db.saveAdminConfig(config);
         await setCachedConfig(config);
-        console.log(`[quark] renewed cookie fields: ${names.join(', ')}`);
+        logger.debug(`[quark] renewed cookie fields: ${names.join(', ')}`);
       } catch (error) {
-        console.warn('[quark] persist renewed cookie failed:', error);
+        logger.warn('[quark] persist renewed cookie failed:', error);
       }
     });
 
@@ -990,7 +991,7 @@ export async function getQuarkPlayUrls(
       });
     }
   } catch (error) {
-    console.warn('[quark] get original download url failed:', error);
+    logger.warn('[quark] get original download url failed:', error);
   }
 
   try {
@@ -1032,7 +1033,7 @@ export async function getQuarkPlayUrls(
       }
     }
   } catch (error) {
-    console.warn('[quark] get transcoding play url failed:', error);
+    logger.warn('[quark] get transcoding play url failed:', error);
   }
 
   const deduped = urls.filter(

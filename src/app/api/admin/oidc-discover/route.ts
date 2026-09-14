@@ -1,6 +1,7 @@
-/* eslint-disable no-console */
+
 import { NextRequest, NextResponse } from 'next/server';
 
+import { logger } from '@/lib/logger';
 import { getAuthenticatedUser } from '@/lib/session';
 
 export const runtime = 'nodejs';
@@ -34,7 +35,7 @@ export async function POST(request: NextRequest) {
     // 构建well-known URL
     const wellKnownUrl = `${issuerUrl}/.well-known/openid-configuration`;
 
-    console.log('正在获取OIDC配置:', wellKnownUrl);
+    logger.debug('正在获取OIDC配置:', wellKnownUrl);
 
     // 通过后端获取配置，避免CORS问题
     const response = await fetch(wellKnownUrl, {
@@ -47,7 +48,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (!response.ok) {
-      console.error('获取OIDC配置失败:', response.status, response.statusText);
+      logger.error('获取OIDC配置失败:', response.status, response.statusText);
       return NextResponse.json(
         {
           error: `无法获取OIDC配置: ${response.status} ${response.statusText}`,
@@ -76,7 +77,7 @@ export async function POST(request: NextRequest) {
       issuer: data.issuer,
     });
   } catch (error) {
-    console.error('OIDC自动发现失败:', error);
+    logger.error('OIDC自动发现失败:', error);
 
     if (error instanceof Error) {
       if (error.name === 'AbortError') {

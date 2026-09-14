@@ -1,5 +1,3 @@
-/* eslint-disable no-console */
-
 import { NextRequest, NextResponse } from 'next/server';
 
 import { isAccessTokenInvalidated } from '@/lib/access-token-invalidation';
@@ -46,7 +44,7 @@ export async function middleware(request: NextRequest) {
 // 处理认证失败的情况
 function handleAuthFailure(
   request: NextRequest,
-  pathname: string
+  pathname: string,
 ): NextResponse {
   // 如果是 API 路由，返回 401 状态码
   if (pathname.startsWith('/api')) {
@@ -77,7 +75,8 @@ function shouldSkipAuth(pathname: string): boolean {
     pathname.startsWith('/players/') ||
     pathname.startsWith('/assets/jassub/') ||
     pathname === '/scripts/bangumi-proxy.worker.js'
-  ) return true;
+  )
+    return true;
   // The internal worker route validates a process-local secret, never a browser cookie.
   if (pathname === '/api/ai-comments/worker') return true;
   const skipPaths = [
@@ -104,6 +103,8 @@ function isTVModePath(pathname: string): boolean {
 // 配置middleware匹配规则
 export const config = {
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|login|register|oidc-register|qr-login|warning|tv/login|api/login|api/register|api/logout|api/auth/oidc|api/auth/qr|api/auth/refresh|api/telegram/login|api/telegram/config|api/telegram/webhook|api/cron/|api/server-config|api/proxy-m3u8|api/proxy/vod/|api/video-proxy|api/cms-proxy|api/tvbox/subscribe|api/theme/css|api/openlist/cms-proxy|api/openlist/play|api/openlist/proxy|api/emby/cms-proxy|api/emby/play|api/emby/subtitle|api/emby/sources|tvbox/).*)',
+    // Exact endpoint boundaries prevent a future sibling such as /api/login-admin
+    // from inheriting a login/media exception. Route handlers enforce scoped tokens.
+    '/((?!_next/(?:static|image)(?:/|$)|favicon.ico$|(?:login|register|oidc-register|qr-login|warning|tv/login)/?$|api/(?:health|login|register|logout|server-config|image-proxy|proxy-m3u8|video-proxy|cms-proxy|tvbox/subscribe|theme/css|emby/sources)/?$|api/auth/(?:refresh|oidc/(?:callback|complete-register|login|session-info)|qr/(?:cancel|confirm|create|image|status))/?$|api/telegram/(?:config|login/(?:create|status))/?$|api/telegram/webhook/[^/]+/?$|api/cron/[^/]+/?$|api/proxy/(?:vod/)?(?:logo|m3u8|key|segment)/?$|api/openlist/play/?$|api/(?:openlist/(?:cms-proxy|play)|emby/cms-proxy)/[^/]+/?$|api/(?:openlist/proxy|emby/(?:play|subtitle))/[^/]+/[^/]+/?$|tvbox/).*)',
   ],
 };

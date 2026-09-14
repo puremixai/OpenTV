@@ -1,6 +1,8 @@
-/* eslint-disable no-console, @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { createClient, RedisClientType } from 'redis';
+
+import { logger } from '@/lib/logger';
 
 // 连接配置接口
 export interface RedisConnectionConfig {
@@ -31,12 +33,12 @@ export function createRetryWrapper(
           err.code === 'EPIPE';
 
         if (isConnectionError && !isLastAttempt) {
-          console.log(
+          logger.debug(
             `${clientName} operation failed, retrying... (${
               i + 1
             }/${maxRetries})`
           );
-          console.error('Error:', err.message);
+          logger.error('Error:', err.message);
 
           // 等待一段时间后重试
           await new Promise((resolve) => setTimeout(resolve, 1000 * (i + 1)));
@@ -48,7 +50,7 @@ export function createRetryWrapper(
               await client.connect();
             }
           } catch (reconnectErr) {
-            console.error('Failed to reconnect:', reconnectErr);
+            logger.error('Failed to reconnect:', reconnectErr);
           }
 
           continue;
@@ -80,11 +82,11 @@ export function createRedisClient(
       socket: {
         // 重连策略：指数退避，最大30秒
         reconnectStrategy: (retries: number) => {
-          console.log(
+          logger.debug(
             `${config.clientName} reconnection attempt ${retries + 1}`
           );
           if (retries > 10) {
-            console.error(
+            logger.error(
               `${config.clientName} max reconnection attempts exceeded`
             );
             return false; // 停止重连
@@ -103,29 +105,29 @@ export function createRedisClient(
 
     // 添加错误事件监听
     client.on('error', (err) => {
-      console.error(`${config.clientName} client error:`, err);
+      logger.error(`${config.clientName} client error:`, err);
     });
 
     client.on('connect', () => {
-      console.log(`${config.clientName} connected`);
+      logger.debug(`${config.clientName} connected`);
     });
 
     client.on('reconnecting', () => {
-      console.log(`${config.clientName} reconnecting...`);
+      logger.debug(`${config.clientName} reconnecting...`);
     });
 
     client.on('ready', () => {
-      console.log(`${config.clientName} ready`);
+      logger.debug(`${config.clientName} ready`);
     });
 
     // 初始连接，带重试机制
     const connectWithRetry = async () => {
       try {
         await client!.connect();
-        console.log(`${config.clientName} connected successfully`);
+        logger.debug(`${config.clientName} connected successfully`);
       } catch (err) {
-        console.error(`${config.clientName} initial connection failed:`, err);
-        console.log('Will retry in 5 seconds...');
+        logger.error(`${config.clientName} initial connection failed:`, err);
+        logger.debug('Will retry in 5 seconds...');
         setTimeout(connectWithRetry, 5000);
       }
     };

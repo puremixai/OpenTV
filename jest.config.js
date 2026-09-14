@@ -16,6 +16,7 @@ const customJestConfig = {
 
   testEnvironment: 'jest-environment-jsdom',
   modulePathIgnorePatterns: [
+    '<rootDir>/.codex/',
     '<rootDir>/.next/',
     '<rootDir>/.next-dev/',
     '<rootDir>/.data/',

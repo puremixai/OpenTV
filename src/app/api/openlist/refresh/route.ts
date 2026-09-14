@@ -1,8 +1,9 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, no-console */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { NextRequest, NextResponse } from 'next/server';
 
 import { getConfig } from '@/lib/config';
+import { logger } from '@/lib/logger';
 import { startOpenListRefresh } from '@/lib/openlist-refresh';
 import { requireFeaturePermission } from '@/lib/permissions';
 import { getAuthenticatedUser } from '@/lib/session';
@@ -45,7 +46,7 @@ export async function POST(request: NextRequest) {
       message: '扫描任务已启动',
     });
   } catch (error) {
-    console.error('启动刷新任务失败:', error);
+    logger.error('启动刷新任务失败:', error);
     return NextResponse.json(
       { error: '启动失败', details: (error as Error).message },
       { status: 500 }

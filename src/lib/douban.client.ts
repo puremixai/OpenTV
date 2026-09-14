@@ -1,4 +1,6 @@
-/* eslint-disable @typescript-eslint/no-explicit-any,no-console,no-case-declarations */
+/* eslint-disable @typescript-eslint/no-explicit-any, no-case-declarations */
+
+import { logger } from '@/lib/logger';
 
 import { DoubanItem, DoubanResult } from './types';
 
@@ -296,7 +298,7 @@ async function requestDoubanWithFallback<T>(
       throw primaryError;
     }
 
-    console.warn(
+    logger.warn(
       `[Douban] 主渠道失败，切换备用渠道: ${primary.proxyType} -> ${backup.proxyType}`,
       primaryError
     );
@@ -662,7 +664,7 @@ async function fetchDoubanRecommends(
     reqParams.append('sort', sort);
   }
   const target = `${baseUrl}?${reqParams.toString()}`;
-  console.log(target);
+  logger.debug(target);
   try {
     const response = await fetchWithTimeout(
       target,

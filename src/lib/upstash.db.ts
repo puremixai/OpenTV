@@ -1,6 +1,8 @@
-/* eslint-disable no-console, @typescript-eslint/no-explicit-any, @typescript-eslint/no-non-null-assertion */
+/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-non-null-assertion */
 
 import { Redis } from '@upstash/redis';
+
+import { logger } from '@/lib/logger';
 
 import { UpstashRedisAdapter } from './redis-adapter';
 import { BaseRedisStorage } from './redis-base.db';
@@ -45,10 +47,10 @@ async function withRetry<T>(
         err.name === 'UpstashError';
 
       if (isConnectionError && !isLastAttempt) {
-        console.log(
+        logger.debug(
           `Upstash Redis operation failed, retrying... (${i + 1}/${maxRetries})`
         );
-        console.error('Error:', err.message);
+        logger.error('Error:', err.message);
 
         // 等待一段时间后重试
         await new Promise((resolve) => setTimeout(resolve, 1000 * (i + 1)));
@@ -98,7 +100,7 @@ function getUpstashRedisClient(): Redis {
       },
     });
 
-    console.log('Upstash Redis client created successfully');
+    logger.debug('Upstash Redis client created successfully');
 
     (global as any)[globalKey] = client;
   }

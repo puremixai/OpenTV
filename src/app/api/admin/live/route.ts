@@ -1,10 +1,12 @@
-/* eslint-disable no-console,no-case-declarations */
+/* eslint-disable no-case-declarations */
 
 import { NextRequest, NextResponse } from 'next/server';
 
 import { getConfig } from '@/lib/config';
 import { db } from '@/lib/db';
 import { deleteCachedLiveChannels, refreshLiveChannels } from '@/lib/live';
+import { resolveLiveProxyMode } from '@/lib/live-playback';
+import { logger } from '@/lib/logger';
 import { checkMutationVersion, withConfigMutation } from '@/lib/server/config-mutation';
 import { getAuthenticatedUser } from '@/lib/session';
 
@@ -52,13 +54,14 @@ export const POST = withConfigMutation(async function POST(request: NextRequest)
           from: 'custom' as 'custom' | 'config',
           channelNumber: 0,
           disabled: false,
+          proxyMode: resolveLiveProxyMode(proxyMode),
         }
 
         try {
           const nums = await refreshLiveChannels(liveInfo);
           liveInfo.channelNumber = nums;
         } catch (error) {
-          console.error('刷新直播源失败:', error);
+          logger.error('刷新直播源失败:', error);
           liveInfo.channelNumber = 0;
         }
 
@@ -124,7 +127,7 @@ export const POST = withConfigMutation(async function POST(request: NextRequest)
           const nums = await refreshLiveChannels(editSource);
           editSource.channelNumber = nums;
         } catch (error) {
-          console.error('刷新直播源失败:', error);
+          logger.error('刷新直播源失败:', error);
           editSource.channelNumber = 0;
         }
         break;

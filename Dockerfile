@@ -4,7 +4,7 @@ FROM node:24-alpine AS deps
 # Native SQLite fallback when a matching prebuilt binary is unavailable.
 RUN apk add --no-cache python3 make g++
 
-# 启用 corepack 并激活 pnpm（Node20 默认提供 corepack）
+# 启用 corepack 并激活项目固定版本的 pnpm
 RUN corepack enable && corepack prepare pnpm@10.14.0 --activate
 
 WORKDIR /app
@@ -86,6 +86,8 @@ RUN mkdir -p /app/.data "$OFFLINE_DOWNLOAD_DIR" \
 
 # 默认以 root 启动，由 entrypoint 按 PUID/PGID 环境变量调整后降权运行
 EXPOSE 3000
+
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 CMD ["node", "scripts/healthcheck.cjs"]
 
 # 使用自定义启动脚本，先预加载配置再启动服务器
 ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]

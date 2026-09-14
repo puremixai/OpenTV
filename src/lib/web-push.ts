@@ -1,6 +1,8 @@
-/* eslint-disable no-console */
+
 
 import crypto from 'crypto';
+
+import { logger } from '@/lib/logger';
 
 import { lockManager } from './lock';
 import { safeFetch } from './safe-http';
@@ -125,7 +127,7 @@ async function fetchWebPushEndpoint(
 
   if (isCloudflareEnvironment()) {
     if (proxy) {
-      console.warn('WEB_PUSH_PROXY is ignored in Cloudflare runtime; use WEB_PUSH_BASEURL instead.');
+      logger.warn('WEB_PUSH_PROXY is ignored in Cloudflare runtime; use WEB_PUSH_BASEURL instead.');
     }
     return fetch(requestUrl, init) as Promise<Response>;
   }
@@ -158,7 +160,7 @@ function parseStoredVapidKeys(raw: string | null): VapidKeys | null {
       return { publicKey: parsed.publicKey, privateKey: parsed.privateKey };
     }
   } catch (error) {
-    console.error('Failed to parse stored Web Push VAPID keys:', error);
+    logger.error('Failed to parse stored Web Push VAPID keys:', error);
   }
 
   return null;
@@ -214,7 +216,7 @@ export async function getVapidPublicKey(storage: IStorage): Promise<string | nul
   try {
     return (await getVapidKeys(storage)).publicKey;
   } catch (error) {
-    console.error('Failed to get Web Push VAPID public key:', error);
+    logger.error('Failed to get Web Push VAPID public key:', error);
     return null;
   }
 }
@@ -224,7 +226,7 @@ export async function isWebPushConfigured(storage: IStorage): Promise<boolean> {
     await getVapidKeys(storage);
     return true;
   } catch (error) {
-    console.error('Web Push VAPID keys are not configured:', error);
+    logger.error('Web Push VAPID keys are not configured:', error);
     return false;
   }
 }
@@ -417,13 +419,13 @@ async function sendToSubscriptionWithRetry(
         return response;
       }
 
-      console.warn(
+      logger.warn(
         `Web Push send failed with ${response.status}, retrying (${attempt + 1}/${WEB_PUSH_MAX_RETRIES})...`
       );
     } catch (error) {
       lastError = error;
       if (attempt === WEB_PUSH_MAX_RETRIES) break;
-      console.warn(
+      logger.warn(
         `Web Push send error, retrying (${attempt + 1}/${WEB_PUSH_MAX_RETRIES}):`,
         error
       );
@@ -477,11 +479,11 @@ export async function dispatchWebPushNotificationWithResult(
 
         await storage.updatePushSubscriptionDeliveryStats?.(userName, subscription.endpoint, false);
         const errorText = await response.text().catch(() => '');
-        console.warn(`Web Push failed (${response.status}) for ${userName}: ${errorText}`);
+        logger.warn(`Web Push failed (${response.status}) for ${userName}: ${errorText}`);
         return { endpointHost, ok: false, status: response.status, error: errorText || response.statusText };
       } catch (error) {
         await storage.updatePushSubscriptionDeliveryStats?.(userName, subscription.endpoint, false);
-        console.error('Web Push delivery error:', error);
+        logger.error('Web Push delivery error:', error);
         return {
           endpointHost,
           ok: false,

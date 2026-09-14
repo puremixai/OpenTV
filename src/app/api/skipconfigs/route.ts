@@ -1,8 +1,9 @@
-/* eslint-disable no-console */
+
 
 import { NextRequest, NextResponse } from 'next/server';
 
 import { db } from '@/lib/db';
+import { logger } from '@/lib/logger';
 import { getAuthenticatedUser } from '@/lib/session';
 import { SkipConfig } from '@/lib/types';
 
@@ -51,7 +52,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(configs);
     }
   } catch (error) {
-    console.error('获取跳过片头片尾配置失败:', error);
+    logger.error('获取跳过片头片尾配置失败:', error);
     return NextResponse.json(
       { error: '获取跳过片头片尾配置失败' },
       { status: 500 }
@@ -101,7 +102,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('保存跳过片头片尾配置失败:', error);
+    logger.error('保存跳过片头片尾配置失败:', error);
     return NextResponse.json(
       { error: '保存跳过片头片尾配置失败' },
       { status: 500 }
@@ -144,7 +145,7 @@ export async function DELETE(request: NextRequest) {
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('删除跳过片头片尾配置失败:', error);
+    logger.error('删除跳过片头片尾配置失败:', error);
     return NextResponse.json(
       { error: '删除跳过片头片尾配置失败' },
       { status: 500 }

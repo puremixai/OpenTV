@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any,no-console,@typescript-eslint/no-non-null-assertion */
+/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-non-null-assertion */
 
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -6,6 +6,7 @@ import { invalidateUserAccessTokens } from '@/lib/access-token-invalidation';
 import { getConfig } from '@/lib/config';
 import { db, getStorage } from '@/lib/db';
 import { sanitizeFeaturePermissions } from '@/lib/feature-permissions';
+import { logger } from '@/lib/logger';
 import { revokeAllRefreshTokens } from '@/lib/refresh-token';
 import { checkMutationVersion, withConfigMutation } from '@/lib/server/config-mutation';
 import { getAuthenticatedUser } from '@/lib/session';
@@ -20,9 +21,9 @@ async function terminateUserSessions(username: string, reason: string): Promise<
     await revokeAllRefreshTokens(username);
     const storage = getStorage();
     await storage.deleteAllPushSubscriptions?.(username);
-    console.log(`Terminated all sessions for ${username}: ${reason}`);
+    logger.debug(`Terminated all sessions for ${username}: ${reason}`);
   } catch (error) {
-    console.error(`Failed to terminate sessions for ${username}:`, error);
+    logger.error(`Failed to terminate sessions for ${username}:`, error);
   }
 }
 
@@ -434,7 +435,7 @@ export const POST = withConfigMutation(async function POST(request: NextRequest)
             adminConfig.UserConfig.Tags.splice(groupIndex, 1);
 
             // 记录删除操作的影响
-            console.log(`删除用户组 "${groupName}"，影响用户: ${affectedUsers.length > 0 ? affectedUsers.join(', ') : '无'}`);
+            logger.debug(`删除用户组 "${groupName}"，影响用户: ${affectedUsers.length > 0 ? affectedUsers.join(', ') : '无'}`);
 
             break;
           }
@@ -516,7 +517,7 @@ export const POST = withConfigMutation(async function POST(request: NextRequest)
       }
     );
   } catch (error) {
-    console.error('用户管理操作失败:', error);
+    logger.error('用户管理操作失败:', error);
     return NextResponse.json(
       {
         error: '用户管理操作失败',

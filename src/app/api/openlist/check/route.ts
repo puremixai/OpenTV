@@ -1,7 +1,8 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, no-console */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { NextRequest, NextResponse } from 'next/server';
 
+import { logger } from '@/lib/logger';
 import { OpenListClient } from '@/lib/openlist.client';
 import { requireFeaturePermission } from '@/lib/permissions';
 import { getAuthenticatedUser } from '@/lib/session';
@@ -52,7 +53,7 @@ export async function POST(request: NextRequest) {
       );
     }
   } catch (error) {
-    console.error('检查 OpenList 连通性失败:', error);
+    logger.error('检查 OpenList 连通性失败:', error);
     return NextResponse.json(
       {
         success: false,

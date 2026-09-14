@@ -1,7 +1,8 @@
-/* eslint-disable no-console,@typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from 'next/server';
 
 import { db } from '@/lib/db';
+import { logger } from '@/lib/logger';
 import { getAuthenticatedUser } from '@/lib/session';
 
 export const runtime = 'nodejs';
@@ -83,7 +84,7 @@ export async function GET(request: NextRequest) {
       }
     );
   } catch (error) {
-    console.error('获取用户列表失败:', error);
+    logger.error('获取用户列表失败:', error);
     return NextResponse.json(
       {
         error: '获取用户列表失败',

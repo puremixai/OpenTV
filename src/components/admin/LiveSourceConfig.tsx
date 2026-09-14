@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, no-console, @typescript-eslint/no-non-null-assertion,react-hooks/exhaustive-deps,@typescript-eslint/no-empty-function */
+/* eslint-disable @typescript-eslint/no-explicit-any, no-console */
 
 'use client';
 import {
@@ -21,10 +21,11 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { GripVertical } from 'lucide-react';
-import { Fragment, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { AdminConfig } from '@/lib/admin.types';
 import { adminFetch as fetch } from '@/lib/admin-fetch';
+import { resolveLiveProxyMode } from '@/lib/live-playback';
 
 import {
   AlertModal,
@@ -35,6 +36,12 @@ import {
 } from '@/components/admin/shared';
 
 import { LiveDataSource } from './types';
+
+const liveProxyModes = [
+  { value: 'direct', label: '直连（默认）' },
+  { value: 'm3u8-only', label: '仅代理m3u8' },
+  { value: 'full', label: '全量代理' },
+] as const;
 
 export const LiveSourceConfig = ({
   config,
@@ -60,6 +67,7 @@ export const LiveSourceConfig = ({
     epg: '',
     disabled: false,
     from: 'custom',
+    proxyMode: 'direct',
   });
 
   // dnd-kit 传感器
@@ -74,7 +82,7 @@ export const LiveSourceConfig = ({
         delay: 150, // 长按 150ms 后触发，避免与滚动冲突
         tolerance: 5,
       },
-    })
+    }),
   );
 
   // 初始化
@@ -114,7 +122,7 @@ export const LiveSourceConfig = ({
     if (!target) return;
     const action = target.disabled ? 'enable' : 'disable';
     withLoading(`toggleLiveSource_${key}`, () =>
-      callLiveSourceApi({ action, key })
+      callLiveSourceApi({ action, key }),
     ).catch(() => {
       console.error('操作失败', action, key);
     });
@@ -122,7 +130,7 @@ export const LiveSourceConfig = ({
 
   const handleSetProxyMode = (
     key: string,
-    mode: 'full' | 'm3u8-only' | 'direct'
+    mode: 'full' | 'm3u8-only' | 'direct',
   ) => {
     withLoading(`setLiveProxyMode_${key}`, async () => {
       // 保存旧值用于回滚
@@ -130,7 +138,7 @@ export const LiveSourceConfig = ({
 
       // 乐观更新本地状态
       setLiveSources((prev) =>
-        prev.map((s) => (s.key === key ? { ...s, proxyMode: mode } : s))
+        prev.map((s) => (s.key === key ? { ...s, proxyMode: mode } : s)),
       );
 
       try {
@@ -153,11 +161,11 @@ export const LiveSourceConfig = ({
       } catch (error) {
         // 失败时回滚本地状态
         setLiveSources((prev) =>
-          prev.map((s) => (s.key === key ? { ...s, proxyMode: oldMode } : s))
+          prev.map((s) => (s.key === key ? { ...s, proxyMode: oldMode } : s)),
         );
         showError(
           error instanceof Error ? error.message : '设置代理模式失败',
-          showAlert
+          showAlert,
         );
         throw error;
       }
@@ -168,7 +176,7 @@ export const LiveSourceConfig = ({
 
   const handleDelete = (key: string) => {
     withLoading(`deleteLiveSource_${key}`, () =>
-      callLiveSourceApi({ action: 'delete', key })
+      callLiveSourceApi({ action: 'delete', key }),
     ).catch(() => {
       console.error('操作失败', 'delete', key);
     });
@@ -247,6 +255,7 @@ export const LiveSourceConfig = ({
         url: newLiveSource.url,
         ua: newLiveSource.ua,
         epg: newLiveSource.epg,
+        proxyMode: resolveLiveProxyMode(newLiveSource.proxyMode),
       });
       setNewLiveSource({
         name: '',
@@ -256,6 +265,7 @@ export const LiveSourceConfig = ({
         ua: '',
         disabled: false,
         from: 'custom',
+        proxyMode: 'direct',
       });
       setShowAddForm(false);
     }).catch(() => {
@@ -297,7 +307,7 @@ export const LiveSourceConfig = ({
   const handleSaveOrder = () => {
     const order = liveSources.map((s) => s.key);
     withLoading('saveLiveSourceOrder', () =>
-      callLiveSourceApi({ action: 'sort', order })
+      callLiveSourceApi({ action: 'sort', order }),
     )
       .then(() => {
         setOrderChanged(false);
@@ -362,7 +372,7 @@ export const LiveSourceConfig = ({
         </td>
         <td className='px-6 py-4 whitespace-nowrap max-w-4'>
           <span
-            className={`px-2 py-1 text-xs rounded-full ${
+            className={`rounded-full px-2 py-1 text-xs ${
               !liveSource.disabled
                 ? 'bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-300'
                 : 'bg-red-100 dark:bg-red-900/20 text-red-800 dark:text-red-300'
@@ -373,30 +383,33 @@ export const LiveSourceConfig = ({
         </td>
         <td className='px-6 py-4 whitespace-nowrap'>
           <select
-            value={liveSource.proxyMode || 'full'}
+            aria-label={`${liveSource.name}代理模式`}
+            value={resolveLiveProxyMode(liveSource.proxyMode)}
             onChange={(e) => {
               handleSetProxyMode(
                 liveSource.key,
-                e.target.value as 'full' | 'm3u8-only' | 'direct'
+                resolveLiveProxyMode(e.target.value),
               );
             }}
             disabled={isLoading(`setLiveProxyMode_${liveSource.key}`)}
-            className={`px-2 py-1 text-xs rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 ${
+            className={`rounded border border-gray-300 bg-white px-2 py-1 text-xs text-gray-900 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 ${
               isLoading(`setLiveProxyMode_${liveSource.key}`)
                 ? 'opacity-50 cursor-not-allowed'
                 : 'cursor-pointer'
             }`}
           >
-            <option value='full'>全量代理</option>
-            <option value='m3u8-only'>仅代理m3u8</option>
-            <option value='direct'>直连</option>
+            {liveProxyModes.map(({ value, label }) => (
+              <option key={value} value={value}>
+                {label}
+              </option>
+            ))}
           </select>
         </td>
         <td className='px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2'>
           <button
             onClick={() => handleToggleEnable(liveSource.key)}
             disabled={isLoading(`toggleLiveSource_${liveSource.key}`)}
-            className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium ${
+            className={`inline-flex items-center rounded-full px-3 py-1.5 text-xs font-medium ${
               !liveSource.disabled
                 ? buttonStyles.roundedDanger
                 : buttonStyles.roundedSuccess
@@ -463,7 +476,7 @@ export const LiveSourceConfig = ({
                 value={refreshIntervalHours}
                 onChange={(e) =>
                   setRefreshIntervalHours(
-                    Math.max(1, parseInt(e.target.value) || 12)
+                    Math.max(1, parseInt(e.target.value) || 12),
                   )
                 }
                 className='px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 w-28 sm:w-40'
@@ -472,7 +485,7 @@ export const LiveSourceConfig = ({
             <button
               onClick={handleSaveRefreshInterval}
               disabled={isLoading('saveLiveRefreshInterval')}
-              className={`px-3 py-1.5 text-sm whitespace-nowrap shrink-0 ${
+              className={`shrink-0 px-3 py-1.5 text-sm whitespace-nowrap ${
                 isLoading('saveLiveRefreshInterval')
                   ? buttonStyles.disabled
                   : buttonStyles.success
@@ -490,7 +503,7 @@ export const LiveSourceConfig = ({
             <button
               onClick={handleRefreshLiveSources}
               disabled={isRefreshing || isLoading('refreshLiveSources')}
-              className={`px-3 py-1.5 text-sm font-medium flex items-center space-x-2 ${
+              className={`flex items-center space-x-2 px-3 py-1.5 text-sm font-medium ${
                 isRefreshing || isLoading('refreshLiveSources')
                   ? 'bg-gray-400 dark:bg-gray-600 cursor-not-allowed text-white rounded-lg'
                   : 'bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 text-white rounded-lg transition-colors'
@@ -512,6 +525,9 @@ export const LiveSourceConfig = ({
             </button>
           </div>
         </div>
+        <p className='text-xs text-gray-500 dark:text-gray-400'>
+          直连由播放器直接请求直播地址，服务器不转发视频；仅在播放受限时按需配置代理。
+        </p>
       </div>
 
       {showAddForm && (
@@ -562,6 +578,26 @@ export const LiveSourceConfig = ({
               }
               className='px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100'
             />
+            <label className='flex items-center gap-3 text-sm text-gray-700 dark:text-gray-300'>
+              代理模式
+              <select
+                aria-label='新直播源代理模式'
+                value={resolveLiveProxyMode(newLiveSource.proxyMode)}
+                onChange={(e) =>
+                  setNewLiveSource((prev) => ({
+                    ...prev,
+                    proxyMode: resolveLiveProxyMode(e.target.value),
+                  }))
+                }
+                className='flex-1 rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-900 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100'
+              >
+                {liveProxyModes.map(({ value, label }) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+            </label>
           </div>
           <div className='flex justify-end'>
             <button
@@ -572,7 +608,7 @@ export const LiveSourceConfig = ({
                 !newLiveSource.url ||
                 isLoading('addLiveSource')
               }
-              className={`w-full sm:w-auto px-4 py-2 ${
+              className={`w-full px-4 py-2 sm:w-auto ${
                 !newLiveSource.name ||
                 !newLiveSource.key ||
                 !newLiveSource.url ||
@@ -611,7 +647,7 @@ export const LiveSourceConfig = ({
                 value={editingLiveSource.name}
                 onChange={(e) =>
                   setEditingLiveSource((prev) =>
-                    prev ? { ...prev, name: e.target.value } : null
+                    prev ? { ...prev, name: e.target.value } : null,
                   )
                 }
                 className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100'
@@ -637,7 +673,7 @@ export const LiveSourceConfig = ({
                 value={editingLiveSource.url}
                 onChange={(e) =>
                   setEditingLiveSource((prev) =>
-                    prev ? { ...prev, url: e.target.value } : null
+                    prev ? { ...prev, url: e.target.value } : null,
                   )
                 }
                 className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100'
@@ -652,7 +688,7 @@ export const LiveSourceConfig = ({
                 value={editingLiveSource.epg}
                 onChange={(e) =>
                   setEditingLiveSource((prev) =>
-                    prev ? { ...prev, epg: e.target.value } : null
+                    prev ? { ...prev, epg: e.target.value } : null,
                   )
                 }
                 className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100'
@@ -667,7 +703,7 @@ export const LiveSourceConfig = ({
                 value={editingLiveSource.ua}
                 onChange={(e) =>
                   setEditingLiveSource((prev) =>
-                    prev ? { ...prev, ua: e.target.value } : null
+                    prev ? { ...prev, ua: e.target.value } : null,
                   )
                 }
                 className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100'
@@ -707,49 +743,49 @@ export const LiveSourceConfig = ({
         className='border border-gray-200 dark:border-gray-700 rounded-lg max-h-112 overflow-y-auto overflow-x-auto relative'
         data-table='live-source-list'
       >
-        <table className='min-w-full divide-y divide-gray-200 dark:divide-gray-700'>
-          <thead className='bg-gray-50 dark:bg-gray-900 sticky top-0 z-10'>
-            <tr>
-              <th
-                className='px-2 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider'
-                aria-label='排序'
-              />
-              <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider'>
-                名称
-              </th>
-              <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider'>
-                Key
-              </th>
-              <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider'>
-                M3U 地址
-              </th>
-              <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider'>
-                节目单地址
-              </th>
-              <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider'>
-                自定义 UA
-              </th>
-              <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider'>
-                频道数
-              </th>
-              <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider'>
-                状态
-              </th>
-              <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider'>
-                代理模式
-              </th>
-              <th className='px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider'>
-                操作
-              </th>
-            </tr>
-          </thead>
-          <DndContext
-            sensors={sensors}
-            collisionDetection={closestCenter}
-            onDragEnd={handleDragEnd}
-            autoScroll={false}
-            modifiers={[restrictToVerticalAxis, restrictToParentElement]}
-          >
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
+          autoScroll={false}
+          modifiers={[restrictToVerticalAxis, restrictToParentElement]}
+        >
+          <table className='min-w-full divide-y divide-gray-200 dark:divide-gray-700'>
+            <thead className='bg-gray-50 dark:bg-gray-900 sticky top-0 z-10'>
+              <tr>
+                <th
+                  className='px-2 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider'
+                  aria-label='排序'
+                />
+                <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider'>
+                  名称
+                </th>
+                <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider'>
+                  Key
+                </th>
+                <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider'>
+                  M3U 地址
+                </th>
+                <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider'>
+                  节目单地址
+                </th>
+                <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider'>
+                  自定义 UA
+                </th>
+                <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider'>
+                  频道数
+                </th>
+                <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider'>
+                  状态
+                </th>
+                <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider'>
+                  代理模式
+                </th>
+                <th className='px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider'>
+                  操作
+                </th>
+              </tr>
+            </thead>
             <SortableContext
               items={liveSources.map((s) => s.key)}
               strategy={verticalListSortingStrategy}
@@ -760,8 +796,8 @@ export const LiveSourceConfig = ({
                 ))}
               </tbody>
             </SortableContext>
-          </DndContext>
-        </table>
+          </table>
+        </DndContext>
       </div>
 
       {/* 保存排序按钮 */}

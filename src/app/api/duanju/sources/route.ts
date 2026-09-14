@@ -1,9 +1,10 @@
-/* eslint-disable @typescript-eslint/no-explicit-any,no-console */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { NextResponse } from 'next/server';
 
 import { getCacheTime } from '@/lib/config';
 import { getDuanjuSources } from '@/lib/duanju';
+import { logger } from '@/lib/logger';
 
 export const runtime = 'nodejs';
 
@@ -28,7 +29,7 @@ export async function GET() {
       }
     );
   } catch (error) {
-    console.error('获取短剧视频源失败:', error);
+    logger.error('获取短剧视频源失败:', error);
     return NextResponse.json(
       {
         code: 500,

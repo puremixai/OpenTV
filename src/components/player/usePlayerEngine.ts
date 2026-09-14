@@ -16,6 +16,7 @@ import { isLazyDetailSource, isNetdiskMountSource } from '@/lib/player/source';
 import { DanmakuFilterConfig, SearchResult } from '@/lib/types';
 
 import { loadPlayerPlugins } from './load-player-plugins';
+import type { PlaybackProgressGuard } from './playback-progress';
 import {
   HarmonyHlsPlaybackMode,
   NetdiskHlsPlaybackMode,
@@ -24,6 +25,8 @@ import {
 } from './types';
 interface PlayerEngineContext {
   videoUrl: string;
+  videoProgressRevision?: number;
+  playbackProgressGuard?: PlaybackProgressGuard;
   loading: boolean;
   currentEpisodeIndex: number;
   artRef: MutableRefObject<HTMLDivElement | null>;
@@ -120,7 +123,7 @@ interface PlayerEngineContext {
     shouldDisableControls: boolean;
     broadcastPlayState: () => void;
   };
-  handleNextEpisode: () => Promise<void>;
+  handleNextEpisode: (resumePlayback?: boolean) => Promise<void>;
   syncAnime4KCanvasFlip: (flip?: string | undefined) => void;
   setPlayerReady: Dispatch<SetStateAction<boolean>>;
   currentEpisodeIndexRef: MutableRefObject<number>;
@@ -146,8 +149,6 @@ interface PlayerEngineContext {
   currentIdRef: MutableRefObject<string>;
   lastSkipCheckRef: MutableRefObject<number>;
   proxyAttemptedRef: MutableRefObject<boolean>;
-  isEpisodeFilteredByTitle: (title: string) => boolean;
-  setCurrentEpisodeIndex: Dispatch<SetStateAction<number>>;
   lastSaveTimeRef: MutableRefObject<number>;
   nextEpisodePreCacheTriggeredRef: MutableRefObject<boolean>;
   nextEpisodeDanmakuPreloadTriggeredRef: MutableRefObject<boolean>;
@@ -156,6 +157,8 @@ interface PlayerEngineContext {
 /** ArtPlayer/HLS lifecycle and cleanup. Dependencies remain explicit in the effect. */
 export function usePlayerEngine({
   videoUrl,
+  videoProgressRevision = 0,
+  playbackProgressGuard,
   loading,
   currentEpisodeIndex,
   artRef,
@@ -249,8 +252,6 @@ export function usePlayerEngine({
   currentIdRef,
   lastSkipCheckRef,
   proxyAttemptedRef,
-  isEpisodeFilteredByTitle,
-  setCurrentEpisodeIndex,
   lastSaveTimeRef,
   nextEpisodePreCacheTriggeredRef,
   nextEpisodeDanmakuPreloadTriggeredRef,
@@ -258,15 +259,25 @@ export function usePlayerEngine({
 }: PlayerEngineContext) {
   const initializationRef = useRef(0);
   const hlsRequestRef = useRef(0);
+  useEffect(() => () => { hlsRequestRef.current++; }, []);
+  const activeMediaRef = useRef<{ player: any; revision: number; url: string; started: boolean; resetPosition: boolean } | null>(null);
   useEffect(() => {
     const initialization = ++initializationRef.current;
-    hlsRequestRef.current++;
+    const isCurrentInitialization = () => initialization === initializationRef.current &&
+      (!playbackProgressGuard || playbackProgressGuard.isCurrent(videoProgressRevision));
+    const isCurrentMedia = (player: any) => {
+      const media = activeMediaRef.current;
+      return !!media && media.player === player && player === artPlayerRef.current &&
+        (!playbackProgressGuard || playbackProgressGuard.isCurrent(media.revision));
+    };
     if (
+      !isCurrentInitialization() ||
       !videoUrl ||
       loading ||
       currentEpisodeIndex === null ||
       !artRef.current
     ) {
+      hlsRequestRef.current++;
       return;
     }
 
@@ -389,7 +400,8 @@ export function usePlayerEngine({
       const previousVideo = artPlayerRef.current.video as
         | (HTMLVideoElement & { hls?: { destroy?: () => void } })
         | undefined;
-      if (previousVideo?.hls) {
+      const sameUrl = activeMediaRef.current?.url === videoUrl;
+      if (!sameUrl && previousVideo?.hls) {
         try {
           previousVideo.hls.destroy?.();
         } catch (err) {
@@ -397,7 +409,19 @@ export function usePlayerEngine({
         }
         delete previousVideo.hls;
       }
-      artPlayerRef.current.switch = videoUrl;
+      if (!sameUrl && previousVideo) {
+        hlsRequestRef.current++;
+        previousVideo.pause();
+        previousVideo.removeAttribute('src');
+        previousVideo.load();
+      }
+      activeMediaRef.current = { player: artPlayerRef.current, revision: videoProgressRevision, url: videoUrl,
+        started: sameUrl && (activeMediaRef.current?.started || artPlayerRef.current.video?.readyState >= 3),
+        resetPosition: sameUrl && activeMediaRef.current?.revision !== videoProgressRevision };
+      if (!sameUrl) artPlayerRef.current.switch = videoUrl;
+      if (sameUrl && artPlayerRef.current.video?.readyState >= 3) {
+        artPlayerRef.current.emit('video:canplay');
+      }
       artPlayerRef.current.title = `${videoTitle} - ${playerEpisodeLabel}`;
       artPlayerRef.current.poster = videoCover;
       if (artPlayerRef.current?.video) {
@@ -418,26 +442,27 @@ export function usePlayerEngine({
 
     // WebKit浏览器或首次创建：销毁之前的播放器实例并创建新的
     // 异步初始化播放器
+    hlsRequestRef.current++;
     const initPlayer = async () => {
       try {
         // 先清理旧播放器实例
         if (artPlayerRef.current) {
           await cleanupPlayer();
-          if (initialization !== initializationRef.current) return;
+          if (!isCurrentInitialization()) return;
           // Rebuilds retain the DOM cleanup grace period; first playback has
           // no previous player or MediaSource to release.
           await new Promise((resolve) => setTimeout(resolve, 100));
         }
-        if (initialization !== initializationRef.current) return;
+        if (!isCurrentInitialization()) return;
 
         // 双重检查：如果旧播放器仍然存在，再次清理
         if (artPlayerRef.current) {
           console.warn('旧播放器仍存在，再次清理');
           await cleanupPlayer();
-          if (initialization !== initializationRef.current) return;
+          if (!isCurrentInitialization()) return;
           await new Promise((resolve) => setTimeout(resolve, 100));
         }
-        if (initialization !== initializationRef.current || !artRef.current) return;
+        if (!isCurrentInitialization() || !artRef.current) return;
 
         // 再次确保容器为空
         if (artRef.current) {
@@ -469,7 +494,7 @@ export function usePlayerEngine({
             needsHlsInitially ? loadHls() : undefined,
             loadPlayerPlugins({ danmaku: isDanmakuEnabled(), thumbnails: !isPlaybackThumbnailDisabled() }),
           ]);
-        if (initialization !== initializationRef.current || !artRef.current) return;
+        if (!isCurrentInitialization() || !artRef.current) return;
 
         const Artplayer = ArtplayerModule.default;
         const initialHls = HlsModule?.default;
@@ -1927,6 +1952,11 @@ export function usePlayerEngine({
           ],
         });
 
+        const eventPlayer = artPlayerRef.current;
+        activeMediaRef.current = { player: eventPlayer, revision: videoProgressRevision, url: videoUrl, started: false, resetPosition: false };
+        eventPlayer.on('video:loadstart', () => {
+          if (isCurrentMedia(eventPlayer)) activeMediaRef.current!.started = true;
+        });
         artPlayerRef.current.on('destroy', () => {
           clearPlayerTimeouts();
         });
@@ -1935,6 +1965,8 @@ export function usePlayerEngine({
 
         // 监听播放器事件
         artPlayerRef.current.on('ready', async () => {
+          if (!isCurrentMedia(eventPlayer)) return;
+          const readyMedia = activeMediaRef.current;
           setError(null);
 
           rescueWebkitHlsBootstrap('player-ready');
@@ -2277,6 +2309,7 @@ export function usePlayerEngine({
 
             // 自动搜索并加载弹幕
             await autoSearchDanmaku();
+            if (readyMedia !== activeMediaRef.current || !isCurrentMedia(eventPlayer)) return;
 
             if (artPlayerRef.current) {
               // 监听弹幕显示/隐藏事件，保存开关状态到 localStorage
@@ -2899,7 +2932,12 @@ export function usePlayerEngine({
 
         // 监听视频可播放事件，这时恢复播放进度更可靠
         artPlayerRef.current.on('video:canplay', () => {
+          if (!isCurrentMedia(eventPlayer) || !activeMediaRef.current?.started || eventPlayer.video.readyState < 3) return;
           let restoredResumeTime = false;
+          if (activeMediaRef.current.resetPosition && !(resumeTimeRef.current && resumeTimeRef.current > 0)) {
+            eventPlayer.currentTime = 0;
+          }
+          activeMediaRef.current.resetPosition = false;
 
           // 若存在需要恢复的播放进度，则跳转
           if (resumeTimeRef.current && resumeTimeRef.current > 0) {
@@ -2987,6 +3025,7 @@ export function usePlayerEngine({
           }, 0);
 
           // 隐藏换源加载状态
+          playbackProgressGuard?.resume(activeMediaRef.current!.revision);
           setIsVideoLoading(false);
           setVideoError(null);
           setCorsFailedUrl(null);
@@ -3317,44 +3356,18 @@ export function usePlayerEngine({
           }
         });
 
-        // 监听视频播放结束事件，自动播放下一集（房员禁用）
+        // Auto-next uses the same selection/URL path as a manual episode switch.
         artPlayerRef.current.on('video:ended', () => {
-          // 房员禁用自动播放下一集
+          if (!isCurrentMedia(eventPlayer)) return;
           if (playSync.shouldDisableControls) {
-            console.log('[PlayPage] Member cannot auto-play next episode');
-            if (artPlayerRef.current) {
-              artPlayerRef.current.notice.show = '等待房主切换下一集';
-            }
+            eventPlayer.notice.show = '等待房主切换下一集';
             return;
           }
-
-          const d = detailRef.current;
-          const idx = currentEpisodeIndexRef.current;
-
-          if (!d || !d.episodes || idx >= d.episodes.length - 1) {
-            return;
-          }
-
-          // 查找下一个未被过滤的集数
-          let nextIdx = idx + 1;
-          while (nextIdx < d.episodes.length) {
-            const episodeTitle = d.episodes_titles?.[nextIdx];
-            const isFiltered =
-              episodeTitle && isEpisodeFilteredByTitle(episodeTitle);
-
-            if (!isFiltered) {
-              setTimeout(() => {
-                setCurrentEpisodeIndex(nextIdx);
-              }, 1000);
-              return;
-            }
-            nextIdx++;
-          }
-
-          // 所有后续集数都被屏蔽
-          if (artPlayerRef.current) {
-            artPlayerRef.current.notice.show = '后续集数均已屏蔽，已自动停止';
-          }
+          const completedMedia = activeMediaRef.current;
+          schedulePlayerTimeout(() => {
+            if (completedMedia !== activeMediaRef.current || !isCurrentMedia(eventPlayer)) return;
+            void handleNextEpisode(true);
+          }, 1000);
         });
 
         artPlayerRef.current.on('video:timeupdate', () => {
@@ -3507,7 +3520,7 @@ export function usePlayerEngine({
           );
         }
       } catch (err) {
-        if (initialization !== initializationRef.current) return;
+        if (!isCurrentInitialization()) return;
         console.error('创建播放器失败:', err);
         setError('播放器初始化失败');
       }
@@ -3517,10 +3530,11 @@ export function usePlayerEngine({
     initPlayer();
     return () => {
       initializationRef.current++;
-      hlsRequestRef.current++;
     };
   }, [
     videoUrl,
+    videoProgressRevision,
+    playbackProgressGuard,
     loading,
     blockAdEnabled,
     harmonyHlsPlaybackMode,

@@ -17,7 +17,7 @@
     "start": "cross-env NODE_ENV=production node server.js",
     "preview:cloudflare": "wrangler dev",
     "deploy:cloudflare": "wrangler deploy",
-    "lint": "eslint src",
+    "lint": "node scripts/lint-baseline.cjs",
     "lint:fix": "eslint src --fix && pnpm format",
     "lint:strict": "eslint --max-warnings=0 src",
     "typecheck": "tsc --noEmit --incremental false",
@@ -46,7 +46,9 @@
     "test:smoke:production": "node scripts/smoke-local.cjs --production",
     "dev:turbo": "cross-env XTV_BUNDLER=turbopack pnpm dev",
     "build:turbo": "pnpm gen:manifest && cross-env XTV_BUNDLER=turbopack next build --turbopack && pnpm gen:pwa",
-    "gen:pwa": "node scripts/generate-pwa.cjs"
+    "gen:pwa": "node scripts/generate-pwa.cjs",
+    "lint:report": "eslint src",
+    "lint:baseline": "node scripts/lint-baseline.cjs --update"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
@@ -62,7 +64,6 @@
     "@types/nprogress": "^0.2.3",
     "@types/qrcode": "^1.5.6",
     "@upstash/redis": "^1.25.0",
-    "@vidstack/react": "^1.12.13",
     "@xmldom/xmldom": "^0.9.10",
     "anime4k-webgpu": "^1.0.0",
     "artplayer": "^5.4.0",
@@ -80,7 +81,6 @@
     "hls.js": "^1.6.10",
     "https-proxy-agent": "^7.0.6",
     "lucide-react": "^0.438.0",
-    "media-icons": "^1.1.5",
     "mux.js": "^6.3.0",
     "nanoid": "^5.1.6",
     "next": "16.3.5",
@@ -103,7 +103,6 @@
     "socket.io-client": "^4.8.1",
     "swiper": "^11.2.8",
     "tailwind-merge": "^3.7.0",
-    "vidstack": "^0.6.15",
     "xml2js": "^0.6.2",
     "xpath": "^0.0.34",
     "zod": "^3.24.1"
@@ -116,7 +115,7 @@
     "@tailwindcss/postcss": "4.3.3",
     "@tailwindcss/typography": "^0.5.20",
     "@testing-library/dom": "^10.4.1",
-    "@testing-library/jest-dom": "^5.17.0",
+    "@testing-library/jest-dom": "^7.0.1",
     "@testing-library/react": "^16.3.0",
     "@types/better-sqlite3": "^7.6.11",
     "@types/bs58": "^5.0.0",
@@ -139,7 +138,7 @@
     "eslint-config-prettier": "^8.10.0",
     "eslint-plugin-simple-import-sort": "^7.0.0",
     "eslint-plugin-unused-imports": "^4.0.0",
-    "jest": "^27.5.1",
+    "jest": "^30.5.1",
     "next-router-mock": "^0.9.0",
     "postcss": "^8.5.1",
     "prettier": "^3.9.6",
@@ -149,7 +148,8 @@
     "vercel": "^50.4.10",
     "webpack-obfuscator": "^3.5.1",
     "workbox-build": "7.4.1",
-    "wrangler": "4.131.1"
+    "wrangler": "4.131.1",
+    "jest-environment-jsdom": "^30.5.1"
   },
   "packageManager": "pnpm@10.14.0"
 }

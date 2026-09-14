@@ -125,9 +125,7 @@ function updateVersionFile(version) {
 }
 
 function generateVersionTs(version) {
-  return `/* eslint-disable no-console */
-
-const CURRENT_VERSION = '${version}';
+  return `const CURRENT_VERSION = '${version}';
 
 // 导出当前版本号供其他地方使用
 export { CURRENT_VERSION };

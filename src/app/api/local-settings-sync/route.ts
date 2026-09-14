@@ -1,4 +1,4 @@
-/* eslint-disable no-console */
+
 
 import { createHash } from 'crypto';
 import { NextRequest, NextResponse } from 'next/server';
@@ -6,6 +6,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getConfig } from '@/lib/config';
 import { db } from '@/lib/db';
 import { validateLocalSettingsPayload } from '@/lib/local-settings-sync';
+import { logger } from '@/lib/logger';
 import { getAuthenticatedUser } from '@/lib/session';
 
 export const runtime = 'nodejs';
@@ -30,7 +31,7 @@ async function getSyncMode(): Promise<'off' | 'manual' | 'auto'> {
     const mode = config.SiteConfig?.LocalSettingsSyncMode;
     if (mode === 'manual' || mode === 'auto') return mode;
   } catch (err) {
-    console.error('获取云同步模式失败:', err);
+    logger.error('获取云同步模式失败:', err);
   }
   return 'off';
 }
@@ -152,7 +153,7 @@ export async function PUT(request: NextRequest) {
       });
     }
   } catch (err) {
-    console.error('查询云端设置失败，继续尝试写入:', err);
+    logger.error('查询云端设置失败，继续尝试写入:', err);
   }
 
   try {
@@ -175,7 +176,7 @@ export async function PUT(request: NextRequest) {
       serverTime: Date.now(),
     });
   } catch (err) {
-    console.error('保存云同步设置失败:', err);
+    logger.error('保存云同步设置失败:', err);
     return NextResponse.json(
       { error: '保存失败，请稍后重试' },
       { status: 500 }

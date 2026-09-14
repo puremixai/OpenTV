@@ -97,6 +97,8 @@ docker compose -f compose.local.yaml down
 
 ## 更新应用
 
+完整镜像和 Lite 镜像均内置健康检查，通过 `scripts/healthcheck.cjs` 请求容器内配置端口的 `/api/health`。完整镜像由自定义服务提供该入口，Lite 的 Next 独立服务由 API 路由提供，二者复用同一状态判断。Compose 使用同一探针；PostgreSQL 不可用时检查失败，Redis 缓存暂时不可用仍按服务的降级策略保持就绪。其他存储模式目前只检查 HTTP 服务就绪，不探测各自的数据库。直接使用 `docker run` 时也会显示健康状态。
+
 从 XTV 更名前的源码升级时，请手动执行本节的拉取与重建流程一次。旧版本的更新检查不识别 OpenTV 日志标题，可能显示检查失败；更新后将使用新的品牌与仓库地址。若要同步已部署实例的站名，请将环境文件中的 `NEXT_PUBLIC_SITE_NAME` 和管理后台保存的站点名称设为 `OpenTV`，后台已有设置优先。
 
 从当前仓库获取更新后重新构建本地应用镜像。更新前按 [PostgreSQL + Redis 部署说明](POSTGRES-REDIS.md) 备份数据库，并保留三个环境文件和数据卷。旧版本用户还应阅读[升级兼容说明](SECURITY-UPGRADE.md)。

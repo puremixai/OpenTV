@@ -2,8 +2,7 @@ import dns from 'dns';
 import { BlockList, isIP } from 'net';
 
 let lists:
-  | { blocked: BlockList; globalV6: BlockList; mappedV4: BlockList }
-  | undefined;
+  { blocked: BlockList; globalV6: BlockList; mappedV4: BlockList } | undefined;
 function getAddressLists() {
   if (lists) return lists;
   const blocked = new BlockList();
@@ -81,7 +80,7 @@ async function resolveRealAddresses(hostname: string) {
               headers: { accept: 'application/dns-json' },
               redirect: 'error',
               signal: AbortSignal.timeout(5000),
-            }
+            },
           );
           if (!response.ok) throw new Error('Public DNS unavailable');
           const text = await response.text();
@@ -93,9 +92,9 @@ async function resolveRealAddresses(hostname: string) {
           if (data.Status !== 0)
             throw new Error('Public DNS resolution failed');
           return (data.Answer || []).filter(
-            (answer) => answer.type === 1 || answer.type === 28
+            (answer) => answer.type === 1 || answer.type === 28,
           );
-        })
+        }),
       );
       const records = answers.flat();
       const addresses = records.map((answer) => ({
@@ -113,7 +112,7 @@ async function resolveRealAddresses(hostname: string) {
       }
       const ttl = Math.max(
         0,
-        Math.min(60, ...records.map((record) => record.TTL || 0))
+        Math.min(60, ...records.map((record) => record.TTL || 0)),
       );
       realDnsCache.set(hostname, {
         expires: Date.now() + ttl * 1000,
@@ -127,7 +126,26 @@ async function resolveRealAddresses(hostname: string) {
   throw new Error('无法解析真实公网地址，请检查 DNS-over-HTTPS 网络连接');
 }
 
-export async function resolvePublicTarget(input: string) {
+// These grants come only from administrator-owned configuration, never URL parameters.
+// Even a trusted origin cannot dial metadata/link-local, multicast or reserved networks.
+function isTrustedLanAddress(address: string): boolean {
+  const lan = new BlockList();
+  for (const [network, prefix] of [
+    ['10.0.0.0', 8],
+    ['172.16.0.0', 12],
+    ['192.168.0.0', 16],
+    ['127.0.0.0', 8],
+  ] as const)
+    lan.addSubnet(network, prefix, 'ipv4');
+  lan.addSubnet('fc00::', 7, 'ipv6');
+  lan.addAddress('::1', 'ipv6');
+  return lan.check(address, isIP(address) === 4 ? 'ipv4' : 'ipv6');
+}
+
+export async function resolvePublicTarget(
+  input: string,
+  trustedOrigins: readonly string[] = [],
+) {
   const url = new URL(input);
   if (
     !['http:', 'https:'].includes(url.protocol) ||
@@ -143,20 +161,28 @@ export async function resolvePublicTarget(input: string) {
   if (!family && addresses.some((item) => isFakeIP(item.address))) {
     if (
       addresses.some(
-        (item) => isPrivateIP(item.address) && !isFakeIP(item.address)
+        (item) => isPrivateIP(item.address) && !isFakeIP(item.address),
       )
     )
       throw new Error('Private or reserved network is forbidden');
     addresses = await resolveRealAddresses(hostname);
   }
-  if (!addresses.length || addresses.some((item) => isPrivateIP(item.address)))
+  const trusted = trustedOrigins.includes(url.origin);
+  if (
+    !addresses.length ||
+    addresses.some(
+      (item) =>
+        isPrivateIP(item.address) &&
+        !(trusted && isTrustedLanAddress(item.address)),
+    )
+  )
     throw new Error('Private or reserved network is forbidden');
   return { url, addresses };
 }
 
 /** Use fetchPublicUrl for actual requests so the checked DNS result is pinned to the connection. */
 export async function validateProxyUrlServerSide(
-  input: string
+  input: string,
 ): Promise<boolean> {
   try {
     await resolvePublicTarget(input);

@@ -88,6 +88,11 @@ async function main() {
     }
     assert(ready, 'server readiness');
     for (const route of [
+      '/api/image-proxy',
+      '/api/proxy/logo',
+      '/api/proxy/m3u8',
+      '/api/proxy/key',
+      '/api/proxy/segment',
       '/api/proxy-m3u8',
       '/api/proxy/vod/segment',
       '/api/video-proxy',

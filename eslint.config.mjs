@@ -104,6 +104,11 @@ export default [
     },
   },
   {
+    files: ['src/lib/**/*.{js,jsx,ts,tsx}', 'src/app/api/**/*.{js,jsx,ts,tsx}'],
+    ignores: ['src/lib/logger.ts', 'src/lib/pancheck/vendor/**'],
+    rules: { 'no-console': 'error' },
+  },
+  {
     files: ['src/lib/pancheck/vendor/checkers/*.ts'],
     rules: { '@typescript-eslint/ban-ts-comment': 'off' },
   },

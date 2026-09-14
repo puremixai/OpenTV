@@ -1,9 +1,10 @@
-/* eslint-disable no-console */
+
 
 import { NextRequest, NextResponse } from 'next/server';
 
 import { getConfig, setCachedConfig } from '@/lib/config';
 import { db } from '@/lib/db';
+import { logger } from '@/lib/logger';
 import { assertBaiduCookieHeaderSafe, normalizeBaiduCookie } from '@/lib/netdisk/baidu.client';
 import {
   assertMobileAuthorizationHeaderSafe,
@@ -201,7 +202,7 @@ export const POST = withConfigMutation(async function POST(request: NextRequest)
 
     return NextResponse.json({ error: '未知操作' }, { status: 400 });
   } catch (error) {
-    console.error('[Admin NetDisk] 操作失败:', error);
+    logger.error('[Admin NetDisk] 操作失败:', error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : '操作失败' },
       { status: 500 }

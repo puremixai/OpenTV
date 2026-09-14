@@ -1,5 +1,7 @@
 # 安全与维护升级说明
 
+后续 Alpha 加固已补齐图片与旧直播代理的鉴权、出站限制和 API 路由策略测试。当前访问规则及受信任内网来源配置见 [API 访问策略](API-ACCESS-POLICY.md)。下文保留早期安全升级的背景与迁移说明。
+
 本轮基于 `e3d15dcf33518467e1a35936d410740c72e196b2`，分支 `fix/security-and-maintenance`。部署前备份数据库和环境配置。
 
 ## 登录与会话
@@ -56,6 +58,6 @@ pnpm start
 
 - Docker 完整版使用自定义 Node 服务器，包含内置 Socket、TV 遥控。Lite 和无常驻 Node 的平台不提供同等内置 Socket 能力；观影室需要配置外部服务器。
 - 房间、设备路由等仍依赖进程内状态。完整交互按单实例部署，本次没有加入共享 Socket Adapter、多实例房间存储或负载均衡粘性会话。
-- Next 构建恢复 ESLint 检查。CI 执行类型、lint 和测试，在 Linux 构建，并在 Windows 验证基础检查。历史 warnings 未作为本轮全部清理目标；第三方 `pancheck/vendor/checkers` 保留原有 `@ts-nocheck`，通过仅针对该目录的规则例外说明。
+- 当前 Next.js 16 的构建命令不执行 ESLint；类型、lint 和测试通过 `pnpm check` 与 CI 执行。CI 在 Linux 构建，并在 Windows 验证基础检查。历史 warnings 通过按文件和规则的基线限制增长；第三方 `pancheck/vendor/checkers` 保留原有 `@ts-nocheck`，通过仅针对该目录的规则例外说明。
 - 仓库含多种第三方视频、网盘、邮件、OIDC、Telegram 和云数据库集成。本轮本地验证不代表这些外部服务已逐一连通，也没有向云平台部署。
 - README 许可名称已与当前 LICENSE 文件内容对齐；LICENSE 原文保持不变。

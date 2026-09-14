@@ -103,6 +103,7 @@ docker compose -f compose.local.yaml up -d --no-build --no-deps --wait moontvplu
 | [配置参考](docs/CONFIGURATION.md)         | 视频源、环境变量、弹幕、代理、观影室及 TVBOX |
 | [数据库与缓存](docs/POSTGRES-REDIS.md)    | PostgreSQL / Redis、SQLite 迁移、备份与回退  |
 | [升级兼容说明](docs/SECURITY-UPGRADE.md)  | 旧版本鉴权、媒体代理、定时任务与脚本配置调整 |
+| [API 访问策略](docs/API-ACCESS-POLICY.md) | 路由鉴权分类、代理出站限制与受信任内网来源 |
 | [管理工作台](docs/ADMIN-UI.md)            | 后台功能与站点管理                           |
 | [多订阅配置](docs/MULTI-SUBSCRIPTIONS.md) | 订阅管理、来源和配置合并                     |
 | [AI 配置](docs/AI-CONFIG.md)              | AI 服务接入与相关设置                        |

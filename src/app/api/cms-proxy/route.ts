@@ -1,8 +1,9 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, no-console */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from 'next/server';
 
 import { getConfig } from '@/lib/config';
 import { db } from '@/lib/db';
+import { logger } from '@/lib/logger';
 import {
   getCachedMetaInfo,
   MetaInfo,
@@ -51,7 +52,7 @@ export async function GET(request: NextRequest) {
     });
 
     // 请求原始 CMS API
-    console.log('CMS 代理请求:', targetUrl.toString());
+    logger.debug('CMS 代理请求:', targetUrl.toString());
 
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 15000); // 15秒超时
@@ -68,7 +69,7 @@ export async function GET(request: NextRequest) {
       clearTimeout(timeoutId);
 
       if (!response.ok) {
-        console.error('CMS API 请求失败:', response.status, response.statusText);
+        logger.error('CMS API 请求失败:', response.status, response.statusText);
         return NextResponse.json(
           { error: '请求 CMS API 失败' },
           { status: response.status }
@@ -76,7 +77,7 @@ export async function GET(request: NextRequest) {
       }
 
       const data = await response.json();
-      console.log('CMS API 返回数据:', {
+      logger.debug('CMS API 返回数据:', {
         code: data.code,
         msg: data.msg,
         page: data.page,
@@ -98,7 +99,7 @@ export async function GET(request: NextRequest) {
         origin = `${proto}://${host}`;
       }
 
-      console.log('CMS 代理 origin:', origin);
+      logger.debug('CMS 代理 origin:', origin);
 
       // 处理返回数据，替换播放链接为代理链接
       const auth = await getAuthenticatedUser(request);
@@ -115,7 +116,7 @@ export async function GET(request: NextRequest) {
       clearTimeout(timeoutId);
 
       if (fetchError.name === 'AbortError') {
-        console.error('CMS API 请求超时:', targetUrl.toString());
+        logger.error('CMS API 请求超时:', targetUrl.toString());
         return NextResponse.json(
           { error: '请求超时' },
           { status: 504 }
@@ -126,7 +127,7 @@ export async function GET(request: NextRequest) {
     }
 
   } catch (error) {
-    console.error('CMS 代理失败:', error);
+    logger.error('CMS 代理失败:', error);
     return NextResponse.json(
       { error: '代理失败', details: (error as Error).message },
       { status: 500 }
@@ -181,7 +182,7 @@ function processCmsResponse(data: any, proxyOrigin: string, yellowFilter: boolea
 
           // 只为第一个视频输出详细日志
           if (index === 0) {
-            console.log('播放地址处理:', {
+            logger.debug('播放地址处理:', {
               vod_name: item.vod_name,
               vod_play_from: item.vod_play_from,
               original_length: originalUrl.length,
@@ -192,7 +193,7 @@ function processCmsResponse(data: any, proxyOrigin: string, yellowFilter: boolea
           }
         } catch (error) {
           // 如果处理失败，保持原样
-          console.error('处理播放地址失败:', error, item.vod_name);
+          logger.error('处理播放地址失败:', error, item.vod_name);
         }
       }
       return item;
@@ -413,7 +414,7 @@ async function handleOpenListProxy(request: NextRequest) {
         ],
       });
     } catch (error) {
-      console.error('获取 OpenList 视频详情失败:', error);
+      logger.error('获取 OpenList 视频详情失败:', error);
       return NextResponse.json(
         { code: 0, msg: '获取详情失败', list: [] },
         { status: 200 }

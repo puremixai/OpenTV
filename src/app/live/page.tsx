@@ -15,6 +15,7 @@ import {
   savePlayRecord,
   subscribeToDataUpdates,
 } from '@/lib/db.client';
+import { resolveLivePlayback, resolveLiveProxyMode } from '@/lib/live-playback';
 import { parseCustomTimeFormat } from '@/lib/time';
 import { useLiveSync } from '@/hooks/useLiveSync';
 
@@ -1333,23 +1334,6 @@ function LivePageClient() {
       .find((line) => line && !line.startsWith('#')) || '';
   };
 
-  const getClientTestUrl = (rawUrl: string, source?: LiveSource | null) => {
-    const proxyMode = source?.proxyMode || 'full';
-    const lower = rawUrl.toLowerCase();
-    const path = lower.split('?')[0];
-    const isM3u = path.endsWith('.m3u8') || path.endsWith('.m3u') || lower.includes('.m3u8') || lower.includes('.m3u');
-    const isProgressive = path.endsWith('.flv') || path.endsWith('.mp4') || lower.includes('.flv?') || lower.includes('.mp4?');
-
-    if (isProgressive || proxyMode === 'direct') return rawUrl;
-
-    // 和实际播放链路保持一致：full 测代理后的分片，m3u8-only 测直连分片。
-    if (isM3u || !isProgressive) {
-      return `/api/proxy/m3u8?url=${encodeURIComponent(rawUrl)}&moontv-source=${encodeURIComponent(source?.key || '')}${proxyMode === 'm3u8-only' ? '&allowCORS=true' : ''}`;
-    }
-
-    return rawUrl;
-  };
-
   const fetchTextByClient = async (url: string, signal: AbortSignal) => {
     const startedAt = performance.now();
     const response = await fetch(url, { cache: 'no-store', signal });
@@ -1414,15 +1398,10 @@ function LivePageClient() {
     const controller = new AbortController();
     const timeout = window.setTimeout(() => controller.abort(), 10000);
     const source = currentSourceRef.current || currentSource;
-    const testUrl = getClientTestUrl(channel.url, source);
-    const lowerTestUrl = testUrl.toLowerCase();
-
     try {
-      const shouldTreatAsM3u8 =
-        lowerTestUrl.includes('.m3u') ||
-        lowerTestUrl.includes('/api/proxy/m3u8');
+      const { url: testUrl, type } = await resolveLivePlayback(channel.url, source, controller.signal);
 
-      if (shouldTreatAsM3u8) {
+      if (type === 'm3u8') {
         const manifest = await fetchTextByClient(testUrl, controller.signal);
         let mediaLine = findFirstPlayableLine(manifest.text);
         if (!mediaLine) throw new Error('empty m3u8');
@@ -1450,7 +1429,7 @@ function LivePageClient() {
       const sample = await sampleByClient(testUrl, controller.signal);
       return {
         status: 'ok',
-        type: lowerTestUrl.includes('.flv') ? 'flv' : lowerTestUrl.includes('.mp4') ? 'mp4' : 'unknown',
+        type,
         firstByteMs: sample.firstByteMs,
         speedKBps: sample.speedKBps,
         bytesRead: sample.bytesRead,
@@ -1732,7 +1711,7 @@ function LivePageClient() {
         this.load = function (context: any, config: any, callbacks: any) {
           // 判断当前直播源的代理模式
           const currentLiveSource = currentSourceRef.current;
-          const proxyMode = currentLiveSource?.proxyMode || 'full';
+          const proxyMode = resolveLiveProxyMode(currentLiveSource?.proxyMode);
 
           // 拦截manifest和level请求
           if (
@@ -1863,6 +1842,7 @@ function LivePageClient() {
 
   // 播放器初始化
   useEffect(() => {
+    const controller = new AbortController();
     const preload = async () => {
       if (
         !Artplayer ||
@@ -1882,61 +1862,24 @@ function LivePageClient() {
         cleanupPlayer();
       }
 
-      // precheck type
-      let type = 'm3u8';
-      const proxyMode = currentSourceRef.current?.proxyMode || 'full';
-
-      // 直连模式：跳过服务器预检查，直接使用 m3u8
-      if (proxyMode === 'direct') {
-        type = 'm3u8';
-      } else {
-        // 全量代理或仅代理m3u8：通过服务器预检查
-        try {
-          const precheckUrl = `/api/live/precheck?url=${encodeURIComponent(videoUrl)}&moontv-source=${currentSourceRef.current?.key || ''}`;
-          const precheckResponse = await fetch(precheckUrl);
-          if (!precheckResponse.ok) {
-            console.error('预检查失败:', precheckResponse.statusText);
-            setIsVideoLoading(false);
-            return;
-          }
-          const precheckResult = await precheckResponse.json();
-          if (precheckResult?.success && precheckResult?.type) {
-            type = precheckResult.type;
-          } else {
-            console.error('预检查返回无效结果:', precheckResult);
-            setIsVideoLoading(false);
-            return;
-          }
-        } catch (err) {
-          console.error('预检查异常:', err);
-          setIsVideoLoading(false);
-          return;
-        }
-      }
-
-      // 如果不是 m3u8、flv 或 mp4 类型，设置不支持的类型并返回
-      if (type !== 'm3u8' && type !== 'flv' && type !== 'mp4') {
-        setUnsupportedType(type);
+      let playback: Awaited<ReturnType<typeof resolveLivePlayback>>;
+      try {
+        playback = await resolveLivePlayback(videoUrl, currentSourceRef.current, controller.signal);
+      } catch (err) {
+        if (controller.signal.aborted) return;
+        console.error('直播流解析失败:', err);
+        setUnsupportedType('unknown');
         setIsVideoLoading(false);
         return;
       }
+      if (controller.signal.aborted) return;
 
       // 重置不支持的类型
       setUnsupportedType(null);
 
       const customType = { m3u8: m3u8Loader, flv: flvLoader };
 
-      // 根据代理模式决定 URL
-      let targetUrl = videoUrl;
-      if (type === 'm3u8') {
-        if (proxyMode === 'direct') {
-          // 直连模式：直接使用原始 URL
-          targetUrl = videoUrl;
-        } else {
-          // 全量代理或仅代理m3u8：使用代理 URL
-          targetUrl = `/api/proxy/m3u8?url=${encodeURIComponent(videoUrl)}&moontv-source=${currentSourceRef.current?.key || ''}`;
-        }
-      }
+      const { url: targetUrl, type } = playback;
 
       try {
         // 创建新的播放器实例
@@ -2112,6 +2055,7 @@ function LivePageClient() {
       }
     }
     preload();
+    return () => controller.abort();
   }, [Artplayer, Hls, videoUrl, currentChannel, loading]);
 
   // 清理播放器资源
@@ -2401,7 +2345,7 @@ function LivePageClient() {
                             当前频道直播流类型：<span className='text-white font-bold'>{unsupportedType.toUpperCase()}</span>
                           </p>
                           <p className='text-sm text-orange-200 mt-2'>
-                            目前仅支持 M3U8 格式的直播流
+                            支持 M3U8、FLV 及浏览器可播放的视频格式
                           </p>
                         </div>
                         <p className='text-sm text-gray-300'>

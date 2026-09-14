@@ -1,4 +1,5 @@
-import { fetchPublicUrl, readLimitedText } from './public-fetch';
+import { fetchPublicUrl, readLimitedText } from '@/lib/server/public-fetch';
+
 import type { AdminConfig } from '../admin.types';
 import { db } from '../db';
 import {

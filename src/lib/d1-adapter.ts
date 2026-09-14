@@ -1,4 +1,3 @@
-import { logger } from '@/lib/logger';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 /**
@@ -110,69 +109,25 @@ class SQLitePreparedStatement implements D1PreparedStatement {
   }
 
   async first<T = any>(colName?: string): Promise<T | null> {
-    try {
-      const result = this.stmt.get(...this.params);
-      if (!result) return null;
-      if (colName) return result[colName] ?? null;
-      return result;
-    } catch (err) {
-      logger.error('SQLite first() error:', err);
-      return null;
-    }
+    const result = this.stmt.get(...this.params);
+    if (!result) return null;
+    return colName ? result[colName] ?? null : result;
   }
 
   async run<T = any>(): Promise<D1Result<T>> {
-    try {
-      const info = this.stmt.run(...this.params);
-      return {
-        success: true,
-        meta: {
-          changes: info.changes,
-          last_row_id: info.lastInsertRowid,
-        },
-      };
-    } catch (err: any) {
-      logger.error('SQLite run() error:', err);
-      return {
-        success: false,
-        error: err.message,
-      };
-    }
+    return this.runSync();
   }
 
   async all<T = any>(): Promise<D1Result<T>> {
-    try {
-      const results = this.stmt.all(...this.params);
-      return {
-        success: true,
-        results: results || [],
-      };
-    } catch (err: any) {
-      logger.error('SQLite all() error:', err);
-      return {
-        success: false,
-        error: err.message,
-        results: [],
-      };
-    }
+    return { success: true, results: this.stmt.all(...this.params) || [] };
   }
 
-  // 同步版本（用于 batch）
+  // Let the transaction see execution failures so it can roll back the whole batch.
   runSync(): D1Result {
-    try {
-      const info = this.stmt.run(...this.params);
-      return {
-        success: true,
-        meta: {
-          changes: info.changes,
-          last_row_id: info.lastInsertRowid,
-        },
-      };
-    } catch (err: any) {
-      return {
-        success: false,
-        error: err.message,
-      };
-    }
+    const info = this.stmt.run(...this.params);
+    return {
+      success: true,
+      meta: { changes: info.changes, last_row_id: info.lastInsertRowid },
+    };
   }
 }

@@ -1,7 +1,8 @@
-/* eslint-disable no-console */
+
 
 import { NextRequest, NextResponse } from 'next/server';
 
+import { logger } from '@/lib/logger';
 import { getAuthenticatedUser } from '@/lib/session';
 
 export const runtime = 'nodejs';
@@ -13,7 +14,7 @@ export const runtime = 'nodejs';
  * 这样可以避免将敏感的 externalServerAuth 暴露给未登录用户
  */
 export async function GET(request: NextRequest) {
-  console.log('watch-room-auth called: ', request.url);
+  logger.debug('watch-room-auth called: ', request.url);
 
   // 从 cookie 获取用户信息
   const authInfo = await getAuthenticatedUser(request);

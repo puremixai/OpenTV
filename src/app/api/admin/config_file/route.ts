@@ -1,4 +1,4 @@
-/* eslint-disable no-console,@typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -10,6 +10,7 @@ import {
   validateSubscriptions,
 } from '@/lib/config-subscriptions';
 import { db } from '@/lib/db';
+import { logger } from '@/lib/logger';
 import { checkMutationVersion, withConfigMutation } from '@/lib/server/config-mutation';
 import { getAuthenticatedUser } from '@/lib/session';
 
@@ -128,9 +129,9 @@ export const POST = withConfigMutation(async function POST(request: NextRequest)
     // 清除短剧视频源缓存（因为配置文件可能包含新的视频源）
     try {
       await db.deleteGlobalValue('duanju');
-      console.log('已清除短剧视频源缓存');
+      logger.debug('已清除短剧视频源缓存');
     } catch (error) {
-      console.error('清除短剧视频源缓存失败:', error);
+      logger.error('清除短剧视频源缓存失败:', error);
       // 不影响主流程，继续执行
     }
 
@@ -139,7 +140,7 @@ export const POST = withConfigMutation(async function POST(request: NextRequest)
       message: '配置文件更新成功',
     });
   } catch (error) {
-    console.error('更新配置文件失败:', error);
+    logger.error('更新配置文件失败:', error);
     return NextResponse.json(
       {
         error: '更新配置文件失败',

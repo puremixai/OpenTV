@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any,no-console */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { promisify } from 'util';
@@ -8,6 +8,7 @@ import { configSelfCheck, setCachedConfig } from '@/lib/config';
 import { SimpleCrypto } from '@/lib/crypto';
 import { clearProgress,updateProgress } from '@/lib/data-migration-progress';
 import { db } from '@/lib/db';
+import { logger } from '@/lib/logger';
 import { withConfigMutation } from '@/lib/server/config-mutation';
 import { getAuthenticatedUser } from '@/lib/session';
 
@@ -121,7 +122,7 @@ export const POST = withConfigMutation(async function POST(req: NextRequest) {
     for (const user of existingUsers.users) {
       await db.deleteUserV2(user.username);
     }
-    console.log(`已清除 ${existingUsers.users.length} 个现有V2用户`);
+    logger.debug(`已清除 ${existingUsers.users.length} 个现有V2用户`);
 
     // 导入管理员配置
 
@@ -129,9 +130,9 @@ export const POST = withConfigMutation(async function POST(req: NextRequest) {
     // 清除短剧视频源缓存（因为导入的配置可能包含不同的视频源）
     try {
       await db.deleteGlobalValue('duanju');
-      console.log('已清除短剧视频源缓存');
+      logger.debug('已清除短剧视频源缓存');
     } catch (error) {
-      console.error('清除短剧视频源缓存失败:', error);
+      logger.error('清除短剧视频源缓存失败:', error);
       // 不影响主流程，继续执行
     }
 
@@ -142,7 +143,7 @@ export const POST = withConfigMutation(async function POST(req: NextRequest) {
     const usersV2Map = new Map((importData.data.usersV2 || []).map((u: any) => [u.username, u]));
 
     const userCount = Object.keys(userData).length;
-    console.log(`准备导入 ${userCount} 个用户的数据`);
+    logger.debug(`准备导入 ${userCount} 个用户的数据`);
     updateProgress(username, 'import', 'importing', 0, userCount, '开始导入用户数据...');
 
     // 分块处理用户，每批处理数量可通过环境变量配置
@@ -152,7 +153,7 @@ export const POST = withConfigMutation(async function POST(req: NextRequest) {
 
     for (let i = 0; i < usernames.length; i += CHUNK_SIZE) {
       const chunk = usernames.slice(i, i + CHUNK_SIZE);
-      console.log(`处理第 ${Math.floor(i / CHUNK_SIZE) + 1} 批用户 (${chunk.length} 个)`);
+      logger.debug(`处理第 ${Math.floor(i / CHUNK_SIZE) + 1} 批用户 (${chunk.length} 个)`);
       updateProgress(
         username,
         'import',
@@ -197,9 +198,9 @@ export const POST = withConfigMutation(async function POST(req: NextRequest) {
                   userV2?.enabledApis,
                   userV2?.banned
                 );
-                console.log(`用户 ${username} 导入成功 (${storageType})`);
+                logger.debug(`用户 ${username} 导入成功 (${storageType})`);
               } else {
-                console.error(`${storageType} storage 缺少 createUserWithHashedPassword 方法`);
+                logger.error(`${storageType} storage 缺少 createUserWithHashedPassword 方法`);
                 return false;
               }
             } else if (storageType === 'postgres') {
@@ -215,9 +216,9 @@ export const POST = withConfigMutation(async function POST(req: NextRequest) {
                   userV2?.enabledApis,
                   userV2?.banned
                 );
-                console.log(`用户 ${username} 导入成功 (Postgres)`);
+                logger.debug(`用户 ${username} 导入成功 (Postgres)`);
               } else {
-                console.error(`Postgres storage 缺少 createUserWithHashedPassword 方法`);
+                logger.error(`Postgres storage 缺少 createUserWithHashedPassword 方法`);
                 return false;
               }
             } else {
@@ -253,10 +254,10 @@ export const POST = withConfigMutation(async function POST(req: NextRequest) {
                 await storage.withRetry(() => storage.client.set(oidcSubKey, username));
               }
 
-              console.log(`用户 ${username} 导入成功 (Redis)`);
+              logger.debug(`用户 ${username} 导入成功 (Redis)`);
             }
           } else {
-            console.log(`跳过用户 ${username}：没有passwordV2`);
+            logger.debug(`跳过用户 ${username}：没有passwordV2`);
             return false;
           }
 
@@ -446,7 +447,7 @@ export const POST = withConfigMutation(async function POST(req: NextRequest) {
 
           return true;
         } catch (error) {
-          console.error(`导入用户 ${username} 失败:`, error);
+          logger.error(`导入用户 ${username} 失败:`, error);
           return false;
         }
       });
@@ -455,7 +456,7 @@ export const POST = withConfigMutation(async function POST(req: NextRequest) {
       const results = await Promise.all(importPromises);
       importedCount += results.filter(r => r).length;
 
-      console.log(`已完成 ${importedCount}/${userCount} 个用户`);
+      logger.debug(`已完成 ${importedCount}/${userCount} 个用户`);
       updateProgress(
         username,
         'import',
@@ -466,7 +467,7 @@ export const POST = withConfigMutation(async function POST(req: NextRequest) {
       );
     }
 
-    console.log(`成功导入 ${importedCount} 个用户的user:info`);
+    logger.debug(`成功导入 ${importedCount} 个用户的user:info`);
     updateProgress(username, 'import', 'completed', importedCount, userCount, '导入完成！');
     setTimeout(() => clearProgress(username, 'import'), 3000);
 
@@ -481,7 +482,7 @@ export const POST = withConfigMutation(async function POST(req: NextRequest) {
     });
 
   } catch (error) {
-    console.error('数据导入失败:', error);
+    logger.error('数据导入失败:', error);
     // 清除进度信息
     const authInfo = await getAuthenticatedUser(req);
     if (authInfo?.username) {

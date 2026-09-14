@@ -1,4 +1,4 @@
-/* eslint-disable no-console */
+
 
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -6,6 +6,7 @@ import {
   mergeSubscriptionConfigs,
   validateSubscriptions,
 } from '@/lib/config-subscriptions';
+import { logger } from '@/lib/logger';
 import {
   fetchSubscriptionContent,
   refreshSubscriptions,
@@ -70,7 +71,7 @@ export async function POST(request: NextRequest) {
       message: '配置拉取成功',
     });
   } catch (error) {
-    console.error('拉取配置失败:', error);
+    logger.error('拉取配置失败:', error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : '拉取配置失败' },
       { status: 400 }

@@ -1,8 +1,9 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, no-console */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { NextRequest, NextResponse } from 'next/server';
 
 import { getConfig } from '@/lib/config';
+import { logger } from '@/lib/logger';
 import { hasFeaturePermission } from '@/lib/permissions';
 import { getAuthenticatedUser } from '@/lib/session';
 
@@ -105,7 +106,7 @@ export async function GET(
       clearTimeout(timeoutId);
 
     if (!imageResponse.ok) {
-      console.error('[Emby Image] 获取图片失败:', {
+      logger.error('[Emby Image] 获取图片失败:', {
         itemId,
         imageType,
         status: imageResponse.status,
@@ -143,7 +144,7 @@ export async function GET(
       clearTimeout(timeoutId);
 
       if (error instanceof Error && error.name === 'AbortError') {
-        console.error('[Emby Image] 请求超时');
+        logger.error('[Emby Image] 请求超时');
         return NextResponse.json(
           { error: '请求超时' },
           { status: 504 }
@@ -152,7 +153,7 @@ export async function GET(
       throw error;
     }
   } catch (error) {
-    console.error('[Emby Image] 错误:', error);
+    logger.error('[Emby Image] 错误:', error);
     return NextResponse.json(
       { error: '获取图片失败', details: (error as Error).message },
       { status: 500 }

@@ -1,4 +1,4 @@
-/* eslint-disable no-console */
+
 
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -6,6 +6,7 @@ import { getConfig } from '@/lib/config';
 import { db } from '@/lib/db';
 import { EmbyClient } from '@/lib/emby.client';
 import { clearEmbyCache } from '@/lib/emby-cache';
+import { logger } from '@/lib/logger';
 import { getAuthenticatedUser } from '@/lib/session';
 
 export const runtime = 'nodejs';
@@ -108,7 +109,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ error: '不支持的操作' }, { status: 400 });
   } catch (error) {
-    console.error('Emby 配置保存失败:', error);
+    logger.error('Emby 配置保存失败:', error);
     return NextResponse.json(
       { error: 'Emby 配置保存失败: ' + (error as Error).message },
       { status: 500 }

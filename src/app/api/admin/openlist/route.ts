@@ -1,9 +1,10 @@
-/* eslint-disable no-console */
+
 
 import { NextRequest, NextResponse } from 'next/server';
 
 import { getConfig } from '@/lib/config';
 import { db } from '@/lib/db';
+import { logger } from '@/lib/logger';
 import { OpenListClient } from '@/lib/openlist.client';
 import {
   type OpenListPathMetaMap,
@@ -159,11 +160,11 @@ export const POST = withConfigMutation(async function POST(request: NextRequest)
 
       // 验证账号密码是否正确
       try {
-        console.log('[OpenList Config] 验证账号密码');
+        logger.debug('[OpenList Config] 验证账号密码');
         await OpenListClient.login(normalizedURL, Username, Password);
-        console.log('[OpenList Config] 账号密码验证成功');
+        logger.debug('[OpenList Config] 账号密码验证成功');
       } catch (error) {
-        console.error('[OpenList Config] 账号密码验证失败:', error);
+        logger.error('[OpenList Config] 账号密码验证失败:', error);
         return NextResponse.json(
           { error: '账号密码验证失败: ' + (error as Error).message },
           { status: 400 }
@@ -172,15 +173,15 @@ export const POST = withConfigMutation(async function POST(request: NextRequest)
 
       if (OfflineDownloadUseCustomSource) {
         try {
-          console.log('[OpenList Config] 验证离线下载 OpenList 账号密码');
+          logger.debug('[OpenList Config] 验证离线下载 OpenList 账号密码');
           await OpenListClient.login(
             normalizedOfflineDownloadURL,
             OfflineDownloadUsername,
             OfflineDownloadPassword
           );
-          console.log('[OpenList Config] 离线下载 OpenList 账号密码验证成功');
+          logger.debug('[OpenList Config] 离线下载 OpenList 账号密码验证成功');
         } catch (error) {
-          console.error('[OpenList Config] 离线下载 OpenList 账号密码验证失败:', error);
+          logger.error('[OpenList Config] 离线下载 OpenList 账号密码验证失败:', error);
           return NextResponse.json(
             { error: '离线下载 OpenList 账号密码验证失败: ' + (error as Error).message },
             { status: 400 }
@@ -217,7 +218,7 @@ export const POST = withConfigMutation(async function POST(request: NextRequest)
 
     return NextResponse.json({ error: '未知操作' }, { status: 400 });
   } catch (error) {
-    console.error('OpenList 配置操作失败:', error);
+    logger.error('OpenList 配置操作失败:', error);
     return NextResponse.json(
       { error: '操作失败', details: (error as Error).message },
       { status: 500 }

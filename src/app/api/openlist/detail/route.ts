@@ -1,8 +1,9 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, no-console */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { NextRequest, NextResponse } from 'next/server';
 
 import { getConfig } from '@/lib/config';
+import { logger } from '@/lib/logger';
 import { OpenListClient } from '@/lib/openlist.client';
 import {
   getCachedVideoInfo,
@@ -86,7 +87,7 @@ export async function GET(request: NextRequest) {
           }
         }
       } catch (error) {
-        console.log('videoinfo.json 不存在，将解析文件名');
+        logger.debug('videoinfo.json 不存在，将解析文件名');
       }
     }
 
@@ -251,7 +252,7 @@ export async function GET(request: NextRequest) {
       refresh14m: pathMetaResolved.refresh14m,
     });
   } catch (error) {
-    console.error('获取视频详情失败:', error);
+    logger.error('获取视频详情失败:', error);
     return NextResponse.json(
       { error: '获取失败', details: (error as Error).message },
       { status: 500 }

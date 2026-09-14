@@ -11,8 +11,19 @@ jest.mock('artplayer', () => ({
       this.video = document.createElement('video');
       option.container.appendChild(this.video);
       this.paused = true;
+      this.play = jest.fn(async () => {
+        this.paused = false;
+      });
       this.layers = { add: () => {} };
-      this.on = () => {};
+      this.events = new Map();
+      this.on = (name, handler) => {
+        const listeners = this.events.get(name) || [];
+        listeners.push(handler);
+        this.events.set(name, listeners);
+      };
+      this.emit = (name) => {
+        for (const listener of this.events.get(name) || []) listener();
+      };
       mockPlayers.push(this);
     }
   },
@@ -50,6 +61,9 @@ jest.mock('../src/components/player/load-player-plugins', () => ({
   }),
 }));
 const { usePlayerEngine } = require('../src/components/player/usePlayerEngine');
+const {
+  createPlaybackProgressGuard,
+} = require('../src/components/player/playback-progress');
 
 function context(overrides = {}) {
   const detail = { source: 'test', episodes: ['https://test/video.mp4'] };
@@ -91,6 +105,7 @@ function context(overrides = {}) {
       video.dataset.playUrl = url;
     },
     createCustomHlsLoader: (Hls) => Hls.DefaultConfig.loader,
+    applyVideoCrossOrigin: () => {},
     formatQuickForwardDuration: (seconds) => `${seconds}s`,
     setError: jest.fn(),
     setVideoError: jest.fn(),
@@ -105,6 +120,7 @@ beforeEach(() => {
   mockPlayers = [];
   jest.spyOn(console, 'log').mockImplementation(() => {});
   jest.spyOn(HTMLMediaElement.prototype, 'load').mockImplementation(() => {});
+  jest.spyOn(HTMLMediaElement.prototype, 'pause').mockImplementation(() => {});
 });
 afterEach(() => {
   jest.restoreAllMocks();
@@ -118,6 +134,187 @@ test('first playback creates the player without a fixed cleanup delay', async ()
   expect(props.artPlayerRef.current?.option.url).toBe('https://test/video.mp4');
 });
 
+test('an old canplay cannot consume the new selection resume time or reopen progress sampling', async () => {
+  const guard = createPlaybackProgressGuard();
+  const props = context({
+    playbackProgressGuard: guard,
+    videoProgressRevision: 0,
+    resumeTimeRef: { current: 77 },
+    resumePlayingAfterHlsModeSwitchRef: { current: null },
+    setIsVideoLoading: jest.fn(),
+    setCorsFailedUrl: jest.fn(),
+  });
+  const { rerender } = await act(async () =>
+    renderHook(({ value }) => usePlayerEngine(value), {
+      initialProps: { value: props },
+    }),
+  );
+  const player = props.artPlayerRef.current;
+  jest
+    .spyOn(HTMLMediaElement.prototype, 'load')
+    .mockImplementation(function () {
+      Object.defineProperty(this, 'readyState', {
+        configurable: true,
+        value: 0,
+      });
+    });
+  Object.defineProperty(player.video, 'readyState', {
+    configurable: true,
+    value: 3,
+  });
+  player.duration = 1800;
+  player.currentTime = 900;
+  guard.suspend();
+  const canplay = player.events.get('video:canplay')[0];
+  await act(async () => {
+    canplay();
+  });
+  expect(props.resumeTimeRef.current).toBe(77);
+  expect(props.setIsVideoLoading).not.toHaveBeenCalled();
+  expect(guard.canCapture()).toBe(false);
+  expect(player.currentTime).toBe(900);
+  await act(async () => {
+    rerender({
+      value: {
+        ...props,
+        videoUrl: 'https://test/new.mp4',
+        videoProgressRevision: guard.revision(),
+      },
+    });
+  });
+  await act(async () => {
+    canplay();
+  });
+  expect(props.resumeTimeRef.current).toBe(77);
+  expect(guard.canCapture()).toBe(false);
+  // Old queued loadstart/canplay events must also be harmless before the new media attaches.
+  player.emit('video:loadstart');
+  await act(async () => {
+    canplay();
+  });
+  expect(props.resumeTimeRef.current).toBe(77);
+  expect(guard.canCapture()).toBe(false);
+  Object.defineProperty(player.video, 'readyState', {
+    configurable: true,
+    value: 3,
+  });
+  player.emit('video:loadstart');
+  await act(async () => {
+    canplay();
+  });
+  expect(props.resumeTimeRef.current).toBeNull();
+  expect(player.currentTime).toBe(77);
+  expect(guard.canCapture()).toBe(true);
+});
+
+test('automatic next episode uses the shared switch handler and cancels an old ended timer', async () => {
+  const guard = createPlaybackProgressGuard();
+  const handleNextEpisode = jest.fn(async () => {});
+  const detail = { source: 'test', episodes: ['1', '2', '3'] };
+  const props = context({
+    playbackProgressGuard: guard,
+    videoProgressRevision: 0,
+    detail,
+    detailRef: { current: detail },
+    currentEpisodeIndexRef: { current: 0 },
+    handleNextEpisode,
+    isEpisodeFilteredByTitle: () => false,
+    setCurrentEpisodeIndex: jest.fn(),
+  });
+  await act(async () => {
+    renderHook(() => usePlayerEngine(props));
+  });
+  const ended = props.artPlayerRef.current.events.get('video:ended').at(-1);
+  act(() => {
+    ended();
+  });
+  guard.suspend();
+  await act(async () => {
+    jest.advanceTimersByTime(1000);
+  });
+  expect(handleNextEpisode).not.toHaveBeenCalled();
+  expect(props.setCurrentEpisodeIndex).not.toHaveBeenCalled();
+});
+
+test('automatic next episode delegates selection and URL updates to the shared handler', async () => {
+  const handleNextEpisode = jest.fn(async () => {});
+  const detail = { source: 'test', episodes: ['1', '2'] };
+  const props = context({
+    detail,
+    detailRef: { current: detail },
+    currentEpisodeIndexRef: { current: 0 },
+    handleNextEpisode,
+    isEpisodeFilteredByTitle: () => false,
+    setCurrentEpisodeIndex: jest.fn(),
+  });
+  await act(async () => {
+    renderHook(() => usePlayerEngine(props));
+  });
+  act(() => {
+    props.artPlayerRef.current.events.get('video:ended').at(-1)();
+  });
+  await act(async () => {
+    jest.advanceTimersByTime(1000);
+  });
+  expect(handleNextEpisode).toHaveBeenCalledTimes(1);
+  expect(handleNextEpisode).toHaveBeenCalledWith(true);
+  expect(props.setCurrentEpisodeIndex).not.toHaveBeenCalled();
+});
+
+test.each([1, 3])(
+  'a new selection reuses the same HLS URL at readyState %s without destroying it',
+  async (readyState) => {
+    const guard = createPlaybackProgressGuard();
+    const props = context({
+      playbackProgressGuard: guard,
+      videoProgressRevision: 0,
+      resumeTimeRef: { current: null },
+      resumePlayingAfterHlsModeSwitchRef: { current: null },
+      setIsVideoLoading: jest.fn(),
+      setCorsFailedUrl: jest.fn(),
+    });
+    const { rerender } = await act(async () =>
+      renderHook(({ value }) => usePlayerEngine(value), {
+        initialProps: { value: props },
+      }),
+    );
+    const player = props.artPlayerRef.current;
+    Object.defineProperty(player.video, 'readyState', {
+      configurable: true,
+      value: readyState,
+    });
+    const hls = { destroy: jest.fn() };
+    player.currentTime = 900;
+    player.duration = 1800;
+    props.resumePlayingAfterHlsModeSwitchRef.current =
+      readyState === 3 ? true : null;
+    player.video.hls = hls;
+    player.emit('video:loadstart');
+    guard.suspend();
+    await act(async () => {
+      rerender({
+        value: { ...props, videoProgressRevision: guard.revision() },
+      });
+    });
+    expect(hls.destroy).not.toHaveBeenCalled();
+    expect(player.video.hls).toBe(hls);
+    if (readyState < 3) {
+      expect(guard.canCapture()).toBe(false);
+      Object.defineProperty(player.video, 'readyState', {
+        configurable: true,
+        value: 3,
+      });
+      await act(async () => {
+        player.emit('video:canplay');
+      });
+    }
+    expect(guard.canCapture()).toBe(true);
+    expect(player.currentTime).toBe(0);
+    expect(player.play).toHaveBeenCalledTimes(readyState === 3 ? 1 : 0);
+    expect(props.setIsVideoLoading).toHaveBeenCalledWith(false);
+  },
+);
+
 test.each(['file', 'netdisk', 'harmony'])(
   '%s playback starts without loading HLS.js',
   async (mode) => {
@@ -130,7 +327,7 @@ test.each(['file', 'netdisk', 'harmony'])(
             isNetdiskNativeHlsActive: () => mode === 'netdisk',
             isHarmonyOS: mode === 'harmony',
             harmonyHlsPlaybackMode: 'native',
-          }
+          },
     );
     await act(async () => renderHook(() => usePlayerEngine(props)));
     await act(async () => jest.advanceTimersByTime(100));
@@ -139,16 +336,16 @@ test.each(['file', 'netdisk', 'harmony'])(
     if (mode !== 'file') {
       const player = props.artPlayerRef.current;
       await act(async () =>
-        player.option.customType.m3u8(player.video, props.videoUrl)
+        player.option.customType.m3u8(player.video, props.videoUrl),
       );
       expect(player.video.src).toBe(
         mode === 'netdisk'
           ? 'https://test/video.m3u8'
-          : 'http://localhost/native?url=https%3A%2F%2Ftest%2Fvideo.m3u8'
+          : 'http://localhost/native?url=https%3A%2F%2Ftest%2Fvideo.m3u8',
       );
     }
     expect(mockHlsLoads).toBe(0);
-  }
+  },
 );
 
 test.each([
@@ -174,10 +371,53 @@ test('a player first opened for MP4 can subsequently start HLS', async () => {
   const player = props.artPlayerRef.current;
   expect(mockHlsLoads).toBe(0);
   await act(async () =>
-    player.option.customType.m3u8(player.video, 'https://test/next.m3u8')
+    player.option.customType.m3u8(player.video, 'https://test/next.m3u8'),
   );
   expect(player.video.hls.url).toBe('https://test/next.m3u8');
 });
+
+test.each(['same', 'different'])(
+  'a pending lazy HLS import is handled correctly after a %s URL selection',
+  async (mode) => {
+    const guard = createPlaybackProgressGuard();
+    const props = context({
+      playbackProgressGuard: guard,
+      videoProgressRevision: 0,
+    });
+    const { rerender } = await act(async () =>
+      renderHook(({ value }) => usePlayerEngine(value), {
+        initialProps: { value: props },
+      }),
+    );
+    const player = props.artPlayerRef.current;
+    const url = 'https://test/lazy.m3u8';
+    guard.suspend();
+    await act(async () => {
+      rerender({
+        value: {
+          ...props,
+          videoUrl: url,
+          videoProgressRevision: guard.revision(),
+        },
+      });
+    });
+    let pending;
+    act(() => {
+      pending = player.option.customType.m3u8(player.video, url);
+      guard.suspend();
+      rerender({
+        value: {
+          ...props,
+          videoUrl: mode === 'same' ? url : 'https://test/other.mp4',
+          videoProgressRevision: guard.revision(),
+        },
+      });
+    });
+    await act(async () => pending);
+    if (mode === 'same') expect(player.video.hls?.url).toBe(url);
+    else expect(player.video.hls).toBeUndefined();
+  },
+);
 
 test('StrictMode does not create a stale duplicate player after async imports', async () => {
   const props = context();
@@ -185,7 +425,7 @@ test('StrictMode does not create a stale duplicate player after async imports', 
     renderHook(() => usePlayerEngine(props), {
       wrapper: ({ children }) =>
         React.createElement(React.StrictMode, null, children),
-    })
+    }),
   );
   expect(mockPlayers).toHaveLength(1);
   expect(props.artRef.current.querySelectorAll('video')).toHaveLength(1);
@@ -202,7 +442,7 @@ test('a pending HLS import cannot attach to the video after the hook unmounts', 
   act(() => {
     pending = player.option.customType.m3u8(
       player.video,
-      'https://test/stale.m3u8'
+      'https://test/stale.m3u8',
     );
     view.unmount();
   });

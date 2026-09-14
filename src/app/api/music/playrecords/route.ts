@@ -1,9 +1,10 @@
-/* eslint-disable no-console */
+
 
 import { NextRequest, NextResponse } from 'next/server';
 
 import { db } from '@/lib/db';
 import { MusicPlayRecord } from '@/lib/db.client';
+import { logger } from '@/lib/logger';
 import { getCachedSongs, setCachedSong } from '@/lib/music-song-cache';
 import { requireFeaturePermission } from '@/lib/permissions';
 import { getAuthenticatedUser } from '@/lib/session';
@@ -56,7 +57,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(enrichedRecords, { status: 200 });
   } catch (err) {
-    console.error('获取音乐播放记录失败', err);
+    logger.error('获取音乐播放记录失败', err);
     return NextResponse.json(
       { error: 'Internal Server Error' },
       { status: 500 }
@@ -176,7 +177,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: true }, { status: 200 });
     }
   } catch (err) {
-    console.error('保存音乐播放记录失败', err);
+    logger.error('保存音乐播放记录失败', err);
     return NextResponse.json(
       { error: 'Internal Server Error' },
       { status: 500 }
@@ -225,7 +226,7 @@ export async function DELETE(request: NextRequest) {
 
     return NextResponse.json({ success: true }, { status: 200 });
   } catch (err) {
-    console.error('删除音乐播放记录失败', err);
+    logger.error('删除音乐播放记录失败', err);
     return NextResponse.json(
       { error: 'Internal Server Error' },
       { status: 500 }

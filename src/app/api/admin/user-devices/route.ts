@@ -1,10 +1,11 @@
-/* eslint-disable no-console */
+
 
 import { NextRequest, NextResponse } from 'next/server';
 
 import { invalidateDeviceAccessToken } from '@/lib/access-token-invalidation';
 import { getConfig } from '@/lib/config';
 import { db, getStorage } from '@/lib/db';
+import { logger } from '@/lib/logger';
 import {
   getUserDevices,
   revokeRefreshToken,
@@ -95,7 +96,7 @@ export async function GET(request: NextRequest) {
       { headers: { 'Cache-Control': 'no-store' } }
     );
   } catch (error) {
-    console.error('获取用户设备失败:', error);
+    logger.error('获取用户设备失败:', error);
     return NextResponse.json(
       { error: '获取用户设备失败', details: (error as Error).message },
       { status: 500 }
@@ -164,7 +165,7 @@ export async function DELETE(request: NextRequest) {
 
     return NextResponse.json({ ok: true });
   } catch (error) {
-    console.error('登出用户设备失败:', error);
+    logger.error('登出用户设备失败:', error);
     return NextResponse.json(
       { error: '登出用户设备失败', details: (error as Error).message },
       { status: 500 }

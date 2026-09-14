@@ -1,7 +1,8 @@
-/* eslint-disable no-console */
+
 
 import { NextRequest, NextResponse } from 'next/server';
 
+import { logger } from '@/lib/logger';
 import { requireFeaturePermission } from '@/lib/permissions';
 
 export const runtime = 'nodejs';
@@ -51,7 +52,7 @@ export async function GET(request: NextRequest) {
     );
 
     if (!isAllowed) {
-      console.warn(`拒绝代理音频请求: ${urlObj.hostname}`);
+      logger.warn(`拒绝代理音频请求: ${urlObj.hostname}`);
       return NextResponse.json(
         { error: '不允许的目标域名' },
         { status: 403 }
@@ -113,7 +114,7 @@ export async function GET(request: NextRequest) {
       headers,
     });
   } catch (error) {
-    console.error('代理音频失败:', error);
+    logger.error('代理音频失败:', error);
     return NextResponse.json(
       {
         error: '代理请求失败',

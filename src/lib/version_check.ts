@@ -1,8 +1,9 @@
-/* eslint-disable no-console */
+
 
 'use client';
 
 import type { ChangelogEntry } from '@/lib/changelog';
+import { logger } from '@/lib/logger';
 import { PROJECT_CHANGELOG_URL, PROJECT_NAME } from '@/lib/project';
 import { compareVersionStrings, parseVersion } from '@/lib/semantic-version';
 import { CURRENT_VERSION } from '@/lib/version';
@@ -81,7 +82,7 @@ export async function checkForUpdates(): Promise<UpdateStatus> {
     const entries = await fetchRemoteChangelog();
     return compareVersions(entries[0].version);
   } catch (error) {
-    console.warn('OpenTV 版本检查失败:', error);
+    logger.warn('OpenTV 版本检查失败:', error);
     return UpdateStatus.FETCH_FAILED;
   }
 }

@@ -1,10 +1,11 @@
-/* eslint-disable no-console,@typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from 'next/server';
 
 import { generateAuthCookieValue } from '@/lib/auth-cookie';
 import { setAuthCookies } from '@/lib/auth-response';
 import { getConfig } from '@/lib/config';
 import { db } from '@/lib/db';
+import { logger } from '@/lib/logger';
 import { TOKEN_CONFIG } from '@/lib/token-config';
 
 export const runtime = 'nodejs';
@@ -160,11 +161,11 @@ export async function POST(request: NextRequest) {
 
       return response;
     } catch (err) {
-      console.error('创建用户失败', err);
+      logger.error('创建用户失败', err);
       return NextResponse.json({ error: '注册失败，请稍后重试' }, { status: 500 });
     }
   } catch (error) {
-    console.error('OIDC注册完成失败:', error);
+    logger.error('OIDC注册完成失败:', error);
     return NextResponse.json({ error: '服务器错误' }, { status: 500 });
   }
 }

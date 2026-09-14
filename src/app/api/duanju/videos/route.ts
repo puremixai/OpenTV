@@ -1,9 +1,10 @@
-/* eslint-disable @typescript-eslint/no-explicit-any,no-console */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { NextRequest, NextResponse } from 'next/server';
 
 import { API_CONFIG, getCacheTime } from '@/lib/config';
 import { getDuanjuSources } from '@/lib/duanju';
+import { logger } from '@/lib/logger';
 import { SearchResult } from '@/lib/types';
 import { cleanHtmlTags } from '@/lib/utils';
 
@@ -134,7 +135,7 @@ export async function GET(request: NextRequest) {
       }
     );
   } catch (error) {
-    console.error('获取短剧列表失败:', error);
+    logger.error('获取短剧列表失败:', error);
     return NextResponse.json(
       {
         code: 500,

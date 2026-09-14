@@ -2,7 +2,7 @@ export interface PlaylistProxyOptions {
   origin: string;
   source: string;
   token?: string;
-  mode: 'vod' | 'ad-filter';
+  mode: 'vod' | 'ad-filter' | 'live';
   proxySegments: boolean;
   adBlockEnabled?: boolean;
 }
@@ -11,21 +11,32 @@ export interface PlaylistProxyOptions {
 export function rewriteMediaPlaylist(
   content: string,
   baseUrl: string,
-  options: PlaylistProxyOptions
+  options: PlaylistProxyOptions,
 ): string {
   const proxy = (uri: string, kind: 'playlist' | 'segment' | 'key') => {
     const absolute = new URL(uri, baseUrl);
     if (!['http:', 'https:'].includes(absolute.protocol)) return uri;
     if (kind !== 'playlist' && !options.proxySegments) return absolute.href;
     const endpoint =
-      kind === 'playlist'
-        ? options.mode === 'vod'
-          ? '/api/proxy/vod/m3u8'
-          : '/api/proxy-m3u8'
-        : '/api/proxy/vod/' + kind;
+      options.mode === 'live'
+        ? '/api/proxy/' + (kind === 'playlist' ? 'm3u8' : kind)
+        : kind === 'playlist'
+          ? options.mode === 'vod'
+            ? '/api/proxy/vod/m3u8'
+            : '/api/proxy-m3u8'
+          : '/api/proxy/vod/' + kind;
     const url = new URL(endpoint, options.origin);
     url.searchParams.set('url', absolute.href);
-    url.searchParams.set('source', options.source);
+    url.searchParams.set(
+      options.mode === 'live' ? 'moontv-source' : 'source',
+      options.source,
+    );
+    if (
+      options.mode === 'live' &&
+      kind === 'playlist' &&
+      !options.proxySegments
+    )
+      url.searchParams.set('allowCORS', 'true');
     if (options.token) url.searchParams.set('token', options.token);
     if (kind === 'playlist' && options.mode === 'ad-filter') {
       if (options.adBlockEnabled === false)
@@ -46,11 +57,11 @@ export function rewriteMediaPlaylist(
           /^#EXT-X-(?:MEDIA|I-FRAME-STREAM-INF|RENDITION-REPORT):/.test(value)
             ? 'playlist'
             : /^#EXT-X-(?:KEY|SESSION-KEY):/.test(value)
-            ? 'key'
-            : 'segment';
+              ? 'key'
+              : 'segment';
         return line.replace(
           /\bURI="([^"]+)"/g,
-          (_match, uri: string) => `URI="${proxy(uri, kind)}"`
+          (_match, uri: string) => `URI="${proxy(uri, kind)}"`,
         );
       }
       const kind =

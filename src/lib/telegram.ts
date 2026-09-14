@@ -1,6 +1,8 @@
-/* eslint-disable no-console,@typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import type { NextRequest } from 'next/server';
+
+import { logger } from '@/lib/logger';
 
 import type { AdminConfig } from './admin.types';
 import {
@@ -449,7 +451,7 @@ async function fetchTelegramApi(
 
   if (isCloudflareEnvironment()) {
     if (config?.apiProxy) {
-      console.warn('TELEGRAM_API_PROXY is ignored in Cloudflare runtime; use TELEGRAM_API_BASE_URL instead.');
+      logger.warn('TELEGRAM_API_PROXY is ignored in Cloudflare runtime; use TELEGRAM_API_BASE_URL instead.');
     }
     return fetch(requestUrl, init) as Promise<Response>;
   }
@@ -592,7 +594,7 @@ export async function dispatchTelegramNotification(
   try {
     await sendTelegramMessage(binding.chatId, buildNotificationText(notification, process.env.NEXT_PUBLIC_SITE_URL || process.env.SITE_BASE));
   } catch (error) {
-    console.error('Telegram notification failed:', error);
+    logger.error('Telegram notification failed:', error);
   }
 }
 

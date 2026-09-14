@@ -11,8 +11,6 @@
  * 注意：此模块仅在服务端使用，通过 webpack 配置排除客户端打包
  */
 
-import { logger } from '@/lib/logger';
-
 import { D1PreparedStatement, D1Result,DatabaseAdapter } from './d1-adapter';
 
 /**
@@ -25,7 +23,7 @@ import { D1PreparedStatement, D1Result,DatabaseAdapter } from './d1-adapter';
  * 模块和 isomorphic-ws/isomorphic-fetch 等不兼容边缘环境的依赖
  */
 function getLibsqlClient(): any {
-  // eslint-disable-next-line @typescript-eslint/no-var-requires -- Load the runtime adapter only on the server or share the CommonJS server singleton.
+  // eslint-disable-next-line @typescript-eslint/no-require-imports -- Select the server-only backend lazily without bundling incompatible runtime adapters.
   const mod = require('@libsql/client/http');
   return mod.createClient || mod.default?.createClient;
 }
@@ -95,81 +93,30 @@ class TursoPreparedStatement implements D1PreparedStatement {
    * 执行查询并返回第一行
    */
   async first<T = any>(colName?: string): Promise<T | null> {
-    try {
-      const result = await this.client.execute({
-        sql: this.query,
-        args: this.params,
-      });
-
-      if (!result.rows || result.rows.length === 0) return null;
-
-      const row = result.rows[0];
-      if (colName) return (row as any)[colName] ?? null;
-
-      return row as T;
-    } catch (err) {
-      logger.error('Turso first() error:', err);
-      return null;
-    }
+    const result = await this.client.execute({ sql: this.query, args: this.params });
+    if (!result.rows || result.rows.length === 0) return null;
+    const row = result.rows[0];
+    return colName ? row[colName] ?? null : row;
   }
 
-  /**
-   * 执行查询并返回结果
-   */
   async run<T = any>(): Promise<D1Result<T>> {
-    try {
-      const result = await this.client.execute({
-        sql: this.query,
-        args: this.params,
-      });
-
-      return {
-        success: true,
-        meta: {
-          changes: result.rowsAffected,
-          last_row_id:
-            result.lastInsertRowid !== undefined
-              ? Number(result.lastInsertRowid)
-              : null,
-        },
-        results: result.rows as T[],
-      };
-    } catch (err: any) {
-      logger.error('Turso run() error:', err);
-      return {
-        success: false,
-        error: err.message,
-      };
-    }
+    const result = await this.client.execute({ sql: this.query, args: this.params });
+    return {
+      success: true,
+      meta: {
+        changes: result.rowsAffected,
+        last_row_id: result.lastInsertRowid !== undefined ? Number(result.lastInsertRowid) : null,
+      },
+      results: result.rows as T[],
+    };
   }
 
-  /**
-   * 执行查询并返回所有行
-   */
   async all<T = any>(): Promise<D1Result<T>> {
-    try {
-      const result = await this.client.execute({
-        sql: this.query,
-        args: this.params,
-      });
-
-      return {
-        success: true,
-        results: (result.rows || []) as T[],
-      };
-    } catch (err: any) {
-      logger.error('Turso all() error:', err);
-      return {
-        success: false,
-        error: err.message,
-        results: [],
-      };
-    }
+    const result = await this.client.execute({ sql: this.query, args: this.params });
+    return { success: true, results: (result.rows || []) as T[] };
   }
 
-  /**
-   * 转换为 libSQL batch 格式
-   */
+  /** Convert to the native transactional batch representation. */
   toLibSQLBatch(): { sql: string; args: any[] } {
     return { sql: this.query, args: this.params };
   }

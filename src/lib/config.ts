@@ -1,6 +1,7 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, no-console, @typescript-eslint/no-non-null-assertion */
+/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-non-null-assertion */
 
 import { db } from '@/lib/db';
+import { logger } from '@/lib/logger';
 import { normalizeApiBaseUrl } from '@/lib/url';
 
 import { AdminConfig } from './admin.types';
@@ -201,6 +202,7 @@ export function refineConfig(adminConfig: AdminConfig): AdminConfig {
         channelNumber: 0,
         from: 'config',
         disabled: false,
+        proxyMode: 'direct',
       });
     }
   });
@@ -246,10 +248,10 @@ async function getInitConfig(
         const decodedBytes = bs58.decode(configContent);
         const decodedContent = new TextDecoder().decode(decodedBytes);
         configFile = decodedContent;
-        console.log('已从订阅 URL 获取配置');
+        logger.debug('已从订阅 URL 获取配置');
       }
     } catch (e) {
-      console.error('从订阅 URL 获取配置失败:', e);
+      logger.error('从订阅 URL 获取配置失败:', e);
     }
   }
 
@@ -416,6 +418,7 @@ async function getInitConfig(
       channelNumber: 0,
       from: 'config',
       disabled: false,
+      proxyMode: 'direct',
     });
   });
 
@@ -442,7 +445,7 @@ export async function getConfig(fresh = false): Promise<AdminConfig> {
 
     // localStorage 模式下直接从环境变量初始化
     if (storageType === 'localstorage') {
-      console.log('localStorage 模式：从环境变量初始化配置');
+      logger.debug('localStorage 模式：从环境变量初始化配置');
       const adminConfig = await getInitConfig('');
       cachedConfig = configSelfCheck(adminConfig);
       return cachedConfig;
@@ -472,9 +475,9 @@ export async function getConfig(fresh = false): Promise<AdminConfig> {
     if (needsEmbyMigration || needsSubscriptionMigration) {
       try {
         await db.saveAdminConfig(adminConfig);
-        console.log('[Config] Emby配置迁移已保存到数据库');
+        logger.debug('[Config] Emby配置迁移已保存到数据库');
       } catch (error) {
-        console.error('[Config] 保存迁移后的配置失败:', error);
+        logger.error('[Config] 保存迁移后的配置失败:', error);
       }
     }
 
@@ -488,16 +491,16 @@ export async function getConfig(fresh = false): Promise<AdminConfig> {
         // 检查是否支持V2存储
         const storage = (db as any).storage;
         if (storage && typeof storage.createUserV2 === 'function') {
-          console.log('检测到配置中有用户，开始自动迁移...');
+          logger.debug('检测到配置中有用户，开始自动迁移...');
           await db.migrateUsersFromConfig(adminConfig);
           // 迁移完成后，清空配置中的用户列表并保存
           adminConfig.UserConfig.Users = [];
           await db.saveAdminConfig(adminConfig);
           cachedConfig = adminConfig;
-          console.log('用户自动迁移完成');
+          logger.debug('用户自动迁移完成');
         }
       } catch (error) {
-        console.error('自动迁移用户失败:', error);
+        logger.error('自动迁移用户失败:', error);
         // 不影响主流程，继续执行
       }
     }
@@ -801,7 +804,7 @@ export function configSelfCheck(adminConfig: AdminConfig): AdminConfig {
   if (adminConfig.EmbyConfig) {
     // 如果是旧格式（有ServerURL但没有Sources）
     if (adminConfig.EmbyConfig.ServerURL && !adminConfig.EmbyConfig.Sources) {
-      console.log('[Config] 检测到旧格式Emby配置，自动迁移到新格式');
+      logger.debug('[Config] 检测到旧格式Emby配置，自动迁移到新格式');
       const oldConfig = adminConfig.EmbyConfig;
       adminConfig.EmbyConfig = {
         Sources: [
@@ -1198,7 +1201,7 @@ export async function resetConfig() {
   try {
     originConfig = await db.getAdminConfig();
   } catch (e) {
-    console.error('获取管理员配置失败:', e);
+    logger.error('获取管理员配置失败:', e);
   }
   if (!originConfig) {
     originConfig = {} as AdminConfig;

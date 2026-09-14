@@ -14,9 +14,8 @@ import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { Suspense, useEffect, useState } from 'react';
 
-import type { BannerData } from '@/lib/home/banner-types';
 import type { InitialBannerArtwork } from '@/lib/home/banner-artwork';
-
+import type { BannerData } from '@/lib/home/banner-types';
 import { getTMDBImageUrl } from '@/lib/tmdb.client';
 import { base58Encode, processImageUrl } from '@/lib/utils';
 

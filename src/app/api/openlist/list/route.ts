@@ -1,9 +1,10 @@
-/* eslint-disable no-console */
+
 
 import { NextRequest, NextResponse } from 'next/server';
 
 import { getConfig } from '@/lib/config';
 import { db } from '@/lib/db';
+import { logger } from '@/lib/logger';
 import {
   getCachedMetaInfo,
   MetaInfo,
@@ -90,14 +91,14 @@ export async function GET(request: NextRequest) {
               setCachedMetaInfo(metaInfo);
             }
           } catch (parseError) {
-            console.error('[OpenList List] JSON 解析或验证失败:', parseError);
+            logger.error('[OpenList List] JSON 解析或验证失败:', parseError);
             throw new Error(`JSON 解析失败: ${(parseError as Error).message}`);
           }
         } else {
           throw new Error('数据库中没有 metainfo 数据');
         }
       } catch (error) {
-        console.error('[OpenList List] 从数据库读取 metainfo 失败:', error);
+        logger.error('[OpenList List] 从数据库读取 metainfo 失败:', error);
         return NextResponse.json(
           {
             error: 'metainfo 读取失败',
@@ -177,7 +178,7 @@ export async function GET(request: NextRequest) {
       categories,
     });
   } catch (error) {
-    console.error('获取视频列表失败:', error);
+    logger.error('获取视频列表失败:', error);
     return NextResponse.json(
       {
         error: '获取失败',

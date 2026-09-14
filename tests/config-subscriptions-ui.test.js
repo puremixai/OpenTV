@@ -5,7 +5,6 @@ global.Headers = require('vm').runInThisContext('Headers');
 const { TextEncoder } = require('util');
 global.TextEncoder = TextEncoder;
 global.structuredClone = (value) => JSON.parse(JSON.stringify(value));
-global.crypto = { randomUUID: () => 'new-subscription' };
 const {
   render,
   screen,
@@ -30,6 +29,9 @@ const config = {
   ConfigSubscriptions: [entry('a'), entry('b')],
 };
 
+beforeEach(() => {
+  jest.spyOn(global.crypto, 'randomUUID').mockReturnValue('new-subscription');
+});
 afterEach(() => jest.restoreAllMocks());
 
 test('edits multiple subscriptions and applies the complete list in one save', async () => {

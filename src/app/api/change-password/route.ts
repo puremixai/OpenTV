@@ -1,10 +1,11 @@
-/* eslint-disable no-console*/
+
 
 import { NextRequest, NextResponse } from 'next/server';
 
 import { invalidateDeviceAccessToken } from '@/lib/access-token-invalidation';
 import { getStorage } from '@/lib/db';
 import { db } from '@/lib/db';
+import { logger } from '@/lib/logger';
 import { getUserDevices, revokeRefreshToken } from '@/lib/refresh-token';
 import { getAuthenticatedUser } from '@/lib/session';
 
@@ -63,19 +64,19 @@ export async function POST(request: NextRequest) {
           invalidateDeviceAccessToken(username, device.tokenId);
           await revokeRefreshToken(username, device.tokenId);
           await storage.deletePushSubscriptionsByTokenId?.(username, device.tokenId);
-          console.log(`Revoked token ${device.tokenId} for ${username} after password change`);
+          logger.debug(`Revoked token ${device.tokenId} for ${username} after password change`);
         }
       }
 
-      console.log(`Password changed for ${username}, revoked ${devices.length - 1} other devices`);
+      logger.debug(`Password changed for ${username}, revoked ${devices.length - 1} other devices`);
     } catch (error) {
-      console.error('Failed to revoke other devices after password change:', error);
+      logger.error('Failed to revoke other devices after password change:', error);
       // 不影响密码修改的成功，只记录错误
     }
 
     return NextResponse.json({ ok: true });
   } catch (error) {
-    console.error('修改密码失败:', error);
+    logger.error('修改密码失败:', error);
     return NextResponse.json(
       {
         error: '修改密码失败',

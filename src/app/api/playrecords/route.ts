@@ -1,8 +1,9 @@
-/* eslint-disable no-console */
+
 
 import { NextRequest, NextResponse } from 'next/server';
 
 import { db } from '@/lib/db';
+import { logger } from '@/lib/logger';
 import { getAuthenticatedUser } from '@/lib/session';
 import { PlayRecord } from '@/lib/types';
 
@@ -29,7 +30,7 @@ export async function GET(request: NextRequest) {
 
       // 检查播放记录迁移标识，没有迁移标识时执行迁移
       if (!userInfoV2.playrecord_migrated) {
-        console.log(
+        logger.debug(
           `用户 ${authInfo.username} 播放记录未迁移，开始执行迁移...`
         );
         await db.migratePlayRecords(authInfo.username);
@@ -38,7 +39,7 @@ export async function GET(request: NextRequest) {
       // 站长也需要执行迁移（站长可能不在数据库中，直接尝试迁移）
       const userInfoV2 = await db.getUserInfoV2(authInfo.username);
       if (!userInfoV2 || !userInfoV2.playrecord_migrated) {
-        console.log(
+        logger.debug(
           `站长 ${authInfo.username} 播放记录未迁移，开始执行迁移...`
         );
         await db.migratePlayRecords(authInfo.username);
@@ -48,7 +49,7 @@ export async function GET(request: NextRequest) {
     const records = await db.getAllPlayRecords(authInfo.username);
     return NextResponse.json(records, { status: 200 });
   } catch (err) {
-    console.error('获取播放记录失败', err);
+    logger.error('获取播放记录失败', err);
     return NextResponse.json(
       { error: 'Internal Server Error' },
       { status: 500 }
@@ -113,12 +114,12 @@ export async function POST(request: NextRequest) {
     (db as any).storage
       .cleanupOldPlayRecords(authInfo.username)
       .catch((err: Error) => {
-        console.error('异步清理播放记录失败:', err);
+        logger.error('异步清理播放记录失败:', err);
       });
 
     return NextResponse.json({ success: true }, { status: 200 });
   } catch (err) {
-    console.error('保存播放记录失败', err);
+    logger.error('保存播放记录失败', err);
     return NextResponse.json(
       { error: 'Internal Server Error' },
       { status: 500 }
@@ -203,7 +204,7 @@ export async function DELETE(request: NextRequest) {
 
     return NextResponse.json({ success: true }, { status: 200 });
   } catch (err) {
-    console.error('删除播放记录失败', err);
+    logger.error('删除播放记录失败', err);
     return NextResponse.json(
       { error: 'Internal Server Error' },
       { status: 500 }

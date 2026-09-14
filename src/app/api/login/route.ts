@@ -1,10 +1,11 @@
-/* eslint-disable no-console,@typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from 'next/server';
 
 import { generateAuthCookie } from '@/lib/auth-cookie';
 import { authResponse, clearAuthCookies, setAuthCookies } from '@/lib/auth-response';
 import { getConfig } from '@/lib/config';
 import { db } from '@/lib/db';
+import { logger } from '@/lib/logger';
 import {
   checkLoginBan,
   getLoginClientIp,
@@ -40,7 +41,7 @@ async function verifyTurnstileToken(token: string, secretKey: string): Promise<b
     const data = await response.json();
     return data.success === true;
   } catch (error) {
-    console.error('Turnstile验证失败:', error);
+    logger.error('Turnstile验证失败:', error);
     return false;
   }
 }
@@ -165,7 +166,7 @@ export async function POST(req: NextRequest) {
       }
 
       if (!siteConfig.TurnstileSecretKey) {
-        console.error('Turnstile Secret Key未配置');
+        logger.error('Turnstile Secret Key未配置');
         return NextResponse.json(
           { error: '服务器配置错误' },
           { status: 500 }
@@ -255,11 +256,11 @@ export async function POST(req: NextRequest) {
 
   setAuthCookies(response, cookieValue, req);
 
-    console.log(`Cookie已设置`);
+    logger.debug(`Cookie已设置`);
 
     return response;
   } catch (error) {
-    console.error('登录接口异常', error);
+    logger.error('登录接口异常', error);
     return NextResponse.json({ error: '服务器错误' }, { status: 500 });
   }
 }

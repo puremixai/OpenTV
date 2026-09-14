@@ -148,6 +148,39 @@ integration('real PostgreSQL and Redis', () => {
     ).rejects.toThrow();
   });
 
+  test('shared SQL media repositories preserve progress, flags, metadata and scoped deletion', async () => {
+    const user = 'pg-test-owner';
+    const key = 'shared-sql+1';
+    const record = {
+      title: '共享仓储', source_name: 'Demo', cover: '', year: '', index: 1,
+      total_episodes: 2, play_time: 12.75, total_time: 90.5,
+      save_time: 1700000000000, search_title: '', new_episodes: 0, is_anime: true,
+    };
+    const favorite = {
+      title: '收藏', source_name: 'Demo', cover: '', year: '2026', total_episodes: 3,
+      save_time: 1700000000000, search_title: '', origin: 'vod',
+      is_completed: true, vod_remarks: '全三集',
+    };
+    try {
+      await storage.setPlayRecord(user, key, record);
+      expect(await storage.getPlayRecord(user, key)).toEqual(record);
+      await storage.setPlayRecord(user, key, { ...record, play_time: 0, is_anime: false });
+      expect((await storage.getAllPlayRecords(user))[key]).toEqual({ ...record, play_time: 0, is_anime: false });
+      expect(await storage.getPlayRecord('another-user', key)).toBeNull();
+      await storage.setFavorite(user, key, favorite);
+      await storage.setFavorite(user, key, { ...favorite, is_completed: false });
+      expect((await storage.getAllFavorites(user))[key]).toEqual({ ...favorite, is_completed: false });
+      expect(await storage.getFavorite('another-user', key)).toBeNull();
+      await storage.deletePlayRecords(user, [key, key, '']);
+      await storage.deleteFavorite(user, key);
+      expect(await storage.getPlayRecord(user, key)).toBeNull();
+      expect(await storage.getFavorite(user, key)).toBeNull();
+    } finally {
+      await storage.deletePlayRecord(user, key);
+      await storage.deleteFavorite(user, key);
+    }
+  });
+
   test('configuration CAS has one winner, retains history and can restore as a new revision', async () => {
     const initial = { ConfigVersion: 0, SiteConfig: { SiteName: 'before' } };
     await storage.setAdminConfig(initial);

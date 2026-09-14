@@ -44,13 +44,19 @@ pnpm lint
 pnpm test --runInBand
 ```
 
-`pnpm check` 顺序执行以上三项。需要验证 PostgreSQL 和 Redis 集成时，先启动 Docker，再执行：
+`pnpm check` 顺序执行以上三项。`pnpm lint` 按 [.eslint-baseline.json](../.eslint-baseline.json) 中的“文件 + 规则”检查存量警告：任一组增加即失败，新文件默认零警告。`pnpm lint:report` 输出完整警告；修复问题后可显式执行 `pnpm lint:baseline` 收紧基线，并审查基线差异，不应通过增加基线绕过检查。
+
+`src/lib/` 和 `src/app/api/` 的日志统一使用 `logger`。这两个目录的裸 `console` 会导致检查失败，即使添加 `eslint-disable no-console` 也不能绕过。只有日志实现本身和保留原样的第三方 `pancheck/vendor/` 例外。诊断信息使用 `logger.debug`，警告和错误保留对应等级，输出遵循日志级别及脱敏策略。
+
+测试使用 Jest 30 与同版本 `jest-environment-jsdom`，通过 `next/jest` 编译；CI 与 Docker 都使用 Node.js 24。需要验证 PostgreSQL 和 Redis 集成时，先启动 Docker，再执行：
 
 ```sh
 pnpm test:postgres-redis
 ```
 
 该命令创建独立的 PostgreSQL / Redis 测试容器，执行全量 Jest 测试后清理测试资源，不使用正式数据库。
+
+API 新增或改动时同步维护 [访问策略清单](API-ACCESS-POLICY.md)，分类测试会检查实际 Next matcher 和匿名访问边界。改动 SQL 仓储时运行 SQLite、libSQL 与 PostgreSQL 的共享契约测试，确保用户隔离、版本冲突与回滚行为一致。
 
 生产构建与认证、Socket 冒烟检查：
 

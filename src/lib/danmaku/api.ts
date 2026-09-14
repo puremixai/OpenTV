@@ -1,8 +1,6 @@
 // 弹幕 API 服务封装（通过本地代理转发）
 import { logger } from '@/lib/logger';
 
-import { disabledDanmakuResult, isDanmakuEnabled } from './enabled';
-
 import {
   clearAllDanmakuCache,
   clearDanmakuCache,
@@ -13,6 +11,7 @@ import {
   getDanmakuFromCache,
   saveDanmakuToCache,
 } from './cache';
+import { disabledDanmakuResult, isDanmakuEnabled } from './enabled';
 import type {
   DanmakuComment,
   DanmakuCommentsResponse,

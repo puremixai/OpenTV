@@ -1,9 +1,10 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, no-console */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { NextRequest, NextResponse } from 'next/server';
 
 import { getConfig } from '@/lib/config';
 import { db } from '@/lib/db';
+import { logger } from '@/lib/logger';
 import { OpenListClient } from '@/lib/openlist.client';
 import {
   getCachedOpenListProxyUrl,
@@ -38,7 +39,7 @@ async function getFinalUrl(url: string, maxRedirects = 5): Promise<string> {
         },
       });
     } catch (error) {
-      console.log(
+      logger.debug(
         '[openlist/proxy] HEAD 请求失败，降级使用 GET:',
         (error as Error).message
       );
@@ -70,7 +71,7 @@ async function getFinalUrl(url: string, maxRedirects = 5): Promise<string> {
         }
         return getResponse.status < 400 ? finalUrl : currentUrl;
       } catch (error) {
-        console.error('[openlist/proxy] 获取最终 URL 失败:', error);
+        logger.error('[openlist/proxy] 获取最终 URL 失败:', error);
         return currentUrl;
       }
     }
@@ -159,7 +160,7 @@ async function resolveFinalPlayUrl(
     return getFinalUrl(qualities[0].url);
   } catch (error) {
     // 视频预览流失败，降级到直连方法
-    console.log(
+    logger.debug(
       '[openlist/proxy] 视频预览流失败，降级到直连方法:',
       (error as Error).message
     );
@@ -306,7 +307,7 @@ export async function GET(
 
       // 缓存链接失效（签名过期等），重新解析并重试一次
       if (videoResponse.status === 401 || videoResponse.status === 403) {
-        console.log('[OpenList Proxy] 缓存的播放链接失效，重新解析');
+        logger.debug('[OpenList Proxy] 缓存的播放链接失效，重新解析');
         finalUrl = await resolveFinalPlayUrl(client, filePath, openListConfig);
         if (!finalUrl || !finalUrl.trim()) {
           return NextResponse.json(
@@ -342,7 +343,7 @@ export async function GET(
       clearTimeout(timeoutId);
 
       if (!videoResponse.ok) {
-        console.error('[OpenList Proxy] 获取视频流失败:', {
+        logger.error('[OpenList Proxy] 获取视频流失败:', {
           fileName,
           status: videoResponse.status,
           statusText: videoResponse.statusText,
@@ -431,7 +432,7 @@ export async function GET(
       clearTimeout(timeoutId);
 
       if (error instanceof Error && error.name === 'AbortError') {
-        console.error('[OpenList Proxy] 请求超时');
+        logger.error('[OpenList Proxy] 请求超时');
         return NextResponse.json(
           { error: '请求超时' },
           { status: 504 }
@@ -440,7 +441,7 @@ export async function GET(
       throw error;
     }
   } catch (error) {
-    console.error('[OpenList Proxy] 错误:', error);
+    logger.error('[OpenList Proxy] 错误:', error);
     return NextResponse.json(
       { error: '播放失败', details: (error as Error).message },
       { status: 500 }

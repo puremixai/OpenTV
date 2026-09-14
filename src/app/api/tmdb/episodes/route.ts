@@ -1,8 +1,9 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, no-console */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { NextRequest, NextResponse } from 'next/server';
 
 import { getConfig } from '@/lib/config';
+import { logger } from '@/lib/logger';
 import { getAuthenticatedUser } from '@/lib/session';
 import { getTVSeasonDetails } from '@/lib/tmdb.search';
 
@@ -53,7 +54,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(response.season);
   } catch (error) {
-    console.error('获取集数详情失败:', error);
+    logger.error('获取集数详情失败:', error);
     return NextResponse.json(
       { error: '获取失败', details: (error as Error).message },
       { status: 500 }

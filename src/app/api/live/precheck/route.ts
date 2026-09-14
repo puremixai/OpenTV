@@ -25,9 +25,8 @@ export async function GET(request: NextRequest) {
   const ua = liveSource.ua || 'AptvPlayer/1.4.10';
 
   try {
-    const decodedUrl = decodeURIComponent(url);
-
-    const response = await fetch(decodedUrl, {
+    // URLSearchParams already decoded the outer query; preserve upstream signatures.
+    const response = await fetch(url, {
       cache: 'no-cache',
       redirect: 'follow',
       credentials: 'same-origin',
@@ -42,7 +41,7 @@ export async function GET(request: NextRequest) {
 
     const contentType = response.headers.get('Content-Type') || '';
     const normalizedContentType = contentType.toLowerCase();
-    const finalUrl = response.url || decodedUrl;
+    const finalUrl = response.url || url;
     const normalizedUrl = finalUrl.toLowerCase().split('?')[0];
     if (response.body) {
       response.body.cancel();
