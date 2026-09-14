@@ -1,759 +1,168 @@
+<div align="center">
+  <img src="public/logo.png" alt="XTV Logo" width="112" height="112">
+</div>
+
 # XTV
 
-<div align="center">
-  <img src="public/logo.png" alt="XTV：融合播放符号的青蓝色 X 标识" width="144" height="144">
-</div>
+可自行部署的影视聚合播放器，面向桌面浏览器、移动端与 Android TV。统一管理视频源、搜索与播放、个人影库和观看记录。
 
-> **XTV** 是一个影视聚合播放器，提供多源搜索、在线播放、私人影库、多人观影室与 Android TV 访问入口。
+[快速开始](#快速开始) · [使用文档](#文档) · [更新记录](CHANGELOG) · [反馈问题](https://github.com/puremixai/xtv/issues)
 
-主仓库：[puremixai/xtv](https://github.com/puremixai/xtv) · 当前版本：**1.0.0** · [更新记录](CHANGELOG) · [问题反馈](https://github.com/puremixai/xtv/issues)
+![Next.js](https://img.shields.io/badge/Next.js-16-000?logo=nextdotjs)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-4-38bdf8?logo=tailwindcss)
+![Docker](https://img.shields.io/badge/Docker-Compose-2496ed?logo=docker)
+[![License](https://img.shields.io/badge/License-CC_BY--NC--SA_4.0-555)](LICENSE)
 
-项目在 [上游增强版项目](https://github.com/mtvpls/MoonTVPlus) 与 [MoonTV v100](https://github.com/MoonTechLab/LunaTV) 的基础上迭代，使用统一的 XTV 名称与视觉标识。网页、PWA 和 Android TV 共用以青蓝色「X」和播放符号组成的品牌图标。
+**当前版本：1.0.0。** XTV 使用独立版本序列，版本以 [VERSION.txt](VERSION.txt) 为准。项目基于 MoonTVPlus 与 MoonTV 迭代，上游来源见[致谢](#致谢)。
 
-<div align="center">
+> XTV 不内置视频源或直播源。首次部署后，需要由管理员配置有权访问的媒体来源或订阅。
 
-![Next.js](https://img.shields.io/badge/Next.js-16.3.5-000?logo=nextdotjs)
-![TailwindCSS](https://img.shields.io/badge/TailwindCSS-4.3.3-38bdf8?logo=tailwindcss)
-![TypeScript](https://img.shields.io/badge/TypeScript-5.8-3178c6?logo=typescript)
-![License](https://img.shields.io/badge/License-CC_BY--NC--SA_4.0-green)
-![Docker Ready](https://img.shields.io/badge/Docker-ready-blue?logo=docker)
+## 核心功能
 
-</div>
+| 功能       | 说明                                                                 |
+| ---------- | -------------------------------------------------------------------- |
+| 搜索与发现 | 聚合多个视频源，查看影片、剧集、演员与评分信息                       |
+| 视频播放   | 基于 HLS.js 与 ArtPlayer，支持外部播放器调用、弹幕和 WebGPU 视频超分 |
+| 个人媒体   | 收藏、播放进度同步、私人影库接入，以及浏览器下载和服务器离线下载     |
+| 多端访问   | 响应式网页、PWA、TV 页面与 Android TV 客户端                         |
+| 观影室     | 多人同步播放、实时聊天与语音交流；该功能仍处于实验阶段               |
+| 站点管理   | 用户与权限管理、视频源及订阅配置、配置历史与回退                     |
+| 海报展示   | 首页轮播与详情海报的渐显、缓慢缩放及滚动视差，支持暂停和减少动态效果 |
 
+服务器离线下载需单独启用，并受管理员权限限制。弹幕、视频超分和部分媒体功能依赖相应服务或浏览器能力，配置方式见[配置参考](docs/CONFIGURATION.md)。
 
----
+## 快速开始
 
-## 🎉 主要功能
+默认部署使用 **Docker Compose + PostgreSQL 17 + Redis 7**。应用镜像由本仓库源码构建；PostgreSQL 保存业务数据，Redis 用于搜索缓存。
 
-- 🎮 **外部播放器跳转**：支持 PotPlayer、VLC、MPV、MX Player、nPlayer、IINA 等多种外部播放器
-- ✨ **视频超分 (Anime4K)**：使用 WebGPU 技术实现实时视频画质增强（支持 1.5x/2x/3x/4x 超分）
-- 💬 **弹幕系统**：完整的弹幕搜索、匹配、加载功能，支持弹幕设置持久化、弹幕屏蔽
-- 📝 **豆瓣评论抓取**：自动抓取并展示豆瓣电影短评，支持分页加载
-- 🧩 **视频源脚本**：支持通过脚本自定义视频源、搜索、详情与播放解析逻辑（实验性）
-- 🪒**自定义去广告**：你可以自定义你的去广告代码，实现更强力的去广告功能
-- 🚀 **更快更顺滑**：相较原版项目整体速度更快，交互体验更好
-- 🎭 **观影室**：支持多人同步观影、实时聊天、语音通话等功能（实验性）。
-- 📥 **M3U8完整下载**：支持浏览器内合并 m3u8 片段下载，也支持下载到本地文件夹并无感播放本地视频。
-- 💾 **服务器离线下载**：支持在服务器端下载视频文件，支持断点续传，提前下载到家秒加载 。
-- 📚 **私人影库**：接入 OpenList、Emby 或小雅，可打造专属私人影库，亦可观看网盘资源。
+需要 Git、Docker 与 Docker Compose v2。Windows 使用 Linux 容器模式。完整的部署、局域网访问与维护步骤见 [Docker 部署指南](docs/DOCKER.md)。
 
-## ✨ 功能特性
+### 1. 获取源码
 
-- 🔍 **多源聚合搜索**：一次搜索立刻返回全源结果。
-- 📄 **丰富详情页**：支持剧集列表、演员、年份、简介等完整信息展示。
-- ▶️ **流畅在线播放**：集成 HLS.js & ArtPlayer。
-- ❤️ **收藏 + 继续观看**：支持 Kvrocks/Redis/Upstash 存储，多端同步进度。
-- 📱 **PWA**：离线缓存、安装到桌面/主屏，移动端原生体验。
-- 🌗 **响应式布局**：桌面侧边栏 + 移动底部导航，自适应各种屏幕尺寸。
-- 👿 **智能去广告**：自动跳过视频中的切片广告，更可以自定义你的去广告代码以增强去广告功能。
-
-### 注意：部署后项目为空壳项目，无内置播放源和直播源，需要自行收集
-
-<details>
-  <summary>点击查看项目截图</summary>
-  <img src="public/screenshot1.png" alt="项目截图" style="max-width:600px">
-  <img src="public/screenshot2.png" alt="项目截图" style="max-width:600px">
-  <img src="public/screenshot3.png" alt="项目截图" style="max-width:600px">
-</details>
-
-
-### 请不要在 B站、小红书、微信公众号、抖音、今日头条或其他中国大陆社交平台发布视频或文章宣传本项目，不授权任何“科技周刊/月刊”类项目或站点收录本项目。
-
-## 🗺 目录
-
-- [版本与更新记录](#版本与更新记录)
-- [品牌与图标](#品牌与图标)
-- [技术栈](#技术栈)
-- [部署](#部署)
-- [配置文件](#配置文件)
-- [自动更新](#自动更新)
-- [环境变量](#环境变量)
-- [外部观影室服务器部署](#外部观影室服务器部署)
-- [弹幕后端部署](#弹幕后端部署)
-- [超分功能说明](#超分功能说明)
-- [Android TV 使用](#android-tv-使用)
-- [TVBOX 订阅功能](#tvbox-订阅功能)
-- [安全与隐私提醒](#安全与隐私提醒)
-- [License](#license)
-- [致谢](#致谢)
-
-
-## 版本与更新记录
-
-XTV 从 **1.0.0** 开始使用独立版本序列。当前版本号记录在 [VERSION.txt](VERSION.txt)，项目更新记录见 [CHANGELOG](CHANGELOG)。此前继承的上游版本与功能历史已保存在 [上游更新历史归档](docs/CHANGELOG-UPSTREAM.md)，不作为 XTV 的当前版本。
-
-修改版本号或更新记录后，在项目根目录执行以下命令，生成界面使用的版本文件；同时保持 `package.json` 的版本号一致：
-
-```powershell
-node scripts/convert-changelog.js
-node scripts/convert-changelog.js --sync-version
+```sh
+git clone --branch main https://github.com/puremixai/xtv.git
+cd xtv
 ```
 
-## 品牌与图标
+### 2. 配置环境
 
-默认站点名称为 **XTV**，可通过构建及运行环境中的 `NEXT_PUBLIC_SITE_NAME` 自定义。使用数据库存储时，网页站名以管理后台保存的站点设置为准；升级已有实例后，如仍显示旧名称，请在后台将站点名称改为 `XTV`。
+在项目根目录准备以下三个文件，均使用 UTF-8 编码：
 
-| 资源 | 文件 | 规格与用途 |
-| --- | --- | --- |
-| Logo | [public/logo.png](public/logo.png) | 500 × 500，项目介绍与客户端菜单 |
-| 浏览器图标 | [public/favicon.ico](public/favicon.ico) | 包含 16、24、32、48、64、128、256 像素尺寸 |
-| PWA 图标 | [public/icons](public/icons) 中的 `icon-*.png` | 192、256、384、512 像素；192 像素版本也用于 Apple 主屏幕和通知 |
-| Android TV 图标 | [drawable/logo.png](apps/android-tv/app/src/main/res/drawable/logo.png) | 500 × 500，用于启动器、圆形图标入口和 TV 横幅 |
+| 文件                  | 配置方式                                                                                            |
+| --------------------- | --------------------------------------------------------------------------------------------------- |
+| `.env.postgres.local` | 复制 [.env.postgres.example](.env.postgres.example)，保留数据库名和用户名，设置 `POSTGRES_PASSWORD` |
+| `.env.redis.local`    | 复制 [.env.redis.example](.env.redis.example)，设置独立的 `REDIS_PASSWORD`                          |
+| `.env.docker.local`   | 新建文件，填写以下应用配置                                                                          |
 
-PWA 名称与图标引用由 [scripts/generate-manifest.js](scripts/generate-manifest.js) 生成，开发和构建命令会自动执行，也可运行 `pnpm gen:manifest` 单独更新。浏览器、PWA 和通知的品牌图标引用带有 `v=xtv` 缓存版本。
+```dotenv
+ADMIN_USERNAME=admin
+PASSWORD=REPLACE_WITH_ADMIN_PASSWORD
+AUTH_SECRET=REPLACE_WITH_RANDOM_AUTH_SECRET
+NEXT_PUBLIC_SITE_NAME=XTV
+SITE_BASE=http://localhost:3000
+POSTGRES_URL=postgresql://moontv:REPLACE_WITH_POSTGRES_PASSWORD@postgres:5432/moontv
+CACHE_REDIS_URL=redis://:REPLACE_WITH_REDIS_PASSWORD@redis:6379/0
+CACHE_KEY_PREFIX=xtv:cache
+```
 
-更新资源后需要重新构建并部署应用。Android TV 的 GitHub Actions 构建会将 `public/logo.png` 复制到 Android 图标目录；本地构建使用该目录中已同步的图标。
+将所有 `REPLACE_WITH_...` 替换为独立的随机值；连接地址中的数据库和缓存密码必须与对应文件一致。URL 中的特殊字符需要百分号编码，也可使用随机十六进制字符串避免转义问题。
 
-XTV 主仓库使用 [puremixai/xtv](https://github.com/puremixai/xtv)。上游镜像地址、数据卷、数据库键及客户端协议保留现有标识，以保持镜像引用有效和已有数据、客户端兼容；这些技术标识不影响 XTV 的界面名称。
+环境文件已被 Git 和 Docker 构建上下文排除。升级已有实例时保留原有配置，尤其是 `AUTH_SECRET`，更换认证密钥会使现有会话失效。
 
+### 3. 启动服务
+
+```sh
+docker compose -f compose.local.yaml up -d --build --wait
+docker compose -f compose.local.yaml ps
+```
+
+三个服务均显示 `healthy` 后，访问 [http://localhost:3000](http://localhost:3000)，使用配置的管理员账号登录，并在后台添加视频源或订阅。可通过 [/api/health](http://localhost:3000/api/health) 查看应用、数据库和缓存状态。
+
+默认仅监听 `127.0.0.1:3000`。从电视或其他设备访问时，需要配置可达的局域网地址或反向代理，详见[网络访问配置](docs/DOCKER.md#3-构建与启动)。
+
+Compose 默认启用 TV 模式和内置观影室，关闭弹幕获取与服务端自定义脚本。数据使用 Docker 卷保存；停止服务时使用 `docker compose -f compose.local.yaml down`，保留数据时不要添加 `-v`。
+
+### 更新应用
+
+先备份数据库、保存当前应用镜像并保留环境配置，具体步骤见[更新与回退](docs/DOCKER.md#更新应用)。在已有工作目录中执行：
+
+```sh
+git switch main
+git pull --ff-only origin main
+docker compose -f compose.local.yaml build moontvplus
+docker compose -f compose.local.yaml up -d --no-build --no-deps --wait moontvplus
+```
+
+上述流程适用于数据库与缓存服务已运行的实例。数据库迁移、备份和回退步骤见 [PostgreSQL 与 Redis 运维说明](docs/POSTGRES-REDIS.md)。Compose 服务名及数据卷沿用现有技术标识，以兼容已有部署。
+
+## 文档
+
+| 文档                                      | 内容                                         |
+| ----------------------------------------- | -------------------------------------------- |
+| [Docker 部署](docs/DOCKER.md)             | 环境准备、启动、网络访问、数据卷与应用更新   |
+| [配置参考](docs/CONFIGURATION.md)         | 视频源、环境变量、弹幕、代理、观影室及 TVBOX |
+| [数据库与缓存](docs/POSTGRES-REDIS.md)    | PostgreSQL / Redis、SQLite 迁移、备份与回退  |
+| [升级兼容说明](docs/SECURITY-UPGRADE.md)  | 旧版本鉴权、媒体代理、定时任务与脚本配置调整 |
+| [管理工作台](docs/ADMIN-UI.md)            | 后台功能与站点管理                           |
+| [多订阅配置](docs/MULTI-SUBSCRIPTIONS.md) | 订阅管理、来源和配置合并                     |
+| [AI 配置](docs/AI-CONFIG.md)              | AI 服务接入与相关设置                        |
+| [Android TV](apps/android-tv/README.md)   | 客户端构建、内核选择与电视端访问             |
+| [开发指南](docs/DEVELOPMENT.md)           | 本地开发、质量检查、目录结构与品牌资源维护   |
 
 ## 技术栈
 
-| 分类      | 主要依赖                                                     |
-| --------- | ------------------------------------------------------------ |
-| 前端框架  | [Next.js 16.3.5](https://nextjs.org/) · App Router · React 19.3 |
-| UI & 样式 | [Tailwind&nbsp;CSS 4.3.3](https://tailwindcss.com/)              |
-| 语言      | TypeScript 5.8                                               |
-| 播放器    | [ArtPlayer](https://github.com/zhw2590582/ArtPlayer) · [HLS.js](https://github.com/video-dev/hls.js/) |
-| 代码质量  | ESLint 9（Flat Config） · Prettier · Jest                    |
-| 部署      | Docker · Vercel · Netlify · Cloudflare Workers · EdgeOne Pages |
+| 层次       | 技术                                       |
+| ---------- | ------------------------------------------ |
+| 前端       | Next.js 16 · React 19 · TypeScript 5.8     |
+| 样式       | Tailwind CSS 4                             |
+| 播放       | HLS.js · ArtPlayer                         |
+| 实时通信   | Socket.IO                                  |
+| 数据与缓存 | PostgreSQL 17 · Redis 7                    |
+| 运行与构建 | Node.js 24 · pnpm 10.14.0 · Docker Compose |
+| 质量检查   | ESLint · Prettier · Jest                   |
 
-本地开发使用 **Node.js 24** 和 **pnpm 10.14.0**；Next.js 16 的最低 Node.js 要求为 20.9。依赖版本以 `pnpm-lock.yaml` 为准。
+应用依赖版本以 [package.json](package.json) 和 [pnpm-lock.yaml](pnpm-lock.yaml) 为准，容器服务版本以 [compose.local.yaml](compose.local.yaml) 为准。
 
-```powershell
+## 开发与贡献
+
+本地开发使用 Node.js 24 和 pnpm 10.14.0。安装依赖后，将 [.env.example](.env.example) 复制为 `.env.local`，设置管理员密码和认证密钥。开发模板使用 SQLite，启动时自动初始化。
+
+```sh
 pnpm install --frozen-lockfile
 pnpm dev
+```
+
+代码检查与生产构建在另一个终端中执行；运行生产服务前需停止占用同一端口的开发服务：
+
+```sh
 pnpm check
 pnpm build
 pnpm start
 ```
 
-默认开发和生产构建使用 Webpack。`pnpm dev:turbo`、`pnpm build:turbo` 提供 Turbopack 入口；Cloudflare 与 EdgeOne 保留 Webpack 适配。PWA 在生产构建后由独立 Workbox 脚本生成，缓存静态资源，登录态相关的页面、RSC 与 API 始终走网络，保留 IndexedDB 离线视频支持。
+问题反馈请包含版本或提交号、部署方式、复现步骤、预期行为与实际结果。提交日志前请移除密码、令牌、会话信息和私有订阅地址。
 
-首页采用按模块加载与缓存、服务端轮播数据种子和响应式图片；隐藏的详情、图片查看与 AI 面板按需加载。React Compiler 以注解模式用于选定的卡片与片单组件。Cache Components 保持关闭，待拆分个性化根配置并验证各部署平台后再启用。迁移和验证记录见 [Next.js 16 升级说明](docs/NEXT16-UPGRADE.md)。
+欢迎通过 [Issues](https://github.com/puremixai/xtv/issues) 报告问题或讨论改进，通过 Pull Request 提交代码和文档。涉及行为变更时，请说明兼容性影响并提供验证结果。更多验证命令见[开发指南](docs/DEVELOPMENT.md)。
 
-Tailwind 4 的主题、变体和插件集中配置在 [src/styles/tailwind.css](src/styles/tailwind.css)。样式迁移范围、浏览器要求和验证命令见 [Tailwind 4 升级说明](docs/TAILWIND4-UPGRADE.md)。
+## 使用约定
 
-首页与详情弹层加入 Apple TV 风格海报动效：图片氛围、柔化转场、缓慢缩放和滚动视差，支持暂停与减少动态效果。实现与验证入口见 [电影海报动效说明](docs/CINEMATIC-HERO.md)。
+项目面向学习与个人非商业使用，不提供内置媒体资源或公开播放服务。请遵守以下约定：
 
-## 部署
+- 配置管理员密码，关闭公网注册，不公开分享实例或将实例用于商业用途、公开服务。
+- 仅接入有权访问和使用的内容，遵守所在地法律及内容提供方的使用要求。使用者对自己的配置、内容访问和传播行为负责。
+- 项目不面向中国大陆地区提供服务；个人自行部署和使用的行为及责任不代表项目维护者。
+- 请勿在 B 站、小红书、微信公众号、抖音、今日头条等中国大陆社交平台宣传本项目，亦未授权“科技周刊／月刊”类项目或站点收录。
 
-本项目**支持 Docker、Vercel、Netlify、Cloudflare Workers 和 EdgeOne Pages 平台** 部署。
+## 许可证
 
-### 使用当前 XTV 源码部署
-
-要使用本仓库的 XTV 文案、Logo 和图标，请从当前源码构建。本地 Compose 配置使用 PostgreSQL 保存业务数据、Redis 提供缓存，仅向本机开放 `3000` 端口。先按 [PostgreSQL + Redis 部署说明](docs/POSTGRES-REDIS.md) 配置 `.env.docker.local`、`.env.postgres.local` 和 `.env.redis.local`，再在项目根目录执行：
-
-```powershell
-docker compose -f compose.local.yaml up -d --build
-docker compose -f compose.local.yaml ps
-```
-
-启动后访问 <http://localhost:3000>。升级、备份和回退步骤见 [本地 Docker 运行说明](docs/DOCKER-LOCAL.md)。
-
-该 Compose 配置默认开启 TV 模式和内置观影室，关闭弹幕获取和服务端自定义脚本。电视或其他设备访问时，需要额外配置可达的服务地址，详见 [Android TV 使用](#android-tv-使用)。
-
-### 一键部署入口
-
-Vercel、Netlify 和 Render 按钮使用 XTV 主仓库 [puremixai/xtv](https://github.com/puremixai/xtv)。各平台仍需配置所需的数据库与环境变量。
-
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/puremixai/xtv)
-
-[![Deploy to Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start/deploy?repository=https://github.com/puremixai/xtv)
-
-**一键部署到 Render**
-
-[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/puremixai/xtv)
-
-`render.yaml` 当前仍引用 `ghcr.io/mtvpls/moontvplus:latest` 上游镜像。要在 Render 使用当前 XTV 源码，需要将服务配置为从本仓库构建，或使用自行构建的 XTV 镜像。
-
-**上游 Zeabur 模板**
-
-[![Deploy on Zeabur](https://zeabur.com/button.svg)](https://zeabur.com/templates/SCHCAY/deploy)
-
-Zeabur 模板及后文的 `ghcr.io/mtvpls/` 镜像地址属于上游项目。使用本仓库的 XTV 修改时，请从当前源码构建应用；本仓库的版本号不代表这些上游镜像的版本。
-
-
-
-### Cloudflare Workers 部署（通过 GitHub Actions）
-
-Cloudflare Workers 提供免费的边缘计算服务，通过 GitHub Actions 可以实现自动化部署。
-
-#### 前置要求
-
-1. 一个 Cloudflare 账号
-2. Fork 本项目到你的 GitHub 账号
-3. 准备一个 Upstash Redis 实例（推荐）
-
-#### 配置步骤
-
-**1. 获取 Cloudflare API Token 和 Account ID**
-
-- 访问 [Cloudflare Dashboard](https://dash.cloudflare.com/)
-- 点击右上角头像 > My Profile > API Tokens
-- 点击 "Create Token"，选择 "Edit Cloudflare Workers" 模板
-- 或使用自定义 Token，需要以下权限：
-  - Account - Cloudflare Workers Scripts - Edit
-  - Account - D1 - Edit（仅在使用 D1 数据库时需要）
-- 创建后复制生成的 API Token
-- 在 Dashboard 首页右侧可以看到你的 Account ID
-
-**2. 配置 GitHub Secrets**
-
-进入你 Fork 的仓库，点击 Settings > Secrets and variables > Actions > New repository secret，添加以下必需的 Secrets：
-
-**必需配置：**
-
-| Secret 名称                | 说明                  | 示例值                   |
-| -------------------------- | --------------------- | ------------------------ |
-| `CLOUDFLARE_API_TOKEN`     | Cloudflare API Token  | `your_api_token_here`    |
-| `CLOUDFLARE_ACCOUNT_ID`    | Cloudflare Account ID | `abc123def456`           |
-| `USERNAME`                 | 站长账号              | `admin`                  |
-| `PASSWORD`                 | 站长密码              | `your_secure_password`   |
-| `NEXT_PUBLIC_STORAGE_TYPE` | 存储类型              | `upstash`                |
-| `UPSTASH_URL`              | Upstash Redis URL     | `https://xxx.upstash.io` |
-| `UPSTASH_TOKEN`            | Upstash Redis Token   | `your_upstash_token`     |
-
-**3. 触发部署**
-
-配置完成后，有两种方式触发部署：
-
-**方式一：手动触发**
-
-- 进入仓库的 Actions 页面
-- 选择 "Deploy to Cloudflare" workflow
-- 点击 "Run workflow" 按钮
-- 选择分支（通常是 main 或 dev）
-- 点击 "Run workflow" 开始部署
-
-**方式二：自动触发（可选）**
-
-如果想要在推送代码时自动部署，可以修改 `.github/workflows/cloudflare-deploy.yml` 文件：
-
-```yaml
-on:
-  push:
-    branches:
-      - main  # 或你的主分支名称
-  workflow_dispatch:
-```
-
-**4. 查看部署状态**
-
-- 在 Actions 页面可以看到部署进度
-- 部署成功后，访问 `https://your-project-name.your-account.workers.dev`
-- 也可以在 Cloudflare Dashboard 的 Workers & Pages 中查看部署的应用
-
-**5. 绑定自定义域名（可选）**
-
-- 在 Cloudflare Dashboard 中进入你的 Worker
-- 点击 Settings > Triggers > Custom Domains
-- 添加你的自定义域名
-
-**6. 使用 D1 数据库（可选）**
-
-如果想使用 Cloudflare D1 数据库代替 Upstash Redis，需要进行以下配置：
-
-1. 在 Cloudflare Dashboard 中创建一个 D1 数据库
-2. 复制数据库 ID
-3. 在 GitHub Secrets 中配置：
-   - 将 `NEXT_PUBLIC_STORAGE_TYPE` 设置为 `d1`
-   - 添加 `D1_DATABASE_ID` 并填入你的数据库 ID
-   - 无需配置 `UPSTASH_URL` 和 `UPSTASH_TOKEN`
-
-**7. 配置外部定时任务（可选）**
-
-可使用外部定时请求/api/cron/mtvpls端点以触发定时任务，或新建一个workers请求触发，推荐每小时请求一次。
-
----
-
-### EdgeOne Pages 部署（通过 GitHub Actions）
-
-EdgeOne Pages/Makers 支持通过 API Token 在 GitHub Actions 中自动构建并部署，本项目已内置 `.github/workflows/edgeone-deploy.yml`。
-
-#### 前置要求
-
-1. 一个腾讯云 EdgeOne 账号
-2. Fork 本项目到你的 GitHub 账号
-3. 准备一个 Turso 数据库实例（推荐，免费 SQLite 云数据库）或 Upstash Redis 实例
-4. 准备 EdgeOne API Token
-
-#### 配置步骤
-
-**1. 获取 EdgeOne API Token**
-
-- 进入 EdgeOne Pages/Makers 控制台
-- 在账号或 API Token 相关页面创建用于 CI/CD 的 Token
-- 复制生成的 Token，后续填入 GitHub Secrets
-
-**2. 配置 GitHub Secrets**
-
-进入你 Fork 的仓库，点击 Settings > Secrets and variables > Actions > New repository secret，添加以下必需的 Secrets：
-
-| Secret 名称                | 说明                | 示例值                   |
-| -------------------------- | ------------------- | ------------------------ |
-| `EDGEONE_API_TOKEN`        | EdgeOne API Token   | `your_edgeone_token`     |
-| `USERNAME`                 | 站长账号            | `admin`                  |
-| `PASSWORD`                 | 站长密码            | `your_secure_password`   |
-| `NEXT_PUBLIC_STORAGE_TYPE` | 存储类型            | `turso` 或 `upstash`     |
-
-**使用 Turso（推荐）：**
-
-在 [Turso](https://turso.tech/) 注册账号并创建数据库，然后运行 `pnpm init:turso` 初始化表结构（需设置 TURSO_URL 和 TURSO_TOKEN 环境变量）。
-
-| Secret 名称                | 说明                | 示例值                            |
-| -------------------------- | ------------------- | --------------------------------- |
-| `TURSO_URL`                | Turso 数据库 URL    | `libsql://your-db.turso.io`       |
-| `TURSO_TOKEN`              | Turso 访问令牌      | `your_turso_token`                |
-
-**使用 Upstash Redis：**
-
-| Secret 名称                | 说明                | 示例值                   |
-| -------------------------- | ------------------- | ------------------------ |
-| `UPSTASH_URL`              | Upstash Redis URL   | `https://xxx.upstash.io` |
-| `UPSTASH_TOKEN`            | Upstash Redis Token | `your_upstash_token`     |
-
-其他可选环境变量可按需继续添加到 GitHub Secrets，工作流会自动同步已配置且非空的变量到 EdgeOne 项目环境变量中。
-
-**3. 触发部署**
-
-- 进入仓库的 Actions 页面
-- 选择 "Deploy to EdgeOne" workflow
-- 点击 "Run workflow"
-- `project_name` 默认为 `moontvplus`
-- `area` 默认为 `overseas`，即全球可用区（不含中国大陆）；如需全球可用区可选择 `global`
-- `sync_environment` 默认开启，会在部署后同步环境变量并再次部署以确保新建项目也能读取环境变量
-
-
----
-
-### Docker 部署
-
-#### Kvrocks 存储（推荐）
-
-```yml
-services:
-  moontv-core:
-    image: ghcr.io/mtvpls/moontvplus:latest
-    container_name: moontv-core
-    restart: on-failure
-    ports:
-      - '3000:3000'
-    environment:
-      - USERNAME=admin
-      - PASSWORD=admin_password
-      - NEXT_PUBLIC_STORAGE_TYPE=kvrocks
-      - KVROCKS_URL=redis://moontv-kvrocks:6666
-    networks:
-      - moontv-network
-    depends_on:
-      - moontv-kvrocks
-  moontv-kvrocks:
-    image: apache/kvrocks
-    container_name: moontv-kvrocks
-    restart: unless-stopped
-    volumes:
-      - kvrocks-data:/var/lib/kvrocks/db
-    networks:
-      - moontv-network
-networks:
-  moontv-network:
-    driver: bridge
-volumes:
-  kvrocks-data:
-```
-（若指定kvrocks-data目录，需要将所挂载的数据目录权限调整为777否则会导致创建数据库失败）
-
-### SQLite 存储
-
-```yml
-services:
-  moontv-core:
-    image: ghcr.io/mtvpls/moontvplus:latest
-    container_name: moontv-core
-    restart: on-failure
-    ports:
-      - '3000:3000'
-    environment:
-      - USERNAME=admin
-      - PASSWORD=admin_password
-      - NEXT_PUBLIC_STORAGE_TYPE=d1
-      - SQLITE_DB_PATH=/app/.data/moontv.db
-    volumes:
-      - ./data:/app/.data
-```
-
-
-### Redis 存储（有一定的丢数据风险）
-
-```yml
-services:
-  moontv-core:
-    image: ghcr.io/mtvpls/moontvplus:latest
-    container_name: moontv-core
-    restart: on-failure
-    ports:
-      - '3000:3000'
-    environment:
-      - USERNAME=admin
-      - PASSWORD=admin_password
-      - NEXT_PUBLIC_STORAGE_TYPE=redis
-      - REDIS_URL=redis://moontv-redis:6379
-    networks:
-      - moontv-network
-    depends_on:
-      - moontv-redis
-  moontv-redis:
-    image: redis:alpine
-    container_name: moontv-redis
-    restart: unless-stopped
-    networks:
-      - moontv-network
-    # 请开启持久化，否则升级/重启后数据丢失
-    volumes:
-      - ./data:/data
-networks:
-  moontv-network:
-    driver: bridge
-```
-
-### Upstash 存储
-
-1. 在 [upstash](https://upstash.com/) 注册账号并新建一个 Redis 实例，名称任意。
-2. 复制新数据库的 **HTTPS ENDPOINT 和 TOKEN**
-3. 使用如下 docker compose
-
-```yml
-services:
-  moontv-core:
-    image: ghcr.io/mtvpls/moontvplus:latest
-    container_name: moontv-core
-    restart: on-failure
-    ports:
-      - '3000:3000'
-    environment:
-      - USERNAME=admin
-      - PASSWORD=admin_password
-      - NEXT_PUBLIC_STORAGE_TYPE=upstash
-      - UPSTASH_URL=上面 https 开头的 HTTPS ENDPOINT
-      - UPSTASH_TOKEN=上面的 TOKEN
-```
-
-#### Lite 镜像说明
-
-`ghcr.io/mtvpls/moontvplus-lite:latest` 为更小的镜像，但不支持启动内置观影室服务，也不支持 SQLite（`NEXT_PUBLIC_STORAGE_TYPE=d1`）自动初始化方案。
-
-示例：
-
-```yml
-services:
-  moontv-core:
-    image: ghcr.io/mtvpls/moontvplus-lite:latest
-    container_name: moontv-core
-    restart: on-failure
-    ports:
-      - '3000:3000'
-    environment:
-      - USERNAME=admin
-      - PASSWORD=admin_password
-      - NEXT_PUBLIC_STORAGE_TYPE=kvrocks
-      - KVROCKS_URL=redis://moontv-kvrocks:6666
-    networks:
-      - moontv-network
-    depends_on:
-      - moontv-kvrocks
-  moontv-kvrocks:
-    image: apache/kvrocks
-    container_name: moontv-kvrocks
-    restart: unless-stopped
-    volumes:
-      - kvrocks-data:/var/lib/kvrocks/db
-    networks:
-      - moontv-network
-networks:
-  moontv-network:
-    driver: bridge
-volumes:
-  kvrocks-data:
-```
-（若指定kvrocks-data目录，需要将所挂载的数据目录权限调整为777否则会导致创建数据库失败）
-
-> **指定运行 UID/GID**：容器默认以 `1001:1001`（`nextjs` 用户）运行。可通过 `PUID` / `PGID` 环境变量指定容器进程运行时使用的用户/组 ID。挂载宿主机目录时建议将其设为宿主机目录的属主 UID/GID，容器启动时会自动调整进程属主并修正 `/data`、`/app/.data` 等数据目录的属主，避免权限问题。
-
-## 配置文件
-
-完成部署后为空壳应用，无播放源，需要站长在管理后台的配置文件设置中填写配置文件，本版本已不支持无数据库运行。
-
-配置文件示例如下：
-
-```json
-{
-  "cache_time": 7200,
-  "api_site": {
-    "dyttzy": {
-      "api": "http://xxx.com/api.php/provide/vod",
-      "name": "示例资源",
-      "detail": "http://xxx.com"
-    }
-    // ...更多站点
-  },
-  "custom_category": [
-    {
-      "name": "华语",
-      "type": "movie",
-      "query": "华语"
-    }
-  ]
-}
-```
-
-- `cache_time`：接口缓存时间（秒）。
-- `api_site`：你可以增删或替换任何资源站，字段说明：
-  - `key`：唯一标识，保持小写字母/数字。
-  - `api`：资源站提供的 `vod` JSON API 根地址。
-  - `name`：在人机界面中展示的名称。
-  - `detail`：（可选）部分无法通过 API 获取剧集详情的站点，需要提供网页详情根 URL，用于爬取。
-- `custom_category`：自定义分类配置，用于在导航中添加个性化的影视分类。以 type + query 作为唯一标识。支持以下字段：
-  - `name`：分类显示名称（可选，如不提供则使用 query 作为显示名）
-  - `type`：分类类型，支持 `movie`（电影）或 `tv`（电视剧）
-  - `query`：搜索关键词，用于在豆瓣 API 中搜索相关内容
-
-custom_category 支持的自定义分类已知如下：
-
-- movie：热门、最新、经典、豆瓣高分、冷门佳片、华语、欧美、韩国、日本、动作、喜剧、爱情、科幻、悬疑、恐怖、治愈
-- tv：热门、美剧、英剧、韩剧、日剧、国产剧、港剧、日本动画、综艺、纪录片
-
-也可输入如 "哈利波特" 效果等同于豆瓣搜索
-
-XTV 支持标准的苹果 CMS V10 API 格式。
-
-## 自动更新
-
-可借助 [watchtower](https://github.com/containrrr/watchtower) 自动更新镜像容器
-
-dockge/komodo 等 docker compose UI 也有自动更新功能
-
-## 环境变量
-
-| 变量                                     | 说明                                                         | 可选值                      | 默认值                                                       |
-| ---------------------------------------- | ------------------------------------------------------------ | --------------------------- | ------------------------------------------------------------ |
-| USERNAME                                 | 站长账号                                                     | 任意字符串                  | 无默认，必填字段                                             |
-| PASSWORD                                 | 站长密码                                                     | 任意字符串                  | 无默认，必填字段                                             |
-| CRON_SECRET / CRON_PASSWORD | 定时任务凭据；优先 CRON_SECRET，支持旧变量，无默认值 | 任意随机字符串 | (空，停用调度) |
-| CRON_WAIT_FOR_COMPLETION                 | 定时任务接口是否等待任务完全结束后再返回响应（true 时返回 200，false 时立即返回 202）。部署在 serverless 平台（如 Vercel）时建议设置为 true，否则响应返回后异步执行可能会被平台杀后台导致任务中断 | true/false                  | false                                                        |
-| CRON_USER_BATCH_SIZE                     | 定时任务用户批处理大小（控制并发处理的用户数量，影响播放记录和收藏更新任务的并发性能） | 正整数                      | 3                                                            |
-| SITE_BASE                                | 站点 url                                                     | 形如 https://example.com    | 空                                                           |
-| NEXT_PUBLIC_SITE_NAME                    | 站点名称                                                     | 任意字符串                  | XTV                                                       |
-| ANNOUNCEMENT                             | 站点公告                                                     | 任意字符串                  | 本网站仅提供影视信息搜索服务，所有内容均来自第三方网站。本站不存储任何视频资源，不对任何内容的准确性、合法性、完整性负责。 |
-| ANNOUNCEMENT_DISPLAY_MODE                | 公告显示模式                                                 | once、every                 | once                                                        |
-| NEXT_PUBLIC_STORAGE_TYPE                 | 播放记录/收藏的存储方式                                      | redis、kvrocks、upstash、d1、turso、postgres | 无默认，必填字段                                             |
-| KVROCKS_URL                              | kvrocks 连接 url                                             | 连接 url                    | 空                                                           |
-| REDIS_URL                                | redis 连接 url                                               | 连接 url                    | 空                                                           |
-| UPSTASH_URL                              | upstash redis 连接 url                                       | 连接 url                    | 空                                                           |
-| UPSTASH_TOKEN                            | upstash redis 连接 token                                     | 连接 token                  | 空                                                           |
-| TURSO_URL                                | Turso (libSQL) 数据库连接 url                                | libsql://xxx.turso.io       | 空                                                           |
-| TURSO_TOKEN                              | Turso (libSQL) 数据库访问令牌                                | 访问令牌                    | 空                                                           |
-| NEXT_PUBLIC_SEARCH_MAX_PAGE              | 搜索接口可拉取的最大页数                                     | 1-50                        | 5                                                            |
-| NEXT_PUBLIC_DOUBAN_PROXY_TYPE            | 豆瓣数据源请求方式                                           | 见下方                      | direct                                                       |
-| NEXT_PUBLIC_DOUBAN_PROXY                 | 自定义豆瓣数据代理 URL                                       | url prefix                  | (空)                                                         |
-| NEXT_PUBLIC_DOUBAN_IMAGE_PROXY_TYPE      | 豆瓣图片代理类型                                             | 见下方                      | direct                                                       |
-| NEXT_PUBLIC_DOUBAN_IMAGE_PROXY           | 自定义豆瓣图片代理 URL                                       | url prefix                  | (空)                                                         |
-| NEXT_PUBLIC_DISABLE_YELLOW_FILTER        | 关闭色情内容过滤                                             | true/false                  | false                                                        |
-| NEXT_PUBLIC_FLUID_SEARCH                 | 是否开启搜索接口流式输出                                     | true/ false                 | true                                                         |
-| PROXY_M3U8_TOKEN | 可选的服务端媒体共享令牌；浏览器默认使用按会话签发的短期令牌 | 随机字符串 | (空) |
-| NEXT_PUBLIC_DANMAKU_CACHE_EXPIRE_MINUTES | 弹幕缓存失效时间（分钟数，设为 0 时不缓存）                  | 0 或正整数                  | 4320（3天）                                                  |
-| ENABLE_TV_MODE                           | 是否启用 TV 模式；设为 false 后 /tv 不可访问，且不启动电视遥控 Socket.IO 监听 | true/false                  | true                                                         |
-| ENABLE_TVBOX_SUBSCRIBE                   | 是否启用 TVBOX 订阅功能                                      | true/false                  | false                                                        |
-| TVBOX_SUBSCRIBE_TOKEN                    | TVBOX 订阅 API 访问 Token，如启用TVBOX功能必须设置该项       | 任意字符串                  | (空)                                                         |
-| TVBOX_BLOCKED_SOURCES                    | TVBOX 订阅屏蔽源列表（多个源用逗号分隔，匹配视频源的 key）   | 逗号分隔的源 key            | (空)                                                         |
-| WATCH_ROOM_ENABLED                       | 是否启用观影室功能（vercel部署不支持该功能，可使用外部服务器） | true/false                  | false                                                        |
-| WATCH_ROOM_SERVER_TYPE                   | 观影室服务器类型                                             | internal/external           | internal                                                     |
-| WATCH_ROOM_EXTERNAL_SERVER_URL           | 外部观影室服务器地址（当 SERVER_TYPE 为 external 时必填）    | WebSocket URL               | (空)                                                         |
-| WATCH_ROOM_EXTERNAL_SERVER_AUTH          | 外部观影室服务器认证令牌（当 SERVER_TYPE 为 external 时必填） | 任意字符串                  | (空)                                                         |
-| NEXT_PUBLIC_VOICE_CHAT_STRATEGY          | 观影室语音聊天策略                                           | webrtc-fallback/server-only | webrtc-fallback                                              |
-| NEXT_PUBLIC_ENABLE_OFFLINE_DOWNLOAD      | 是否启用服务器离线下载功能（开启后也仅管理员和站长可用）     | true/false                  | false                                                        |
-| OFFLINE_DOWNLOAD_DIR                     | 离线下载文件存储目录                                         | 任意有效路径                | /data                                                        |
-| OFFLINE_DOWNLOAD_PROXY                   | 离线下载代理                                                 | http://host:port         | (空)                                                         |
-| VIDEOINFO_CACHE_MINUTES                  | 私人影库视频信息在内存中的缓存时长（分钟）                   | 正整数                      | 1440（1天）                                                  |
-| NEXT_PUBLIC_ENABLE_SOURCE_SEARCH         | 是否开启源站寻片功能                                         | true/false                  | true                                                         |
-| MAX_PLAY_RECORDS_PER_USER                | 单个用户播放记录清理阈值（超过此数量将自动清理旧记录）       | 正整数                      | 100                                                          |
-| MAX_MANGA_HISTORY_PER_USER              | 单个用户漫画阅读历史保留上限 | 正整数                      | 100                                                          |
-| MAGNET_HEALTH_MAX_CONCURRENT             | 动漫磁力测活全站同时进行的最大任务数（进程内）               | 1-100                       | 10                                                           |
-| INIT_CONFIG                              | 初始配置（JSON 格式，包含 api_site、custom_category、lives 等） | JSON 字符串                 | (空)                                                         |
-| CONFIG_SUBSCRIPTION_URL                  | 配置订阅 URL（Base58 编码的配置文件地址，优先级高于 INIT_CONFIG） | URL                         | (空)                                                         |
-| TMDB_API_KEY                             | TMDB API 密钥                                                | 任意字符串                  | (空)                                                         |
-| TMDB_PROXY                               | TMDB 代理地址                                                | URL                         | (空)                                                         |
-| TMDB_REVERSE_PROXY                       | TMDB 反向代理地址                                            | URL                         | (空)                                                         |
-| DANMAKU_API_BASE                         | 弹幕 API 地址                                                | URL                         | http://localhost:9321                                        |
-| DANMAKU_API_TOKEN                        | 弹幕 API Token                                               | 任意字符串                  | 87654321                                                     |
-| DATA_MIGRATION_CHUNK_SIZE                | 数据迁移批处理大小（控制导入导出时每批处理的用户数量和数据条数） | 正整数                      | 10                                                           |
-| QR_LOGIN_STORE_MODE                      | 电视端扫码登录状态存储模式；serverless环境下多节点内存状态不可靠。 | auto、memory、hybrid、shared | auto                                                         |
-| WEB_PUSH_PROXY                           | Web Push 服务端发送代理地址，用于服务器访问 FCM 等 Push endpoint | HTTP/HTTPS 代理 URL          | (空)                                                         |
-| WEB_PUSH_BASEURL                         | Web Push endpoint 反向代理 Base URL；支持 `{endpoint}`（URL编码）和 `{raw_endpoint}`（不编码）占位符 | URL                         | (空)                                                         |
-| TELEGRAM_BOT_TOKEN                       | Telegram Bot Token，用于 Bot 登录、绑定和通知推送             | BotFather 生成的 token       | (空)                                                         |
-| TELEGRAM_BOT_USERNAME                    | Telegram Bot 用户名（不含或包含 @ 均可）                      | bot username                | (空)                                                         |
-| TELEGRAM_WEBHOOK_SECRET                  | Telegram Webhook Secret；Webhook 路径为 `/api/telegram/webhook/<secret>` | 随机长字符串                | (空)                                                         |
-| TELEGRAM_API_PROXY                       | Telegram Bot API 系统代理（Node 部署可用，Cloudflare/Edge 会忽略） | HTTP/HTTPS 代理 URL         | (空)                                                         |
-| TELEGRAM_API_BASE_URL                    | Telegram Bot API 反代 Base URL，用于替换 `https://api.telegram.org` | URL                         | (空)                                                         |
-| TELEGRAM_LOGIN_ENABLED                   | 是否启用 Telegram 快捷登录                                    | true/false                  | true                                                         |
-| TELEGRAM_BINDING_ENABLED                 | 是否启用 Telegram 账号绑定                                    | true/false                  | true                                                         |
-| TELEGRAM_NOTIFICATIONS_ENABLED           | 是否启用 Telegram 通知推送                                    | true/false                  | true                                                         |
-| TELEGRAM_DEFAULT_NOTIFICATIONS           | 新绑定 Telegram 用户是否默认开启通知                          | true/false                  | true                                                         |
-
-
-### Telegram Bot 配置
-
-1. 在 Telegram 通过 BotFather 创建 Bot，获取 `TELEGRAM_BOT_TOKEN` 和 Bot 用户名。
-2. 设置 `TELEGRAM_BOT_TOKEN`、`TELEGRAM_BOT_USERNAME`、`TELEGRAM_WEBHOOK_SECRET` 并重启服务。
-3. 如服务器无法直连 Telegram，可选填 `TELEGRAM_API_PROXY`（系统代理）或 `TELEGRAM_API_BASE_URL`（反代 Base URL）。
-4. 可在后台 Telegram Bot 配置页点击“一键设置 Webhook”，或手动将 Webhook 设置到：`https://你的域名/api/telegram/webhook/<TELEGRAM_WEBHOOK_SECRET>`。
-
-可使用以下命令设置 Webhook：
-
-```bash
-curl "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/setWebhook"   -d "url=https://你的域名/api/telegram/webhook/$TELEGRAM_WEBHOOK_SECRET"   -d "secret_token=$TELEGRAM_WEBHOOK_SECRET"
-```
-
-用户登录后可在“通知设置”中生成绑定码，也可在注册成功页直接绑定；绑定后可接收站内通知并使用 Telegram 确认登录。
-
-NEXT_PUBLIC_DOUBAN_PROXY_TYPE 选项解释：
-
-- direct: 由服务器直接请求豆瓣源站
-- cors-proxy-zwei: 浏览器向 cors proxy 请求豆瓣数据，该 cors proxy 由 [Zwei](https://github.com/bestzwei) 搭建
-- cmliussss-cdn-tencent: 浏览器向豆瓣 CDN 请求数据，该 CDN 由 [CMLiussss](https://github.com/cmliu) 搭建，并由腾讯云 cdn 提供加速
-- cmliussss-cdn-ali: 浏览器向豆瓣 CDN 请求数据，该 CDN 由 [CMLiussss](https://github.com/cmliu) 搭建，并由阿里云 cdn 提供加速
-- custom: 用户自定义 proxy，由 NEXT_PUBLIC_DOUBAN_PROXY 定义
-
-NEXT_PUBLIC_DOUBAN_IMAGE_PROXY_TYPE 选项解释：
-
-- direct：由浏览器直接请求豆瓣分配的默认图片域名
-- server：由服务器代理请求豆瓣分配的默认图片域名
-- img3：由浏览器请求豆瓣官方的精品 cdn（阿里云）
-- cmliussss-cdn-tencent：由浏览器请求豆瓣 CDN，该 CDN 由 [CMLiussss](https://github.com/cmliu) 搭建，并由腾讯云 cdn 提供加速
-- cmliussss-cdn-ali：由浏览器请求豆瓣 CDN，该 CDN 由 [CMLiussss](https://github.com/cmliu) 搭建，并由阿里云 cdn 提供加速
-- custom: 用户自定义 proxy，由 NEXT_PUBLIC_DOUBAN_IMAGE_PROXY 定义
-
-NEXT_PUBLIC_VOICE_CHAT_STRATEGY 选项解释：
-
-- webrtc-fallback：使用 WebRTC P2P 连接，失败时自动回退到服务器中转（推荐）
-- server-only：仅使用服务器中转（适用于无法建立 P2P 连接的网络环境）
-
-### 外部观影室服务器部署
-
-如果您在 Vercel 等无法运行 WebSocket 服务器的平台部署，或希望将观影室服务器独立部署，可以使用外部观影室服务器。
-
-推荐使用由 [tgs9915](https://github.com/tgs9915) 开发的 [watch-room-server](https://github.com/tgs9915/watch-room-server) 项目进行部署。
-
-**配置步骤：**
-
-1. 按照 [watch-room-server](https://github.com/tgs9915/watch-room-server) 的文档部署外部服务器
-
-2. 在 XTV 中设置以下环境变量：
-
-   ```env
-   WATCH_ROOM_ENABLED=true
-   WATCH_ROOM_SERVER_TYPE=external
-   WATCH_ROOM_EXTERNAL_SERVER_URL=wss://your-watch-room-server.com
-   WATCH_ROOM_EXTERNAL_SERVER_AUTH=your_secure_token
-   ```
-
-3. 重启应用即可使用外部观影室服务器
-
-
-
-## 弹幕后端部署
-
-要使用弹幕功能，需要额外部署弹幕 API 后端服务。
-
-### 部署步骤
-
-1. 按照[danmu_api](https://github.com/huangxd-/danmu_api.git)教程部署后端
-2. 建议配置SOURCE_ORDER或PLATFORM_ORDER环境变量，默认弹幕源很少
-3. 在管理面板设置后端地址
-
-
-
-
-##  超分功能说明
-
-超分功能需要浏览器支持webgpu并且你的浏览器环境不能是http（如非要在http中使用，需要在浏览器端设置允许不安全的内容）
-
-
-
-
-## Android TV 使用
-
-XTV 提供 `/tv` 电视端页面，并包含 [Android TV 壳工程](apps/android-tv/README.md)，可使用系统 WebView 或 GeckoView 打开电视端页面。默认桌面名称为 `XTV TV`，支持通过 `APP_NAME` 自定义，启动器图标使用统一的 XTV Logo。
-
-构建参数、版本选择和局域网遥控能力见 [Android TV 使用说明](apps/android-tv/README.md)。
-
-`BASE_URL` 必须是电视可访问的服务地址。本地 Compose 默认只监听电脑的 `127.0.0.1:3000`；用于电视访问时，需要配置可达的反向代理地址，或按需调整端口绑定及防火墙。电视中的 `localhost` 指向电视自身。
-
-也可配合 [OrionTV](https://github.com/zimplexing/OrionTV) 使用，将 XTV 作为后端，同步网页端播放记录。
-
-## TVBOX 订阅功能
-
-本项目支持生成 TVBOX 格式的订阅链接，方便在 TVBOX 应用中使用。
-
-### 配置步骤
-
-1. 在环境变量中设置以下配置：
-
-   ```env
-   # 启用 TVBOX 订阅功能
-   ENABLE_TVBOX_SUBSCRIBE=true
-   # 设置订阅访问 Token（请使用强密码）
-   TVBOX_SUBSCRIBE_TOKEN=your_secure_random_token
-   # 可选：屏蔽特定视频源（多个源用逗号分隔，填写视频源的 key）
-   TVBOX_BLOCKED_SOURCES=source1,source2
-   ```
-
-2. 重启应用后，登录网站，点击用户菜单中的"订阅"按钮
-
-3. 复制生成的订阅链接到 TVBOX 应用中使用
-
-## 安全与隐私提醒
-
-### 请设置密码保护并关闭公网注册
-
-为了您的安全和避免潜在的法律风险，我们要求在部署时**强烈建议关闭公网注册**：
-
-### 部署要求
-
-1. **设置环境变量 `PASSWORD`**：为您的实例设置一个强密码
-2. **仅供个人使用**：请勿将您的实例链接公开分享或传播
-3. **遵守当地法律**：请确保您的使用行为符合当地法律法规
-
-### 重要声明
-
-- 本项目仅供学习和个人使用
-- 请勿将部署的实例用于商业用途或公开服务
-- 如因公开分享导致的任何法律问题，用户需自行承担责任
-- 项目开发者不对用户的使用行为承担任何法律责任
-- 本项目不在中国大陆地区提供服务。如有该项目在向中国大陆地区提供服务，属个人行为。在该地区使用所产生的法律风险及责任，属于用户个人行为，与本项目无关，须自行承担全部责任。特此声明
-
-## 升级与本地开发
-
-本轮鉴权、代理和脚本执行行为有调整。部署前请阅读 [升级说明](docs/SECURITY-UPGRADE.md)，逐项状态见 [修改清单](docs/MODIFICATION-CHECKLIST.md)。
-
-## License
-
-仓库当前 [LICENSE](LICENSE) 文件为 **CC BY-NC-SA 4.0**。此前 README 的 MIT 标注与该文件不一致，现按文件内容标注；本次修改不变更许可证。派生代码及各贡献部分的授权范围仍需上游维护者澄清。
+本仓库 [LICENSE](LICENSE) 标明采用 **CC BY-NC-SA 4.0**。第三方依赖与上游组件保留各自的版权和许可声明；继承代码及各贡献部分的授权范围仍需上游维护者澄清。
 
 ## 致谢
 
-- [ts-nextjs-tailwind-starter](https://github.com/theodorusclarence/ts-nextjs-tailwind-starter) — 项目最初基于该脚手架。
-- [上游增强版项目](https://github.com/mtvpls/MoonTVPlus) — 本项目的迭代基础。
-- [MoonTV](https://github.com/MoonTechLab/LunaTV)— 由此启发，再次站在巨人的肩膀上。
-- [LibreTV](https://github.com/LibreSpark/LibreTV) — 由此启发，站在巨人的肩膀上。
-- [ArtPlayer](https://github.com/zhw2590582/ArtPlayer) — 提供强大的网页视频播放器。
-- [HLS.js](https://github.com/video-dev/hls.js) — 实现 HLS 流媒体在浏览器中的播放支持。
-- [Zwei](https://github.com/bestzwei) — 提供获取豆瓣数据的 cors proxy
-- [CMLiussss](https://github.com/cmliu) — 提供豆瓣 CDN 服务
-- 感谢所有提供免费影视接口的站点。
+- [MoonTVPlus](https://github.com/mtvpls/MoonTVPlus)、[MoonTV](https://github.com/MoonTechLab/LunaTV)：项目迭代基础。继承的更新记录保存在[上游历史归档](docs/CHANGELOG-UPSTREAM.md)。
+- [LibreTV](https://github.com/LibreSpark/LibreTV)、[ts-nextjs-tailwind-starter](https://github.com/theodorusclarence/ts-nextjs-tailwind-starter)：早期设计与工程基础。
+- [ArtPlayer](https://github.com/zhw2590582/ArtPlayer)、[HLS.js](https://github.com/video-dev/hls.js)：网页播放能力。
+- [apple-tv-hero](https://github.com/DerekCounihan/apple-tv-hero)：海报过渡与视差效果的设计参考。
+- [Zwei](https://github.com/bestzwei)、[CMLiussss](https://github.com/cmliu)：媒体信息代理与图片访问方案。
 
-## Star History
-
-下图展示 XTV 主仓库的历史统计。
-
-[![Star History Chart](https://star-history.dera.page/svg?repos=puremixai/xtv&type=Date)](https://star-history.dera.page/#puremixai/xtv&Date)
+感谢所有代码、文档、问题反馈与测试贡献者。
