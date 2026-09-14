@@ -1,9 +1,10 @@
-#!/usr/bin / env node
+#!/usr/bin/env node
 
 /* eslint-disable */
 
 const fs = require('fs');
 const path = require('path');
+const { parseVersion } = require('../src/lib/semantic-version');
 
 function parseChangelog(content) {
   const lines = content.split('\n');
@@ -15,10 +16,16 @@ function parseChangelog(content) {
   for (const line of lines) {
     const trimmedLine = line.trim();
 
-    // 匹配版本行: ## [X.Y.Z] - YYYY-MM-DD
+    // 版本可带预发布标识，例如 0.1.0-dev.1。
     const versionMatch = trimmedLine.match(
-      /^## \[([\d.]+)\] - (\d{4}-\d{2}-\d{2})$/
+      /^## \[([^\]]+)\] - (\d{4}-\d{2}-\d{2})$/,
     );
+    if (
+      trimmedLine.startsWith('## [') &&
+      (!versionMatch || !parseVersion(versionMatch[1]))
+    ) {
+      throw new Error(`CHANGELOG 版本格式无效: ${trimmedLine}`);
+    }
     if (versionMatch) {
       if (currentVersion) {
         versions.push(currentVersion);
@@ -87,33 +94,7 @@ function parseChangelog(content) {
 }
 
 function generateTypeScript(changelogData) {
-  const entries = changelogData.versions
-    .map((version) => {
-      const addedEntries = version.added
-        .map((entry) => `    "${entry}"`)
-        .join(',\n');
-      const changedEntries = version.changed
-        .map((entry) => `    "${entry}"`)
-        .join(',\n');
-      const fixedEntries = version.fixed
-        .map((entry) => `    "${entry}"`)
-        .join(',\n');
-
-      return `  {
-    version: "${version.version}",
-    date: "${version.date}",
-    added: [
-${addedEntries || '      // 无新增内容'}
-    ],
-    changed: [
-${changedEntries || '      // 无变更内容'}
-    ],
-    fixed: [
-${fixedEntries || '      // 无修复内容'}
-    ]
-  }`;
-    })
-    .join(',\n');
+  const entries = JSON.stringify(changelogData.versions, null, 2);
 
   return `// 此文件由 scripts/convert-changelog.js 自动生成
 // 请勿手动编辑
@@ -126,9 +107,7 @@ export interface ChangelogEntry {
   fixed: string[];
 }
 
-export const changelog: ChangelogEntry[] = [
-${entries}
-];
+export const changelog: ChangelogEntry[] = ${entries};
 
 export default changelog;
 `;
@@ -160,7 +139,7 @@ function convertVersionTxtToTs() {
   const versionTsPath = path.join(process.cwd(), 'src/lib/version.ts');
   try {
     const version = fs.readFileSync(versionTxtPath, 'utf8').trim();
-    if (!/^[\d.]+$/.test(version)) {
+    if (!parseVersion(version)) {
       throw new Error(`VERSION.txt 内容无效: "${version}"`);
     }
 
@@ -228,14 +207,16 @@ function main() {
       // 在本地运行时，只提示但不更新版本文件
       console.log('🔧 本地运行模式：跳过版本文件更新');
       console.log('💡 版本文件更新将在 git tag 触发的 release 工作流中完成');
-      console.log('💡 本地可执行 node scripts/convert-changelog.js --sync-version 从 VERSION.txt 同步 version.ts');
+      console.log(
+        '💡 本地可执行 node scripts/convert-changelog.js --sync-version 从 VERSION.txt 同步 version.ts',
+      );
     }
 
     console.log(`✅ 成功生成 ${outputPath}`);
     console.log(`📊 版本统计:`);
     changelogData.versions.forEach((version) => {
       console.log(
-        `   ${version.version} (${version.date}): +${version.added.length} ~${version.changed.length} !${version.fixed.length}`
+        `   ${version.version} (${version.date}): +${version.added.length} ~${version.changed.length} !${version.fixed.length}`,
       );
     });
 

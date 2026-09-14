@@ -2,6 +2,7 @@
 
 import { checkSearchSignal, fetchSearchResponse } from '@/lib/server/search-control';
 import { normalizeApiBaseUrl } from '@/lib/url';
+import { CURRENT_VERSION } from '@/lib/version';
 
 interface EmbyConfig {
   ServerURL: string;
@@ -81,7 +82,7 @@ interface EmbyView {
   CollectionType?: string;
 }
 
-const DEFAULT_EMBY_AUTHORIZATION_HEADER = 'MediaBrowser Client="XTV", Device="Web", DeviceId="moontvplus-web", Version="1.0.0"';
+const DEFAULT_EMBY_AUTHORIZATION_HEADER = `MediaBrowser Client="XTV", Device="Web", DeviceId="moontvplus-web", Version="${CURRENT_VERSION}"`;
 
 export class EmbyClient {
   private serverUrl: string;

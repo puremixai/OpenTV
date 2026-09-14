@@ -12,10 +12,12 @@
 
 - `BASE_URL`: 服务端 Base URL，不需要带 `/tv`，例如 `https://example.com` 或 `http://192.168.1.10:3000`
 - `APP_NAME`: Android TV 桌面显示名称，默认 `XTV TV`
-- `VERSION_NAME`: APK 版本名
-- `VERSION_CODE`: APK 版本号，整数
+- `VERSION_NAME`: APK 展示版本名，默认读取仓库根目录的 [VERSION.txt](../../VERSION.txt)；可通过 Gradle 属性或环境变量覆盖，空值回退到源码版本
+- `VERSION_CODE`: Android 安装更新使用的整数版本号，默认 `2`；每次向已有安装分发更新时必须递增，不随展示版本重新编号或降级
 - `MIN_SDK`: Android 外壳的最低 API，标准版为 `23`（Android 6+），兼容版为 `21`（Android 5+）；网页兼容性还取决于浏览器内核，见下文
 - `GECKOVIEW_VERSION`: GeckoView 依赖版本，仅 GeckoView 版本使用，默认 `128.0.20240725162350`
+
+XTV 采用 `0.x` 开发版本体系，详见[版本策略](../../docs/DEVELOPMENT.md#版本维护)。GitHub Actions 的 `version_name` 留空时使用所选源码的版本，并统一用于 APK 构建和产物名称。`VERSION_NAME` 从初始化标记 `1.0.0` 调整为 `0.1.0-alpha.1` 不代表 Android 安装版本倒退；本次将默认 `VERSION_CODE` 从 `1` 提升至 `2`。如果已安装的 APK 使用了 `2` 或更大的版本号，构建下一次更新时必须显式传入更大的整数，并保持包名及签名一致。
 
 App 启动时会自动打开：
 

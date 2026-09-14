@@ -2,7 +2,7 @@
 
 以下内容归档自 XTV 启用独立版本号之前的 CHANGELOG，用于追溯继承自 [MoonTVPlus](https://github.com/mtvpls/MoonTVPlus) 的功能历史。归档中的版本号不属于 XTV 独立版本序列，原有内容按归档时状态保留。
 
-XTV 当前更新记录见 [CHANGELOG](../CHANGELOG)，独立版本从 1.0.0 开始。
+XTV 当前更新记录见 [CHANGELOG](../CHANGELOG)，采用独立的 `0.x` Alpha 测试版本体系，详见[版本策略](DEVELOPMENT.md#版本维护)。
 
 ---
 

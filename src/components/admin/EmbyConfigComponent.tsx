@@ -6,6 +6,7 @@ import { Fragment, useEffect, useState } from 'react';
 
 import { AdminConfig } from '@/lib/admin.types';
 import { adminFetch as fetch } from '@/lib/admin-fetch';
+import { CURRENT_VERSION } from '@/lib/version';
 
 import {
   AlertModal,
@@ -1017,7 +1018,7 @@ export const EmbyConfigComponent = ({
                 <p className='text-xs text-gray-500 dark:text-gray-400 mt-1'>
                   仅用于账号认证登录请求，示例：MediaBrowser
                   Client=&quot;XTV&quot;, Device=&quot;Web&quot;,
-                  DeviceId=&quot;moontvplus-web&quot;, Version=&quot;1.0.0&quot;
+                  DeviceId=&quot;moontvplus-web&quot;, Version=&quot;{CURRENT_VERSION}&quot;
                 </p>
               </div>
             </div>

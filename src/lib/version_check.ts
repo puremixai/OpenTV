@@ -4,20 +4,13 @@
 
 import type { ChangelogEntry } from '@/lib/changelog';
 import { PROJECT_CHANGELOG_URL, PROJECT_NAME } from '@/lib/project';
+import { compareVersionStrings, parseVersion } from '@/lib/semantic-version';
 import { CURRENT_VERSION } from '@/lib/version';
 
 export enum UpdateStatus {
   HAS_UPDATE = 'has_update',
   NO_UPDATE = 'no_update',
   FETCH_FAILED = 'fetch_failed',
-}
-
-function parseVersion(version: string): number[] | null {
-  if (!/^\d+(?:\.\d+){0,2}$/.test(version)) return null;
-  const parts = version.split('.').map(Number);
-  if (!parts.every(Number.isSafeInteger)) return null;
-  while (parts.length < 3) parts.push(0);
-  return parts;
 }
 
 function parseProjectChangelog(content: string): ChangelogEntry[] {
@@ -34,9 +27,7 @@ function parseProjectChangelog(content: string): ChangelogEntry[] {
   for (const line of lines) {
     const text = line.trim();
     if (text.startsWith('## [')) {
-      const match = text.match(
-        /^## \[(\d+\.\d+\.\d+)\] - (\d{4}-\d{2}-\d{2})$/
-      );
+      const match = text.match(/^## \[([^\]]+)\] - (\d{4}-\d{2}-\d{2})$/);
       if (!match || !parseVersion(match[1])) {
         throw new Error('远程日志的版本格式无效');
       }
@@ -54,10 +45,10 @@ function parseProjectChangelog(content: string): ChangelogEntry[] {
         text === '### Added'
           ? 'added'
           : text === '### Changed'
-          ? 'changed'
-          : text === '### Fixed'
-          ? 'fixed'
-          : null;
+            ? 'changed'
+            : text === '### Fixed'
+              ? 'fixed'
+              : null;
     } else if (current && section && text.startsWith('- ')) {
       current[section].push(text.slice(2));
     }
@@ -96,13 +87,10 @@ export async function checkForUpdates(): Promise<UpdateStatus> {
 }
 
 export function compareVersions(remoteVersion: string): UpdateStatus {
-  const current = parseVersion(CURRENT_VERSION);
-  const remote = parseVersion(remoteVersion.trim());
-  if (!current || !remote) return UpdateStatus.FETCH_FAILED;
-
-  for (let i = 0; i < 3; i++) {
-    if (remote[i] > current[i]) return UpdateStatus.HAS_UPDATE;
-    if (remote[i] < current[i]) return UpdateStatus.NO_UPDATE;
-  }
-  return UpdateStatus.NO_UPDATE;
+  const comparison = compareVersionStrings(
+    remoteVersion.trim(),
+    CURRENT_VERSION,
+  );
+  if (comparison === null) return UpdateStatus.FETCH_FAILED;
+  return comparison > 0 ? UpdateStatus.HAS_UPDATE : UpdateStatus.NO_UPDATE;
 }

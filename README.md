@@ -4,7 +4,7 @@
 
 # XTV
 
-可自行部署的影视聚合播放器，面向桌面浏览器、移动端与 Android TV。统一管理视频源、搜索与播放、个人影库和观看记录。
+可自行部署的影视聚合播放器，面向桌面浏览器、移动端与 Android TV。统一管理视频源、搜索与播放、个人影库和观看记录。项目目前处于 Alpha 测试阶段，功能与配置仍在迭代，详见[版本策略](docs/DEVELOPMENT.md#版本维护)。
 
 [快速开始](#快速开始) · [使用文档](#文档) · [更新记录](CHANGELOG) · [反馈问题](https://github.com/puremixai/xtv/issues)
 
@@ -13,7 +13,7 @@
 ![Docker](https://img.shields.io/badge/Docker-Compose-2496ed?logo=docker)
 [![License](https://img.shields.io/badge/License-CC_BY--NC--SA_4.0-555)](LICENSE)
 
-**当前版本：1.0.0。** XTV 使用独立版本序列，版本以 [VERSION.txt](VERSION.txt) 为准。项目基于 MoonTVPlus 与 MoonTV 迭代，上游来源见[致谢](#致谢)。
+**当前版本：0.1.0-alpha.1（Alpha 测试）。** XTV 使用独立版本序列，版本以 [VERSION.txt](VERSION.txt) 为准。项目基于 MoonTVPlus 与 MoonTV 迭代，上游来源见[致谢](#致谢)。
 
 > XTV 不内置视频源或直播源。首次部署后，需要由管理员配置有权访问的媒体来源或订阅。
 
