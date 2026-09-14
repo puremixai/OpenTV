@@ -1,0 +1,41 @@
+# Optional overlay: explicitly combine with compose.local.yaml.
+# Store interpolation variables in an untracked .env.go-worker.local file.
+services:
+  moontvplus:
+    environment:
+      OPENTV_GO_URL: http://opentv-go:8081
+      OPENTV_GO_TOKEN: ${OPENTV_GO_TOKEN:?Set an independent worker token of at least 32 characters}
+      OPENTV_GO_OFFLINE_DOWNLOADS: ${OPENTV_GO_OFFLINE_DOWNLOADS:-false}
+      OPENTV_GO_OPENLIST_SCAN: ${OPENTV_GO_OPENLIST_SCAN:-true}
+    depends_on:
+      opentv-go:
+        condition: service_healthy
+
+  opentv-go:
+    build:
+      context: ./services/go-worker
+    image: opentv-go-worker:local
+    restart: unless-stopped
+    init: true
+    user: '${PUID:-1001}:${PGID:-1001}'
+    environment:
+      OPENTV_GO_TOKEN: ${OPENTV_GO_TOKEN:?Set an independent worker token of at least 32 characters}
+      OPENTV_GO_LISTEN_ADDR: 0.0.0.0:8081
+      OPENTV_GO_OFFLINE_DOWNLOADS: ${OPENTV_GO_OFFLINE_DOWNLOADS:-false}
+      OPENTV_GO_ALLOWED_ORIGINS: ${OPENTV_GO_ALLOWED_ORIGINS:-[]}
+      OPENTV_GO_MAX_DOWNLOADS: ${OPENTV_GO_MAX_DOWNLOADS:-2}
+      OPENTV_GO_SEGMENT_CONCURRENCY: ${OPENTV_GO_SEGMENT_CONCURRENCY:-6}
+      OPENTV_GO_SCAN_CONCURRENCY: ${OPENTV_GO_SCAN_CONCURRENCY:-4}
+      OFFLINE_DOWNLOAD_DIR: /data
+      OFFLINE_DOWNLOAD_PROXY: ${OFFLINE_DOWNLOAD_PROXY:-}
+      TZ: Asia/Shanghai
+    volumes:
+      - downloads:/data
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    stop_grace_period: 30s

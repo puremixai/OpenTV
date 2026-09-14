@@ -109,6 +109,7 @@ docker compose -f compose.local.yaml up -d --no-build --no-deps --wait moontvplu
 | [AI 配置](docs/AI-CONFIG.md)              | AI 服务接入与相关设置                        |
 | [Android TV](apps/android-tv/README.md)   | 客户端构建、内核选择与电视端访问             |
 | [开发指南](docs/DEVELOPMENT.md)           | 本地开发、质量检查、目录结构与品牌资源维护   |
+| [Go 服务端](services/go-worker/README.md) | 可选离线下载与 OpenList 扫描服务、切换及回退 |
 
 ## 技术栈
 

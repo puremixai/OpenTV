@@ -25,3 +25,6 @@ public/screenshot3.png
 
 # Android/TV native app sources are not needed in Docker image builds
 apps/
+
+# Go worker has its own build context and image.
+services/go-worker/

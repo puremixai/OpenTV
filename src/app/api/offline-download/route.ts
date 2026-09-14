@@ -8,6 +8,7 @@ import * as path from 'path';
 
 import { logger } from '@/lib/logger';
 import { OfflineDownloader, OfflineDownloadTask } from '@/lib/offline-downloader';
+import { forwardOfflineDownload, isGoWorkerEnabled } from '@/lib/server/go-worker';
 import { getAuthenticatedUser } from '@/lib/session';
 
 // 检查是否启用离线下载功能
@@ -122,6 +123,7 @@ export async function GET(request: NextRequest) {
   if (!(await checkPermission(request))) {
     return NextResponse.json({ error: '无权限' }, { status: 403 });
   }
+  if (isGoWorkerEnabled('offlineDownloads')) return forwardOfflineDownload(request);
 
   // 确保下载器已初始化（这会触发任务加载）
   getDownloader();
@@ -163,6 +165,7 @@ export async function POST(request: NextRequest) {
   if (!(await checkPermission(request))) {
     return NextResponse.json({ error: '无权限' }, { status: 403 });
   }
+  if (isGoWorkerEnabled('offlineDownloads')) return forwardOfflineDownload(request);
 
   try {
     const body = await request.json();
@@ -291,6 +294,7 @@ export async function DELETE(request: NextRequest) {
   if (!(await checkPermission(request))) {
     return NextResponse.json({ error: '无权限' }, { status: 403 });
   }
+  if (isGoWorkerEnabled('offlineDownloads')) return forwardOfflineDownload(request);
 
   try {
     const { searchParams } = new URL(request.url);
@@ -346,6 +350,7 @@ export async function PUT(request: NextRequest) {
   if (!(await checkPermission(request))) {
     return NextResponse.json({ error: '无权限' }, { status: 403 });
   }
+  if (isGoWorkerEnabled('offlineDownloads')) return forwardOfflineDownload(request);
 
   try {
     const { searchParams } = new URL(request.url);

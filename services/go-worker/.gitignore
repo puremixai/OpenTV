@@ -1,0 +1,5 @@
+/.data/
+/bin/
+/*.exe
+/opentv-worker
+/coverage.out

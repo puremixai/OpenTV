@@ -21,6 +21,7 @@ import {
   updateScanTaskProgress,
 } from '@/lib/scan-task';
 import { parseSeasonFromTitle } from '@/lib/season-parser';
+import { isGoWorkerEnabled, scanGoOpenListRoots } from '@/lib/server/go-worker';
 import { getTVSeasonDetails,searchTMDB } from '@/lib/tmdb.search';
 
 /**
@@ -221,8 +222,6 @@ async function performMultiRootScan(
   clearMetaInfo: boolean,
   scanMode: 'torrent' | 'name' | 'hybrid'
 ): Promise<void> {
-  const client = new OpenListClient(url, username, password);
-
   updateScanTaskProgress(taskId, 0, 0);
 
   try {
@@ -232,21 +231,31 @@ async function performMultiRootScan(
     const rootFolderGroups: { rootPath: string; folders: any[] }[] = [];
     let totalFolders = 0;
 
-    for (let i = 0; i < rootPaths.length; i++) {
-      const rootPath = rootPaths[i];
-      logger.debug(
-        `[OpenList Refresh] 列举根目录 (${i + 1}/${rootPaths.length}): ${rootPath}`
-      );
-
-      try {
-        const folders = await listRootFolders(client, rootPath);
-        rootFolderGroups.push({ rootPath, folders });
-        totalFolders += folders.length;
+    if (isGoWorkerEnabled('openlistScan')) {
+      const result = await scanGoOpenListRoots({ url, username, password, rootPaths });
+      rootFolderGroups.push(...result.groups);
+      totalFolders = result.groups.reduce((total, group) => total + group.folders.length, 0);
+      for (const failure of result.errors) {
+        logger.error(`[OpenList Refresh] 根目录 ${failure.rootPath} 列举失败`);
+      }
+    } else {
+      const client = new OpenListClient(url, username, password);
+      for (let i = 0; i < rootPaths.length; i++) {
+        const rootPath = rootPaths[i];
         logger.debug(
-          `[OpenList Refresh] 根目录 ${rootPath} 发现 ${folders.length} 个文件夹`
+          `[OpenList Refresh] 列举根目录 (${i + 1}/${rootPaths.length}): ${rootPath}`
         );
-      } catch (error) {
-        logger.error(`[OpenList Refresh] 根目录 ${rootPath} 列举失败:`, error);
+
+        try {
+          const folders = await listRootFolders(client, rootPath);
+          rootFolderGroups.push({ rootPath, folders });
+          totalFolders += folders.length;
+          logger.debug(
+            `[OpenList Refresh] 根目录 ${rootPath} 发现 ${folders.length} 个文件夹`
+          );
+        } catch (error) {
+          logger.error(`[OpenList Refresh] 根目录 ${rootPath} 列举失败:`, error);
+        }
       }
     }
 

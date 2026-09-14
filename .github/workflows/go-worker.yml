@@ -1,0 +1,59 @@
+name: Go worker checks
+on:
+  push:
+    paths:
+      - 'services/go-worker/**'
+      - 'compose.go-worker.yaml'
+      - 'src/lib/server/go-worker.ts'
+      - 'src/lib/openlist-refresh.ts'
+      - 'src/app/api/offline-download/**'
+      - 'tests/go-*.test.js'
+      - '.github/workflows/go-worker.yml'
+  pull_request:
+    paths:
+      - 'services/go-worker/**'
+      - 'compose.go-worker.yaml'
+      - 'src/lib/server/go-worker.ts'
+      - 'src/lib/openlist-refresh.ts'
+      - 'src/app/api/offline-download/**'
+      - 'tests/go-*.test.js'
+      - '.github/workflows/go-worker.yml'
+permissions:
+  contents: read
+jobs:
+  test:
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            go: '1.27.x'
+          - os: windows-latest
+            go: '1.25.x'
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ matrix.go }}
+          cache: false
+      - run: go vet ./...
+        working-directory: services/go-worker
+      - run: go test -race ./... -count=1 -timeout=120s
+        working-directory: services/go-worker
+        if: runner.os == 'Linux'
+      - run: go test ./... -count=1 -timeout=120s
+        working-directory: services/go-worker
+        if: runner.os == 'Windows'
+      - run: go build -o bin/opentv-worker.exe ./cmd/opentv-worker
+        working-directory: services/go-worker
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.14.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec jest --runTestsByPath tests/go-worker-bridge.test.js tests/go-openlist-scan.test.js tests/go-worker.integration.test.js --runInBand
+        env:
+          OPENTV_GO_TEST_BINARY: ${{ github.workspace }}/services/go-worker/bin/opentv-worker.exe

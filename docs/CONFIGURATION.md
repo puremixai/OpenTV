@@ -19,6 +19,10 @@ docker compose -f compose.local.yaml up -d --no-build --no-deps --force-recreate
 
 以上命令用于已经启动数据库和缓存的实例。涉及构建时变量的更改，先按 [Docker 部署](DOCKER.md) 重新构建。
 
+## 可选 Go 服务端
+
+可选的 Go 服务端通过 `OPENTV_GO_OFFLINE_DOWNLOADS` 和 `OPENTV_GO_OPENLIST_SCAN` 分别启用，两者默认关闭。Node 使用 `OPENTV_GO_URL` 和独立的 `OPENTV_GO_TOKEN` 连接 Go，公开 API 与权限验证保持原入口。下载切换需要停止原下载进程并共享同一个下载目录；完整配置和 Compose 覆盖步骤见 [Go 服务端说明](../services/go-worker/README.md)。
+
 ## 视频源与分类
 
 在管理后台的配置文件设置中填写 JSON。以下地址仅演示格式，不提供实际资源：

@@ -29,6 +29,7 @@ Docker 部署使用 `.env.docker.local`、`.env.postgres.local`、`.env.redis.lo
 | `src/lib/`         | 数据访问、认证和业务逻辑                     |
 | `src/styles/`      | 共享样式与 Tailwind 配置                     |
 | `server/`          | 自定义服务器使用的数据库、缓存与实时通信模块 |
+| `services/go-worker/` | 独立 Go 服务端，离线下载与 OpenList 目录列举 |
 | `scripts/`         | 数据初始化、迁移、构建与验证脚本             |
 | `tests/`           | 单元测试与集成测试                           |
 | `apps/android-tv/` | Android TV 客户端工程                        |
@@ -66,6 +67,8 @@ pnpm test:smoke:production
 ```
 
 验证时根据实际修改范围选择检查项。仅修改文档时，检查链接、示例语法和配置一致性即可。
+
+Go 服务端使用独立模块，不是默认 Node 构建的依赖。修改该模块时，在 `services/go-worker` 中运行 `go test ./...` 与 `go vet ./...`；Linux 还应执行 `go test -race ./...`。改动 Node/Go 协议时运行真实进程联调，命令见 [Go 服务端测试说明](../services/go-worker/README.md#内部接口与检查)。独立 CI 同时检查 Linux 和 Windows，保留跨平台任务文件锁与 API 兼容回归。
 
 ## 构建方式
 
