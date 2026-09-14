@@ -1,11 +1,11 @@
-name: moontvplus-local
+name: opentv-local
 
 services:
-  moontvplus:
+  opentv:
     build:
       context: .
       dockerfile: Dockerfile
-    image: moontvplus:before-postgres-redis
+    image: opentv:before-postgres-redis
     restart: unless-stopped
     init: true
     ports:
@@ -35,5 +35,8 @@ services:
       retries: 3
 
 volumes:
+  # Share the original data with the PostgreSQL deployment and rollback image.
   database:
+    name: moontvplus-local_database
   downloads:
+    name: moontvplus-local_downloads

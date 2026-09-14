@@ -46,6 +46,8 @@ OPENTV_GO_OFFLINE_DOWNLOADS=false
 
 使用仓库根目录的可选 [compose.go-worker.yaml](../../compose.go-worker.yaml)，与现有 [compose.local.yaml](../../compose.local.yaml) 组合。该覆盖文件默认仅切换扫描；下载需显式启用。Go 只加入 Compose 内部网络，不发布主机端口，与 Node 共享原 `downloads` 数据卷。
 
+既有项目改名先阅读[从旧 Compose 名称升级](../../docs/DOCKER.md#从旧-compose-名称升级)。迁移及后续切换继续保留 `--env-file .env.go-worker.local -f compose.local.yaml -f compose.go-worker.yaml`，使 Node 与 Go 两端沿用相同的适配配置。当前项目名为 `opentv-local`，应用服务名为 `opentv`，下载卷仍显式绑定原有卷。
+
 按 [Docker 部署指南](../../docs/DOCKER.md) 准备原有三个环境文件。另建未跟踪的 `.env.go-worker.local`，供 Compose 插值读取：
 
 ```dotenv
@@ -59,14 +61,14 @@ OPENTV_GO_ALLOWED_ORIGINS=["http://openlist:5244"]
 OpenList 主机须能从 Go 容器访问；容器内的 `127.0.0.1` 指向 Go 容器自身。此文件通过 `--env-file` 读取，只在 `.env.docker.local` 填写这些值不会覆盖 Compose 的同名 `environment`。若原部署配置了 `PUID` / `PGID`，在此文件填写相同值，使两个服务都能访问原下载卷。
 
 ```sh
-docker compose --env-file .env.go-worker.local -f compose.local.yaml -f compose.go-worker.yaml build moontvplus opentv-go
+docker compose --env-file .env.go-worker.local -f compose.local.yaml -f compose.go-worker.yaml build opentv opentv-go
 docker compose --env-file .env.go-worker.local -f compose.local.yaml -f compose.go-worker.yaml up -d --no-build --wait
 ```
 
 切换下载引擎前，应完成或停止当前下载并备份下载卷。将覆盖环境文件的 `OPENTV_GO_OFFLINE_DOWNLOADS` 改为 `true` 后，先停止旧 Node 和 Go，再启动两者，避免启动先后顺序造成双写：
 
 ```sh
-docker compose --env-file .env.go-worker.local -f compose.local.yaml -f compose.go-worker.yaml stop moontvplus opentv-go
+docker compose --env-file .env.go-worker.local -f compose.local.yaml -f compose.go-worker.yaml stop opentv opentv-go
 docker compose --env-file .env.go-worker.local -f compose.local.yaml -f compose.go-worker.yaml up -d --no-build --wait
 ```
 

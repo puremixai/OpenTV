@@ -62,6 +62,8 @@ Compose 已指定 `NEXT_PUBLIC_STORAGE_TYPE=postgres`，并设置容器内的监
 
 ## 3. 构建与启动
 
+首次安装使用下面的命令。已有 `moontvplus-local` 实例应先执行[名称升级步骤](#从旧-compose-名称升级)，停止旧项目后再由新项目使用原数据卷。
+
 ```powershell
 docker compose -f compose.local.yaml up -d --build --wait
 docker compose -f compose.local.yaml ps
@@ -82,12 +84,14 @@ Invoke-RestMethod http://localhost:3000/api/health
 | 离线下载        | `moontvplus-local_downloads` | 服务器下载的视频文件                              |
 | SQLite 兼容目录 | `moontvplus-local_database`  | 保留已有 SQLite 数据；当前业务数据使用 PostgreSQL |
 
-Compose 项目名 `moontvplus-local`、应用服务名 `moontvplus` 和本地镜像名 `moontvplus:local` 沿用现有技术标识，以复用已有数据卷。缓存示例中的 `xtv:cache` 也保留为兼容标识，升级时沿用已有缓存前缀。应用镜像使用 OpenTV 源码构建。
+Compose 项目名为 `opentv-local`，应用服务名为 `opentv`，本地镜像名为 `opentv:local`，默认应用容器名为 `opentv-local-opentv-1`。PostgreSQL、SQLite 和离线下载卷显式绑定上表中的原有物理卷名，避免项目改名后创建空数据库或丢失下载入口。缓存示例中的 `xtv:cache` 保持原值。
+
+物理卷名独立于 Compose 项目名。若需要多个隔离实例，应为各实例单独覆盖卷的 `name`，仅使用 `-p` 不会再隔离这些数据卷。
 
 查看应用日志，或停止并保留数据：
 
 ```powershell
-docker compose -f compose.local.yaml logs --tail 100 -f moontvplus
+docker compose -f compose.local.yaml logs --tail 100 -f opentv
 docker compose -f compose.local.yaml down
 ```
 
@@ -96,6 +100,8 @@ docker compose -f compose.local.yaml down
 已有 SQLite 实例应先按 [PostgreSQL + Redis 部署说明](POSTGRES-REDIS.md) 备份并迁移数据。日常数据库备份也见该文档，应用镜像回退步骤见下方。
 
 ## 更新应用
+
+仍使用 `moontvplus-local` 项目的实例，先按下方的[改名步骤](#从旧-compose-名称升级)切换一次，再使用本节的日常更新命令。
 
 完整镜像和 Lite 镜像均内置健康检查，通过 `scripts/healthcheck.cjs` 请求容器内配置端口的 `/api/health`。完整镜像由自定义服务提供该入口，Lite 的 Next 独立服务由 API 路由提供，二者复用同一状态判断。Compose 使用同一探针；PostgreSQL 不可用时检查失败，Redis 缓存暂时不可用仍按服务的降级策略保持就绪。其他存储模式目前只检查 HTTP 服务就绪，不探测各自的数据库。直接使用 `docker run` 时也会显示健康状态。
 
@@ -106,8 +112,8 @@ docker compose -f compose.local.yaml down
 先为当前镜像添加唯一的回退标签，记录命令输出的标签名。以下为 PowerShell 示例：
 
 ```powershell
-$rollbackTag = "moontvplus:backup-$(Get-Date -Format 'yyyyMMdd-HHmmss')"
-docker tag moontvplus:local $rollbackTag
+$rollbackTag = "opentv:backup-$(Get-Date -Format 'yyyyMMdd-HHmmss')"
+docker tag opentv:local $rollbackTag
 Write-Output $rollbackTag
 ```
 
@@ -116,21 +122,59 @@ Write-Output $rollbackTag
 ```powershell
 git switch main
 git pull --ff-only origin main
-docker compose -f compose.local.yaml build moontvplus
-docker compose -f compose.local.yaml up -d --no-build --no-deps --wait moontvplus
+docker compose -f compose.local.yaml build opentv
+docker compose -f compose.local.yaml up -d --no-build --no-deps --wait opentv
 docker compose -f compose.local.yaml ps
 Invoke-RestMethod http://localhost:3000/api/health
 ```
 
 上述命令适用于 PostgreSQL 和 Redis 已运行的实例，只替换应用容器；若所有服务已停止，请使用首次部署中的完整 `up` 命令。若此次更新也调整了 PostgreSQL、Redis 或 Compose 配置，按对应升级说明操作。更新后已有浏览器页面可按 Ctrl+F5 刷新。
 
-## 回退应用
+## 从旧 Compose 名称升级
 
-将示例中的 `moontvplus:backup-YYYYMMDD-HHmmss` 替换为更新前保存的实际标签：
+首次从 `moontvplus-local` 切换到 `opentv-local` 时，需要重建属于旧项目的容器。数据库、SQLite 和下载卷沿用原来的物理卷名，环境文件与数据库内的名称不变。先按 [数据库备份说明](POSTGRES-REDIS.md#备份与回退)做好备份，并保留旧镜像：
+
+此时备份命令需在 `docker compose` 后追加 `-p moontvplus-local`，明确操作仍在运行的旧项目；使用自定义旧项目名时替换为实际名称。下面的迁移例子以默认 PostgreSQL 部署为例。
 
 ```powershell
-docker tag moontvplus:backup-YYYYMMDD-HHmmss moontvplus:local
-docker compose -f compose.local.yaml up -d --no-build --no-deps --wait moontvplus
+$rollbackTag = "opentv:before-compose-rename-$(Get-Date -Format 'yyyyMMdd-HHmmss')"
+docker tag moontvplus:local $rollbackTag
+Write-Output $rollbackTag
+docker volume inspect moontvplus-local_postgres moontvplus-local_database moontvplus-local_downloads
+docker compose -f compose.local.yaml build opentv
+```
+
+上面的卷名对应默认部署。如果旧实例使用了自定义项目名或卷名，应先将两个基础 Compose 文件中各卷的 `name` 设置为实际名称。只使用 SQLite 的实例检查 `database`、`downloads` 两个卷，并使用 `compose.sqlite.yaml`；需要复用旧回退镜像时，先执行 `docker tag moontvplus:before-postgres-redis opentv:before-postgres-redis`，启动时使用 `--no-build`。
+
+确认备份和镜像构建成功后，在 PowerShell 中按旧项目标签选出容器，核对名称后执行切换：
+
+```powershell
+$oldProject = 'moontvplus-local'
+docker ps -a --filter "label=com.docker.compose.project=$oldProject" --format '{{.Names}}'
+$oldContainers = @(docker ps -aq --filter "label=com.docker.compose.project=$oldProject")
+if ($LASTEXITCODE -ne 0) { throw '无法读取旧项目容器，终止切换' }
+if ($oldContainers.Count -gt 0) {
+    docker stop --timeout 30 $oldContainers
+    if ($LASTEXITCODE -ne 0) { throw '旧容器未全部停止，终止切换' }
+    docker rm $oldContainers
+    if ($LASTEXITCODE -ne 0) { throw '旧容器未全部移除，终止切换' }
+}
+docker compose -f compose.local.yaml up -d --no-build --wait
+docker compose -f compose.local.yaml ps
+Invoke-RestMethod http://localhost:3000/api/health
+```
+
+这里停止旧项目的全部容器，确保不会有两个 PostgreSQL 进程或下载引擎同时写入原卷。`docker rm` 不加 `-v`。旧的 `moontvplus-local_default` 网络不再使用；新服务加入 `opentv-local_default`。Compose 可能提示原卷由旧项目创建，这是复用数据卷的预期提示。
+
+如果已启用 Go worker，构建和启动命令均需继续带上原来的 `--env-file .env.go-worker.local -f compose.local.yaml -f compose.go-worker.yaml`，并构建 `opentv opentv-go` 两个服务；保留两端下载开关及同一个下载卷。旧 Go 进程也会随旧项目容器一起停止，具体配置见 [Go 服务端说明](../services/go-worker/README.md#docker-compose)。本次只调整 Compose 名称，不自动启用 Go。
+
+## 回退应用
+
+将示例中的 `opentv:backup-YYYYMMDD-HHmmss` 替换为更新前保存的实际标签：
+
+```powershell
+docker tag opentv:backup-YYYYMMDD-HHmmss opentv:local
+docker compose -f compose.local.yaml up -d --no-build --no-deps --wait opentv
 docker compose -f compose.local.yaml ps
 Invoke-RestMethod http://localhost:3000/api/health
 ```

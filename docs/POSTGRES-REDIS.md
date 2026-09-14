@@ -19,7 +19,7 @@ CACHE_KEY_PREFIX=xtv:cache
 
 示例中的密码是占位符。可运行 `node -e "console.log(require('crypto').randomBytes(24).toString('hex'))"` 分别生成两个随机密码。自行选择包含特殊字符的密码时，需要对 URL 中的密码进行百分号编码。`compose.local.yaml` 显式设置 `NEXT_PUBLIC_STORAGE_TYPE=postgres`，优先于环境文件。
 
-项目展示名称为 OpenTV；`xtv:cache`、Compose 服务名及数据卷名保留为兼容已有部署的技术标识。升级时沿用原有缓存前缀与数据卷。
+Compose 项目名为 `opentv-local`，应用服务名为 `opentv`，镜像名为 `opentv:local`；物理数据卷名与 `xtv:cache` 缓存前缀继续沿用原值。旧 Compose 项目首次改名时，先按 [名称升级说明](DOCKER.md#从旧-compose-名称升级)停止旧项目并复用原卷。
 
 新安装且没有旧数据时：
 
@@ -33,26 +33,26 @@ Invoke-RestMethod http://localhost:3000/api/health
 
 ## 从当前 SQLite 迁移
 
-以下步骤适用于本仓库默认的 Compose 项目和卷名。先准备上面的连接配置。迁移前保留旧镜像为 `moontvplus:before-postgres-redis`，将原应用环境复制为 `.env.before-postgres.local`，用于 `compose.sqlite.yaml` 回退。保留原认证密钥可让迁移后的现有会话继续使用。
+以下步骤适用于本仓库默认的 Compose 项目和卷名。先准备上面的连接配置。迁移前保留旧镜像为 `opentv:before-postgres-redis`，将原应用环境复制为 `.env.before-postgres.local`，用于 `compose.sqlite.yaml` 回退。保留原认证密钥可让迁移后的现有会话继续使用。
 
 ```powershell
-docker tag moontvplus:local moontvplus:before-postgres-redis
+docker tag opentv:local opentv:before-postgres-redis
 # 此复制必须在修改应用连接配置之前执行。
 Copy-Item -LiteralPath .env.docker.local -Destination .env.before-postgres.local
 docker compose -f compose.local.yaml up -d postgres redis
-docker build -t moontvplus:postgres-redis-candidate .
+docker build -t opentv:postgres-redis-candidate .
 ```
 
 正式导入之前，在独立测试数据库演练。正式迁移时停止应用以冻结写入，再使用 SQLite backup API 生成唯一备份；不要直接复制运行中的数据库主文件而忽略 WAL。备份副本转换为 `journal_mode=DELETE`，以便随后在只读卷中独立打开；原 SQLite 数据库的 WAL 模式保持不变。
 
 ```powershell
-docker compose -f compose.local.yaml stop moontvplus
+docker compose -f compose.local.yaml stop opentv
 # 将 UNIQUE 替换成此次操作的唯一时间戳，避免覆盖历史备份。
-docker run --rm --network none --user 1001:1001 -v moontvplus-local_database:/app/.data moontvplus:before-postgres-redis node -e "const D=require('better-sqlite3');const p='/app/.data/moontv-before-postgres-UNIQUE.db';if(require('fs').existsSync(p))throw new Error('Backup already exists');const d=new D('/app/.data/moontv.db');d.backup(p).then(()=>{d.close();const b=new D(p);b.pragma('journal_mode=DELETE');b.close()}).catch(()=>process.exit(1))"
-docker run --rm --network moontvplus-local_default --env-file .env.docker.local --user 1001:1001 -v moontvplus-local_database:/app/.data:ro moontvplus:postgres-redis-candidate node scripts/migrate-sqlite-to-postgres.cjs /app/.data/moontv-before-postgres-UNIQUE.db
+docker run --rm --network none --user 1001:1001 -v moontvplus-local_database:/app/.data opentv:before-postgres-redis node -e "const D=require('better-sqlite3');const p='/app/.data/moontv-before-postgres-UNIQUE.db';if(require('fs').existsSync(p))throw new Error('Backup already exists');const d=new D('/app/.data/moontv.db');d.backup(p).then(()=>{d.close();const b=new D(p);b.pragma('journal_mode=DELETE');b.close()}).catch(()=>process.exit(1))"
+docker run --rm --network opentv-local_default --env-file .env.docker.local --user 1001:1001 -v moontvplus-local_database:/app/.data:ro opentv:postgres-redis-candidate node scripts/migrate-sqlite-to-postgres.cjs /app/.data/moontv-before-postgres-UNIQUE.db
 # 应用启动前再次核对，启动后会话与定时任务可能产生合法数据变化。
-docker run --rm --network moontvplus-local_default --env-file .env.docker.local --user 1001:1001 -v moontvplus-local_database:/app/.data:ro moontvplus:postgres-redis-candidate node scripts/migrate-sqlite-to-postgres.cjs /app/.data/moontv-before-postgres-UNIQUE.db --verify-only
-docker tag moontvplus:postgres-redis-candidate moontvplus:local
+docker run --rm --network opentv-local_default --env-file .env.docker.local --user 1001:1001 -v moontvplus-local_database:/app/.data:ro opentv:postgres-redis-candidate node scripts/migrate-sqlite-to-postgres.cjs /app/.data/moontv-before-postgres-UNIQUE.db --verify-only
+docker tag opentv:postgres-redis-candidate opentv:local
 docker compose -f compose.local.yaml up -d --no-build
 ```
 
@@ -84,7 +84,7 @@ docker compose -f compose.local.yaml cp postgres:/tmp/moontv-backup.dump ./moont
 迁移刚完成且尚未产生新数据时，可以停止新应用并启动原 SQLite 版本：
 
 ```powershell
-docker compose -f compose.local.yaml stop moontvplus
+docker compose -f compose.local.yaml stop opentv
 docker compose -f compose.sqlite.yaml up -d --no-build
 ```
 

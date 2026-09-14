@@ -1,11 +1,11 @@
-name: moontvplus-local
+name: opentv-local
 
 services:
-  moontvplus:
+  opentv:
     build:
       context: .
       dockerfile: Dockerfile
-    image: moontvplus:local
+    image: opentv:local
     restart: unless-stopped
     init: true
     ports:
@@ -66,6 +66,10 @@ services:
       retries: 12
 
 volumes:
+  # Pin existing storage independently of the Compose project name.
   database:
+    name: moontvplus-local_database
   downloads:
+    name: moontvplus-local_downloads
   postgres:
+    name: moontvplus-local_postgres

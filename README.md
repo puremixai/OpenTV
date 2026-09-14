@@ -84,16 +84,16 @@ Compose 默认启用 TV 模式和内置观影室，关闭弹幕获取与服务�
 
 ### 更新应用
 
-先备份数据库、保存当前应用镜像并保留环境配置，具体步骤见[更新与回退](docs/DOCKER.md#更新应用)。在已有工作目录中执行：
+先备份数据库、保存当前应用镜像并保留环境配置，具体步骤见[更新与回退](docs/DOCKER.md#更新应用)。既有项目首次改名时，先按[从旧 Compose 名称升级](docs/DOCKER.md#从旧-compose-名称升级)完成迁移，再执行以下更新命令：
 
 ```sh
 git switch main
 git pull --ff-only origin main
-docker compose -f compose.local.yaml build moontvplus
-docker compose -f compose.local.yaml up -d --no-build --no-deps --wait moontvplus
+docker compose -f compose.local.yaml build opentv
+docker compose -f compose.local.yaml up -d --no-build --no-deps --wait opentv
 ```
 
-上述流程适用于数据库与缓存服务已运行的实例。数据库迁移、备份和回退步骤见 [PostgreSQL 与 Redis 运维说明](docs/POSTGRES-REDIS.md)。Compose 服务名及数据卷沿用现有技术标识，以兼容已有部署。
+上述流程适用于数据库与缓存服务已运行的实例。数据库迁移、备份和回退步骤见 [PostgreSQL 与 Redis 运维说明](docs/POSTGRES-REDIS.md)。Compose 项目名为 `opentv-local`，应用服务名为 `opentv`；数据卷通过显式名称绑定原有卷。启用 Go 服务端的部署须保留 [Go 叠加配置](services/go-worker/README.md#docker-compose)中的环境文件和 Compose 参数。
 
 ## 文档
 

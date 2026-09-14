@@ -4,7 +4,7 @@ const assert = require('node:assert/strict');
 const { execFileSync } = require('node:child_process');
 const { randomBytes } = require('node:crypto');
 
-const name = `moontvplus-subscriptions-smoke-${randomBytes(4).toString('hex')}`;
+const name = `opentv-subscriptions-smoke-${randomBytes(4).toString('hex')}`;
 const password = randomBytes(24).toString('hex');
 const cronSecret = randomBytes(24).toString('hex');
 const username = 'subscriptions-smoke';
@@ -108,7 +108,7 @@ async function save(local, subscriptions) {
         'PORT=3000',
         '-e',
         'CRON_WAIT_FOR_COMPLETION=true',
-        process.env.SMOKE_IMAGE || 'moontvplus:local',
+        process.env.SMOKE_IMAGE || 'opentv:local',
       ],
       {
         env: {

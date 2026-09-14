@@ -129,4 +129,4 @@ OpenTV 的标志以首字母 O 为主体：青蓝渐变的环在右侧断开，�
 
 PWA 名称与图标引用由 [generate-manifest.js](../scripts/generate-manifest.js) 生成，开发和构建命令会自动执行，也可单独运行 `pnpm gen:manifest`。替换资源后需重新构建部署；Android TV 的 GitHub Actions 构建会复制根目录 Logo，本地构建需自行同步对应文件。
 
-默认站点名称为 `OpenTV`。`NEXT_PUBLIC_SITE_NAME` 可设置初始名称；已有数据库中的站点设置以管理后台保存值为准。Compose 服务名、数据卷、数据库键和客户端协议保留已有技术标识，以兼容现有部署。
+默认站点名称为 `OpenTV`。`NEXT_PUBLIC_SITE_NAME` 可设置初始名称；已有数据库中的站点设置以管理后台保存值为准。Compose 项目名为 `opentv-local`，应用服务名为 `opentv`；数据卷显式绑定原有卷名，数据库键和客户端协议保留已有技术标识。既有项目改名先阅读[从旧 Compose 名称升级](DOCKER.md#从旧-compose-名称升级)。

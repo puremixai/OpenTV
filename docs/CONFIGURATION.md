@@ -11,13 +11,13 @@
 - **管理后台**：站名、公告、豆瓣代理、弹幕后端等设置会保存到数据库。对应环境变量主要用于首次初始化；已有实例应同时检查后台保存的值。Telegram 配置也会与后台配置合并，并非所有字段都由环境变量覆盖。
 - **构建时配置**：部分 `NEXT_PUBLIC_*` 变量直接编入浏览器代码。例如弹幕缓存时长需要在构建环境设置，并重新构建镜像；仅修改运行时环境文件不会改变这类值。
 
-修改运行时环境或 Compose 后，在项目根目录重新创建应用容器：
+既有项目首次改名时，先阅读[从旧 Compose 名称升级](DOCKER.md#从旧-compose-名称升级)。完成迁移后，修改运行时环境或 Compose 时，在项目根目录重新创建应用容器：
 
 ```sh
-docker compose -f compose.local.yaml up -d --no-build --no-deps --force-recreate --wait moontvplus
+docker compose -f compose.local.yaml up -d --no-build --no-deps --force-recreate --wait opentv
 ```
 
-以上命令用于已经启动数据库和缓存的实例。涉及构建时变量的更改，先按 [Docker 部署](DOCKER.md) 重新构建。
+以上命令用于已经启动数据库和缓存的实例。启用 Go 服务端时，须保留 [Go 叠加配置](../services/go-worker/README.md#docker-compose)中的 `--env-file` 和两个 `-f` 参数。涉及构建时变量的更改，先按 [Docker 部署](DOCKER.md) 重新构建。
 
 ## 可选 Go 服务端
 

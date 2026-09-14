@@ -2,6 +2,8 @@
 
 当前本地部署已切换为 **PostgreSQL + Redis**，配置、迁移、备份与回退步骤见 [PostgreSQL + Redis 部署说明](POSTGRES-REDIS.md)。下方带日期的 SQLite 升级记录属于历史操作，不能用于当前部署的数据回退。
 
+Compose 配置现统一使用项目名 `opentv-local`、服务名 `opentv` 和镜像名 `opentv:local`，原数据卷显式复用。已有实例首次切换见 [名称升级说明](DOCKER.md#从旧-compose-名称升级)。下方带日期记录中的旧容器名和镜像标签保留为历史信息，日常操作与回退请使用 [当前部署指南](DOCKER.md)。
+
 ## 2026-09-13 Tailwind 4 与海报动效更新
 
 - 部署代码为 `upgrade/tailwind4` 分支的 `3f6995b`，已推送至 `origin`。当前镜像为 `moontvplus:local`，同时保留标签 `moontvplus:tailwind4-hero-3f6995b`，镜像 ID `8d00157feaf0`；镜像的 `org.opencontainers.image.revision` 标签记录完整代码提交号。

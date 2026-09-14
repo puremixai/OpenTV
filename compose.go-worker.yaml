@@ -1,7 +1,7 @@
 # Optional overlay: explicitly combine with compose.local.yaml.
 # Store interpolation variables in an untracked .env.go-worker.local file.
 services:
-  moontvplus:
+  opentv:
     environment:
       OPENTV_GO_URL: http://opentv-go:8081
       OPENTV_GO_TOKEN: ${OPENTV_GO_TOKEN:?Set an independent worker token of at least 32 characters}
