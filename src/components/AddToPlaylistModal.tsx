@@ -98,35 +98,55 @@ export default function AddToPlaylistModal({
   onError,
 }: AddToPlaylistModalProps) {
   const [playlists, setPlaylists] = useState<MusicPlaylist[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [playlistRequest, setPlaylistRequest] = useState({
+    isOpen,
+    revision: 0,
+    loading: isOpen,
+  });
+  const loading = playlistRequest.loading;
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [newPlaylistName, setNewPlaylistName] = useState('');
   const [newPlaylistDescription, setNewPlaylistDescription] = useState('');
   const [creating, setCreating] = useState(false);
   const [addingToPlaylistId, setAddingToPlaylistId] = useState<string | null>(null); // 正在添加的歌单ID
 
-  async function loadPlaylists() {
-    try {
-      setLoading(true);
-      const response = await fetch('/api/music/v2/playlists');
-      if (response.ok) {
-        const data = await response.json();
-        setPlaylists(data.data?.playlists || []);
-      }
-    } catch (error) {
-      logger.error('加载歌单失败:', error);
-    } finally {
-      setLoading(false);
-    }
+  // 每次打开都开始新的读取，加载状态与本次打开一起提交。
+  if (playlistRequest.isOpen !== isOpen) {
+    setPlaylistRequest({
+      isOpen,
+      revision: playlistRequest.revision + 1,
+      loading: isOpen,
+    });
   }
 
   // 加载用户的歌单列表
   useEffect(() => {
-    if (isOpen) {
-      const timer = window.setTimeout(() => void loadPlaylists(), 0);
-      return () => window.clearTimeout(timer);
-    }
-  }, [isOpen]);
+    if (!isOpen) return;
+    const controller = new AbortController();
+    let cancelled = false;
+
+    fetch('/api/music/v2/playlists', { signal: controller.signal })
+      .then(async (response) => {
+        if (!response.ok) throw new Error('加载歌单失败');
+        return response.json();
+      })
+      .then((data) => {
+        if (!cancelled) setPlaylists(data.data?.playlists || []);
+      })
+      .catch((error) => {
+        if (!cancelled) logger.error('加载歌单失败:', error);
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setPlaylistRequest((previous) => ({ ...previous, loading: false }));
+        }
+      });
+
+    return () => {
+      cancelled = true;
+      controller.abort();
+    };
+  }, [isOpen, playlistRequest.revision]);
 
   const handleCreatePlaylist = async () => {
     if (!newPlaylistName.trim()) {
@@ -149,7 +169,11 @@ export default function AddToPlaylistModal({
         setNewPlaylistName('');
         setNewPlaylistDescription('');
         setShowCreateForm(false);
-        await loadPlaylists();
+        setPlaylistRequest((previous) => ({
+          ...previous,
+          revision: previous.revision + 1,
+          loading: true,
+        }));
       } else {
         const data = await response.json();
         onError?.(getApiErrorMessage(data.error, '创建歌单失败'));

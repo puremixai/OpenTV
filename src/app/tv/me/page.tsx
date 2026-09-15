@@ -20,7 +20,6 @@ import {
   useMemo,
   useRef,
   useState,
-  useSyncExternalStore,
 } from 'react';
 
 import { clearAuthCookie, getAuthInfoFromBrowserCookie } from '@/lib/auth';
@@ -84,26 +83,22 @@ function formatDateTime(value?: number) {
 
 export default function TVMePage() {
   const router = useRouter();
-  const ready = useSyncExternalStore(
-    () => () => undefined,
-    () => true,
-    () => false
-  );
-  const authInfo = useSyncExternalStore(
-    () => () => undefined,
-    () => getAuthInfoFromBrowserCookie() as AuthInfo | null,
-    () => null
-  );
+  const [ready, setReady] = useState(false);
+  const [authInfo, setAuthInfo] = useState<AuthInfo | null>(null);
   const [loggingOut, setLoggingOut] = useState(false);
   const [error, setError] = useState('');
   const [localRemoteUrl, setLocalRemoteUrl] = useState('');
-  const upDownAction = useSyncExternalStore(
-    () => () => undefined,
-    loadTVPlayerUpDownAction,
-    () => DEFAULT_TV_PLAYER_UP_DOWN_ACTION
+  const [upDownAction, setUpDownAction] = useState<TVPlayerUpDownAction>(
+    DEFAULT_TV_PLAYER_UP_DOWN_ACTION
   );
   const wakeMenuButtonRef = useRef<HTMLButtonElement | null>(null);
   const volumeButtonRef = useRef<HTMLButtonElement | null>(null);
+
+  useEffect(() => {
+    setAuthInfo(getAuthInfoFromBrowserCookie());
+    setUpDownAction(loadTVPlayerUpDownAction());
+    setReady(true);
+  }, []);
 
   useEffect(() => {
     const readLocalRemoteUrl = () => {
@@ -121,13 +116,12 @@ export default function TVMePage() {
       setLocalRemoteUrl(detail?.url || '');
     };
 
-    const initialReadTimer = window.setTimeout(readLocalRemoteUrl, 0);
+    readLocalRemoteUrl();
     window.addEventListener('moontv:local-remote-info', onLocalRemoteInfo);
     const timer = window.setInterval(readLocalRemoteUrl, 1500);
 
     return () => {
       window.removeEventListener('moontv:local-remote-info', onLocalRemoteInfo);
-      window.clearTimeout(initialReadTimer);
       window.clearInterval(timer);
     };
   }, []);
@@ -162,6 +156,7 @@ export default function TVMePage() {
   };
 
   const handleUpDownActionChange = (action: TVPlayerUpDownAction) => {
+    setUpDownAction(action);
     saveTVPlayerUpDownAction(action);
   };
 

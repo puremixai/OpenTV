@@ -1003,20 +1003,16 @@ function SearchPageClient() {
   // 监听选项卡切换，自动执行搜索
   useEffect(() => {
     // 如果切换到网盘搜索选项卡，且有搜索关键词，且已显示结果，则触发搜索
-    const timer = window.setTimeout(() => {
-      if (activeTab === 'pansou' && searchQuery.trim() && showResults) {
-        setTriggerPansouSearch((prev) => !prev);
-      }
-      // 如果切换到 ACG 磁力搜索选项卡，且有搜索关键词，且已显示结果，则触发搜索
-      if (activeTab === 'acg' && searchQuery.trim() && showResults) {
-        setTriggerAcgSearch((prev) => !prev);
-      }
-    }, 0);
-    return () => window.clearTimeout(timer);
+    if (activeTab === 'pansou' && searchQuery.trim() && showResults) {
+      setTriggerPansouSearch((prev) => !prev);
+    }
+    // 如果切换到 ACG 磁力搜索选项卡，且有搜索关键词，且已显示结果，则触发搜索
+    if (activeTab === 'acg' && searchQuery.trim() && showResults) {
+      setTriggerAcgSearch((prev) => !prev);
+    }
   }, [activeTab]);
 
   useEffect(() => {
-    const configTimer = window.setTimeout(() => {
     // 获取用户权限
     const authInfo = getAuthInfoFromBrowserCookie();
     setUserRole(authInfo?.role || null);
@@ -1074,7 +1070,6 @@ function SearchPageClient() {
       privateLibraryOnlyLoadedRef.current = true;
       setPrivateLibraryOnlyReady(true);
     }
-    }, 0);
 
     // 监听搜索历史更新事件
     const unsubscribe = subscribeToDataUpdates(
@@ -1114,7 +1109,6 @@ function SearchPageClient() {
     document.body.addEventListener('scroll', handleScroll, { passive: true });
 
     return () => {
-      window.clearTimeout(configTimer);
       unsubscribe();
       isRunning = false; // 停止 requestAnimationFrame 循环
 
@@ -1126,31 +1120,28 @@ function SearchPageClient() {
   useEffect(() => {
     if (!featureFlagsReady) return;
 
-    const timer = window.setTimeout(() => {
-      const typeParam = searchParams.get('type');
-      const query = searchParams.get('q');
+    const typeParam = searchParams.get('type');
+    const query = searchParams.get('q');
 
-      if (typeParam === 'pansou') {
-        if (netdiskSearchEnabled) {
-          setActiveTab('pansou');
-        } else {
-          setActiveTab('video');
-        }
-      } else if (typeParam === 'acg') {
-        if (magnetSearchEnabled) {
-          setActiveTab('acg');
-        } else {
-          setActiveTab('video');
-        }
+    if (typeParam === 'pansou') {
+      if (netdiskSearchEnabled) {
+        setActiveTab('pansou');
       } else {
         setActiveTab('video');
       }
-
-      if (!query) {
-        document.getElementById('searchInput')?.focus();
+    } else if (typeParam === 'acg') {
+      if (magnetSearchEnabled) {
+        setActiveTab('acg');
+      } else {
+        setActiveTab('video');
       }
-    }, 0);
-    return () => window.clearTimeout(timer);
+    } else {
+      setActiveTab('video');
+    }
+
+    if (!query) {
+      document.getElementById('searchInput')?.focus();
+    }
   }, [
     searchParams,
     netdiskSearchEnabled,
@@ -1164,7 +1155,6 @@ function SearchPageClient() {
       return;
     }
 
-    const timer = window.setTimeout(() => {
     // 当搜索参数变化时更新搜索状态
     let query = searchParams.get('q') || '';
 
@@ -1454,9 +1444,7 @@ function SearchPageClient() {
       setShowResults(false);
       setShowSuggestions(false);
     }
-    }, 0);
     return () => {
-      window.clearTimeout(timer);
       searchAbortRef.current?.abort();
       searchAbortRef.current = null;
       eventSourceRef.current?.close();
@@ -1480,22 +1468,19 @@ function SearchPageClient() {
     const query = searchParams.get('q');
     if (!query || !query.trim()) return;
 
-    const timer = window.setTimeout(() => {
-      if (typeParam === 'pansou' && netdiskSearchEnabled) {
-        setSearchQuery(query);
-        setShowResults(true);
-        setTimeout(() => {
-          setTriggerPansouSearch((prev) => !prev);
-        }, 100);
-      } else if (typeParam === 'acg' && magnetSearchEnabled) {
-        setSearchQuery(query);
-        setShowResults(true);
-        setTimeout(() => {
-          setTriggerAcgSearch((prev) => !prev);
-        }, 100);
-      }
-    }, 0);
-    return () => window.clearTimeout(timer);
+    if (typeParam === 'pansou' && netdiskSearchEnabled) {
+      setSearchQuery(query);
+      setShowResults(true);
+      setTimeout(() => {
+        setTriggerPansouSearch((prev) => !prev);
+      }, 100);
+    } else if (typeParam === 'acg' && magnetSearchEnabled) {
+      setSearchQuery(query);
+      setShowResults(true);
+      setTimeout(() => {
+        setTriggerAcgSearch((prev) => !prev);
+      }, 100);
+    }
   }, [
     searchParams,
     netdiskSearchEnabled,

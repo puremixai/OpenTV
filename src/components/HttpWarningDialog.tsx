@@ -39,17 +39,14 @@ export default function HttpWarningDialog({ onClose }: HttpWarningDialogProps) {
     };
 
     let visibilityTimer: number | null = null;
-    const timer = window.setTimeout(() => {
-      const shouldDisplay = checkShouldShow();
-      setShouldShow(shouldDisplay);
+    const shouldDisplay = checkShouldShow();
+    setShouldShow(shouldDisplay);
 
-      if (shouldDisplay) {
-        // 延迟显示动画
-        visibilityTimer = window.setTimeout(() => setIsVisible(true), 100);
-      }
-    }, 0);
+    if (shouldDisplay) {
+      // 延迟显示动画
+      visibilityTimer = window.setTimeout(() => setIsVisible(true), 100);
+    }
     return () => {
-      window.clearTimeout(timer);
       if (visibilityTimer !== null) window.clearTimeout(visibilityTimer);
     };
   }, []);

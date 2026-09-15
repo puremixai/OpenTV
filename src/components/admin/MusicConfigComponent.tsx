@@ -34,16 +34,12 @@ export const MusicConfigComponent = ({
   const [musicCountdown, setMusicCountdown] = useState(10);
 
   useEffect(() => {
-    const timer = window.setTimeout(() => {
-      if (config?.MusicConfig) {
-        setEnabled(config.MusicConfig.Enabled || false);
-        setBaseUrl(config.MusicConfig.BaseUrl || '');
-        setToken(config.MusicConfig.Token || '');
-        setProxyEnabled(config.MusicConfig.ProxyEnabled ?? true);
-      }
-    }, 0);
-
-    return () => window.clearTimeout(timer);
+    if (config?.MusicConfig) {
+      setEnabled(config.MusicConfig.Enabled || false);
+      setBaseUrl(config.MusicConfig.BaseUrl || '');
+      setToken(config.MusicConfig.Token || '');
+      setProxyEnabled(config.MusicConfig.ProxyEnabled ?? true);
+    }
   }, [config]);
 
   useEffect(() => {

@@ -80,42 +80,38 @@ export const AIConfigComponent = ({
 
   // 从配置加载数据
   useEffect(() => {
-    const timer = window.setTimeout(() => {
-      if (config?.AIConfig) {
-        setEnabled(config.AIConfig.Enabled || false);
-        setCustomApiKey(config.AIConfig.CustomApiKey || '');
-        setCustomBaseURL(config.AIConfig.CustomBaseURL || '');
-        setCustomModel(config.AIConfig.CustomModel || '');
-        setDecisionCustomModel(config.AIConfig.DecisionCustomModel || '');
-        setEnableWebSearch(config.AIConfig.EnableWebSearch || false);
-        setWebSearchProvider(config.AIConfig.WebSearchProvider || 'tavily');
-        setTavilyApiKey(config.AIConfig.TavilyApiKey || '');
-        setSerperApiKey(config.AIConfig.SerperApiKey || '');
-        setSerpApiKey(config.AIConfig.SerpApiKey || '');
-        setEnableNewMode(config.AIConfig.EnableNewMode ?? true);
-        setNewProtocol(config.AIConfig.NewProtocol || 'openai-completions');
-        setOpenaiApiKey(config.AIConfig.OpenAIApiKey || '');
-        setOpenaiBaseURL(config.AIConfig.OpenAIBaseURL || '');
-        setOpenaiModel(config.AIConfig.OpenAIModel || '');
-        setClaudeApiKey(config.AIConfig.ClaudeApiKey || '');
-        setClaudeBaseURL(config.AIConfig.ClaudeBaseURL || '');
-        setClaudeModel(config.AIConfig.ClaudeModel || '');
-        setMaxContext(config.AIConfig.MaxContext ?? 131072);
-        setCompressThreshold(config.AIConfig.CompressThreshold ?? 90);
-        setEnableHomepageEntry(config.AIConfig.EnableHomepageEntry !== false);
-        setEnableVideoCardEntry(config.AIConfig.EnableVideoCardEntry !== false);
-        setEnablePlayPageEntry(config.AIConfig.EnablePlayPageEntry !== false);
-        setEnableAIComments(config.AIConfig.EnableAIComments || false);
-        setTemperature(config.AIConfig.Temperature ?? 0.7);
-        setMaxTokens(config.AIConfig.MaxTokens ?? 1000);
-        setSystemPrompt(config.AIConfig.SystemPrompt || '');
-        setEnableStreaming(config.AIConfig.EnableStreaming !== false);
-        setDefaultMessageNoVideo(config.AIConfig.DefaultMessageNoVideo || '');
-        setDefaultMessageWithVideo(config.AIConfig.DefaultMessageWithVideo || '');
-      }
-    }, 0);
-
-    return () => window.clearTimeout(timer);
+    if (config?.AIConfig) {
+      setEnabled(config.AIConfig.Enabled || false);
+      setCustomApiKey(config.AIConfig.CustomApiKey || '');
+      setCustomBaseURL(config.AIConfig.CustomBaseURL || '');
+      setCustomModel(config.AIConfig.CustomModel || '');
+      setDecisionCustomModel(config.AIConfig.DecisionCustomModel || '');
+      setEnableWebSearch(config.AIConfig.EnableWebSearch || false);
+      setWebSearchProvider(config.AIConfig.WebSearchProvider || 'tavily');
+      setTavilyApiKey(config.AIConfig.TavilyApiKey || '');
+      setSerperApiKey(config.AIConfig.SerperApiKey || '');
+      setSerpApiKey(config.AIConfig.SerpApiKey || '');
+      setEnableNewMode(config.AIConfig.EnableNewMode ?? true);
+      setNewProtocol(config.AIConfig.NewProtocol || 'openai-completions');
+      setOpenaiApiKey(config.AIConfig.OpenAIApiKey || '');
+      setOpenaiBaseURL(config.AIConfig.OpenAIBaseURL || '');
+      setOpenaiModel(config.AIConfig.OpenAIModel || '');
+      setClaudeApiKey(config.AIConfig.ClaudeApiKey || '');
+      setClaudeBaseURL(config.AIConfig.ClaudeBaseURL || '');
+      setClaudeModel(config.AIConfig.ClaudeModel || '');
+      setMaxContext(config.AIConfig.MaxContext ?? 131072);
+      setCompressThreshold(config.AIConfig.CompressThreshold ?? 90);
+      setEnableHomepageEntry(config.AIConfig.EnableHomepageEntry !== false);
+      setEnableVideoCardEntry(config.AIConfig.EnableVideoCardEntry !== false);
+      setEnablePlayPageEntry(config.AIConfig.EnablePlayPageEntry !== false);
+      setEnableAIComments(config.AIConfig.EnableAIComments || false);
+      setTemperature(config.AIConfig.Temperature ?? 0.7);
+      setMaxTokens(config.AIConfig.MaxTokens ?? 1000);
+      setSystemPrompt(config.AIConfig.SystemPrompt || '');
+      setEnableStreaming(config.AIConfig.EnableStreaming !== false);
+      setDefaultMessageNoVideo(config.AIConfig.DefaultMessageNoVideo || '');
+      setDefaultMessageWithVideo(config.AIConfig.DefaultMessageWithVideo || '');
+    }
   }, [config]);
 
   const handleSave = async () => {

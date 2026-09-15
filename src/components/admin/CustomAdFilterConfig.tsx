@@ -82,17 +82,13 @@ export const CustomAdFilterConfig = ({
 }`;
 
   useEffect(() => {
-    const timer = window.setTimeout(() => {
-      // 从数据库配置读取自定义去广告代码
-      if (config?.SiteConfig?.CustomAdFilterCode) {
-        setAdFilterCode(config.SiteConfig.CustomAdFilterCode);
-      } else {
-        // 如果数据库没有保存的代码，使用默认代码
-        setAdFilterCode(defaultAdFilterCode);
-      }
-    }, 0);
-
-    return () => window.clearTimeout(timer);
+    // 从数据库配置读取自定义去广告代码
+    if (config?.SiteConfig?.CustomAdFilterCode) {
+      setAdFilterCode(config.SiteConfig.CustomAdFilterCode);
+    } else {
+      // 如果数据库没有保存的代码，使用默认代码
+      setAdFilterCode(defaultAdFilterCode);
+    }
   }, [config]);
 
   // 移除 TypeScript 类型注解，转换为纯 JavaScript

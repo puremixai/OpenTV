@@ -97,17 +97,14 @@ export default function CorrectDialog({
 
   useEffect(() => {
     if (isOpen) {
-      const timer = window.setTimeout(() => {
-        setSearchQuery(currentTitle);
-        setResults([]);
-        setError('');
-        setSelectedResult(null);
-        setSeasons([]);
-        setShowSeasonSelection(false);
-        setShowManualInput(false);
-        // 不要在这里重置 manualData，因为它会在 handleShowManualInput 中被设置
-      }, 0);
-      return () => window.clearTimeout(timer);
+      setSearchQuery(currentTitle);
+      setResults([]);
+      setError('');
+      setSelectedResult(null);
+      setSeasons([]);
+      setShowSeasonSelection(false);
+      setShowManualInput(false);
+      // 不要在这里重置 manualData，因为它会在 handleShowManualInput 中被设置
     }
   }, [isOpen, currentTitle]);
 
@@ -127,8 +124,7 @@ export default function CorrectDialog({
         seasonName: currentVideo?.seasonName || '',
       };
 
-      const timer = window.setTimeout(() => setManualData(newManualData), 0);
-      return () => window.clearTimeout(timer);
+      setManualData(newManualData);
     }
   }, [showManualInput, isOpen, currentVideo, currentTitle]);
 

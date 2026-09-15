@@ -111,10 +111,8 @@ function TVLivePlayClient() {
   useEffect(() => {
     if (!source) return;
     let alive = true;
-    const timer = window.setTimeout(() => {
-      setLoading(true);
-      setError('');
-    }, 0);
+    setLoading(true);
+    setError('');
     fetch(`/api/live/channels?source=${encodeURIComponent(source.key)}`)
       .then((r) => {
         if (r.status === 401 || r.status === 403) throw new Error('无权限访问电视直播，请先登录或检查权限');
@@ -139,19 +137,17 @@ function TVLivePlayClient() {
       })
       .catch((err) => setError(err instanceof Error ? err.message : '获取频道列表失败'))
       .finally(() => alive && setLoading(false));
-    return () => { alive = false; window.clearTimeout(timer); };
+    return () => { alive = false; };
   }, [source, needChannel]);
 
   useEffect(() => {
     let alive = true;
     if (!channel) return;
-    const timer = window.setTimeout(() => {
-      setVideoUrl('');
-      setVideoType(undefined);
-      setUnsupportedError('');
-      setPlaybackError(false);
-      setRetryCount(0);
-    }, 0);
+    setVideoUrl('');
+    setVideoType(undefined);
+    setUnsupportedError('');
+    setPlaybackError(false);
+    setRetryCount(0);
     resolveLiveUrl(channel.url, source)
       .then(({ url, type }) => {
         if (!alive) return;
@@ -162,7 +158,7 @@ function TVLivePlayClient() {
         if (!alive) return;
         setUnsupportedError(err instanceof Error ? err.message : '不支持的直播流格式');
       });
-    return () => { alive = false; window.clearTimeout(timer); };
+    return () => { alive = false; };
   }, [channel, source]);
 
   useEffect(() => {
@@ -172,11 +168,11 @@ function TVLivePlayClient() {
 
   useEffect(() => {
     if (!source || !channel?.tvgId) {
-      const timer = window.setTimeout(() => setEpgPrograms([]), 0);
-      return () => window.clearTimeout(timer);
+      setEpgPrograms([]);
+      return;
     }
     let alive = true;
-    const timer = window.setTimeout(() => setEpgLoading(true), 0);
+    setEpgLoading(true);
     fetch(`/api/live/epg?source=${encodeURIComponent(source.key)}&tvgId=${encodeURIComponent(channel.tvgId)}`)
       .then((r) => r.ok ? r.json() : null)
       .then((data) => {
@@ -185,7 +181,7 @@ function TVLivePlayClient() {
       })
       .catch(() => alive && setEpgPrograms([]))
       .finally(() => alive && setEpgLoading(false));
-    return () => { alive = false; window.clearTimeout(timer); };
+    return () => { alive = false; };
   }, [channel?.tvgId, source]);
 
   useEffect(() => {

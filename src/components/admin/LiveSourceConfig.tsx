@@ -87,16 +87,12 @@ export const LiveSourceConfig = ({
 
   // 初始化
   useEffect(() => {
-    const timer = window.setTimeout(() => {
-      if (config?.LiveConfig) {
-        setLiveSources(config.LiveConfig);
-        setRefreshIntervalHours(config.LiveRefreshIntervalHours || 12);
-        // 进入时重置 orderChanged
-        setOrderChanged(false);
-      }
-    }, 0);
-
-    return () => window.clearTimeout(timer);
+    if (config?.LiveConfig) {
+      setLiveSources(config.LiveConfig);
+      setRefreshIntervalHours(config.LiveRefreshIntervalHours || 12);
+      // 进入时重置 orderChanged
+      setOrderChanged(false);
+    }
   }, [config]);
 
   // 通用 API 请求

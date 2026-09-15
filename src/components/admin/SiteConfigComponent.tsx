@@ -226,11 +226,8 @@ export const SiteConfigComponent = ({
             ? 'every'
             : ('once' as const),
       };
-      const timer = window.setTimeout(() => {
-        setSiteSettings(nextSettings);
-        setSavedSettings(JSON.stringify(nextSettings));
-      }, 0);
-      return () => window.clearTimeout(timer);
+      setSiteSettings(nextSettings);
+      setSavedSettings(JSON.stringify(nextSettings));
     }
   }, [config]);
 

@@ -98,13 +98,10 @@ function DoubanPageClient() {
 
   // 获取自定义分类数据
   useEffect(() => {
-    const timer = window.setTimeout(() => {
-      const runtimeConfig = (window as any).RUNTIME_CONFIG;
-      if (runtimeConfig?.CUSTOM_CATEGORIES?.length > 0) {
-        setCustomCategories(runtimeConfig.CUSTOM_CATEGORIES);
-      }
-    }, 0);
-    return () => window.clearTimeout(timer);
+    const runtimeConfig = (window as any).RUNTIME_CONFIG;
+    if (runtimeConfig?.CUSTOM_CATEGORIES?.length > 0) {
+      setCustomCategories(runtimeConfig.CUSTOM_CATEGORIES);
+    }
   }, []);
 
   // 同步最新参数值到 ref
@@ -138,75 +135,70 @@ function DoubanPageClient() {
 
   // type变化时立即重置selectorsReady（最高优先级）
   useEffect(() => {
-    const timer = window.setTimeout(() => {
-      setSelectorsReady(false);
-      setLoading(true); // 立即显示loading状态
-    }, 0);
-    return () => window.clearTimeout(timer);
+    setSelectorsReady(false);
+    setLoading(true); // 立即显示loading状态
   }, [type]);
 
   // 当type变化时重置选择器状态
   useEffect(() => {
-    const timer = window.setTimeout(() => {
-      if (type === 'custom' && customCategories.length > 0) {
-        // 自定义分类模式：优先选择 movie，如果没有 movie 则选择 tv
-        const types = Array.from(
-          new Set(customCategories.map((cat) => cat.type))
-        );
-        if (types.length > 0) {
-          // 优先选择 movie，如果没有 movie 则选择 tv
-          let selectedType = types[0]; // 默认选择第一个
-          if (types.includes('movie')) {
-            selectedType = 'movie';
-          } else {
-            selectedType = 'tv';
-          }
-          setPrimarySelection(selectedType);
-
-          // 设置选中类型的第一个分类的 query 作为二级选择
-          const firstCategory = customCategories.find(
-            (cat) => cat.type === selectedType
-          );
-          if (firstCategory) {
-            setSecondarySelection(firstCategory.query);
-          }
-        }
-        setSelectedWeekday(''); // 清空星期选择
-      } else {
-        // 原有逻辑
-        if (type === 'movie') {
-          setPrimarySelection('热门');
-          setSecondarySelection('全部');
-          setSelectedWeekday(''); // 清空星期选择
-        } else if (type === 'tv') {
-          setPrimarySelection('最近热门');
-          setSecondarySelection('tv');
-          setSelectedWeekday(''); // 清空星期选择
-        } else if (type === 'show') {
-          setPrimarySelection('最近热门');
-          setSecondarySelection('show');
-          setSelectedWeekday(''); // 清空星期选择
-        } else if (type === 'anime') {
-          setPrimarySelection('每日放送');
-          setSecondarySelection('全部');
-          setSelectedWeekday(getTodayWeekday()); // 默认选中今天
+    if (type === 'custom' && customCategories.length > 0) {
+      // 自定义分类模式：优先选择 movie，如果没有 movie 则选择 tv
+      const types = Array.from(
+        new Set(customCategories.map((cat) => cat.type))
+      );
+      if (types.length > 0) {
+        // 优先选择 movie，如果没有 movie 则选择 tv
+        let selectedType = types[0]; // 默认选择第一个
+        if (types.includes('movie')) {
+          selectedType = 'movie';
         } else {
-          setPrimarySelection('');
-          setSecondarySelection('全部');
-          setSelectedWeekday(''); // 清空星期选择
+          selectedType = 'tv';
+        }
+        setPrimarySelection(selectedType);
+
+        // 设置选中类型的第一个分类的 query 作为二级选择
+        const firstCategory = customCategories.find(
+          (cat) => cat.type === selectedType
+        );
+        if (firstCategory) {
+          setSecondarySelection(firstCategory.query);
         }
       }
+      setSelectedWeekday(''); // 清空星期选择
+    } else {
+      // 原有逻辑
+      if (type === 'movie') {
+        setPrimarySelection('热门');
+        setSecondarySelection('全部');
+        setSelectedWeekday(''); // 清空星期选择
+      } else if (type === 'tv') {
+        setPrimarySelection('最近热门');
+        setSecondarySelection('tv');
+        setSelectedWeekday(''); // 清空星期选择
+      } else if (type === 'show') {
+        setPrimarySelection('最近热门');
+        setSecondarySelection('show');
+        setSelectedWeekday(''); // 清空星期选择
+      } else if (type === 'anime') {
+        setPrimarySelection('每日放送');
+        setSecondarySelection('全部');
+        setSelectedWeekday(getTodayWeekday()); // 默认选中今天
+      } else {
+        setPrimarySelection('');
+        setSecondarySelection('全部');
+        setSelectedWeekday(''); // 清空星期选择
+      }
+    }
 
-      // 清空 MultiLevelSelector 状态
-      setMultiLevelValues({
-        type: 'all',
-        region: 'all',
-        year: 'all',
-        platform: 'all',
-        label: 'all',
-        sort: 'T',
-      });
-    }, 0);
+    // 清空 MultiLevelSelector 状态
+    setMultiLevelValues({
+      type: 'all',
+      region: 'all',
+      year: 'all',
+      platform: 'all',
+      label: 'all',
+      sort: 'T',
+    });
 
     // 使用短暂延迟确保状态更新完成后标记选择器准备好
     const readyTimer = setTimeout(() => {
@@ -214,7 +206,6 @@ function DoubanPageClient() {
     }, 50);
 
     return () => {
-      clearTimeout(timer);
       clearTimeout(readyTimer);
     };
   }, [type, customCategories]);

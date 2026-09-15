@@ -253,31 +253,28 @@ export default function WatchRoomMusicPage() {
   const [bars, setBars] = useState<number[]>(() => Array.from({ length: SPECTRUM_BIN_COUNT }, () => SPECTRUM_IDLE_LEVEL));
 
   useEffect(() => {
-    const timer = window.setTimeout(() => {
-      const nextState =
-        currentRoom?.roomType === 'music' && currentRoom.currentState?.type === 'music'
-          ? currentRoom.currentState
-          : null;
+    const nextState =
+      currentRoom?.roomType === 'music' && currentRoom.currentState?.type === 'music'
+        ? currentRoom.currentState
+        : null;
 
-      setState((prev) => {
-        if (prev === nextState) return prev;
-        return nextState;
-      });
+    setState((prev) => {
+      if (prev === nextState) return prev;
+      return nextState;
+    });
 
-      if (!nextState) {
-        playbackRequestIdRef.current += 1;
-        audioRef.current?.pause();
-        setCurrentTime(0);
-        setDuration(0);
-        return;
-      }
+    if (!nextState) {
+      playbackRequestIdRef.current += 1;
+      audioRef.current?.pause();
+      setCurrentTime(0);
+      setDuration(0);
+      return;
+    }
 
-      setCurrentTime(adjustedTime(nextState, nextState.isPlaying));
-      if (Number.isFinite(nextState.song.duration) && nextState.song.duration) {
-        setDuration(nextState.song.duration);
-      }
-    }, 0);
-    return () => window.clearTimeout(timer);
+    setCurrentTime(adjustedTime(nextState, nextState.isPlaying));
+    if (Number.isFinite(nextState.song.duration) && nextState.song.duration) {
+      setDuration(nextState.song.duration);
+    }
   }, [currentRoom?.currentState, currentRoom?.id, currentRoom?.roomType]);
 
   const currentLyricIndex = useMemo(() => {

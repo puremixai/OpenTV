@@ -803,11 +803,8 @@ function PlayPageClient() {
   const isDirectPlay = currentSource === 'directplay';
 
   useEffect(() => {
-    const timer = window.setTimeout(() => {
-      setNetdiskTMDBMeta(null);
-      setPendingNetdiskTMDBData(null);
-    }, 0);
-    return () => window.clearTimeout(timer);
+    setNetdiskTMDBMeta(null);
+    setPendingNetdiskTMDBData(null);
   }, [currentSource, currentId]);
 
   /** 网盘挂载视频是否启用原生 HLS（仅支持原生 HLS 的浏览器且用户开启时生效） */
@@ -1015,11 +1012,9 @@ function PlayPageClient() {
     // 检查是否禁用了自动加载弹幕
     if (isDanmakuAutoLoadDisabled()) {
       console.log('[弹幕] 已禁用自动加载弹幕，跳过自动加载');
-      const timer = window.setTimeout(() => {
-        setShowDanmakuSourceSelector(false);
-        setDanmakuLoading(false);
-      }, 0);
-      return () => window.clearTimeout(timer);
+      setShowDanmakuSourceSelector(false);
+      setDanmakuLoading(false);
+      return;
     }
 
     // 检查集数是否有效且是否已改变
@@ -1392,15 +1387,12 @@ function PlayPageClient() {
       }
     };
 
-    const timer = window.setTimeout(() => {
-      // 立即清空当前弹幕（使用 reset 方法，不触发显示/隐藏事件）
-      if (danmakuPluginRef.current) {
-        danmakuPluginRef.current.reset();
-        setDanmakuCount(0);
-      }
-      void loadDanmakuForCurrentEpisode();
-    }, 0);
-    return () => window.clearTimeout(timer);
+    // 立即清空当前弹幕（使用 reset 方法，不触发显示/隐藏事件）
+    if (danmakuPluginRef.current) {
+      danmakuPluginRef.current.reset();
+      setDanmakuCount(0);
+    }
+    void loadDanmakuForCurrentEpisode();
   }, [currentEpisodeIndex, videoTitle, loading, isDirectPlay]);
 
   // 获取豆瓣评分数据
@@ -1661,52 +1653,50 @@ function PlayPageClient() {
         return;
       }
       const pending = pendingNetdiskTMDBData;
-      const timer = window.setTimeout(() => {
-        setPendingNetdiskTMDBData(null);
-        const tmdbYear = pending.releaseDate?.split('-')[0] || '';
-        const shouldReplaceDesc =
-          !currentDetail.desc ||
-          currentDetail.desc.startsWith('临时播放目录：') ||
-          currentDetail.desc.startsWith('移动云盘分享：');
-        const resolvedTmdbId =
-          typeof pending.tmdbId === 'string'
-            ? Number(String(pending.tmdbId).split(':')[1] || 0)
-            : pending.tmdbId;
+      setPendingNetdiskTMDBData(null);
+      const tmdbYear = pending.releaseDate?.split('-')[0] || '';
+      const shouldReplaceDesc =
+        !currentDetail.desc ||
+        currentDetail.desc.startsWith('临时播放目录：') ||
+        currentDetail.desc.startsWith('移动云盘分享：');
+      const resolvedTmdbId =
+        typeof pending.tmdbId === 'string'
+          ? Number(String(pending.tmdbId).split(':')[1] || 0)
+          : pending.tmdbId;
 
-        setNetdiskTMDBMeta({
-          desc: shouldReplaceDesc
-            ? pending.overview || currentDetail.desc
-            : currentDetail.desc,
-          poster: currentDetail.poster || pending.poster || '',
-          year: currentDetail.year || tmdbYear,
-          tmdbId: currentDetail.tmdb_id || resolvedTmdbId,
-        });
+      setNetdiskTMDBMeta({
+        desc: shouldReplaceDesc
+          ? pending.overview || currentDetail.desc
+          : currentDetail.desc,
+        poster: currentDetail.poster || pending.poster || '',
+        year: currentDetail.year || tmdbYear,
+        tmdbId: currentDetail.tmdb_id || resolvedTmdbId,
+      });
 
-        setDetail((prev) =>
-          prev && isNetdiskSource(prev.source)
-            ? {
-                ...prev,
-                poster: prev.poster || pending.poster || '',
-                year: prev.year || tmdbYear,
-                desc: shouldReplaceDesc
-                  ? pending.overview || prev.desc
-                  : prev.desc,
-                tmdb_id: prev.tmdb_id || resolvedTmdbId,
-              }
-            : prev
-        );
+      setDetail((prev) =>
+        prev && isNetdiskSource(prev.source)
+          ? {
+              ...prev,
+              poster: prev.poster || pending.poster || '',
+              year: prev.year || tmdbYear,
+              desc: shouldReplaceDesc
+                ? pending.overview || prev.desc
+                : prev.desc,
+              tmdb_id: prev.tmdb_id || resolvedTmdbId,
+            }
+          : prev
+      );
 
-        if (pending.poster && !currentDetail.poster) {
-          setVideoCover(processImageUrl(pending.poster));
-        }
-        if (tmdbYear && !currentDetail.year) {
-          setVideoYear(tmdbYear);
-        }
-        if (pending.overview) {
-          setCorrectedDesc(pending.overview);
-        }
-      }, 0);
-      return () => window.clearTimeout(timer);
+      if (pending.poster && !currentDetail.poster) {
+        setVideoCover(processImageUrl(pending.poster));
+      }
+      if (tmdbYear && !currentDetail.year) {
+        setVideoYear(tmdbYear);
+      }
+      if (pending.overview) {
+        setCorrectedDesc(pending.overview);
+      }
+      return;
     }
   }, [pendingNetdiskTMDBData, detail]);
 
@@ -4992,11 +4982,7 @@ function PlayPageClient() {
 
   // 当集数索引变化时自动更新视频地址
   useEffect(() => {
-    const timer = window.setTimeout(
-      () => updateVideoUrl(detail, currentEpisodeIndex),
-      0
-    );
-    return () => window.clearTimeout(timer);
+    updateVideoUrl(detail, currentEpisodeIndex);
   }, [detail, currentEpisodeIndex]);
 
   // 进入页面时直接获取全部源信息
@@ -5795,20 +5781,18 @@ function PlayPageClient() {
         newIndex,
       });
       if (newIndex !== currentEpisodeIndex) {
-        const timer = window.setTimeout(() => {
-          console.log(
-            '[PlayPage] URL episode changed, updating index to:',
-            newIndex
-          );
-          saveCurrentEpisodeLocalProgressOnly();
-          resumeTimeRef.current = null;
-          resumePlayingAfterHlsModeSwitchRef.current = null;
-          playbackProgressGuard.suspend();
-          setIsVideoLoading(true);
-          playbackSwitchCoordinator.cancel();
-          setCurrentEpisodeIndex(newIndex);
-        }, 0);
-        return () => window.clearTimeout(timer);
+        console.log(
+          '[PlayPage] URL episode changed, updating index to:',
+          newIndex
+        );
+        saveCurrentEpisodeLocalProgressOnly();
+        resumeTimeRef.current = null;
+        resumePlayingAfterHlsModeSwitchRef.current = null;
+        playbackProgressGuard.suspend();
+        setIsVideoLoading(true);
+        playbackSwitchCoordinator.cancel();
+        setCurrentEpisodeIndex(newIndex);
+        return;
       }
     }
   }, [searchParams, currentEpisodeIndex]);
@@ -5835,48 +5819,46 @@ function PlayPageClient() {
       );
 
       if (targetSource) {
-        const timer = window.setTimeout(() => {
-          saveCurrentEpisodeLocalProgressOnly();
-          const previousPosition = playbackProgressGuard.sourcePosition({
-            currentTime: artPlayerRef.current?.currentTime || 0,
-            duration: artPlayerRef.current?.duration || 0,
-          }, resumeTimeRef.current);
-          playbackProgressGuard.suspend();
-          setIsVideoLoading(true);
-          playbackSwitchCoordinator.cancel();
-          // 记录当前播放进度
-          const currentPlayTime = previousPosition.currentTime;
+        saveCurrentEpisodeLocalProgressOnly();
+        const previousPosition = playbackProgressGuard.sourcePosition({
+          currentTime: artPlayerRef.current?.currentTime || 0,
+          duration: artPlayerRef.current?.duration || 0,
+        }, resumeTimeRef.current);
+        playbackProgressGuard.suspend();
+        setIsVideoLoading(true);
+        playbackSwitchCoordinator.cancel();
+        // 记录当前播放进度
+        const currentPlayTime = previousPosition.currentTime;
 
-          // 获取URL中的episode参数
-          const episodeParam = searchParams.get('episode');
-          const targetEpisode = episodeParam ? parseInt(episodeParam, 10) - 1 : 0;
+        // 获取URL中的episode参数
+        const episodeParam = searchParams.get('episode');
+        const targetEpisode = episodeParam ? parseInt(episodeParam, 10) - 1 : 0;
 
-          // 更新视频源信息（urlSource 已经是完整格式）
-          setCurrentSource(urlSource);
-          setCurrentId(urlId);
-          setVideoTitle(targetSource.title);
-          setVideoYear(targetSource.year);
-          setVideoCover(targetSource.poster);
-          setVideoDoubanId(targetSource.douban_id || 0);
-          setDetail(targetSource);
-          setSourceProxyMode(targetSource.proxyMode || false); // 从 detail 数据中读取代理模式
+        // 更新视频源信息（urlSource 已经是完整格式）
+        setCurrentSource(urlSource);
+        setCurrentId(urlId);
+        setVideoTitle(targetSource.title);
+        setVideoYear(targetSource.year);
+        setVideoCover(targetSource.poster);
+        setVideoDoubanId(targetSource.douban_id || 0);
+        setDetail(targetSource);
+        setSourceProxyMode(targetSource.proxyMode || false); // 从 detail 数据中读取代理模式
 
-          // 更新集数
-          if (
-            targetEpisode >= 0 &&
-            targetEpisode < targetSource.episodes.length
-          ) {
-            setCurrentEpisodeIndex(targetEpisode);
+        // 更新集数
+        if (
+          targetEpisode >= 0 &&
+          targetEpisode < targetSource.episodes.length
+        ) {
+          setCurrentEpisodeIndex(targetEpisode);
 
-            // 如果是同一集,保存播放进度以便恢复
-            if (targetEpisode === currentEpisodeIndex && currentPlayTime > 1) {
-              resumeTimeRef.current = currentPlayTime;
-            } else {
-              resumeTimeRef.current = null;
-            }
+          // 如果是同一集,保存播放进度以便恢复
+          if (targetEpisode === currentEpisodeIndex && currentPlayTime > 1) {
+            resumeTimeRef.current = currentPlayTime;
+          } else {
+            resumeTimeRef.current = null;
           }
-        }, 0);
-        return () => window.clearTimeout(timer);
+        }
+        return;
       } else {
         // 如果新源不在可用列表中,强制刷新页面重新加载
         window.location.reload();
@@ -5893,40 +5875,34 @@ function PlayPageClient() {
   // 监听 detail 和 currentEpisodeIndex 变化，自动获取视频信息
   useEffect(() => {
     if (detail && detail.episodes && detail.episodes.length > 0) {
-      const timer = window.setTimeout(() => {
-        void fetchCurrentSourceVideoInfo();
-      }, 0);
-      return () => window.clearTimeout(timer);
+      void fetchCurrentSourceVideoInfo();
+      return;
     }
   }, [detail, currentEpisodeIndex]);
 
   // 监听 detail 和 currentEpisodeIndex 变化，动态更新字幕
   useEffect(() => {
     if (!artPlayerRef.current || !detail) return;
-    const timer = window.setTimeout(() => {
-      if (!artPlayerRef.current) return;
-      revokeCustomSubtitle();
-      const currentSubtitles = (detail.subtitles?.[currentEpisodeIndex] ||
-        []) as SourceSubtitleItem[];
+    revokeCustomSubtitle();
+    const currentSubtitles = (detail.subtitles?.[currentEpisodeIndex] ||
+      []) as SourceSubtitleItem[];
 
-      // 如果有字幕，更新播放器字幕
-      if (currentSubtitles.length > 0) {
-        currentSubtitleLabelRef.current = currentSubtitles[0].label;
-        void switchSourceSubtitle(currentSubtitles[0]).catch((error) => {
-          console.warn('[Subtitle] 源字幕加载失败:', error);
-          if (artPlayerRef.current) {
-            artPlayerRef.current.subtitle.show = false;
-          }
-          currentSubtitleLabelRef.current = '关闭';
-        });
-      } else {
-        artPlayerRef.current.subtitle.show = false;
+    // 如果有字幕，更新播放器字幕
+    if (currentSubtitles.length > 0) {
+      currentSubtitleLabelRef.current = currentSubtitles[0].label;
+      void switchSourceSubtitle(currentSubtitles[0]).catch((error) => {
+        console.warn('[Subtitle] 源字幕加载失败:', error);
+        if (artPlayerRef.current) {
+          artPlayerRef.current.subtitle.show = false;
+        }
         currentSubtitleLabelRef.current = '关闭';
-      }
+      });
+    } else {
+      artPlayerRef.current.subtitle.show = false;
+      currentSubtitleLabelRef.current = '关闭';
+    }
 
-      updateSubtitleSetting();
-    }, 0);
-    return () => window.clearTimeout(timer);
+    updateSubtitleSetting();
   }, [detail, currentEpisodeIndex]);
 
   // Selection preparation is isolated from UI state and persistence ordering.

@@ -40,32 +40,28 @@ export const OPDSConfigComponent = ({
   const [booksCountdown, setBooksCountdown] = useState(10);
 
   useEffect(() => {
-    const timer = window.setTimeout(() => {
-      if (!config?.OPDSConfig) return;
-      setEnabled(config.OPDSConfig.Enabled || false);
-      setCacheTTL(config.OPDSConfig.CacheTTL || 10 * 60 * 1000);
-      setSources(
-        (config.OPDSConfig.Sources || []).map((item, index) => ({
-          id: item.id || `source_${index + 1}`,
-          name: item.name || `书源 ${index + 1}`,
-          type: 'opds' as const,
-          url: item.url || '',
-          enabled: item.enabled !== false,
-          authMode: item.authMode || 'none',
-          username: item.username || '',
-          password: item.password || '',
-          headerName: item.headerName || '',
-          headerValue: item.headerValue || '',
-          searchTemplate: item.searchTemplate || '',
-          preferFormat: item.preferFormat || ['epub', 'pdf'],
-          language: item.language || '',
-        }))
-      );
-      setLegadoSubscriptions(config.OPDSConfig.LegadoSubscriptions || []);
-      setEditingIndex(null);
-    }, 0);
-
-    return () => window.clearTimeout(timer);
+    if (!config?.OPDSConfig) return;
+    setEnabled(config.OPDSConfig.Enabled || false);
+    setCacheTTL(config.OPDSConfig.CacheTTL || 10 * 60 * 1000);
+    setSources(
+      (config.OPDSConfig.Sources || []).map((item, index) => ({
+        id: item.id || `source_${index + 1}`,
+        name: item.name || `书源 ${index + 1}`,
+        type: 'opds' as const,
+        url: item.url || '',
+        enabled: item.enabled !== false,
+        authMode: item.authMode || 'none',
+        username: item.username || '',
+        password: item.password || '',
+        headerName: item.headerName || '',
+        headerValue: item.headerValue || '',
+        searchTemplate: item.searchTemplate || '',
+        preferFormat: item.preferFormat || ['epub', 'pdf'],
+        language: item.language || '',
+      }))
+    );
+    setLegadoSubscriptions(config.OPDSConfig.LegadoSubscriptions || []);
+    setEditingIndex(null);
   }, [config]);
 
   useEffect(() => {

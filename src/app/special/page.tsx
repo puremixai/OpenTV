@@ -16,18 +16,15 @@ function SpecialPageClient() {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    const timer = window.setTimeout(() => {
-      const enableParam = searchParams.get('enable');
-      if (enableParam === '1' || enableParam === 'true') {
-        setSpecialSourcesEnabledOnDevice(true);
-      } else if (enableParam === '0' || enableParam === 'false') {
-        setSpecialSourcesEnabledOnDevice(false);
-      }
+    const enableParam = searchParams.get('enable');
+    if (enableParam === '1' || enableParam === 'true') {
+      setSpecialSourcesEnabledOnDevice(true);
+    } else if (enableParam === '0' || enableParam === 'false') {
+      setSpecialSourcesEnabledOnDevice(false);
+    }
 
-      setEnabled(isSpecialSourcesEnabledOnDevice());
-      setReady(true);
-    }, 0);
-    return () => window.clearTimeout(timer);
+    setEnabled(isSpecialSourcesEnabledOnDevice());
+    setReady(true);
   }, [searchParams]);
 
   const updateEnabled = (next: boolean) => {

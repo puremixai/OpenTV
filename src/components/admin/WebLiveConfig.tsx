@@ -39,13 +39,9 @@ export const WebLiveConfig = ({
   const [isEnabling, setIsEnabling] = useState(false);
 
   useEffect(() => {
-    const timer = window.setTimeout(() => {
-      if (config?.WebLiveConfig) {
-        setWebLiveSources(config.WebLiveConfig);
-      }
-    }, 0);
-
-    return () => window.clearTimeout(timer);
+    if (config?.WebLiveConfig) {
+      setWebLiveSources(config.WebLiveConfig);
+    }
   }, [config]);
 
   useEffect(() => {

@@ -202,13 +202,10 @@ export default function PansouSearch({
   >({});
 
   useEffect(() => {
-    const timer = window.setTimeout(() => {
-      setCooldownRemainingMs(0);
-      setCheckStatesByType({});
-      setMagnetHealthMap({});
-      setMagnetHealthCheckingIds({});
-    }, 0);
-    return () => window.clearTimeout(timer);
+    setCooldownRemainingMs(0);
+    setCheckStatesByType({});
+    setMagnetHealthMap({});
+    setMagnetHealthCheckingIds({});
   }, [keyword, triggerSearch]);
 
   useEffect(() => {
@@ -331,9 +328,8 @@ export default function PansouSearch({
       return;
     }
 
-    const timer = window.setTimeout(() => void searchPansou(), 0);
-    return () => window.clearTimeout(timer);
-  }, [searchPansou, triggerSearch]); // 只在触发标志变化时搜索，避免 keyword 变化自动搜索
+    searchPansou();
+  }, [triggerSearch]); // 只在触发标志变化时搜索，避免 keyword 变化自动搜索
 
   const handleCopy = async (text: string, url: string) => {
     try {

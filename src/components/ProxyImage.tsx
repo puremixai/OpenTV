@@ -37,8 +37,7 @@ const ProxyImage: React.FC<ProxyImageProps> = ({
   const imgRef = useRef<HTMLImageElement | null>(null);
 
   useEffect(() => {
-    const timer = window.setTimeout(() => setCurrentSrc(initialSrc), 0);
-    return () => window.clearTimeout(timer);
+    setCurrentSrc(initialSrc);
   }, [initialSrc]);
 
   // 主源图片域主页探测：失败则 sticky 走备源（替代原 5s complete 误判）

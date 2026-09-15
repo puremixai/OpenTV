@@ -34,8 +34,7 @@ const FireworksCanvas = () => {
     const end = new Date(2026, 2, 3, 23, 59, 59, 999);
     const now = new Date();
     if (runtimeEnabled || (now >= start && now <= end)) {
-      const timer = window.setTimeout(() => setActive(true), 0);
-      return () => window.clearTimeout(timer);
+      setActive(true);
     }
   }, []);
 

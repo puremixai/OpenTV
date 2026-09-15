@@ -176,41 +176,38 @@ export default function BookDetailPage() {
 
   useEffect(() => {
     let cancelled = false;
-    const timer = window.setTimeout(() => {
-      if (!detail || !readable || readableFormat !== 'chapters') {
-        setChapters([]);
-        setChaptersError('');
-        setChaptersLoading(false);
-        return;
-      }
+    if (!detail || !readable || readableFormat !== 'chapters') {
       setChapters([]);
-      setChaptersLoading(true);
       setChaptersError('');
-      const params = new URLSearchParams({
-        sourceId: detail.sourceId,
-        bookId: detail.id,
-      });
-      fetch(`/api/books/read/chapters?${params.toString()}`, {
-        cache: 'no-store',
+      setChaptersLoading(false);
+      return;
+    }
+    setChapters([]);
+    setChaptersLoading(true);
+    setChaptersError('');
+    const params = new URLSearchParams({
+      sourceId: detail.sourceId,
+      bookId: detail.id,
+    });
+    fetch(`/api/books/read/chapters?${params.toString()}`, {
+      cache: 'no-store',
+    })
+      .then(async (res) => {
+        const json = await res.json();
+        if (!res.ok) throw new Error(json.error || '获取章节失败');
+        if (cancelled) return;
+        setChapters((json.chapters || []) as BookChapter[]);
       })
-        .then(async (res) => {
-          const json = await res.json();
-          if (!res.ok) throw new Error(json.error || '获取章节失败');
-          if (cancelled) return;
-          setChapters((json.chapters || []) as BookChapter[]);
-        })
-        .catch((err) => {
-          if (cancelled) return;
-          setChapters([]);
-          setChaptersError(err.message || '获取章节失败');
-        })
-        .finally(() => {
-          if (!cancelled) setChaptersLoading(false);
-        });
-    }, 0);
+      .catch((err) => {
+        if (cancelled) return;
+        setChapters([]);
+        setChaptersError(err.message || '获取章节失败');
+      })
+      .finally(() => {
+        if (!cancelled) setChaptersLoading(false);
+      });
     return () => {
       cancelled = true;
-      window.clearTimeout(timer);
     };
   }, [detail, readable, readableFormat]);
 

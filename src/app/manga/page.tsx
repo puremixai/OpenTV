@@ -111,10 +111,7 @@ export default function MangaRecommendPage() {
 
   useEffect(() => {
     if (!sourceId) return;
-    const timer = window.setTimeout(() => {
-      void fetchRecommend(1, false);
-    }, 0);
-    return () => window.clearTimeout(timer);
+    void fetchRecommend(1, false);
   }, [fetchRecommend, sourceId]);
 
   useEffect(() => {

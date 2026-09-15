@@ -40,20 +40,16 @@ export const SuwayomiConfigComponent = ({
   const [mangaCountdown, setMangaCountdown] = useState(10);
 
   useEffect(() => {
-    const timer = window.setTimeout(() => {
-      if (config?.SuwayomiConfig) {
-        setEnabled(config.SuwayomiConfig.Enabled || false);
-        setServerURL(config.SuwayomiConfig.ServerURL || '');
-        setAuthMode(config.SuwayomiConfig.AuthMode || 'none');
-        setUsername(config.SuwayomiConfig.Username || '');
-        setPassword(config.SuwayomiConfig.Password || '');
-        setDefaultLang(config.SuwayomiConfig.DefaultLang || 'zh');
-        setSourceIds((config.SuwayomiConfig.SourceIds || []).join(','));
-        setMaxSources(config.SuwayomiConfig.MaxSources || 10);
-      }
-    }, 0);
-
-    return () => window.clearTimeout(timer);
+    if (config?.SuwayomiConfig) {
+      setEnabled(config.SuwayomiConfig.Enabled || false);
+      setServerURL(config.SuwayomiConfig.ServerURL || '');
+      setAuthMode(config.SuwayomiConfig.AuthMode || 'none');
+      setUsername(config.SuwayomiConfig.Username || '');
+      setPassword(config.SuwayomiConfig.Password || '');
+      setDefaultLang(config.SuwayomiConfig.DefaultLang || 'zh');
+      setSourceIds((config.SuwayomiConfig.SourceIds || []).join(','));
+      setMaxSources(config.SuwayomiConfig.MaxSources || 10);
+    }
   }, [config]);
 
   useEffect(() => {

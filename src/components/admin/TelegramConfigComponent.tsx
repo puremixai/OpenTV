@@ -37,24 +37,20 @@ export const TelegramConfigComponent = ({
   const [testChatId, setTestChatId] = useState('');
 
   useEffect(() => {
-    const timer = window.setTimeout(() => {
-      const telegram = config?.TelegramConfig;
-      if (telegram) {
-        setEnabled(Boolean(telegram.enabled));
-        setBotToken(telegram.botToken || '');
-        setBotUsername(telegram.botUsername || '');
-        setWebhookSecret(telegram.webhookSecret || '');
-        setApiProxy(telegram.apiProxy || '');
-        setApiBaseUrl(telegram.apiBaseUrl || '');
-        setLoginEnabled(telegram.loginEnabled !== false);
-        setBindingEnabled(telegram.bindingEnabled !== false);
-        setRegistrationEnabled(telegram.registrationEnabled === true);
-        setNotificationsEnabled(telegram.notificationsEnabled !== false);
-        setDefaultNotifications(telegram.defaultNotifications !== false);
-      }
-    }, 0);
-
-    return () => window.clearTimeout(timer);
+    const telegram = config?.TelegramConfig;
+    if (telegram) {
+      setEnabled(Boolean(telegram.enabled));
+      setBotToken(telegram.botToken || '');
+      setBotUsername(telegram.botUsername || '');
+      setWebhookSecret(telegram.webhookSecret || '');
+      setApiProxy(telegram.apiProxy || '');
+      setApiBaseUrl(telegram.apiBaseUrl || '');
+      setLoginEnabled(telegram.loginEnabled !== false);
+      setBindingEnabled(telegram.bindingEnabled !== false);
+      setRegistrationEnabled(telegram.registrationEnabled === true);
+      setNotificationsEnabled(telegram.notificationsEnabled !== false);
+      setDefaultNotifications(telegram.defaultNotifications !== false);
+    }
   }, [config]);
 
   const buildConfig = (): AdminConfig['TelegramConfig'] => ({

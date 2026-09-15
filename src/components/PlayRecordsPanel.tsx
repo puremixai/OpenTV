@@ -132,8 +132,7 @@ export default function PlayRecordsPanel({
 
   useEffect(() => {
     if (!isOpen) return;
-    const timer = window.setTimeout(() => void loadPlayRecords(), 0);
-    return () => window.clearTimeout(timer);
+    loadPlayRecords();
   }, [isOpen]);
 
   useEffect(() => {

@@ -442,49 +442,46 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
   }, [videoInfoMap]);
 
   useEffect(() => {
-    const timer = window.setTimeout(() => {
-      if (
-        typeof window === 'undefined' ||
-        !currentSource ||
-        !currentId ||
-        !episodeProgressContentKey
-      ) {
-        setWatchedEpisodes(new Set());
-        return;
+    if (
+      typeof window === 'undefined' ||
+      !currentSource ||
+      !currentId ||
+      !episodeProgressContentKey
+    ) {
+      setWatchedEpisodes(new Set());
+      return;
+    }
+
+    const watched = new Set<number>();
+
+    try {
+      const records = getCachedPlayRecordsSnapshot();
+      const record = records[generateStorageKey(currentSource, currentId)];
+      if (record && record.index > 0 && record.play_time > 1) {
+        watched.add(record.index);
       }
+    } catch (error) {
+      logger.warn('[EpisodeSelector] Failed to read cached play records:', error);
+    }
 
-      const watched = new Set<number>();
+    try {
+      const episodeRecords = loadAllLocalEpisodeProgressRecords(
+        episodeProgressContentKey
+      );
 
-      try {
-        const records = getCachedPlayRecordsSnapshot();
-        const record = records[generateStorageKey(currentSource, currentId)];
-        if (record && record.index > 0 && record.play_time > 1) {
-          watched.add(record.index);
-        }
-      } catch (error) {
-        logger.warn('[EpisodeSelector] Failed to read cached play records:', error);
-      }
-
-      try {
-        const episodeRecords = loadAllLocalEpisodeProgressRecords(
-          episodeProgressContentKey
-        );
-
-        for (const [episodeIndex, record] of Object.entries(episodeRecords)) {
-          if (Number(record?.playTime) > 1) {
-            const episodeNumber = Number(episodeIndex) + 1;
-            if (episodeNumber >= 1 && episodeNumber <= totalEpisodes) {
-              watched.add(episodeNumber);
-            }
+      for (const [episodeIndex, record] of Object.entries(episodeRecords)) {
+        if (Number(record?.playTime) > 1) {
+          const episodeNumber = Number(episodeIndex) + 1;
+          if (episodeNumber >= 1 && episodeNumber <= totalEpisodes) {
+            watched.add(episodeNumber);
           }
         }
-      } catch (error) {
-        logger.warn('[EpisodeSelector] Failed to read local episode progress:', error);
       }
+    } catch (error) {
+      logger.warn('[EpisodeSelector] Failed to read local episode progress:', error);
+    }
 
-      setWatchedEpisodes(watched);
-    }, 0);
-    return () => window.clearTimeout(timer);
+    setWatchedEpisodes(watched);
   }, [currentSource, currentId, episodeProgressContentKey, totalEpisodes, value]);
 
   // 主要的 tab 状态：'danmaku' | 'episodes' | 'sources'
@@ -496,8 +493,7 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
   // 当房员状态变化时，自动切换到弹幕选项卡
   useEffect(() => {
     if (isRoomMember && (activeTab === 'episodes' || activeTab === 'sources')) {
-      const timer = window.setTimeout(() => setActiveTab('danmaku'), 0);
-      return () => window.clearTimeout(timer);
+      setActiveTab('danmaku');
     }
   }, [isRoomMember, activeTab]);
 
@@ -570,8 +566,7 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
     );
 
     if (nextPage >= 0) {
-      const timer = window.setTimeout(() => setCurrentPage(nextPage), 0);
-      return () => window.clearTimeout(timer);
+      setCurrentPage(nextPage);
     }
   }, [episodeGroupsAsc, totalEpisodes, value]);
 
@@ -644,34 +639,31 @@ const EpisodeSelector: React.FC<EpisodeSelectorProps> = ({
   // 当有预计算结果时，先合并到videoInfoMap中
   useEffect(() => {
     if (precomputedVideoInfo && precomputedVideoInfo.size > 0) {
-      const timer = window.setTimeout(() => {
-        // 原子性地更新两个状态，避免时序问题
-        setVideoInfoMap((prev) => {
-          const newMap = new Map(prev);
-          precomputedVideoInfo.forEach((value, key) => {
-            newMap.set(key, value);
-          });
-          return newMap;
+      // 原子性地更新两个状态，避免时序问题
+      setVideoInfoMap((prev) => {
+        const newMap = new Map(prev);
+        precomputedVideoInfo.forEach((value, key) => {
+          newMap.set(key, value);
         });
+        return newMap;
+      });
 
-        setAttemptedSources((prev) => {
-          const newSet = new Set(prev);
-          precomputedVideoInfo.forEach((info, key) => {
-            if (!info.hasError) {
-              newSet.add(key);
-            }
-          });
-          return newSet;
-        });
-
-        // 同步更新 ref，确保 getVideoInfo 能立即看到更新
+      setAttemptedSources((prev) => {
+        const newSet = new Set(prev);
         precomputedVideoInfo.forEach((info, key) => {
           if (!info.hasError) {
-            attemptedSourcesRef.current.add(key);
+            newSet.add(key);
           }
         });
-      }, 0);
-      return () => window.clearTimeout(timer);
+        return newSet;
+      });
+
+      // 同步更新 ref，确保 getVideoInfo 能立即看到更新
+      precomputedVideoInfo.forEach((info, key) => {
+        if (!info.hasError) {
+          attemptedSourcesRef.current.add(key);
+        }
+      });
     }
   }, [precomputedVideoInfo]);
 

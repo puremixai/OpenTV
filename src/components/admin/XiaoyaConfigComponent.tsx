@@ -31,18 +31,14 @@ export const XiaoyaConfigComponent = ({
   const [disableVideoPreview, setDisableVideoPreview] = useState(false);
 
   useEffect(() => {
-    const timer = window.setTimeout(() => {
-      if (config?.XiaoyaConfig) {
-        setEnabled(config.XiaoyaConfig.Enabled || false);
-        setServerURL(config.XiaoyaConfig.ServerURL || '');
-        setToken(config.XiaoyaConfig.Token || '');
-        setUsername(config.XiaoyaConfig.Username || '');
-        setPassword(config.XiaoyaConfig.Password || '');
-        setDisableVideoPreview(config.XiaoyaConfig.DisableVideoPreview || false);
-      }
-    }, 0);
-
-    return () => window.clearTimeout(timer);
+    if (config?.XiaoyaConfig) {
+      setEnabled(config.XiaoyaConfig.Enabled || false);
+      setServerURL(config.XiaoyaConfig.ServerURL || '');
+      setToken(config.XiaoyaConfig.Token || '');
+      setUsername(config.XiaoyaConfig.Username || '');
+      setPassword(config.XiaoyaConfig.Password || '');
+      setDisableVideoPreview(config.XiaoyaConfig.DisableVideoPreview || false);
+    }
   }, [config]);
 
   const handleSave = async () => {

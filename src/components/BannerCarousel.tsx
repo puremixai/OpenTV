@@ -153,14 +153,12 @@ export default function BannerCarousel({
 
   // 读取本地设置
   useEffect(() => {
-    const timer = window.setTimeout(() => {
-      const setting = localStorage.getItem('enableTrailers');
-      if (setting !== null) {
-        setEnableTrailers(setting === 'true');
-      }
+    const setting = localStorage.getItem('enableTrailers');
+    if (setting !== null) {
+      setEnableTrailers(setting === 'true');
+    }
 
-      setBannerHeightScale(getSavedBannerHeightScale());
-    }, 0);
+    setBannerHeightScale(getSavedBannerHeightScale());
 
     const handleHomeModulesUpdated = () => {
       setBannerHeightScale(getSavedBannerHeightScale());
@@ -168,7 +166,6 @@ export default function BannerCarousel({
 
     window.addEventListener('homeModulesUpdated', handleHomeModulesUpdated);
     return () => {
-      window.clearTimeout(timer);
       window.removeEventListener(
         'homeModulesUpdated',
         handleHomeModulesUpdated,
@@ -216,8 +213,7 @@ export default function BannerCarousel({
 
     // 页面加载完毕后再开始加载
     if (document.readyState === 'complete') {
-      const timer = window.setTimeout(() => setShouldLoad(true), 0);
-      return () => window.clearTimeout(timer);
+      setShouldLoad(true);
     } else {
       const handleLoad = () => {
         setShouldLoad(true);
@@ -231,11 +227,8 @@ export default function BannerCarousel({
   useEffect(() => {
     // 如果未启用预告片或数据源不是TMDB，不进行检测
     if (!enableTrailers || dataSource !== 'TMDB') {
-      const timer = window.setTimeout(
-        () => setIsYouTubeAccessible(false),
-        0
-      );
-      return () => window.clearTimeout(timer);
+      setIsYouTubeAccessible(false);
+      return;
     }
 
     const checkYouTubeAccess = () => {
@@ -266,14 +259,12 @@ export default function BannerCarousel({
   useEffect(() => {
     // The server seed is newer than browser caches and already contains the first artwork.
     if (initialData) {
-      const timer = window.setTimeout(() => {
-        setItems(initialData.list);
-        setCurrentIndex(0);
-        setDataSource(initialData.source);
-        setTrailersLoaded(false);
-        setIsLoading(false);
-      }, 0);
-      return () => window.clearTimeout(timer);
+      setItems(initialData.list);
+      setCurrentIndex(0);
+      setDataSource(initialData.source);
+      setTrailersLoaded(false);
+      setIsLoading(false);
+      return;
     }
     // 如果不应该加载，直接返回
     if (!shouldLoad) return;
@@ -437,8 +428,7 @@ export default function BannerCarousel({
 
   // 切换轮播图时重置静音状态
   useEffect(() => {
-    const timer = window.setTimeout(() => setIsMuted(true), 0);
-    return () => window.clearTimeout(timer);
+    setIsMuted(true);
   }, [currentIndex]);
 
   // 控制视频播放/暂停和静音状态

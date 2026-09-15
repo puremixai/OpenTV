@@ -159,8 +159,7 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({
   // 打开面板时加载通知
   useEffect(() => {
     if (isOpen) {
-      const timer = window.setTimeout(() => void loadNotifications(), 0);
-      return () => window.clearTimeout(timer);
+      loadNotifications();
     }
   }, [isOpen]);
 

@@ -70,36 +70,32 @@ export const RegistrationConfigComponent = ({
   });
 
   useEffect(() => {
-    const timer = window.setTimeout(() => {
-      if (config?.SiteConfig) {
-        setRegistrationSettings({
-          EnableRegistration: config.SiteConfig.EnableRegistration || false,
-          RequireRegistrationInviteCode:
-            config.SiteConfig.RequireRegistrationInviteCode || false,
-          RegistrationInviteCode: config.SiteConfig.RegistrationInviteCode || '',
-          RegistrationRequireTurnstile:
-            config.SiteConfig.RegistrationRequireTurnstile || false,
-          LoginRequireTurnstile: config.SiteConfig.LoginRequireTurnstile || false,
-          TurnstileSiteKey: config.SiteConfig.TurnstileSiteKey || '',
-          TurnstileSecretKey: config.SiteConfig.TurnstileSecretKey || '',
-          DefaultUserTags: config.SiteConfig.DefaultUserTags || [],
-          EnableOIDCLogin: config.SiteConfig.EnableOIDCLogin || false,
-          EnableOIDCRegistration:
-            config.SiteConfig.EnableOIDCRegistration || false,
-          OIDCIssuer: config.SiteConfig.OIDCIssuer || '',
-          OIDCAuthorizationEndpoint:
-            config.SiteConfig.OIDCAuthorizationEndpoint || '',
-          OIDCTokenEndpoint: config.SiteConfig.OIDCTokenEndpoint || '',
-          OIDCUserInfoEndpoint: config.SiteConfig.OIDCUserInfoEndpoint || '',
-          OIDCClientId: config.SiteConfig.OIDCClientId || '',
-          OIDCClientSecret: config.SiteConfig.OIDCClientSecret || '',
-          OIDCButtonText: config.SiteConfig.OIDCButtonText || '',
-          OIDCMinTrustLevel: config.SiteConfig.OIDCMinTrustLevel ?? 0,
-        });
-      }
-    }, 0);
-
-    return () => window.clearTimeout(timer);
+    if (config?.SiteConfig) {
+      setRegistrationSettings({
+        EnableRegistration: config.SiteConfig.EnableRegistration || false,
+        RequireRegistrationInviteCode:
+          config.SiteConfig.RequireRegistrationInviteCode || false,
+        RegistrationInviteCode: config.SiteConfig.RegistrationInviteCode || '',
+        RegistrationRequireTurnstile:
+          config.SiteConfig.RegistrationRequireTurnstile || false,
+        LoginRequireTurnstile: config.SiteConfig.LoginRequireTurnstile || false,
+        TurnstileSiteKey: config.SiteConfig.TurnstileSiteKey || '',
+        TurnstileSecretKey: config.SiteConfig.TurnstileSecretKey || '',
+        DefaultUserTags: config.SiteConfig.DefaultUserTags || [],
+        EnableOIDCLogin: config.SiteConfig.EnableOIDCLogin || false,
+        EnableOIDCRegistration:
+          config.SiteConfig.EnableOIDCRegistration || false,
+        OIDCIssuer: config.SiteConfig.OIDCIssuer || '',
+        OIDCAuthorizationEndpoint:
+          config.SiteConfig.OIDCAuthorizationEndpoint || '',
+        OIDCTokenEndpoint: config.SiteConfig.OIDCTokenEndpoint || '',
+        OIDCUserInfoEndpoint: config.SiteConfig.OIDCUserInfoEndpoint || '',
+        OIDCClientId: config.SiteConfig.OIDCClientId || '',
+        OIDCClientSecret: config.SiteConfig.OIDCClientSecret || '',
+        OIDCButtonText: config.SiteConfig.OIDCButtonText || '',
+        OIDCMinTrustLevel: config.SiteConfig.OIDCMinTrustLevel ?? 0,
+      });
+    }
   }, [config]);
 
   // 处理注册开关变化

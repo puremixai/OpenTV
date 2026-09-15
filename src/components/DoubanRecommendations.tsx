@@ -72,8 +72,7 @@ export default function DoubanRecommendations({ doubanId }: DoubanRecommendation
 
   useEffect(() => {
     if (enableComments && doubanId) {
-      const timer = window.setTimeout(() => void fetchRecommendations(), 0);
-      return () => window.clearTimeout(timer);
+      fetchRecommendations();
     }
   }, [enableComments, doubanId, fetchRecommendations]);
 

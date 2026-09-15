@@ -26,7 +26,8 @@ export default function EpisodeFilterSettings({
   const [config, setConfig] = useState<EpisodeFilterConfig>(normalizeEpisodeFilterConfig());
   const [newKeyword, setNewKeyword] = useState('');
   const [newType, setNewType] = useState<'normal' | 'regex'>('normal');
-  const [loading, setLoading] = useState(false);
+  const [loadState, setLoadState] = useState({ isOpen, loading: isOpen });
+  const loading = loadState.loading;
   const [saving, setSaving] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
@@ -34,22 +35,23 @@ export default function EpisodeFilterSettings({
   const inputRef = useRef<HTMLInputElement>(null); // 用于直接操作输入框 DOM
   const [mounted, setMounted] = useState(false);
 
+  // 打开时立即进入加载状态；关闭不改变草稿，退出动画仍可展示它。
+  if (loadState.isOpen !== isOpen) {
+    setLoadState({ isOpen, loading: isOpen });
+  }
+
   // 确保组件在客户端挂载后才渲染 Portal
   useEffect(() => {
-    const timer = window.setTimeout(() => setMounted(true), 0);
-    return () => window.clearTimeout(timer);
+    setMounted(true);
   }, []);
 
   // 控制动画状态
   useEffect(() => {
     let animationId: number;
     let timer: NodeJS.Timeout;
-    let animationStateTimer: NodeJS.Timeout;
 
     if (isOpen) {
-      animationStateTimer = setTimeout(() => {
-        setIsVisible(true);
-      }, 0);
+      setIsVisible(true);
       // 使用双重 requestAnimationFrame 确保DOM完全渲染
       animationId = requestAnimationFrame(() => {
         animationId = requestAnimationFrame(() => {
@@ -57,9 +59,7 @@ export default function EpisodeFilterSettings({
         });
       });
     } else {
-      animationStateTimer = setTimeout(() => {
-        setIsAnimating(false);
-      }, 0);
+      setIsAnimating(false);
       // 等待动画完成后隐藏组件
       timer = setTimeout(() => {
         setIsVisible(false);
@@ -72,9 +72,6 @@ export default function EpisodeFilterSettings({
       }
       if (timer) {
         clearTimeout(timer);
-      }
-      if (animationStateTimer) {
-        clearTimeout(animationStateTimer);
       }
     };
   }, [isOpen]);
@@ -129,31 +126,29 @@ export default function EpisodeFilterSettings({
     }
   }, [isVisible]);
 
-  async function loadConfig() {
-    setLoading(true);
-    try {
-      const loadedConfig = await getEpisodeFilterConfig();
-      if (loadedConfig) {
-        setConfig(normalizeEpisodeFilterConfig(loadedConfig));
-      } else {
-        setConfig(normalizeEpisodeFilterConfig());
-      }
-    } catch (error) {
-      logger.error('加载集数过滤配置失败:', error);
-    } finally {
-      setLoading(false);
-    }
-  }
-
   // 加载配置
   useEffect(() => {
-    if (isOpen) {
-      const timer = window.setTimeout(() => void loadConfig(), 0);
-      return () => window.clearTimeout(timer);
-    }
+    if (!isOpen) return;
+    let cancelled = false;
+    getEpisodeFilterConfig()
+      .then((loadedConfig) => {
+        if (!cancelled) {
+          setConfig(normalizeEpisodeFilterConfig(loadedConfig || undefined));
+        }
+      })
+      .catch((error) => {
+        if (!cancelled) logger.error('加载集数过滤配置失败:', error);
+      })
+      .finally(() => {
+        if (!cancelled) setLoadState({ isOpen: true, loading: false });
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [isOpen]);
 
   const handleToggleReverseMode = () => {
+    if (loading || !isOpen) return;
     setConfig((prev) => {
       const normalizedConfig = normalizeEpisodeFilterConfig(prev);
       return {
@@ -165,6 +160,7 @@ export default function EpisodeFilterSettings({
 
   // 保存配置
   const handleSave = async () => {
+    if (loading || !isOpen) return;
     const normalizedConfig = normalizeEpisodeFilterConfig(config);
     if (normalizedConfig.reverseMode && normalizedConfig.rules.length === 0) {
       if (onShowToast) {
@@ -198,6 +194,7 @@ export default function EpisodeFilterSettings({
 
   // 添加规则
   const handleAddRule = () => {
+    if (loading || !isOpen) return;
     if (!newKeyword.trim()) {
       if (onShowToast) {
         onShowToast('请输入关键字', 'info');
@@ -350,6 +347,7 @@ export default function EpisodeFilterSettings({
               </div>
               <button
                 onClick={handleToggleReverseMode}
+                disabled={loading || !isOpen}
                 className="shrink-0 active:scale-95 transition-transform duration-150"
                 title={config.reverseMode ? '关闭相反模式' : '开启相反模式'}
               >
@@ -376,6 +374,7 @@ export default function EpisodeFilterSettings({
                 ref={inputRef}
                 type="text"
                 value={newKeyword}
+                disabled={loading || !isOpen}
                 onChange={(e) => setNewKeyword(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && handleAddRule()}
                 placeholder="输入要屏蔽的集数关键字（如：预告、花絮）"
@@ -390,6 +389,7 @@ export default function EpisodeFilterSettings({
               <div className="flex gap-2">
                 <select
                   value={newType}
+                  disabled={loading || !isOpen}
                   onChange={(e) => setNewType(e.target.value as 'normal' | 'regex')}
                   className="flex-1 px-4 py-3 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg border border-gray-200 dark:border-gray-600 focus:border-green-500 focus:outline-hidden focus:ring-2 focus:ring-green-500/20 transition-all duration-200"
                 >
@@ -398,6 +398,7 @@ export default function EpisodeFilterSettings({
                 </select>
                 <button
                   onClick={handleAddRule}
+                  disabled={loading || !isOpen}
                   className="px-6 py-3 bg-green-600 hover:bg-green-700 active:bg-green-800 text-white rounded-lg transition-all duration-200 flex items-center gap-2 active:scale-[0.98] shadow-xs hover:shadow-md"
                 >
                   <Plus size={18} />
@@ -514,7 +515,7 @@ export default function EpisodeFilterSettings({
             </button>
             <button
               onClick={handleSave}
-              disabled={saving}
+              disabled={saving || loading || !isOpen}
               className="flex-1 px-4 py-3 bg-green-600 hover:bg-green-700 active:bg-green-800 disabled:bg-gray-300 disabled:cursor-not-allowed dark:disabled:bg-gray-700 text-white rounded-xl font-medium transition-all duration-200 active:scale-[0.98] shadow-xs hover:shadow-md disabled:shadow-none"
             >
               {saving ? (

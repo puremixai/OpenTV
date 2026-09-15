@@ -37,8 +37,7 @@ export default function MusicMyPlaylistsPage() {
   }, []);
 
   useEffect(() => {
-    const timer = window.setTimeout(() => loadUserPlaylists(), 0);
-    return () => window.clearTimeout(timer);
+    loadUserPlaylists();
   }, [loadUserPlaylists]);
 
   const normalizePlaylistSong = (song: MusicSongInput) => mapSong({

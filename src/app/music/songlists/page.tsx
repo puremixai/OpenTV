@@ -99,92 +99,83 @@ export default function MusicSongListsPage() {
   };
 
   useEffect(() => {
-    const timer = window.setTimeout(() => setActiveTagLabel(tagId), 0);
-    return () => window.clearTimeout(timer);
+    setActiveTagLabel(tagId);
   }, [tagId]);
 
   useEffect(() => {
-    const timer = window.setTimeout(() => setActiveSource(source), 0);
-    return () => window.clearTimeout(timer);
+    setActiveSource(source);
   }, [source]);
 
   useEffect(() => {
-    const timer = window.setTimeout(() => setActiveSortId(sortId), 0);
-    return () => window.clearTimeout(timer);
+    setActiveSortId(sortId);
   }, [sortId]);
 
   useEffect(() => {
-    const timer = window.setTimeout(() => {
-      const cacheKey = `music_songlist_tags_${source}`;
-      const cached = readCache<{ groups: SongListGroup[]; hotTags: SongListTag[] }>(cacheKey);
-      setLoadingTags(true);
-      if (cached) {
-        setGroups(cached.groups || []);
-        setHotTags(cached.hotTags || []);
-      }
+    const cacheKey = `music_songlist_tags_${source}`;
+    const cached = readCache<{ groups: SongListGroup[]; hotTags: SongListTag[] }>(cacheKey);
+    setLoadingTags(true);
+    if (cached) {
+      setGroups(cached.groups || []);
+      setHotTags(cached.hotTags || []);
+    }
 
-      fetch(`/api/music/v2/discovery/songlist-tags?source=${source}`)
-        .then((res) => res.json())
-        .then((data) => {
-          if (data.success) {
-            const next = {
-              groups: data.data?.groups || [],
-              hotTags: data.data?.hotTags || [],
-            };
-            setGroups(next.groups);
-            setHotTags(next.hotTags);
-            writeCache(cacheKey, next);
-          } else if (!cached) {
-            setGroups([]);
-            setHotTags([]);
-          }
-        })
-        .catch(() => {
-          if (!cached) {
-            setGroups([]);
-            setHotTags([]);
-          }
-        })
-        .finally(() => setLoadingTags(false));
-    }, 0);
-    return () => window.clearTimeout(timer);
+    fetch(`/api/music/v2/discovery/songlist-tags?source=${source}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success) {
+          const next = {
+            groups: data.data?.groups || [],
+            hotTags: data.data?.hotTags || [],
+          };
+          setGroups(next.groups);
+          setHotTags(next.hotTags);
+          writeCache(cacheKey, next);
+        } else if (!cached) {
+          setGroups([]);
+          setHotTags([]);
+        }
+      })
+      .catch(() => {
+        if (!cached) {
+          setGroups([]);
+          setHotTags([]);
+        }
+      })
+      .finally(() => setLoadingTags(false));
   }, [source]);
 
   useEffect(() => {
-    const timer = window.setTimeout(() => {
-      const cacheKey = `music_songlists_${source}_${tagId}_${sortId}_${page}`;
-      const cached = readCache<{ list: SongListItem[]; total: number }>(cacheKey);
-      setLoadingList(true);
-      if (cached) {
-        setSongLists(cached.list || []);
-        setTotal(cached.total || 0);
-      }
+    const cacheKey = `music_songlists_${source}_${tagId}_${sortId}_${page}`;
+    const cached = readCache<{ list: SongListItem[]; total: number }>(cacheKey);
+    setLoadingList(true);
+    if (cached) {
+      setSongLists(cached.list || []);
+      setTotal(cached.total || 0);
+    }
 
-      fetch(`/api/music/v2/discovery/songlists?source=${source}&tagId=${encodeURIComponent(tagId)}&sortId=${encodeURIComponent(sortId)}&page=${page}`)
-        .then((res) => res.json())
-        .then((data) => {
-          if (data.success) {
-            const next = {
-              list: data.data?.list || [],
-              total: data.data?.total || 0,
-            };
-            setSongLists(next.list);
-            setTotal(next.total);
-            writeCache(cacheKey, next);
-          } else if (!cached) {
-            setSongLists([]);
-            setTotal(0);
-          }
-        })
-        .catch(() => {
-          if (!cached) {
-            setSongLists([]);
-            setTotal(0);
-          }
-        })
-        .finally(() => setLoadingList(false));
-    }, 0);
-    return () => window.clearTimeout(timer);
+    fetch(`/api/music/v2/discovery/songlists?source=${source}&tagId=${encodeURIComponent(tagId)}&sortId=${encodeURIComponent(sortId)}&page=${page}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success) {
+          const next = {
+            list: data.data?.list || [],
+            total: data.data?.total || 0,
+          };
+          setSongLists(next.list);
+          setTotal(next.total);
+          writeCache(cacheKey, next);
+        } else if (!cached) {
+          setSongLists([]);
+          setTotal(0);
+        }
+      })
+      .catch(() => {
+        if (!cached) {
+          setSongLists([]);
+          setTotal(0);
+        }
+      })
+      .finally(() => setLoadingList(false));
   }, [source, tagId, sortId, page]);
 
   const openDetail = (item: SongListItem) => {

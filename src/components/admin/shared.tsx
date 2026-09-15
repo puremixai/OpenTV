@@ -89,25 +89,17 @@ export const AlertModal = ({
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
-    const visibilityTimer = window.setTimeout(() => {
-      if (isOpen) {
-        setIsVisible(true);
-      } else {
-        setIsVisible(false);
+    if (isOpen) {
+      setIsVisible(true);
+      if (timer) {
+        const timeout = setTimeout(() => {
+          onClose();
+        }, timer);
+        return () => clearTimeout(timeout);
       }
-    }, 0);
-    let closeTimeout: number | undefined;
-
-    if (isOpen && timer) {
-      closeTimeout = window.setTimeout(() => {
-        onClose();
-      }, timer);
+    } else {
+      setIsVisible(false);
     }
-
-    return () => {
-      window.clearTimeout(visibilityTimer);
-      if (closeTimeout !== undefined) window.clearTimeout(closeTimeout);
-    };
   }, [isOpen, timer, onClose]);
 
   if (!isOpen) return null;

@@ -36,27 +36,25 @@ export default function TVLivePage() {
   const [lastChannel, setLastChannel] = useState<LastLiveChannel | null>(null);
 
   useEffect(() => {
-    const timer = window.setTimeout(() => {
-      try {
-        const saved = localStorage.getItem(TV_LIVE_LAST_CHANNEL_KEY);
-        if (saved) {
-          const parsed = JSON.parse(saved) as Partial<LastLiveChannel>;
-          if (parsed.source && parsed.id && parsed.title) {
-            setLastChannel({
-              source: parsed.source,
-              sourceName: parsed.sourceName || '',
-              id: parsed.id,
-              title: parsed.title,
-              group: parsed.group || '',
-              logo: parsed.logo || '',
-              updatedAt: parsed.updatedAt,
-            });
-          }
+    try {
+      const saved = localStorage.getItem(TV_LIVE_LAST_CHANNEL_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved) as Partial<LastLiveChannel>;
+        if (parsed.source && parsed.id && parsed.title) {
+          setLastChannel({
+            source: parsed.source,
+            sourceName: parsed.sourceName || '',
+            id: parsed.id,
+            title: parsed.title,
+            group: parsed.group || '',
+            logo: parsed.logo || '',
+            updatedAt: parsed.updatedAt,
+          });
         }
-      } catch {
-        setLastChannel(null);
       }
-    }, 0);
+    } catch {
+      setLastChannel(null);
+    }
 
     fetch('/api/live/sources')
       .then((r) => {
@@ -70,7 +68,6 @@ export default function TVLivePage() {
       })
       .catch((err) => setError(err instanceof Error ? err.message : '获取直播源失败'))
       .finally(() => setLoading(false));
-    return () => window.clearTimeout(timer);
   }, []);
 
   useEffect(() => {
@@ -112,12 +109,10 @@ export default function TVLivePage() {
 
   useEffect(() => {
     if (!source) return;
-    const timer = window.setTimeout(() => {
-      setLoading(true);
-      setError('');
-      setSelectedGroup('全部');
-      setVisibleCount(120);
-    }, 0);
+    setLoading(true);
+    setError('');
+    setSelectedGroup('全部');
+    setVisibleCount(120);
     fetch(`/api/live/channels?source=${encodeURIComponent(source)}`)
       .then((r) => {
         if (r.status === 401 || r.status === 403) throw new Error('无权限访问电视直播，请先登录或检查权限');
@@ -130,7 +125,6 @@ export default function TVLivePage() {
         setError(err instanceof Error ? err.message : '获取频道列表失败');
       })
       .finally(() => setLoading(false));
-    return () => window.clearTimeout(timer);
   }, [source]);
 
   const groups = useMemo(() => ['全部', ...Array.from(new Set(channels.map((c) => c.group || '其他')))], [channels]);

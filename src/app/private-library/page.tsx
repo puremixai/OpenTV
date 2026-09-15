@@ -151,25 +151,22 @@ export default function PrivateLibraryPage() {
 
   // 从URL初始化状态，并检查配置自动跳转
   useEffect(() => {
-    const timer = window.setTimeout(() => {
-      const urlSourceParam = searchParams.get('source');
+    const urlSourceParam = searchParams.get('source');
 
-      // 解析source参数
-      const parsed = parseSourceParam(urlSourceParam);
+    // 解析source参数
+    const parsed = parseSourceParam(urlSourceParam);
 
-      // 如果 OpenList 未配置但 Emby 已配置，强制使用 Emby
-      if (!runtimeConfig.OPENLIST_ENABLED && runtimeConfig.EMBY_ENABLED) {
-        setSourceType('emby');
-      } else if (parsed.sourceType) {
-        setSourceType(parsed.sourceType);
-        if (parsed.embyKey) {
-          setEmbyKey(parsed.embyKey);
-        }
+    // 如果 OpenList 未配置但 Emby 已配置，强制使用 Emby
+    if (!runtimeConfig.OPENLIST_ENABLED && runtimeConfig.EMBY_ENABLED) {
+      setSourceType('emby');
+    } else if (parsed.sourceType) {
+      setSourceType(parsed.sourceType);
+      if (parsed.embyKey) {
+        setEmbyKey(parsed.embyKey);
       }
+    }
 
-      isInitializedRef.current = true;
-    }, 0);
-    return () => window.clearTimeout(timer);
+    isInitializedRef.current = true;
   }, [searchParams, runtimeConfig]);
 
   // 获取Emby源列表
@@ -220,34 +217,29 @@ export default function PrivateLibraryPage() {
   useEffect(() => {
     if (!isInitializedRef.current) return;
 
-    const timer = window.setTimeout(() => {
-      setPage(1);
-      setVideos([]);
-      setHasMore(true);
-      setError('');
-      setSelectedView('all');
-      setOpenlistCategory('all');
-      setLoading(false);
-      setLoadingMore(false);
-      isFetchingRef.current = false;
-    }, 0);
-    return () => window.clearTimeout(timer);
-  }, [searchParams, sourceType, embyKey]);
+    // URL view changes describe this selection; only a source change resets it.
+    setPage(1);
+    setVideos([]);
+    setHasMore(true);
+    setError('');
+    setSelectedView('all');
+    setOpenlistCategory('all');
+    setLoading(false);
+    setLoadingMore(false);
+    isFetchingRef.current = false;
+  }, [sourceType, embyKey]);
 
   // 切换分类时重置状态（但不在初始化时执行）
   useEffect(() => {
     if (!isInitializedRef.current) return;
 
-    const timer = window.setTimeout(() => {
-      setPage(1);
-      setVideos([]);
-      setHasMore(true);
-      setError('');
-      setLoading(false);
-      setLoadingMore(false);
-      isFetchingRef.current = false;
-    }, 0);
-    return () => window.clearTimeout(timer);
+    setPage(1);
+    setVideos([]);
+    setHasMore(true);
+    setError('');
+    setLoading(false);
+    setLoadingMore(false);
+    isFetchingRef.current = false;
   }, [selectedView]);
 
   // 切换 OpenList 分类时重置状态
@@ -255,16 +247,13 @@ export default function PrivateLibraryPage() {
     if (!isInitializedRef.current) return;
     if (sourceType !== 'openlist') return;
 
-    const timer = window.setTimeout(() => {
-      setPage(1);
-      setVideos([]);
-      setHasMore(true);
-      setError('');
-      setLoading(false);
-      setLoadingMore(false);
-      isFetchingRef.current = false;
-    }, 0);
-    return () => window.clearTimeout(timer);
+    setPage(1);
+    setVideos([]);
+    setHasMore(true);
+    setError('');
+    setLoading(false);
+    setLoadingMore(false);
+    isFetchingRef.current = false;
   }, [openlistCategory, sourceType]);
 
   // 切换排序时重置状态（但不在初始化时执行）
@@ -272,16 +261,13 @@ export default function PrivateLibraryPage() {
     if (!isInitializedRef.current) return;
     if (sourceType !== 'emby') return;
 
-    const timer = window.setTimeout(() => {
-      setPage(1);
-      setVideos([]);
-      setHasMore(true);
-      setError('');
-      setLoading(false);
-      setLoadingMore(false);
-      isFetchingRef.current = false;
-    }, 0);
-    return () => window.clearTimeout(timer);
+    setPage(1);
+    setVideos([]);
+    setHasMore(true);
+    setError('');
+    setLoading(false);
+    setLoadingMore(false);
+    isFetchingRef.current = false;
   }, [sortBy, sortOrder, sourceType]);
 
   // 获取 Emby 媒体库列表

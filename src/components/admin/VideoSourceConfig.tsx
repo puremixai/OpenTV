@@ -146,17 +146,13 @@ export const VideoSourceConfig = ({
 
   // 初始化
   useEffect(() => {
-    const timer = window.setTimeout(() => {
-      if (config?.SourceConfig) {
-        setSources(config.SourceConfig);
-        // 进入时重置 orderChanged
-        setOrderChanged(false);
-        // 重置选择状态
-        setSelectedSources(new Set());
-      }
-    }, 0);
-
-    return () => window.clearTimeout(timer);
+    if (config?.SourceConfig) {
+      setSources(config.SourceConfig);
+      // 进入时重置 orderChanged
+      setOrderChanged(false);
+      // 重置选择状态
+      setSelectedSources(new Set());
+    }
   }, [config]);
 
   // 通用 API 请求

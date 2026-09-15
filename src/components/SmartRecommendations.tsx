@@ -158,23 +158,19 @@ export default function SmartRecommendations({
   }, [videoTitle]);
 
   useEffect(() => {
-    const timer = window.setTimeout(() => {
-      const dataSource = getDataSource();
+    const dataSource = getDataSource();
 
-      if (!dataSource) {
-        // 不显示推荐
-        setRecommendations([]);
-        return;
-      }
+    if (!dataSource) {
+      // 不显示推荐
+      setRecommendations([]);
+      return;
+    }
 
-      if (dataSource === 'douban') {
-        void fetchDoubanRecommendations();
-      } else if (dataSource === 'tmdb') {
-        void fetchTMDBRecommendations();
-      }
-    }, 0);
-
-    return () => window.clearTimeout(timer);
+    if (dataSource === 'douban') {
+      fetchDoubanRecommendations();
+    } else if (dataSource === 'tmdb') {
+      fetchTMDBRecommendations();
+    }
   }, [getDataSource, fetchDoubanRecommendations, fetchTMDBRecommendations]);
 
   // 如果不应该显示推荐，返回null

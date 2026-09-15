@@ -120,66 +120,60 @@ function LoginPageClient() {
   useEffect(() => {
     const errorParam = searchParams.get('error');
     if (errorParam) {
-      const timer = window.setTimeout(
-        () => setError(decodeURIComponent(errorParam)),
-        0
-      );
-      return () => window.clearTimeout(timer);
+      setError(decodeURIComponent(errorParam));
+      return;
     }
   }, [searchParams]);
 
   // 在客户端挂载后设置配置
   useEffect(() => {
-    const timer = window.setTimeout(() => {
-      const runtimeConfig = (window as any).RUNTIME_CONFIG;
-      const storageType = runtimeConfig?.STORAGE_TYPE;
-      const shouldAsk = storageType && storageType !== 'localstorage';
-      setShouldAskUsername(shouldAsk);
+    const runtimeConfig = (window as any).RUNTIME_CONFIG;
+    const storageType = runtimeConfig?.STORAGE_TYPE;
+    const shouldAsk = storageType && storageType !== 'localstorage';
+    setShouldAskUsername(shouldAsk);
 
-      // 设置背景图（支持多张随机选择）
-      const loginBg = runtimeConfig?.LOGIN_BACKGROUND_IMAGE;
-      if (loginBg) {
-        const urls = loginBg
-          .split('\n')
-          .map((url: string) => url.trim())
-          .filter((url: string) => url !== '');
+    // 设置背景图（支持多张随机选择）
+    const loginBg = runtimeConfig?.LOGIN_BACKGROUND_IMAGE;
+    if (loginBg) {
+      const urls = loginBg
+        .split('\n')
+        .map((url: string) => url.trim())
+        .filter((url: string) => url !== '');
 
-        if (urls.length > 0) {
-          // 随机选择一张背景图
-          const randomIndex = Math.floor(Math.random() * urls.length);
-          setBackgroundImage(urls[randomIndex]);
-        }
+      if (urls.length > 0) {
+        // 随机选择一张背景图
+        const randomIndex = Math.floor(Math.random() * urls.length);
+        setBackgroundImage(urls[randomIndex]);
       }
+    }
 
-      // 设置站点配置
-      setSiteConfig({
-        LoginRequireTurnstile: runtimeConfig?.LOGIN_REQUIRE_TURNSTILE || false,
-        TurnstileSiteKey: runtimeConfig?.TURNSTILE_SITE_KEY || '',
-        EnableRegistration: runtimeConfig?.ENABLE_REGISTRATION || false,
-        EnableOIDCLogin: runtimeConfig?.ENABLE_OIDC_LOGIN || false,
-        OIDCButtonText: runtimeConfig?.OIDC_BUTTON_TEXT || '',
-      });
-      setTelegramLoginEnabled(Boolean(runtimeConfig?.ENABLE_TELEGRAM_LOGIN));
+    // 设置站点配置
+    setSiteConfig({
+      LoginRequireTurnstile: runtimeConfig?.LOGIN_REQUIRE_TURNSTILE || false,
+      TurnstileSiteKey: runtimeConfig?.TURNSTILE_SITE_KEY || '',
+      EnableRegistration: runtimeConfig?.ENABLE_REGISTRATION || false,
+      EnableOIDCLogin: runtimeConfig?.ENABLE_OIDC_LOGIN || false,
+      OIDCButtonText: runtimeConfig?.OIDC_BUTTON_TEXT || '',
+    });
+    setTelegramLoginEnabled(Boolean(runtimeConfig?.ENABLE_TELEGRAM_LOGIN));
 
-      // 从localStorage读取记住的密码信息
-      const rememberedCredentials = localStorage.getItem('rememberedCredentials');
-      if (rememberedCredentials) {
-        try {
-          const credentials = JSON.parse(rememberedCredentials);
-          if (credentials.password) {
-            setPassword(credentials.password);
-          }
-          if (credentials.username && shouldAsk) {
-            setUsername(credentials.username);
-          }
-          setRememberPassword(true);
-        } catch {
-          // 清除无效的数据
-          localStorage.removeItem('rememberedCredentials');
+    // 从localStorage读取记住的密码信息
+    const rememberedCredentials = localStorage.getItem('rememberedCredentials');
+    if (rememberedCredentials) {
+      try {
+        const credentials = JSON.parse(rememberedCredentials);
+        if (credentials.password) {
+          setPassword(credentials.password);
         }
+        if (credentials.username && shouldAsk) {
+          setUsername(credentials.username);
+        }
+        setRememberPassword(true);
+      } catch {
+        // 清除无效的数据
+        localStorage.removeItem('rememberedCredentials');
       }
-    }, 0);
-    return () => window.clearTimeout(timer);
+    }
   }, []);
 
   // 加载Cloudflare Turnstile脚本
@@ -216,8 +210,8 @@ function LoginPageClient() {
           setTurnstileToken(token);
         },
       });
-      const timer = window.setTimeout(() => setTurnstileWidgetId(widgetId), 0);
-      return () => window.clearTimeout(timer);
+      setTurnstileWidgetId(widgetId);
+      return;
     }
   }, [turnstileLoaded, siteConfig]);
 

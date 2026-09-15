@@ -61,6 +61,8 @@ export default function WatchRoomScreenPage() {
     startSharing,
     stopSharing,
   } = useScreenShare(qualityPreset);
+  const screenRoomId = screenRoom?.id;
+  const screenRoomType = screenRoom?.roomType;
 
   const showToast = (message: string, type: ToastProps['type'] = 'info') => {
     setToast({
@@ -78,13 +80,10 @@ export default function WatchRoomScreenPage() {
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
-    const timer = window.setTimeout(() => {
-      const saved = window.localStorage.getItem(SCREEN_SHARE_QUALITY_KEY);
-      if (saved === 'smooth' || saved === 'hd' || saved === 'ultra') {
-        setQualityPreset(saved);
-      }
-    }, 0);
-    return () => window.clearTimeout(timer);
+    const saved = window.localStorage.getItem(SCREEN_SHARE_QUALITY_KEY);
+    if (saved === 'smooth' || saved === 'hd' || saved === 'ultra') {
+      setQualityPreset(saved);
+    }
   }, []);
 
   useEffect(() => {
@@ -104,30 +103,28 @@ export default function WatchRoomScreenPage() {
   }, [currentRoom, router]);
 
   useEffect(() => {
-    if (!screenRoom || screenRoom.roomType !== 'screen') return;
+    if (!screenRoomId || screenRoomType !== 'screen') return;
 
     const supportError = isOwner
       ? getScreenShareHostSupportError()
       : getScreenShareViewerSupportError();
     if (supportError) {
-      const timer = window.setTimeout(() => {
-        showToast(`当前设备无法使用屏幕共享房间：${supportError}`, 'error');
-        leaveRoom();
-        router.replace('/watch-room');
-      }, 0);
-      return () => window.clearTimeout(timer);
+      showToast(`当前设备无法使用屏幕共享房间：${supportError}`, 'error');
+      leaveRoom();
+      router.replace('/watch-room');
+      return;
     }
-  }, [isOwner, leaveRoom, router, screenRoom]);
+  }, [isOwner, leaveRoom, router, screenRoomId, screenRoomType]);
 
   useEffect(() => {
-    if (!screenRoom || !isOwner) return;
+    if (!screenRoomId || !isOwner) return;
 
     localStorage.setItem(WATCH_ROOM_NO_CONNECT_KEY, '1');
     localStorage.setItem(WATCH_ROOM_NO_CONNECT_TIMESTAMP_KEY, String(Date.now()));
     const heartbeat = window.setInterval(() => {
       localStorage.setItem(WATCH_ROOM_NO_CONNECT_TIMESTAMP_KEY, String(Date.now()));
     }, 30_000);
-    const key = `${NEW_TAB_KEY_PREFIX}${screenRoom.id}`;
+    const key = `${NEW_TAB_KEY_PREFIX}${screenRoomId}`;
     if (!sessionStorage.getItem(key)) {
       sessionStorage.setItem(key, '1');
       openDetachedPage();
@@ -138,7 +135,7 @@ export default function WatchRoomScreenPage() {
       localStorage.removeItem(WATCH_ROOM_NO_CONNECT_TIMESTAMP_KEY);
       window.clearInterval(heartbeat);
     };
-  }, [isOwner, openDetachedPage, screenRoom]);
+  }, [isOwner, openDetachedPage, screenRoomId]);
 
   if (!screenRoom || screenRoom.roomType !== 'screen') {
     return null;

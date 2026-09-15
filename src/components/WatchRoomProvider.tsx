@@ -220,6 +220,16 @@ export function WatchRoomProvider({ children }: WatchRoomProviderProps) {
       return;
     }
 
+    if (shouldDisableWatchRoomConnection) {
+      disconnect();
+      setConfig({
+        enabled: false,
+        serverType: 'internal',
+      });
+      setIsEnabled(false);
+      return;
+    }
+
     const loadConfig = async () => {
       try {
         // 使用公共 API 获取观影室配置（不需要管理员权限）
@@ -303,21 +313,7 @@ export function WatchRoomProvider({ children }: WatchRoomProviderProps) {
       }
     };
 
-    const timer = window.setTimeout(() => {
-      if (shouldDisableWatchRoomConnection) {
-        disconnect();
-        setConfig({
-          enabled: false,
-          serverType: 'internal',
-        });
-        setIsEnabled(false);
-        return;
-      }
-
-      void loadConfig();
-    }, 0);
-
-    return () => window.clearTimeout(timer);
+    void loadConfig();
   }, [connect, disconnect, isLoggedIn, shouldDisableWatchRoomConnection]); // 添加 isLoggedIn 作为依赖
 
   // 仅在 Provider 卸载时断开，避免路由切换时误断开房间连接

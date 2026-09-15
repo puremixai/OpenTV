@@ -309,11 +309,8 @@ function AdminPageClient() {
 
   useEffect(() => {
     // 首次加载时显示骨架
-    const timer = window.setTimeout(() => {
-      void fetchConfig(true);
-    }, 0);
+    void fetchConfig(true);
     // 不再自动获取用户列表，等用户打开用户管理选项卡时再获取
-    return () => window.clearTimeout(timer);
   }, [fetchConfig]);
 
   useEffect(() => {
@@ -343,10 +340,7 @@ function AdminPageClient() {
 
   useEffect(() => {
     if (activeSection !== 'userConfig' || usersV2) return;
-    const timer = window.setTimeout(() => {
-      void fetchUsersV2();
-    }, 0);
-    return () => window.clearTimeout(timer);
+    void fetchUsersV2();
   }, [activeSection, usersV2, fetchUsersV2]);
 
   const navigate = (id: AdminSectionId, discard = false) => {

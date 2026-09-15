@@ -168,23 +168,17 @@ export default function DanmakuPanel({
   // 当视频标题首次加载时，初始化搜索关键词（仅执行一次）
   useEffect(() => {
     if (videoTitle && !initializedRef.current) {
-      const timer = window.setTimeout(() => {
-        setSearchKeyword(videoTitle);
-        initializedRef.current = true; // 标记已初始化，防止后续自动填充
-      }, 0);
-      return () => window.clearTimeout(timer);
+      setSearchKeyword(videoTitle);
+      initializedRef.current = true; // 标记已初始化，防止后续自动填充
     }
   }, [videoTitle]);
 
   useEffect(() => {
-    const timer = window.setTimeout(() => {
-      if (episodes.length > 0) {
-        setEpisodeGroupIndex(Math.floor(currentEpisodeIndex / episodesPerGroup));
-      } else {
-        setEpisodeGroupIndex(0);
-      }
-    }, 0);
-    return () => window.clearTimeout(timer);
+    if (episodes.length > 0) {
+      setEpisodeGroupIndex(Math.floor(currentEpisodeIndex / episodesPerGroup));
+    } else {
+      setEpisodeGroupIndex(0);
+    }
   }, [episodes, currentEpisodeIndex]);
 
   const episodeGroupCount = Math.ceil(episodes.length / episodesPerGroup);

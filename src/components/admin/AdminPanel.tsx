@@ -14,10 +14,7 @@ export function AdminPanel({
 }) {
   const [edited, setEdited] = useState(false);
   useUnsavedChanges(edited);
-  useEffect(() => {
-    const timer = window.setTimeout(() => setEdited(false), 0);
-    return () => window.clearTimeout(timer);
-  }, [version]);
+  useEffect(() => setEdited(false), [version]);
   return (
     <div
       className='admin-panel min-w-0 rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-[#111824] sm:p-6'

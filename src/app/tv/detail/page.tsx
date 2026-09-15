@@ -112,10 +112,8 @@ function TVDetailClient() {
 
   useEffect(() => {
     let alive = true;
-    const timer = window.setTimeout(() => {
-      setLoading(true);
-      setError('');
-    }, 0);
+    setLoading(true);
+    setError('');
     fetchTVDetail({ source, id, title, fileName })
       .then((data) => {
         if (!alive) return;
@@ -129,7 +127,6 @@ function TVDetailClient() {
       .finally(() => alive && setLoading(false));
     return () => {
       alive = false;
-      window.clearTimeout(timer);
     };
   }, [source, id, title, fileName]);
 

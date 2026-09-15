@@ -33,38 +33,35 @@ const PageLayout = ({
     !isCinema && !hideNavigation && activePath !== '/play';
 
   useEffect(() => {
-    const timer = window.setTimeout(() => {
-      if (typeof window === 'undefined' || !shouldShowSharedBackground) {
-        setBackgroundImage('');
-        return;
+    if (typeof window === 'undefined' || !shouldShowSharedBackground) {
+      setBackgroundImage('');
+      return;
+    }
+
+    const homeBg = (
+      window as Window & {
+        RUNTIME_CONFIG?: {
+          HOME_BACKGROUND_IMAGE?: string;
+        };
       }
+    ).RUNTIME_CONFIG?.HOME_BACKGROUND_IMAGE;
+    if (!homeBg) {
+      setBackgroundImage('');
+      return;
+    }
 
-      const homeBg = (
-        window as Window & {
-          RUNTIME_CONFIG?: {
-            HOME_BACKGROUND_IMAGE?: string;
-          };
-        }
-      ).RUNTIME_CONFIG?.HOME_BACKGROUND_IMAGE;
-      if (!homeBg) {
-        setBackgroundImage('');
-        return;
-      }
+    const urls = homeBg
+      .split('\n')
+      .map((url: string) => url.trim())
+      .filter((url: string) => url !== '');
 
-      const urls = homeBg
-        .split('\n')
-        .map((url: string) => url.trim())
-        .filter((url: string) => url !== '');
+    if (urls.length === 0) {
+      setBackgroundImage('');
+      return;
+    }
 
-      if (urls.length === 0) {
-        setBackgroundImage('');
-        return;
-      }
-
-      const randomIndex = Math.floor(Math.random() * urls.length);
-      setBackgroundImage(urls[randomIndex]);
-    }, 0);
-    return () => window.clearTimeout(timer);
+    const randomIndex = Math.floor(Math.random() * urls.length);
+    setBackgroundImage(urls[randomIndex]);
   }, [shouldShowSharedBackground]);
 
   return (

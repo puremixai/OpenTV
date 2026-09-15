@@ -48,8 +48,8 @@ export const VersionPanel: React.FC<VersionPanelProps> = ({
 
   // 确保组件已挂载
   useEffect(() => {
-    const timer = window.setTimeout(() => setMounted(true), 0);
-    return () => window.clearTimeout(timer);
+    setMounted(true);
+    return () => setMounted(false);
   }, []);
 
   // Body 滚动锁定 - 使用 overflow 方式避免布局问题
@@ -78,31 +78,25 @@ export const VersionPanel: React.FC<VersionPanelProps> = ({
   useEffect(() => {
     if (!isOpen) return;
     let active = true;
-    const timer = window.setTimeout(() => {
-      if (!active) return;
-      setUpdateStatus(null);
-      setRemoteChangelog([]);
-      setLatestVersion('');
-      setShowRemoteContent(false);
+    setUpdateStatus(null);
+    setRemoteChangelog([]);
+    setLatestVersion('');
+    setShowRemoteContent(false);
 
-      fetchRemoteChangelog()
-        .then((entries) => {
-          if (!active) return;
-          setRemoteChangelog(entries);
-          setLatestVersion(entries[0].version);
-          setUpdateStatus(compareVersions(entries[0].version));
-        })
-        .catch((error) => {
-          if (!active) return;
-          console.warn('获取 OpenTV 变更日志失败:', error);
-          setUpdateStatus(UpdateStatus.FETCH_FAILED);
-        });
-    }, 0);
+    fetchRemoteChangelog()
+      .then((entries) => {
+        if (!active) return;
+        setRemoteChangelog(entries);
+        setLatestVersion(entries[0].version);
+        setUpdateStatus(compareVersions(entries[0].version));
+      })
+      .catch((error) => {
+        if (!active) return;
+        console.warn('获取 OpenTV 变更日志失败:', error);
+        setUpdateStatus(UpdateStatus.FETCH_FAILED);
+      });
 
-    return () => {
-      active = false;
-      window.clearTimeout(timer);
-    };
+    return () => { active = false; };
   }, [isOpen]);
 
   // 渲染变更日志条目

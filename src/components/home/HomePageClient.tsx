@@ -355,11 +355,8 @@ function HomeClient({
 
   // 加载首页模块配置
   useEffect(() => {
-    const timer = window.setTimeout(() => {
-      loadHomeLayoutSettings();
-      setLayoutReady(true);
-    }, 0);
-    return () => window.clearTimeout(timer);
+    loadHomeLayoutSettings();
+    setLayoutReady(true);
   }, []);
 
   // 监听首页模块配置更新事件
@@ -379,28 +376,25 @@ function HomeClient({
 
   // 检查公告弹窗状态
   useEffect(() => {
-    const timer = window.setTimeout(() => {
-      if (typeof window !== 'undefined' && announcement) {
-        // 会话级标记：只在首次访问站点时弹出，导航切回首页不重复弹
-        if (sessionStorage.getItem('announcementShown')) {
-          return;
-        }
-        // 每次显示模式：每次新会话首次访问弹出一次
-        if (announcementDisplayMode === 'every') {
-          setShowAnnouncement(true);
-          sessionStorage.setItem('announcementShown', '1');
-          return;
-        }
-        // 单次显示模式：localStorage 记住已看过的公告文本，换公告则重新弹出
-        const hasSeenAnnouncement = localStorage.getItem('hasSeenAnnouncement');
-        if (hasSeenAnnouncement !== announcement) {
-          setShowAnnouncement(true);
-        } else {
-          setShowAnnouncement(Boolean(!hasSeenAnnouncement && announcement));
-        }
+    if (typeof window !== 'undefined' && announcement) {
+      // 会话级标记：只在首次访问站点时弹出，导航切回首页不重复弹
+      if (sessionStorage.getItem('announcementShown')) {
+        return;
       }
-    }, 0);
-    return () => window.clearTimeout(timer);
+      // 每次显示模式：每次新会话首次访问弹出一次
+      if (announcementDisplayMode === 'every') {
+        setShowAnnouncement(true);
+        sessionStorage.setItem('announcementShown', '1');
+        return;
+      }
+      // 单次显示模式：localStorage 记住已看过的公告文本，换公告则重新弹出
+      const hasSeenAnnouncement = localStorage.getItem('hasSeenAnnouncement');
+      if (hasSeenAnnouncement !== announcement) {
+        setShowAnnouncement(true);
+      } else {
+        setShowAnnouncement(Boolean(!hasSeenAnnouncement && announcement));
+      }
+    }
   }, [announcement, announcementDisplayMode]);
 
   const handleCloseAnnouncement = (announcement: string) => {

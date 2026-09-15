@@ -8,6 +8,11 @@ const {
   within,
 } = require('@testing-library/react');
 
+// Standalone renders need the App Router boundary used by homepage navigation.
+jest.mock('next/navigation', () => ({
+  useRouter: () => require('next-router-mock').default,
+}));
+
 // These unrelated UI features perform their own network/storage work. Keep the
 // homepage, its shelves, and the recommendation API clients real in this suite.
 jest.mock('@/components/PageLayout', () => ({

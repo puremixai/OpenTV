@@ -50,8 +50,7 @@ export function ThemeToggle() {
   };
 
   useEffect(() => {
-    const timer = window.setTimeout(() => setMounted(true), 0);
-    return () => window.clearTimeout(timer);
+    setMounted(true);
   }, []);
 
   // 监听主题变化和路由变化，确保主题色始终同步

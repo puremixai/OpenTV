@@ -20,18 +20,15 @@ export default function MusicSongListDetailPage() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    const timer = window.setTimeout(() => {
-      setLoading(true);
-      fetch(`/api/music/v2/discovery/songlist-detail?source=${source}&id=${encodeURIComponent(playlistId)}`)
-        .then((res) => res.json())
-        .then((data) => {
-          if (data.success) setSongs((data.data?.list || []).map(mapSong));
-          else setSongs([]);
-        })
-        .catch(() => setSongs([]))
-        .finally(() => setLoading(false));
-    }, 0);
-    return () => window.clearTimeout(timer);
+    setLoading(true);
+    fetch(`/api/music/v2/discovery/songlist-detail?source=${source}&id=${encodeURIComponent(playlistId)}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success) setSongs((data.data?.list || []).map(mapSong));
+        else setSongs([]);
+      })
+      .catch(() => setSongs([]))
+      .finally(() => setLoading(false));
   }, [source, playlistId]);
 
   return loading ? (

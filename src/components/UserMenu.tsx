@@ -486,8 +486,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({
 
   // 确保组件已挂载
   useEffect(() => {
-    const timer = window.setTimeout(() => setMounted(true), 0);
-    return () => window.clearTimeout(timer);
+    setMounted(true);
   }, []);
 
   // 加载未读通知数量
@@ -528,44 +527,33 @@ export const UserMenu: React.FC<UserMenuProps> = ({
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
-    let checkInterval: number | undefined;
-    const timer = window.setTimeout(() => {
-      // 检查是否已经有其他实例在加载
-      const globalWindow = window as any;
-      if (globalWindow.__loadingNotifications) {
-        // 如果正在加载，等待加载完成后获取结果
-        checkInterval = window.setInterval(() => {
-          if (
-            !globalWindow.__loadingNotifications &&
-            globalWindow.__unreadNotificationCount !== undefined
-          ) {
-            setUnreadCount(globalWindow.__unreadNotificationCount);
-            if (checkInterval !== undefined) {
-              window.clearInterval(checkInterval);
-              checkInterval = undefined;
-            }
-          }
-        }, 100);
-        return;
-      }
+    // 检查是否已经有其他实例在加载
+    const globalWindow = window as any;
+    if (globalWindow.__loadingNotifications) {
+      // 如果正在加载，等待加载完成后获取结果
+      const checkInterval = setInterval(() => {
+        if (
+          !globalWindow.__loadingNotifications &&
+          globalWindow.__unreadNotificationCount !== undefined
+        ) {
+          setUnreadCount(globalWindow.__unreadNotificationCount);
+          clearInterval(checkInterval);
+        }
+      }, 100);
+      return () => clearInterval(checkInterval);
+    }
 
-      // 检查是否已经加载过
-      if (globalWindow.__unreadNotificationCount !== undefined) {
-        setUnreadCount(globalWindow.__unreadNotificationCount);
-        return;
-      }
+    // 检查是否已经加载过
+    if (globalWindow.__unreadNotificationCount !== undefined) {
+      setUnreadCount(globalWindow.__unreadNotificationCount);
+      return;
+    }
 
-      // 标记正在加载
-      globalWindow.__loadingNotifications = true;
-      void loadUnreadCount().finally(() => {
-        globalWindow.__loadingNotifications = false;
-      });
-    }, 0);
-
-    return () => {
-      window.clearTimeout(timer);
-      if (checkInterval !== undefined) window.clearInterval(checkInterval);
-    };
+    // 标记正在加载
+    globalWindow.__loadingNotifications = true;
+    loadUnreadCount().finally(() => {
+      globalWindow.__loadingNotifications = false;
+    });
   }, []);
 
   useEffect(() => {
@@ -596,18 +584,14 @@ export const UserMenu: React.FC<UserMenuProps> = ({
 
   // 从运行时配置读取订阅是否启用
   useEffect(() => {
-    const timer = window.setTimeout(() => {
-      if (typeof window !== 'undefined') {
-        const enabled =
-          (window as any).RUNTIME_CONFIG?.ENABLE_TVBOX_SUBSCRIBE || false;
-        setSubscribeEnabled(enabled);
-        setTvModeEnabled(
-          (window as any).RUNTIME_CONFIG?.ENABLE_TV_MODE !== false
-        );
-      }
-    }, 0);
-
-    return () => window.clearTimeout(timer);
+    if (typeof window !== 'undefined') {
+      const enabled =
+        (window as any).RUNTIME_CONFIG?.ENABLE_TVBOX_SUBSCRIBE || false;
+      setSubscribeEnabled(enabled);
+      setTvModeEnabled(
+        (window as any).RUNTIME_CONFIG?.ENABLE_TV_MODE !== false
+      );
+    }
   }, []);
 
   // 懒加载订阅 URL - 只在打开订阅面板时请求
@@ -718,26 +702,21 @@ export const UserMenu: React.FC<UserMenuProps> = ({
 
   // 获取认证信息和存储类型
   useEffect(() => {
-    const timer = window.setTimeout(() => {
-      if (typeof window !== 'undefined') {
-        const auth = getAuthInfoFromBrowserCookie();
-        setAuthInfo(auth);
+    if (typeof window !== 'undefined') {
+      const auth = getAuthInfoFromBrowserCookie();
+      setAuthInfo(auth);
 
-        const runtimeConfig = (window as any).RUNTIME_CONFIG || {};
-        const type = runtimeConfig.STORAGE_TYPE || 'localstorage';
-        const displayType = runtimeConfig.DISPLAY_STORAGE_TYPE || type;
-        setStorageType(type);
-        setDisplayStorageType(displayType);
-      }
-    }, 0);
-
-    return () => window.clearTimeout(timer);
+      const runtimeConfig = (window as any).RUNTIME_CONFIG || {};
+      const type = runtimeConfig.STORAGE_TYPE || 'localstorage';
+      const displayType = runtimeConfig.DISPLAY_STORAGE_TYPE || type;
+      setStorageType(type);
+      setDisplayStorageType(displayType);
+    }
   }, []);
 
   // 从 localStorage 读取设置
   useEffect(() => {
-    const timer = window.setTimeout(() => {
-      if (typeof window !== 'undefined') {
+    if (typeof window !== 'undefined') {
       const savedAggregateSearch = localStorage.getItem(
         'defaultAggregateSearch'
       );
@@ -1028,10 +1007,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({
       if (savedFilesystemSavePath !== null) {
         setFilesystemSavePath(savedFilesystemSavePath);
       }
-      }
-    }, 0);
-
-    return () => window.clearTimeout(timer);
+    }
   }, []);
 
   // 加载通知设置
@@ -1773,17 +1749,13 @@ export const UserMenu: React.FC<UserMenuProps> = ({
 
   useEffect(() => {
     if (!tvboxToken || !isSubscribeOpen) return;
-    const timer = window.setTimeout(() => {
-      setSubscribeUrl(
-        buildSubscribeUrl(
-          tvboxToken,
-          subscribeAdFilterEnabled,
-          subscribeYellowFilterEnabled
-        )
-      );
-    }, 0);
-
-    return () => window.clearTimeout(timer);
+    setSubscribeUrl(
+      buildSubscribeUrl(
+        tvboxToken,
+        subscribeAdFilterEnabled,
+        subscribeYellowFilterEnabled
+      )
+    );
   }, [
     tvboxToken,
     subscribeAdFilterEnabled,
@@ -2417,47 +2389,42 @@ export const UserMenu: React.FC<UserMenuProps> = ({
   // 初始化：读取根布局注入的全局模式
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    const timer = window.setTimeout(() => {
-      const runtimeConfig = (window as any).RUNTIME_CONFIG || {};
-      const mode =
-        runtimeConfig.LOCAL_SETTINGS_SYNC_MODE === 'manual' ||
-        runtimeConfig.LOCAL_SETTINGS_SYNC_MODE === 'auto'
-          ? runtimeConfig.LOCAL_SETTINGS_SYNC_MODE
-          : 'off';
-      const storageType = runtimeConfig.STORAGE_TYPE || 'localstorage';
-      const supportedStorageTypes = new Set([
-        'd1',
-        'postgres',
-        'turso',
-        'redis',
-        'upstash',
-        'kvrocks',
-      ]);
-      const username = getAuthInfoFromBrowserCookie()?.username;
-      const enabled =
-        supportedStorageTypes.has(storageType) &&
-        Boolean(username) &&
-        mode !== 'off';
+    const runtimeConfig = (window as any).RUNTIME_CONFIG || {};
+    const mode =
+      runtimeConfig.LOCAL_SETTINGS_SYNC_MODE === 'manual' ||
+      runtimeConfig.LOCAL_SETTINGS_SYNC_MODE === 'auto'
+        ? runtimeConfig.LOCAL_SETTINGS_SYNC_MODE
+        : 'off';
+    const storageType = runtimeConfig.STORAGE_TYPE || 'localstorage';
+    const supportedStorageTypes = new Set([
+      'd1',
+      'postgres',
+      'turso',
+      'redis',
+      'upstash',
+      'kvrocks',
+    ]);
+    const username = getAuthInfoFromBrowserCookie()?.username;
+    const enabled =
+      supportedStorageTypes.has(storageType) &&
+      Boolean(username) &&
+      mode !== 'off';
 
-      setSyncAvailable(enabled);
-      setSyncMode(mode);
+    setSyncAvailable(enabled);
+    setSyncMode(mode);
 
-      // 自动模式：同一用户在当前页面生命周期内只恢复一次，两个 UserMenu 实例共享同一请求。
-      if (mode === 'auto' && enabled && username) {
-        const syncState = (window as any).__moontvLocalSettingsAutoPull as
-          | { username: string; promise: Promise<boolean> }
-          | undefined;
-        if (!syncState || syncState.username !== username) {
-          (window as any).__moontvLocalSettingsAutoPull = {
-            username,
-            promise: pullRemoteSettings(false),
-          };
-        }
+    // 自动模式：同一用户在当前页面生命周期内只恢复一次，两个 UserMenu 实例共享同一请求。
+    if (mode === 'auto' && enabled && username) {
+      const syncState = (window as any).__moontvLocalSettingsAutoPull as
+        | { username: string; promise: Promise<boolean> }
+        | undefined;
+      if (!syncState || syncState.username !== username) {
+        (window as any).__moontvLocalSettingsAutoPull = {
+          username,
+          promise: pullRemoteSettings(false),
+        };
       }
-    }, 0);
-
-    return () => window.clearTimeout(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }
   }, []);
 
   // 从 localStorage 读取白名单键的当前快照（仅含已设置的键）
@@ -2953,19 +2920,13 @@ export const UserMenu: React.FC<UserMenuProps> = ({
   // 自动模式：关闭本地设置面板时，把本地设置同步到云端
   const prevSettingsOpenRef = useRef(false);
   useEffect(() => {
-    let timer: number | undefined;
     if (prevSettingsOpenRef.current && !isSettingsOpen) {
       // 面板从打开 → 关闭：自动模式下静默上传本地设置
       if (syncAvailable && syncMode === 'auto') {
-        timer = window.setTimeout(() => {
-          void pushRemoteSettings({ silent: true });
-        }, 0);
+        void pushRemoteSettings({ silent: true });
       }
     }
     prevSettingsOpenRef.current = isSettingsOpen;
-    return () => {
-      if (timer !== undefined) window.clearTimeout(timer);
-    };
   }, [isSettingsOpen, pushRemoteSettings, syncAvailable, syncMode]);
 
   // 清除弹幕缓存

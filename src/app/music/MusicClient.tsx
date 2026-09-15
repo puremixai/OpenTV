@@ -521,24 +521,21 @@ export default function MusicClient({ children: _children }: { children?: React.
   );
 
   useEffect(() => {
-    const timer = window.setTimeout(() => {
-      try {
-        const saved = JSON.parse(localStorage.getItem('musicEqGains') || 'null');
-        if (Array.isArray(saved) && saved.length === EQ_BANDS.length) setEqGains(saved.map(value => Math.max(-12, Math.min(12, Number(value) || 0))));
-        setEqualizerEnabled(localStorage.getItem('musicEqEnabled') === '1');
-        setLoudnessEnabled(localStorage.getItem('musicLoudnessEnabled') === '1');
-        setReverbEnabled(localStorage.getItem('musicReverbEnabled') === '1');
-        setReverbPreset((localStorage.getItem('musicReverbPreset') as keyof typeof REVERB_PRESETS) || 'none');
-        setReverbMainGain(Math.max(0, Math.min(150, Number(localStorage.getItem('musicReverbMainGain')) || 100)));
-        setReverbMix(Math.max(0, Math.min(40, Number(localStorage.getItem('musicReverbMix')) || 12)));
-        setEqPreset(localStorage.getItem('musicEqPreset') || 'Flat');
-        setPitchRate(Math.max(0.5, Math.min(1.5, Number(localStorage.getItem('musicPitchRate')) || 1)));
-        setSurroundEnabled(localStorage.getItem('musicSurroundEnabled') === '1');
-        setSurroundSpeed(Math.max(5, Math.min(60, Number(localStorage.getItem('musicSurroundSpeed')) || 25)));
-        setSurroundDistance(Math.max(1, Math.min(10, Number(localStorage.getItem('musicSurroundDistance')) || 5)));
-      } catch { /* Keep default audio settings if persisted settings cannot be read. */ }
-    }, 0);
-    return () => window.clearTimeout(timer);
+    try {
+      const saved = JSON.parse(localStorage.getItem('musicEqGains') || 'null');
+      if (Array.isArray(saved) && saved.length === EQ_BANDS.length) setEqGains(saved.map(value => Math.max(-12, Math.min(12, Number(value) || 0))));
+      setEqualizerEnabled(localStorage.getItem('musicEqEnabled') === '1');
+      setLoudnessEnabled(localStorage.getItem('musicLoudnessEnabled') === '1');
+      setReverbEnabled(localStorage.getItem('musicReverbEnabled') === '1');
+      setReverbPreset((localStorage.getItem('musicReverbPreset') as keyof typeof REVERB_PRESETS) || 'none');
+      setReverbMainGain(Math.max(0, Math.min(150, Number(localStorage.getItem('musicReverbMainGain')) || 100)));
+      setReverbMix(Math.max(0, Math.min(40, Number(localStorage.getItem('musicReverbMix')) || 12)));
+      setEqPreset(localStorage.getItem('musicEqPreset') || 'Flat');
+      setPitchRate(Math.max(0.5, Math.min(1.5, Number(localStorage.getItem('musicPitchRate')) || 1)));
+      setSurroundEnabled(localStorage.getItem('musicSurroundEnabled') === '1');
+      setSurroundSpeed(Math.max(5, Math.min(60, Number(localStorage.getItem('musicSurroundSpeed')) || 25)));
+      setSurroundDistance(Math.max(1, Math.min(10, Number(localStorage.getItem('musicSurroundDistance')) || 5)));
+    } catch { /* Keep default audio settings if persisted settings cannot be read. */ }
   }, []);
 
   useEffect(() => {
@@ -812,11 +809,7 @@ export default function MusicClient({ children: _children }: { children?: React.
   };
 
   useEffect(() => {
-    const timer = window.setTimeout(
-      () => setMusicProxyEnabled(getMusicProxyEnabled()),
-      0
-    );
-    return () => window.clearTimeout(timer);
+    setMusicProxyEnabled(getMusicProxyEnabled());
   }, [getMusicProxyEnabled]);
 
   // 页面加载时恢复播放状态和数据库记录
@@ -942,13 +935,10 @@ export default function MusicClient({ children: _children }: { children?: React.
 
   // 恢复 PiP 偏好设置
   useEffect(() => {
-    const timer = window.setTimeout(() => {
-      const savedOpacity = localStorage.getItem('lyricsPiPOpacity');
-      const savedMinimized = localStorage.getItem('lyricsPiPMinimized');
-      if (savedOpacity) setPipOpacity(parseFloat(savedOpacity));
-      if (savedMinimized) setPipMinimized(savedMinimized === 'true');
-    }, 0);
-    return () => window.clearTimeout(timer);
+    const savedOpacity = localStorage.getItem('lyricsPiPOpacity');
+    const savedMinimized = localStorage.getItem('lyricsPiPMinimized');
+    if (savedOpacity) setPipOpacity(parseFloat(savedOpacity));
+    if (savedMinimized) setPipMinimized(savedMinimized === 'true');
   }, []);
 
   // 监听来自 PiP 窗口的消息
@@ -1010,14 +1000,12 @@ export default function MusicClient({ children: _children }: { children?: React.
   // 监听 playRecords 变化，更新 playlistIndex
   useEffect(() => {
     if (pendingSongToPlay) {
-      const timer = window.setTimeout(() => {
-        const index = playRecords.findIndex(
-          r => r.platform === pendingSongToPlay.platform && r.id === pendingSongToPlay.id
-        );
-        setPlaylistIndex(index);
-        setPendingSongToPlay(null);
-      }, 0);
-      return () => window.clearTimeout(timer);
+      const index = playRecords.findIndex(
+        r => r.platform === pendingSongToPlay.platform && r.id === pendingSongToPlay.id
+      );
+      setPlaylistIndex(index);
+      setPendingSongToPlay(null);
+      return;
     }
   }, [playRecords, pendingSongToPlay]);
 

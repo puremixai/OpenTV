@@ -82,10 +82,11 @@ const AlertModal = ({
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
-    const timer = window.setTimeout(() => {
-      setIsVisible(isOpen);
-    }, 0);
-    return () => window.clearTimeout(timer);
+    if (isOpen) {
+      setIsVisible(true);
+    } else {
+      setIsVisible(false);
+    }
   }, [isOpen]);
 
   if (!isOpen) return null;
@@ -203,14 +204,11 @@ export default function AnimeSubscriptionComponent({
 
   // 加载配置
   useEffect(() => {
-    const timer = window.setTimeout(() => {
-      if (config?.AnimeSubscriptionConfig) {
-        setEnabled(config.AnimeSubscriptionConfig.Enabled || false);
-        setDownloadTool(config.AnimeSubscriptionConfig.DownloadTool || 'aria2');
-        setSubscriptions(config.AnimeSubscriptionConfig.Subscriptions || []);
-      }
-    }, 0);
-    return () => window.clearTimeout(timer);
+    if (config?.AnimeSubscriptionConfig) {
+      setEnabled(config.AnimeSubscriptionConfig.Enabled || false);
+      setDownloadTool(config.AnimeSubscriptionConfig.DownloadTool || 'aria2');
+      setSubscriptions(config.AnimeSubscriptionConfig.Subscriptions || []);
+    }
   }, [config]);
 
   // 重置表单

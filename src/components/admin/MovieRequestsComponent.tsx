@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, no-console,react-hooks/exhaustive-deps */
+/* eslint-disable @typescript-eslint/no-explicit-any, no-console */
 
 'use client';
 
@@ -31,6 +31,7 @@ export const MovieRequestsComponent = ({
   const [pendingCount, setPendingCount] = useState(0);
   const [fulfilledCount, setFulfilledCount] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [reloadVersion, setReloadVersion] = useState(0);
 
   // 求片功能设置
   const [enableMovieRequest, setEnableMovieRequest] = useState(
@@ -41,44 +42,43 @@ export const MovieRequestsComponent = ({
   );
   const [savingSettings, setSavingSettings] = useState(false);
 
-  async function loadCounts() {
-    try {
-      const response = await fetch('/api/movie-requests');
-      const data = await response.json();
-      const allRequests = data.requests || [];
-      setPendingCount(
-        allRequests.filter((r: any) => r.status === 'pending').length
-      );
-      setFulfilledCount(
-        allRequests.filter((r: any) => r.status === 'fulfilled').length
-      );
-    } catch (error) {
-      console.error('加载求片数量失败:', error);
-    }
-  }
-
-  async function loadRequests() {
-    setLoading(true);
-    try {
-      const response = await fetch(
-        `/api/movie-requests?status=${filter}&detail=true`
-      );
-      const data = await response.json();
-      setRequests(data.requests || []);
-    } catch (error) {
-      console.error('加载求片列表失败:', error);
-    } finally {
-      setLoading(false);
-    }
-  }
-
   useEffect(() => {
-    const timer = window.setTimeout(() => {
-      void loadRequests();
-      void loadCounts();
-    }, 0);
-    return () => window.clearTimeout(timer);
-  }, [filter]);
+    const controller = new AbortController();
+    const { signal } = controller;
+    void fetch(`/api/movie-requests?status=${filter}&detail=true`, { signal })
+      .then(async (response) => {
+        const data = await response.json();
+        if (!signal.aborted) setRequests(data.requests || []);
+      })
+      .catch((error) => {
+        if (!signal.aborted) console.error('加载求片列表失败:', error);
+      })
+      .finally(() => {
+        if (!signal.aborted) setLoading(false);
+      });
+    void fetch('/api/movie-requests', { signal })
+      .then(async (response) => {
+        const data = await response.json();
+        if (signal.aborted) return;
+        const allRequests = data.requests || [];
+        setPendingCount(
+          allRequests.filter((r: any) => r.status === 'pending').length
+        );
+        setFulfilledCount(
+          allRequests.filter((r: any) => r.status === 'fulfilled').length
+        );
+      })
+      .catch((error) => {
+        if (!signal.aborted) console.error('加载求片数量失败:', error);
+      });
+    return () => controller.abort();
+  }, [filter, reloadVersion]);
+
+  const handleFilterChange = (nextFilter: 'pending' | 'fulfilled') => {
+    if (nextFilter === filter) return;
+    setLoading(true);
+    setFilter(nextFilter);
+  };
 
   const handleFulfill = async (id: string) => {
     await withLoading(`fulfill_${id}`, async () => {
@@ -90,7 +90,8 @@ export const MovieRequestsComponent = ({
         });
         if (!response.ok) throw new Error('操作失败');
         showSuccess('已标记为已上架', showAlert);
-        await loadRequests();
+        setLoading(true);
+        setReloadVersion((version) => version + 1);
       } catch (err) {
         showError(err instanceof Error ? err.message : '操作失败', showAlert);
       }
@@ -105,7 +106,8 @@ export const MovieRequestsComponent = ({
         });
         if (!response.ok) throw new Error('删除失败');
         showSuccess('删除成功', showAlert);
-        await loadRequests();
+        setLoading(true);
+        setReloadVersion((version) => version + 1);
       } catch (err) {
         showError(err instanceof Error ? err.message : '删除失败', showAlert);
       }
@@ -215,7 +217,7 @@ export const MovieRequestsComponent = ({
         </h3>
         <div className='flex gap-2 mb-4'>
           <button
-            onClick={() => setFilter('pending')}
+            onClick={() => handleFilterChange('pending')}
             className={`px-4 py-2 rounded-lg ${
               filter === 'pending'
                 ? 'bg-blue-600 text-white'
@@ -225,7 +227,7 @@ export const MovieRequestsComponent = ({
             待处理 ({pendingCount})
           </button>
           <button
-            onClick={() => setFilter('fulfilled')}
+            onClick={() => handleFilterChange('fulfilled')}
             className={`px-4 py-2 rounded-lg ${
               filter === 'fulfilled'
                 ? 'bg-blue-600 text-white'

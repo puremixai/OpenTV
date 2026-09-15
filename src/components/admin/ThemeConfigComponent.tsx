@@ -45,53 +45,49 @@ export const ThemeConfigComponent = ({
   ]);
 
   useEffect(() => {
-    const timer = window.setTimeout(() => {
-      if (config?.ThemeConfig) {
-        setThemeSettings({
-          enableBuiltInTheme: config.ThemeConfig.enableBuiltInTheme || false,
-          builtInTheme: config.ThemeConfig.builtInTheme || 'default',
-          customCSS: config.ThemeConfig.customCSS || '',
-          enableCache: config.ThemeConfig.enableCache !== false,
-          cacheMinutes: config.ThemeConfig.cacheMinutes || 1440,
-          progressThumbType: config.ThemeConfig.progressThumbType || 'default',
-          progressThumbPresetId: config.ThemeConfig.progressThumbPresetId || '',
-          progressThumbCustomUrl: config.ThemeConfig.progressThumbCustomUrl || '',
-        });
+    if (config?.ThemeConfig) {
+      setThemeSettings({
+        enableBuiltInTheme: config.ThemeConfig.enableBuiltInTheme || false,
+        builtInTheme: config.ThemeConfig.builtInTheme || 'default',
+        customCSS: config.ThemeConfig.customCSS || '',
+        enableCache: config.ThemeConfig.enableCache !== false,
+        cacheMinutes: config.ThemeConfig.cacheMinutes || 1440,
+        progressThumbType: config.ThemeConfig.progressThumbType || 'default',
+        progressThumbPresetId: config.ThemeConfig.progressThumbPresetId || '',
+        progressThumbCustomUrl: config.ThemeConfig.progressThumbCustomUrl || '',
+      });
 
-        // 解析背景图配置
-        if (config.ThemeConfig.loginBackgroundImage) {
-          const urls = config.ThemeConfig.loginBackgroundImage
-            .split('\n')
-            .map((url) => url.trim())
-            .filter((url) => url !== '');
-          setLoginBackgroundImages(urls.length > 0 ? urls : ['']);
-        } else {
-          setLoginBackgroundImages(['']);
-        }
-
-        if (config.ThemeConfig.registerBackgroundImage) {
-          const urls = config.ThemeConfig.registerBackgroundImage
-            .split('\n')
-            .map((url) => url.trim())
-            .filter((url) => url !== '');
-          setRegisterBackgroundImages(urls.length > 0 ? urls : ['']);
-        } else {
-          setRegisterBackgroundImages(['']);
-        }
-
-        if (config.ThemeConfig.homeBackgroundImage) {
-          const urls = config.ThemeConfig.homeBackgroundImage
-            .split('\n')
-            .map((url) => url.trim())
-            .filter((url) => url !== '');
-          setHomeBackgroundImages(urls.length > 0 ? urls : ['']);
-        } else {
-          setHomeBackgroundImages(['']);
-        }
+      // 解析背景图配置
+      if (config.ThemeConfig.loginBackgroundImage) {
+        const urls = config.ThemeConfig.loginBackgroundImage
+          .split('\n')
+          .map((url) => url.trim())
+          .filter((url) => url !== '');
+        setLoginBackgroundImages(urls.length > 0 ? urls : ['']);
+      } else {
+        setLoginBackgroundImages(['']);
       }
-    }, 0);
 
-    return () => window.clearTimeout(timer);
+      if (config.ThemeConfig.registerBackgroundImage) {
+        const urls = config.ThemeConfig.registerBackgroundImage
+          .split('\n')
+          .map((url) => url.trim())
+          .filter((url) => url !== '');
+        setRegisterBackgroundImages(urls.length > 0 ? urls : ['']);
+      } else {
+        setRegisterBackgroundImages(['']);
+      }
+
+      if (config.ThemeConfig.homeBackgroundImage) {
+        const urls = config.ThemeConfig.homeBackgroundImage
+          .split('\n')
+          .map((url) => url.trim())
+          .filter((url) => url !== '');
+        setHomeBackgroundImages(urls.length > 0 ? urls : ['']);
+      } else {
+        setHomeBackgroundImages(['']);
+      }
+    }
   }, [config]);
 
   const handleSave = async () => {

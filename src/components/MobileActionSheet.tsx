@@ -62,21 +62,17 @@ const MobileActionSheet: React.FC<MobileActionSheetProps> = ({
 
   // 确保组件在客户端挂载后才渲染 Portal
   useEffect(() => {
-    const timer = window.setTimeout(() => setMounted(true), 0);
-    return () => window.clearTimeout(timer);
+    setMounted(true);
   }, []);
 
   // 控制动画状态
   useEffect(() => {
     let animationId: number;
     let timer: NodeJS.Timeout;
-    let animationStateTimer: NodeJS.Timeout;
 
     if (isOpen) {
       backdropPressStarted.current = false;
-      animationStateTimer = setTimeout(() => {
-        setIsVisible(true);
-      }, 0);
+      setIsVisible(true);
       // 使用双重 requestAnimationFrame 确保DOM完全渲染
       animationId = requestAnimationFrame(() => {
         animationId = requestAnimationFrame(() => {
@@ -85,9 +81,7 @@ const MobileActionSheet: React.FC<MobileActionSheetProps> = ({
       });
     } else {
       backdropPressStarted.current = false;
-      animationStateTimer = setTimeout(() => {
-        setIsAnimating(false);
-      }, 0);
+      setIsAnimating(false);
       // 等待动画完成后隐藏组件
       timer = setTimeout(() => {
         setIsVisible(false);
@@ -100,9 +94,6 @@ const MobileActionSheet: React.FC<MobileActionSheetProps> = ({
       }
       if (timer) {
         clearTimeout(timer);
-      }
-      if (animationStateTimer) {
-        clearTimeout(animationStateTimer);
       }
     };
   }, [isOpen]);

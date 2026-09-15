@@ -136,12 +136,9 @@ export default function TVRemotePanel({
   useEffect(() => {
     if (!isOpen) return;
 
-    const timer = window.setTimeout(() => {
-      void loadDevices();
-    }, 0);
+    void loadDevices();
 
     return () => {
-      window.clearTimeout(timer);
       setDevices([]);
       setSelectedDeviceId('');
       setStatus('');

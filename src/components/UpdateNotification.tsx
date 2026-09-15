@@ -15,23 +15,19 @@ export const UpdateNotification: React.FC = () => {
   const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
+    // 检查认证信息
+    const authInfo = getAuthInfoFromBrowserCookie();
+    setIsOwner(authInfo?.role === 'owner');
+
     // 检查是否是移动设备
     const checkMobile = () => {
       setIsMobile(window.innerWidth < 768);
     };
 
-    const timer = window.setTimeout(() => {
-      // 检查认证信息
-      const authInfo = getAuthInfoFromBrowserCookie();
-      setIsOwner(authInfo?.role === 'owner');
-      checkMobile();
-    }, 0);
+    checkMobile();
     window.addEventListener('resize', checkMobile);
 
-    return () => {
-      window.clearTimeout(timer);
-      window.removeEventListener('resize', checkMobile);
-    };
+    return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
   // 检查中、不是站长、是移动设备或没有更新时不渲染任何内容

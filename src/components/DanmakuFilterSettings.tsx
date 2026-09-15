@@ -23,23 +23,26 @@ export default function DanmakuFilterSettings({
   const [config, setConfig] = useState<DanmakuFilterConfig>({ rules: [] });
   const [newKeyword, setNewKeyword] = useState('');
   const [newType, setNewType] = useState<'normal' | 'regex'>('normal');
-  const [loading, setLoading] = useState(false);
+  const [loadState, setLoadState] = useState({ isOpen, loading: isOpen });
+  const loading = loadState.loading;
   const [saving, setSaving] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
   const [inputKey, setInputKey] = useState(0); // 用于强制重新渲染输入框
   const inputRef = useRef<HTMLInputElement>(null); // 用于直接操作输入框 DOM
 
+  // 打开时立即进入加载状态；关闭不改变草稿，退出动画仍可展示它。
+  if (loadState.isOpen !== isOpen) {
+    setLoadState({ isOpen, loading: isOpen });
+  }
+
   // 控制动画状态
   useEffect(() => {
     let animationId: number;
     let timer: NodeJS.Timeout;
-    let animationStateTimer: NodeJS.Timeout;
 
     if (isOpen) {
-      animationStateTimer = setTimeout(() => {
-        setIsVisible(true);
-      }, 0);
+      setIsVisible(true);
       // 使用双重 requestAnimationFrame 确保DOM完全渲染
       animationId = requestAnimationFrame(() => {
         animationId = requestAnimationFrame(() => {
@@ -47,9 +50,7 @@ export default function DanmakuFilterSettings({
         });
       });
     } else {
-      animationStateTimer = setTimeout(() => {
-        setIsAnimating(false);
-      }, 0);
+      setIsAnimating(false);
       // 等待动画完成后隐藏组件
       timer = setTimeout(() => {
         setIsVisible(false);
@@ -62,9 +63,6 @@ export default function DanmakuFilterSettings({
       }
       if (timer) {
         clearTimeout(timer);
-      }
-      if (animationStateTimer) {
-        clearTimeout(animationStateTimer);
       }
     };
   }, [isOpen]);
@@ -119,32 +117,28 @@ export default function DanmakuFilterSettings({
     }
   }, [isVisible]);
 
-  async function loadConfig() {
-    setLoading(true);
-    try {
-      const loadedConfig = await getDanmakuFilterConfig();
-      if (loadedConfig) {
-        setConfig(loadedConfig);
-      } else {
-        setConfig({ rules: [] });
-      }
-    } catch (error) {
-      logger.error('加载弹幕过滤配置失败:', error);
-    } finally {
-      setLoading(false);
-    }
-  }
-
   // 加载配置
   useEffect(() => {
-    if (isOpen) {
-      const timer = window.setTimeout(() => void loadConfig(), 0);
-      return () => window.clearTimeout(timer);
-    }
+    if (!isOpen) return;
+    let cancelled = false;
+    getDanmakuFilterConfig()
+      .then((loadedConfig) => {
+        if (!cancelled) setConfig(loadedConfig || { rules: [] });
+      })
+      .catch((error) => {
+        if (!cancelled) logger.error('加载弹幕过滤配置失败:', error);
+      })
+      .finally(() => {
+        if (!cancelled) setLoadState({ isOpen: true, loading: false });
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [isOpen]);
 
   // 保存配置
   const handleSave = async () => {
+    if (loading || !isOpen) return;
     setSaving(true);
     try {
       await saveDanmakuFilterConfig(config);
@@ -170,6 +164,7 @@ export default function DanmakuFilterSettings({
 
   // 添加规则
   const handleAddRule = () => {
+    if (loading || !isOpen) return;
     if (!newKeyword.trim()) {
       if (onShowToast) {
         onShowToast('请输入关键字', 'info');
@@ -305,6 +300,7 @@ export default function DanmakuFilterSettings({
                 ref={inputRef}
                 type="text"
                 value={newKeyword}
+                disabled={loading || !isOpen}
                 onChange={(e) => setNewKeyword(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && handleAddRule()}
                 placeholder="输入要屏蔽的关键字"
@@ -319,6 +315,7 @@ export default function DanmakuFilterSettings({
               <div className="flex gap-2">
                 <select
                   value={newType}
+                  disabled={loading || !isOpen}
                   onChange={(e) => setNewType(e.target.value as 'normal' | 'regex')}
                   className="flex-1 px-4 py-3 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg border border-gray-200 dark:border-gray-600 focus:border-teal-500 focus:outline-hidden focus:ring-2 focus:ring-teal-500/20 transition-all duration-200"
                 >
@@ -327,6 +324,7 @@ export default function DanmakuFilterSettings({
                 </select>
                 <button
                   onClick={handleAddRule}
+                  disabled={loading || !isOpen}
                   className="px-6 py-3 bg-teal-600 hover:bg-teal-700 active:bg-teal-800 text-white rounded-lg transition-all duration-200 flex items-center gap-2 active:scale-[0.98] shadow-xs hover:shadow-md"
                 >
                   <Plus size={18} />
@@ -441,7 +439,7 @@ export default function DanmakuFilterSettings({
             </button>
             <button
               onClick={handleSave}
-              disabled={saving}
+              disabled={saving || loading || !isOpen}
               className="flex-1 px-4 py-3 bg-teal-600 hover:bg-teal-700 active:bg-teal-800 disabled:bg-gray-300 disabled:cursor-not-allowed dark:disabled:bg-gray-700 text-white rounded-xl font-medium transition-all duration-200 active:scale-[0.98] shadow-xs hover:shadow-md disabled:shadow-none"
             >
               {saving ? (

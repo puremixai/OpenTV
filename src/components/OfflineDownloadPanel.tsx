@@ -45,8 +45,7 @@ export function OfflineDownloadPanel({ isOpen, onClose }: OfflineDownloadPanelPr
 
   // 确保只在客户端渲染
   useEffect(() => {
-    const timer = window.setTimeout(() => setMounted(true), 0);
-    return () => window.clearTimeout(timer);
+    setMounted(true);
   }, []);
 
   // 获取任务列表
@@ -119,12 +118,9 @@ export function OfflineDownloadPanel({ isOpen, onClose }: OfflineDownloadPanelPr
   // 定期刷新任务列表
   useEffect(() => {
     if (isOpen) {
-      const timer = window.setTimeout(() => void fetchTasks(), 0);
+      fetchTasks();
       const interval = setInterval(fetchTasks, 3000); // 每3秒刷新一次
-      return () => {
-        window.clearTimeout(timer);
-        clearInterval(interval);
-      };
+      return () => clearInterval(interval);
     }
   }, [isOpen]);
 

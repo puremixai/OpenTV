@@ -1,5 +1,7 @@
 # OpenTV Lint Warning Baseline Cleanup Implementation Plan
 
+> 2026-09-15 复审：此清理提交的部分 effect 改动存在运行时回归；后续纠偏与验证见 [运行时纠偏记录](../../lint-runtime-corrections.md)。以下为原实施记录，不应作为运行时无回归的结论。
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Reduce the remaining 699 OpenTV lint warnings by warning type while preserving behavior and keeping the existing `.eslint-baseline.json` as the comparison baseline.

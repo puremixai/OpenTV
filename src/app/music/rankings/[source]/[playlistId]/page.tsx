@@ -20,15 +20,12 @@ export default function MusicRankingDetailPage() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    const timer = window.setTimeout(() => {
-      setLoading(true);
-      fetch(`/api/music/v2/discovery/board-songs?source=${source}&boardId=${encodeURIComponent(playlistId)}`)
-        .then((res) => res.json())
-        .then((data) => setSongs((data.data?.list || []).map(mapSong)))
-        .catch(() => setSongs([]))
-        .finally(() => setLoading(false));
-    }, 0);
-    return () => window.clearTimeout(timer);
+    setLoading(true);
+    fetch(`/api/music/v2/discovery/board-songs?source=${source}&boardId=${encodeURIComponent(playlistId)}`)
+      .then((res) => res.json())
+      .then((data) => setSongs((data.data?.list || []).map(mapSong)))
+      .catch(() => setSongs([]))
+      .finally(() => setLoading(false));
   }, [source, playlistId]);
 
   return loading ? <MusicLoadingIndicator className="py-8" /> : (

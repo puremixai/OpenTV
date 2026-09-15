@@ -31,8 +31,7 @@ export default function TrailerPickerDialog({
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    const timer = window.setTimeout(() => setMounted(true), 0);
-    return () => window.clearTimeout(timer);
+    setMounted(true);
   }, []);
 
   useEffect(() => {

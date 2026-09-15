@@ -31,10 +31,7 @@ export default function TVLoginPage() {
   }, []);
 
   useEffect(() => {
-    const timer = window.setTimeout(() => {
-      void create();
-    }, 0);
-    return () => window.clearTimeout(timer);
+    void create();
   }, [create]);
 
   useEffect(() => {

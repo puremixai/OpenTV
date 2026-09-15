@@ -56,15 +56,22 @@ export function DownloadManagementPanel({
   }
 
   useEffect(() => {
-    const timer = window.setTimeout(() => setMounted(true), 0);
-    return () => window.clearTimeout(timer);
+    setMounted(true);
   }, []);
 
   useEffect(() => {
-    if (isOpen) {
-      const timer = window.setTimeout(() => void loadCompletedTasks(), 0);
-      return () => window.clearTimeout(timer);
-    }
+    if (!isOpen) return;
+    let cancelled = false;
+    downloadDB.getCompletedTasks()
+      .then((tasks) => {
+        if (!cancelled) setCompletedTasks(tasks);
+      })
+      .catch((error) => {
+        if (!cancelled) logger.error('加载已完成任务失败:', error);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [isOpen]);
 
   const handleSelectAll = () => {

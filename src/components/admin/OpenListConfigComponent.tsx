@@ -3,7 +3,7 @@
 'use client';
 
 import { ChevronDown, ChevronUp } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 
 import { AdminConfig } from '@/lib/admin.types';
@@ -54,7 +54,19 @@ export const OpenListConfigComponent = ({
     }>
   >([]);
   const [videos, setVideos] = useState<any[]>([]);
+  const videoRequestId = useRef(0);
+  const [loadedVideoConfig, setLoadedVideoConfig] = useState<AdminConfig | null>(
+    null
+  );
   const [refreshing, setRefreshing] = useState(false);
+  const canLoadVideos = Boolean(
+    config?.OpenListConfig?.URL &&
+      config?.OpenListConfig?.Username &&
+      config?.OpenListConfig?.Password
+  );
+  // Automatic loads belong to a config revision; manual scans have their own lifetime.
+  const loadingVideos =
+    refreshing || (canLoadVideos && loadedVideoConfig !== config);
   const [scanProgress, setScanProgress] = useState<{
     current: number;
     total: number;
@@ -68,82 +80,89 @@ export const OpenListConfigComponent = ({
   );
 
   useEffect(() => {
-    const timer = window.setTimeout(() => {
-      if (config?.OpenListConfig) {
-        setEnabled(config.OpenListConfig.Enabled || false);
-        setUrl(config.OpenListConfig.URL || '');
-        setUsername(config.OpenListConfig.Username || '');
-        setPassword(config.OpenListConfig.Password || '');
-        setRootPaths(
-          config.OpenListConfig.RootPaths ||
-            (config.OpenListConfig.RootPath
-              ? [config.OpenListConfig.RootPath]
-              : ['/'])
-        );
-        setOfflineDownloadPath(config.OpenListConfig.OfflineDownloadPath || '/');
-        setOfflineDownloadUseCustomSource(
-          config.OpenListConfig.OfflineDownloadUseCustomSource || false
-        );
-        setOfflineDownloadUrl(config.OpenListConfig.OfflineDownloadURL || '');
-        setOfflineDownloadUsername(
-          config.OpenListConfig.OfflineDownloadUsername || ''
-        );
-        setOfflineDownloadPassword(
-          config.OpenListConfig.OfflineDownloadPassword || ''
-        );
-        setScanInterval(config.OpenListConfig.ScanInterval || 0);
-        setScanMode(config.OpenListConfig.ScanMode || 'hybrid');
-        setDisableVideoPreview(
-          config.OpenListConfig.DisableVideoPreview || false
-        );
-        const pathMeta = config.OpenListConfig.PathMeta || {};
-        setPathMetaRows(
-          Object.entries(pathMeta).map(([path, meta]) => ({
-            path,
-            category: meta?.category || '',
-            refresh14m: Boolean(meta?.refresh14m),
-            proxyPlay: Boolean(meta?.proxyPlay),
-            proxyCacheMinutes:
-              typeof meta?.proxyCacheMinutes === 'number' &&
-              meta.proxyCacheMinutes > 0
-                ? meta.proxyCacheMinutes
-                : 60,
-          }))
-        );
-      }
-    }, 0);
-
-    return () => window.clearTimeout(timer);
+    if (config?.OpenListConfig) {
+      setEnabled(config.OpenListConfig.Enabled || false);
+      setUrl(config.OpenListConfig.URL || '');
+      setUsername(config.OpenListConfig.Username || '');
+      setPassword(config.OpenListConfig.Password || '');
+      setRootPaths(
+        config.OpenListConfig.RootPaths ||
+          (config.OpenListConfig.RootPath
+            ? [config.OpenListConfig.RootPath]
+            : ['/'])
+      );
+      setOfflineDownloadPath(config.OpenListConfig.OfflineDownloadPath || '/');
+      setOfflineDownloadUseCustomSource(
+        config.OpenListConfig.OfflineDownloadUseCustomSource || false
+      );
+      setOfflineDownloadUrl(config.OpenListConfig.OfflineDownloadURL || '');
+      setOfflineDownloadUsername(
+        config.OpenListConfig.OfflineDownloadUsername || ''
+      );
+      setOfflineDownloadPassword(
+        config.OpenListConfig.OfflineDownloadPassword || ''
+      );
+      setScanInterval(config.OpenListConfig.ScanInterval || 0);
+      setScanMode(config.OpenListConfig.ScanMode || 'hybrid');
+      setDisableVideoPreview(
+        config.OpenListConfig.DisableVideoPreview || false
+      );
+      const pathMeta = config.OpenListConfig.PathMeta || {};
+      setPathMetaRows(
+        Object.entries(pathMeta).map(([path, meta]) => ({
+          path,
+          category: meta?.category || '',
+          refresh14m: Boolean(meta?.refresh14m),
+          proxyPlay: Boolean(meta?.proxyPlay),
+          proxyCacheMinutes:
+            typeof meta?.proxyCacheMinutes === 'number' &&
+            meta.proxyCacheMinutes > 0
+              ? meta.proxyCacheMinutes
+              : 60,
+        }))
+      );
+    }
   }, [config]);
 
   async function fetchVideos(noCache = false) {
+    const requestId = ++videoRequestId.current;
     try {
-      setRefreshing(true);
       const url = `/api/openlist/list?page=1&pageSize=100&includeFailed=true${
         noCache ? '&noCache=true' : ''
       }`;
       const response = await fetch(url);
       if (response.ok) {
         const data = await response.json();
-        setVideos(data.list || []);
+        if (requestId === videoRequestId.current) setVideos(data.list || []);
       }
     } catch (error) {
       console.error('获取视频列表失败:', error);
-    } finally {
-      setRefreshing(false);
     }
   }
 
   useEffect(() => {
-    if (
-      config?.OpenListConfig?.URL &&
-      config?.OpenListConfig?.Username &&
-      config?.OpenListConfig?.Password
-    ) {
-      const timer = window.setTimeout(() => void fetchVideos(), 0);
-      return () => window.clearTimeout(timer);
-    }
-  }, [config]);
+    const requestId = ++videoRequestId.current;
+    if (!canLoadVideos) return;
+    const controller = new AbortController();
+    const { signal } = controller;
+    void fetch('/api/openlist/list?page=1&pageSize=100&includeFailed=true', {
+      signal,
+    })
+      .then(async (response) => {
+        if (!response.ok) return;
+        const data = await response.json();
+        if (!signal.aborted && requestId === videoRequestId.current) {
+          setVideos(data.list || []);
+        }
+      })
+      .catch((error) => {
+        if (!signal.aborted) console.error('获取视频列表失败:', error);
+      })
+      .finally(() => {
+        if (!signal.aborted) setLoadedVideoConfig(config);
+      });
+    return () => controller.abort();
+  }, [config, canLoadVideos]);
 
   const handleSave = async () => {
     await withLoading('saveOpenList', async () => {
@@ -256,7 +275,6 @@ export const OpenListConfigComponent = ({
           } else if (task.status === 'completed') {
             clearInterval(pollInterval);
             setScanProgress(null);
-            setRefreshing(false);
             showSuccess(
               `扫描完成！新增 ${task.result.new} 个，已存在 ${task.result.existing} 个，失败 ${task.result.errors} 个`,
               showAlert
@@ -265,6 +283,7 @@ export const OpenListConfigComponent = ({
             await fetchVideos(true);
             // 然后再刷新配置（这会触发 useEffect，但此时缓存已经是新的了）
             await refreshConfig();
+            setRefreshing(false);
           } else if (task.status === 'failed') {
             clearInterval(pollInterval);
             setScanProgress(null);
@@ -307,8 +326,13 @@ export const OpenListConfigComponent = ({
     }
   };
 
-  const handleCorrectSuccess = () => {
-    fetchVideos(true); // 强制从数据库重新读取，不使用缓存
+  const handleCorrectSuccess = async () => {
+    setRefreshing(true);
+    try {
+      await fetchVideos(true); // 强制从数据库重新读取，不使用缓存
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   const handleCheckConnectivity = async () => {
@@ -362,7 +386,12 @@ export const OpenListConfigComponent = ({
           }
 
           showSuccess('删除成功', showAlert);
-          await fetchVideos(true); // 强制从数据库重新读取
+          setRefreshing(true);
+          try {
+            await fetchVideos(true); // 强制从数据库重新读取
+          } finally {
+            setRefreshing(false);
+          }
           refreshConfig(); // 异步刷新配置以更新资源数量（不等待，避免重复刷新）
         } catch (error) {
           showError(
@@ -1054,17 +1083,17 @@ export const OpenListConfigComponent = ({
               <div className='flex gap-3'>
                 <button
                   onClick={() => handleRefresh(true)}
-                  disabled={refreshing}
+                  disabled={loadingVideos}
                   className={buttonStyles.warning}
                 >
-                  {refreshing ? '扫描中...' : '重新扫描'}
+                  {loadingVideos ? '扫描中...' : '重新扫描'}
                 </button>
                 <button
                   onClick={() => handleRefresh(false)}
-                  disabled={refreshing}
+                  disabled={loadingVideos}
                   className={buttonStyles.primary}
                 >
-                  {refreshing ? '扫描中...' : '立即扫描'}
+                  {loadingVideos ? '扫描中...' : '立即扫描'}
                 </button>
               </div>
             </div>
@@ -1104,7 +1133,7 @@ export const OpenListConfigComponent = ({
               </div>
             )}
 
-            {refreshing ? (
+            {loadingVideos ? (
               <div className='text-center py-8 text-gray-500 dark:text-gray-400'>
                 加载中...
               </div>

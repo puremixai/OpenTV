@@ -42,28 +42,24 @@ export const EmailConfigComponent = ({
   const [testEmail, setTestEmail] = useState('');
 
   useEffect(() => {
-    const timer = window.setTimeout(() => {
-      if (config?.EmailConfig) {
-        setEnabled(config.EmailConfig.enabled || false);
-        setProvider(config.EmailConfig.provider || 'smtp');
+    if (config?.EmailConfig) {
+      setEnabled(config.EmailConfig.enabled || false);
+      setProvider(config.EmailConfig.provider || 'smtp');
 
-        if (config.EmailConfig.smtp) {
-          setSmtpHost(config.EmailConfig.smtp.host || '');
-          setSmtpPort(config.EmailConfig.smtp.port || 587);
-          setSmtpSecure(config.EmailConfig.smtp.secure || false);
-          setSmtpUser(config.EmailConfig.smtp.user || '');
-          setSmtpPassword(config.EmailConfig.smtp.password || '');
-          setSmtpFrom(config.EmailConfig.smtp.from || '');
-        }
-
-        if (config.EmailConfig.resend) {
-          setResendApiKey(config.EmailConfig.resend.apiKey || '');
-          setResendFrom(config.EmailConfig.resend.from || '');
-        }
+      if (config.EmailConfig.smtp) {
+        setSmtpHost(config.EmailConfig.smtp.host || '');
+        setSmtpPort(config.EmailConfig.smtp.port || 587);
+        setSmtpSecure(config.EmailConfig.smtp.secure || false);
+        setSmtpUser(config.EmailConfig.smtp.user || '');
+        setSmtpPassword(config.EmailConfig.smtp.password || '');
+        setSmtpFrom(config.EmailConfig.smtp.from || '');
       }
-    }, 0);
 
-    return () => window.clearTimeout(timer);
+      if (config.EmailConfig.resend) {
+        setResendApiKey(config.EmailConfig.resend.apiKey || '');
+        setResendFrom(config.EmailConfig.resend.from || '');
+      }
+    }
   }, [config]);
 
   const handleSave = async () => {

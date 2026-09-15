@@ -147,21 +147,19 @@ export default function MangaReadPage() {
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    const timer = window.setTimeout(() => {
-      const savedMode = window.localStorage.getItem(READ_MODE_STORAGE_KEY) as ReadMode | null;
-      if (savedMode && READ_MODE_OPTIONS.some((item) => item.value === savedMode)) {
-        setReadMode(savedMode);
-      }
-      const savedScaleMode = window.localStorage.getItem(SCALE_MODE_STORAGE_KEY) as ScaleMode | null;
-      if (savedScaleMode && SCALE_MODE_OPTIONS.some((item) => item.value === savedScaleMode)) {
-        setScaleMode(savedScaleMode);
-      }
-      const savedGap = Number(window.localStorage.getItem(PAGE_GAP_STORAGE_KEY) || 0);
-      if (!Number.isNaN(savedGap)) {
-        setPageGap(Math.min(Math.max(savedGap, 0), 48));
-      }
-    }, 0);
-    return () => window.clearTimeout(timer);
+    // Read saved preferences before the persistence effects below can write defaults.
+    const savedMode = window.localStorage.getItem(READ_MODE_STORAGE_KEY) as ReadMode | null;
+    if (savedMode && READ_MODE_OPTIONS.some((item) => item.value === savedMode)) {
+      setReadMode(savedMode);
+    }
+    const savedScaleMode = window.localStorage.getItem(SCALE_MODE_STORAGE_KEY) as ScaleMode | null;
+    if (savedScaleMode && SCALE_MODE_OPTIONS.some((item) => item.value === savedScaleMode)) {
+      setScaleMode(savedScaleMode);
+    }
+    const savedGap = Number(window.localStorage.getItem(PAGE_GAP_STORAGE_KEY) || 0);
+    if (!Number.isNaN(savedGap)) {
+      setPageGap(Math.min(Math.max(savedGap, 0), 48));
+    }
   }, []);
 
   useEffect(() => {
@@ -231,12 +229,10 @@ export default function MangaReadPage() {
   }, [cover, mangaId, sourceId, sourceName, title]);
 
   useEffect(() => {
-    const timer = window.setTimeout(() => {
-      setActivePage(0);
-      restoredChapterKeyRef.current = null;
-      preloadedImageUrlsRef.current.clear();
-    }, 0);
-    return () => window.clearTimeout(timer);
+    // Reset before a cached history Promise can restore the new chapter's position.
+    setActivePage(0);
+    restoredChapterKeyRef.current = null;
+    preloadedImageUrlsRef.current.clear();
   }, [chapterId]);
 
   useEffect(() => {
@@ -288,8 +284,7 @@ export default function MangaReadPage() {
   }, [chapterId, mangaId, pages.length, readMode, sourceId]);
 
   useEffect(() => {
-    const timer = window.setTimeout(() => setShowChapterComplete(false), 0);
-    return () => window.clearTimeout(timer);
+    setShowChapterComplete(false);
   }, [activePage, chapterId, readMode]);
 
   useEffect(() => {

@@ -162,7 +162,7 @@ export default function AcgSearch({
   };
 
   // 执行搜索
-  const performSearch = useCallback(async (page: number, isLoadMore = false) => {
+  const performSearch = async (page: number, isLoadMore = false) => {
     if (isLoadingMoreRef.current) return;
     if (source === 'mikan' && page > 1) return;
     if (source === 'dmhy' && page > 1) return;
@@ -287,7 +287,7 @@ export default function AcgSearch({
       setLoading(false);
       isLoadingMoreRef.current = false;
     }
-  }, [keyword, onError, source]);
+  };
 
   useEffect(() => {
     // triggerSearch 变化时触发搜索（无论是 true 还是 false）
@@ -300,15 +300,12 @@ export default function AcgSearch({
       return;
     }
 
-    const timer = window.setTimeout(() => {
-      // 重置状态并开始新搜索
-      setAllItems([]);
-      setCurrentPage(1);
-      setHasMore(true);
-      void performSearch(1, false);
-    }, 0);
-    return () => window.clearTimeout(timer);
-  }, [controlsOnly, keyword, performSearch, triggerSearch]);
+    // 重置状态并开始新搜索
+    setAllItems([]);
+    setCurrentPage(1);
+    setHasMore(true);
+    performSearch(1, false);
+  }, [triggerSearch, controlsOnly]);
 
   // 切换搜索源时，自动重新搜索（避免组件初次挂载时重复触发）
   useEffect(() => {
@@ -322,14 +319,11 @@ export default function AcgSearch({
     const currentKeyword = keyword.trim();
     if (!currentKeyword) return;
 
-    const timer = window.setTimeout(() => {
-      setAllItems([]);
-      setCurrentPage(1);
-      setHasMore(true);
-      void performSearch(1, false);
-    }, 0);
-    return () => window.clearTimeout(timer);
-  }, [controlsOnly, keyword, performSearch, source]);
+    setAllItems([]);
+    setCurrentPage(1);
+    setHasMore(true);
+    performSearch(1, false);
+  }, [source, controlsOnly]);
 
   // 加载更多数据
   const loadMore = useCallback(() => {
@@ -339,7 +333,7 @@ export default function AcgSearch({
     if (!loading && hasMore && !isLoadingMoreRef.current) {
       performSearch(currentPage + 1, true);
     }
-  }, [currentPage, hasMore, loading, performSearch, source]);
+  }, [loading, hasMore, currentPage, source]);
 
   // 使用 Intersection Observer 监听滚动到底部
   useEffect(() => {

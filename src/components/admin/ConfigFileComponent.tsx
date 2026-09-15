@@ -35,15 +35,11 @@ export function ConfigFileComponent({
   );
 
   useEffect(() => {
-    const timer = window.setTimeout(() => {
-      if (!config || dirty) return;
-      setDraftVersion(config.ConfigVersion || 0);
-      setSubscriptions(structuredClone(config.ConfigSubscriptions || []));
-      setLocalContent(config.ConfigFileLocal || '{}');
-      setDirty(false);
-    }, 0);
-
-    return () => window.clearTimeout(timer);
+    if (!config || dirty) return;
+    setDraftVersion(config.ConfigVersion || 0);
+    setSubscriptions(structuredClone(config.ConfigSubscriptions || []));
+    setLocalContent(config.ConfigFileLocal || '{}');
+    setDirty(false);
   }, [config, dirty]);
 
   const preview = useMemo(() => {

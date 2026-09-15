@@ -5,7 +5,7 @@ import type FlvJsModule from 'flv.js';
 import type HlsInstance from 'hls.js';
 import { AlertTriangle,Radio } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 
 import { logger } from '@/lib/logger';
 import { getRuntimeConfig } from '@/lib/runtime-config';
@@ -51,7 +51,6 @@ export default function WebLivePage() {
   const artPlayerRef = useRef<ArtplayerInstance | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadingStage, setLoadingStage] = useState<'loading' | 'fetching' | 'ready'>('loading');
-  const [loadingMessage, setLoadingMessage] = useState('正在加载直播源...');
   const [sources, setSources] = useState<WebLiveSource[]>([]);
   const [currentSource, setCurrentSource] = useState<WebLiveSource | null>(null);
   const [videoUrl, setVideoUrl] = useState('');
@@ -62,7 +61,12 @@ export default function WebLivePage() {
   const [isVideoLoading, setIsVideoLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [selectedPlatform, setSelectedPlatform] = useState<string | null>(null);
-  const [isWebLiveEnabled, setIsWebLiveEnabled] = useState<boolean | null>(null);
+  // Runtime config is fixed for this document; keep the server's loading view during hydration.
+  const isWebLiveEnabled = useSyncExternalStore(
+    () => () => undefined,
+    () => getRuntimeConfig().WEB_LIVE_ENABLED ?? false,
+    () => null
+  );
   const [librariesLoaded, setLibrariesLoaded] = useState(false);
   const hasAutoLoadedRef = useRef(false); // 防止重复自动加载
 
@@ -107,26 +111,6 @@ export default function WebLivePage() {
         logger.warn('清理播放器资源时出错:', err);
         artPlayerRef.current = null;
       }
-    }
-  }, []);
-
-  const fetchSources = useCallback(async () => {
-    try {
-      setLoading(true);
-      setLoadingStage('loading');
-      setLoadingMessage('正在加载直播源...');
-      const res = await fetch('/api/web-live/sources');
-      if (res.ok) {
-        setLoadingStage('fetching');
-        const data = await res.json();
-        setSources(data as WebLiveSource[]);
-        setLoadingStage('ready');
-        await new Promise(resolve => setTimeout(resolve, 500));
-      }
-    } catch (err) {
-      logger.error('获取直播源失败:', err);
-    } finally {
-      setLoading(false);
     }
   }, []);
 
@@ -204,7 +188,8 @@ export default function WebLivePage() {
     meta.name = 'referrer';
     meta.content = 'no-referrer';
     document.head.appendChild(meta);
-    let configTimer: number | null = null;
+    const controller = new AbortController();
+    let cancelled = false;
 
     if (typeof window !== 'undefined') {
       // 异步加载所有必需的库
@@ -213,28 +198,39 @@ export default function WebLivePage() {
         import('hls.js').then(mod => { Hls = mod.default; }),
         import('flv.js').then(mod => { flvjs = mod.default; })
       ]).then(() => {
-        setLibrariesLoaded(true);
+        if (!cancelled) setLibrariesLoaded(true);
       });
 
-      configTimer = window.setTimeout(() => {
-        // 检查网络直播功能是否启用
-        const runtimeConfig = getRuntimeConfig();
-        const enabled = runtimeConfig?.WEB_LIVE_ENABLED ?? false;
-        setIsWebLiveEnabled(enabled);
+      // 检查网络直播功能是否启用
+      const runtimeConfig = getRuntimeConfig();
+      const enabled = runtimeConfig?.WEB_LIVE_ENABLED ?? false;
 
-        if (enabled) {
-          void fetchSources();
-        } else {
-          setLoading(false);
-        }
-      }, 0);
+      if (enabled) {
+        fetch('/api/web-live/sources', { signal: controller.signal })
+          .then(async (res) => {
+            if (cancelled || !res.ok) return;
+            setLoadingStage('fetching');
+            const data = await res.json();
+            if (cancelled) return;
+            setSources(data as WebLiveSource[]);
+            setLoadingStage('ready');
+            await new Promise(resolve => setTimeout(resolve, 500));
+          })
+          .catch((err) => {
+            if (!cancelled) logger.error('获取直播源失败:', err);
+          })
+          .finally(() => {
+            if (!cancelled) setLoading(false);
+          });
+      }
     }
 
     return () => {
-      if (configTimer !== null) window.clearTimeout(configTimer);
+      cancelled = true;
+      controller.abort();
       document.head.removeChild(meta);
     };
-  }, [fetchSources]);
+  }, []);
 
   // 当 sources 加载完成后，检查 URL 参数并自动加载对应的频道
   useEffect(() => {
@@ -265,10 +261,8 @@ export default function WebLivePage() {
     // 查找匹配的 source
     const foundSource = sources.find(s => s.platform === needLoadPlatform && s.roomId === needLoadRoomId);
     if (foundSource) {
-      const timer = window.setTimeout(() => {
-        void handleSourceClick(foundSource);
-      }, 0);
-      return () => window.clearTimeout(timer);
+      void handleSourceClick(foundSource);
+      return;
     } else {
       hasAutoLoadedRef.current = false; // 重置标志以便重试
     }
@@ -453,7 +447,7 @@ export default function WebLivePage() {
             {/* 加载消息 */}
             <div className='space-y-2'>
               <p className='text-xl font-semibold text-gray-800 dark:text-gray-200 animate-pulse'>
-                {loadingMessage}
+                正在加载直播源...
               </p>
             </div>
           </div>

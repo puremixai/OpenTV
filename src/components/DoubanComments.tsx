@@ -77,15 +77,12 @@ export default function DoubanComments({ doubanId }: DoubanCommentsProps) {
 
   useEffect(() => {
     // 重置状态当 doubanId 变化时
-    const timer = window.setTimeout(() => {
-      setHasStartedLoading(false);
-      setComments([]);
-      setLoading(false);
-      setError(null);
-      setTotal(0);
-      setHasMore(false);
-    }, 0);
-    return () => window.clearTimeout(timer);
+    setHasStartedLoading(false);
+    setComments([]);
+    setLoading(false);
+    setError(null);
+    setTotal(0);
+    setHasMore(false);
   }, [doubanId]); // 只在 doubanId 变化时重新获取
 
   const startLoading = () => {

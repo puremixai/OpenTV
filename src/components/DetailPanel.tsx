@@ -299,26 +299,22 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
 
   // 确保组件在客户端挂载后才渲染 Portal
   useEffect(() => {
-    const timer = window.setTimeout(() => setMounted(true), 0);
-    return () => window.clearTimeout(timer);
+    setMounted(true);
   }, []);
 
   useEffect(() => {
     if (!showGallery) {
-      const timer = window.setTimeout(() => {
-        setGalleryImages([]);
-        setGalleryError(null);
-        setGalleryLoading(false);
-        setGalleryTotal(0);
-        setGalleryScrollTop(0);
-        setGalleryViewportHeight(0);
-        setGalleryViewportWidth(0);
-      }, 0);
-      return () => window.clearTimeout(timer);
+      setGalleryImages([]);
+      setGalleryError(null);
+      setGalleryLoading(false);
+      setGalleryTotal(0);
+      setGalleryScrollTop(0);
+      setGalleryViewportHeight(0);
+      setGalleryViewportWidth(0);
+      return;
     }
 
-    const timer = window.setTimeout(() => void fetchGalleryImages(), 0);
-    return () => window.clearTimeout(timer);
+    fetchGalleryImages();
   }, [fetchGalleryImages, galleryMediaType, galleryTmdbId, showGallery]);
 
   useEffect(() => {
@@ -349,24 +345,17 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
     let timer: NodeJS.Timeout;
 
     if (isOpen) {
+      setIsVisible(true);
       animationId = requestAnimationFrame(() => {
-        setIsVisible(true);
         animationId = requestAnimationFrame(() => {
           setIsAnimating(true);
         });
       });
     } else {
-      const animationStateTimer = setTimeout(() => {
-        setIsAnimating(false);
-      }, 0);
+      setIsAnimating(false);
       timer = setTimeout(() => {
         setIsVisible(false);
       }, 200);
-      return () => {
-        if (animationId) cancelAnimationFrame(animationId);
-        clearTimeout(timer);
-        clearTimeout(animationStateTimer);
-      };
     }
 
     return () => {
@@ -381,13 +370,10 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
 
   useEffect(() => {
     if (!isOpen) {
-      const timer = window.setTimeout(() => {
-        setShowGallery(false);
-        setShowImageViewer(false);
-        setSelectedImage('');
-        detailRequestRef.current += 1;
-      }, 0);
-      return () => window.clearTimeout(timer);
+      setShowGallery(false);
+      setShowImageViewer(false);
+      setSelectedImage('');
+      detailRequestRef.current += 1;
     }
   }, [isOpen]);
 

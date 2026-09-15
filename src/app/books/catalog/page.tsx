@@ -132,18 +132,12 @@ export default function BooksCatalogPage() {
   }, []);
 
   useEffect(() => {
-    const timer = window.setTimeout(() => {
-      setSelectedSourceId(sourceId);
-      setCatalogNavigation([]);
-    }, 0);
-    return () => window.clearTimeout(timer);
+    setSelectedSourceId(sourceId);
+    setCatalogNavigation([]);
   }, [sourceId]);
 
   useEffect(() => {
-    const timer = window.setTimeout(() => {
-      setSelectedHref(href);
-    }, 0);
-    return () => window.clearTimeout(timer);
+    setSelectedHref(href);
   }, [href]);
 
   useEffect(() => {
@@ -181,6 +175,7 @@ export default function BooksCatalogPage() {
       );
     });
     if (!firstNavigationItem?.href) return;
+    setSelectedHref(firstNavigationItem.href);
     router.replace(
       `/books/catalog?sourceId=${encodeURIComponent(
         sourceId
@@ -276,10 +271,7 @@ export default function BooksCatalogPage() {
 
   useEffect(() => {
     if (!sourceId) return;
-    const timer = window.setTimeout(() => {
-      void loadCatalog(href, false);
-    }, 0);
-    return () => window.clearTimeout(timer);
+    void loadCatalog(href, false);
   }, [sourceId, href, loadCatalog]);
 
   useEffect(() => {

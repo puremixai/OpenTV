@@ -58,19 +58,12 @@ export default function WatchRoomPage() {
   const [currentUsername, setCurrentUsername] = useState<string>('游客');
 
   useEffect(() => {
-    const timer = window.setTimeout(() => {
-      const authInfo = getAuthInfoFromBrowserCookie();
-      setCurrentUsername(authInfo?.username || '游客');
-    }, 0);
-    return () => window.clearTimeout(timer);
+    const authInfo = getAuthInfoFromBrowserCookie();
+    setCurrentUsername(authInfo?.username || '游客');
   }, []);
 
   useEffect(() => {
-    const timer = window.setTimeout(
-      () => setMusicEnabled(Boolean(getRuntimeConfig().MUSIC_ENABLED)),
-      0
-    );
-    return () => window.clearTimeout(timer);
+    setMusicEnabled(Boolean(getRuntimeConfig().MUSIC_ENABLED));
   }, []);
 
   // 创建房间表单
@@ -128,11 +121,10 @@ export default function WatchRoomPage() {
   // 切换到房间列表 tab 时加载房间
   useEffect(() => {
     if (activeTab === 'list') {
-      const initialLoadTimer = window.setTimeout(() => loadRooms(true), 0);
+      loadRooms(true);
       // 每5秒刷新一次
       const interval = setInterval(() => loadRooms(false), 5000);
       return () => {
-        window.clearTimeout(initialLoadTimer);
         clearInterval(interval);
       };
     }

@@ -516,20 +516,18 @@ function TVPlayClient() {
   const title = searchParams.get('title');
   const fileName = searchParams.get('fileName');
   const initialIndex = Number(searchParams.get('index') || '0');
+  const explicitIndex = searchParams.has('index');
 
   useEffect(() => {
     let alive = true;
-    const timer = window.setTimeout(() => {
-      setLoading(true);
-      setError('');
-    }, 0);
+    setLoading(true);
+    setError('');
     fetchTVDetail({ source, id, title, fileName })
       .then((data) => {
         if (!alive) return;
         setDetail(data.detail);
         setSources(data.sources);
         const maxIndex = Math.max(0, (data.detail.episodes?.length || 1) - 1);
-        const explicitIndex = searchParams.has('index');
         const safeIndex = Math.max(
           0,
           Math.min(
@@ -566,9 +564,8 @@ function TVPlayClient() {
       .finally(() => alive && setLoading(false));
     return () => {
       alive = false;
-      window.clearTimeout(timer);
     };
-  }, [fileName, id, initialIndex, searchParams, source, title]);
+  }, [explicitIndex, fileName, id, initialIndex, source, title]);
 
   useEffect(() => {
     let alive = true;
@@ -692,10 +689,10 @@ function TVPlayClient() {
 
   useEffect(() => {
     if (!danmakuEnabled || danmakuItems.length === 0) {
-      const timer = window.setTimeout(() => setActiveDanmakuItems([]), 0);
+      setActiveDanmakuItems([]);
       spawnedDanmakuRef.current.clear();
       lastDanmakuTimeRef.current = currentPlaybackTime;
-      return () => window.clearTimeout(timer);
+      return;
     }
 
     const current = currentPlaybackTime;
@@ -731,16 +728,13 @@ function TVPlayClient() {
       nextItems.forEach((item) => spawned.add(item.id));
     }
 
-    const timer = window.setTimeout(() => {
-      setActiveDanmakuItems((prev) => {
-        if (jumped) return nextItems;
-        if (nextItems.length === 0) return prev;
-        return [...prev, ...nextItems];
-      });
-    }, 0);
+    setActiveDanmakuItems((prev) => {
+      if (jumped) return nextItems;
+      if (nextItems.length === 0) return prev;
+      return [...prev, ...nextItems];
+    });
 
     lastDanmakuTimeRef.current = current;
-    return () => window.clearTimeout(timer);
   }, [danmakuEnabled, danmakuItems, currentPlaybackTime]);
 
   useEffect(() => {
@@ -979,11 +973,8 @@ function TVPlayClient() {
   }, [muted, videoUrl, volume]);
 
   useEffect(() => {
-    const timer = window.setTimeout(() => {
-      if (showPanel || showEpisodes || showDanmakuSettings) revealPanel();
-    }, 0);
+    if (showPanel || showEpisodes || showDanmakuSettings) revealPanel();
     return () => {
-      window.clearTimeout(timer);
       if (idleTimerRef.current) window.clearTimeout(idleTimerRef.current);
     };
   }, [revealPanel, showDanmakuSettings, showEpisodes, showPanel]);
@@ -1219,14 +1210,11 @@ function TVPlayClient() {
   useEffect(() => {
     if (!showEpisodes) return;
     const targetPage = Math.floor(episodeIndex / 30);
-    const timer = window.setTimeout(() => {
-      setEpisodePage(targetPage);
-      window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
-      window.requestAnimationFrame(() => {
-        focusEpisodePanelElement(episodeButtonRefs.current[episodeIndex]);
-      });
-    }, 0);
-    return () => window.clearTimeout(timer);
+    setEpisodePage(targetPage);
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+    window.requestAnimationFrame(() => {
+      focusEpisodePanelElement(episodeButtonRefs.current[episodeIndex]);
+    });
   }, [episodeIndex, showEpisodes]);
 
   useEffect(() => {

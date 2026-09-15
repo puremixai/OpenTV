@@ -41,19 +41,16 @@ const AlertModal = ({
 
   // 控制动画状态
   useEffect(() => {
-    const visibilityTimer = window.setTimeout(() => {
-      if (isOpen) {
-        setIsVisible(true);
-        if (timer) {
-          setTimeout(() => {
-            onClose();
-          }, timer);
-        }
-      } else {
-        setIsVisible(false);
+    if (isOpen) {
+      setIsVisible(true);
+      if (timer) {
+        setTimeout(() => {
+          onClose();
+        }, timer);
       }
-    }, 0);
-    return () => window.clearTimeout(visibilityTimer);
+    } else {
+      setIsVisible(false);
+    }
   }, [isOpen, timer, onClose]);
 
   if (!isOpen) return null;

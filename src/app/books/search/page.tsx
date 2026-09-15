@@ -393,60 +393,53 @@ export default function BooksSearchPage() {
   );
 
   useEffect(() => {
-    const timer = window.setTimeout(
-      () => setUseFluidSearch(readFluidSearchSetting()),
-      0
-    );
+    setUseFluidSearch(readFluidSearchSetting());
     fetch('/api/books/sources')
       .then((res) => res.json())
       .then((json) => setSources(json.sources || []))
       .catch(() => undefined);
     return () => {
-      window.clearTimeout(timer);
       closeEventSource();
       clearPendingResults();
     };
   }, [clearPendingResults, closeEventSource, readFluidSearchSetting]);
 
   useEffect(() => {
-    const timer = window.setTimeout(() => {
-      const keyword = urlQuery;
-      const source = urlSourceId;
+    const keyword = urlQuery;
+    const source = urlSourceId;
 
-      if (!restoredRef.current) {
-        restoredRef.current = true;
-        if (!keyword) {
-          const cachedState = restoreSearchState();
-          if (cachedState?.q?.trim()) {
-            setQ(cachedState.q);
-            setSourceId(cachedState.sourceId || '');
-            setResult(cachedState.result || EMPTY_RESULT);
-            setHasSearched(true);
-          }
-          return;
-        }
-      }
-
-      setQ(keyword);
-      setSourceId(source);
+    if (!restoredRef.current) {
+      restoredRef.current = true;
       if (!keyword) {
-        closeEventSource();
-        clearPendingResults();
-        setResult(EMPTY_RESULT);
-        setLoading(false);
-        setHasSearched(false);
-        setTotalSources(0);
-        setCompletedSources(0);
-        setError('');
+        const cachedState = restoreSearchState();
+        if (cachedState?.q?.trim()) {
+          setQ(cachedState.q);
+          setSourceId(cachedState.sourceId || '');
+          setResult(cachedState.result || EMPTY_RESULT);
+          setHasSearched(true);
+        }
         return;
       }
+    }
 
-      const forceRefresh = forceNextUrlSearchRef.current;
-      forceNextUrlSearchRef.current = false;
-      void performSearch(keyword, source, { forceRefresh });
-    }, 0);
+    setQ(keyword);
+    setSourceId(source);
+    if (!keyword) {
+      closeEventSource();
+      clearPendingResults();
+      setResult(EMPTY_RESULT);
+      setLoading(false);
+      setHasSearched(false);
+      setTotalSources(0);
+      setCompletedSources(0);
+      setError('');
+      return;
+    }
+
+    const forceRefresh = forceNextUrlSearchRef.current;
+    forceNextUrlSearchRef.current = false;
+    void performSearch(keyword, source, { forceRefresh });
     return () => {
-      window.clearTimeout(timer);
       closeEventSource();
       clearPendingResults();
     };

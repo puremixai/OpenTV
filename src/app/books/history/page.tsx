@@ -140,10 +140,7 @@ export default function BookHistoryPage() {
 
   useEffect(() => {
     if (!cacheModalOpen) return;
-    const timer = window.setTimeout(() => {
-      void loadCacheItems();
-    }, 0);
-    return () => window.clearTimeout(timer);
+    void loadCacheItems();
   }, [cacheModalOpen]);
 
   const items = useMemo(

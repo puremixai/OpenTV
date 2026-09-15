@@ -73,15 +73,11 @@ export const CategoryConfig = ({
 
   // 初始化
   useEffect(() => {
-    const timer = window.setTimeout(() => {
-      if (config?.CustomCategories) {
-        setCategories(config.CustomCategories);
-        // 进入时重置 orderChanged
-        setOrderChanged(false);
-      }
-    }, 0);
-
-    return () => window.clearTimeout(timer);
+    if (config?.CustomCategories) {
+      setCategories(config.CustomCategories);
+      // 进入时重置 orderChanged
+      setOrderChanged(false);
+    }
   }, [config]);
 
   // 通用 API 请求

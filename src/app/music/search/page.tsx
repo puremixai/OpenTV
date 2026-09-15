@@ -260,28 +260,25 @@ export default function MusicSearchPage() {
 
   useEffect(() => {
     let controller: AbortController | null = null;
-    const timer = window.setTimeout(() => {
-      setSelectedSource(source);
-      setSelectedType(searchType);
-      setKeyword(q);
-      void loadHotSearch();
+    setSelectedSource(source);
+    setSelectedType(searchType);
+    setKeyword(q);
+    void loadHotSearch();
 
-      if (!q) {
-        setSongs([]);
-        setSingers([]);
-        setAlbums([]);
-        setDetailTitle('');
-        setPage(1);
-        setHasMore(false);
-        return;
-      }
-      controller = new AbortController();
+    if (!q) {
+      setSongs([]);
+      setSingers([]);
+      setAlbums([]);
       setDetailTitle('');
       setPage(1);
-      void loadSearchPage(1, false, controller.signal);
-    }, 0);
+      setHasMore(false);
+      return;
+    }
+    controller = new AbortController();
+    setDetailTitle('');
+    setPage(1);
+    void loadSearchPage(1, false, controller.signal);
     return () => {
-      window.clearTimeout(timer);
       controller?.abort();
     };
   }, [source, q, searchType, loadHotSearch, loadSearchPage]);

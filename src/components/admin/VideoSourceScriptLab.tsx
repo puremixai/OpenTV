@@ -117,11 +117,7 @@ export const VideoSourceScriptLab = () => {
   };
 
   useEffect(() => {
-    const timer = window.setTimeout(() => {
-      void loadScripts();
-    }, 0);
-
-    return () => window.clearTimeout(timer);
+    loadScripts();
   }, []);
 
   const handleCreateNew = () => {
@@ -321,33 +317,29 @@ export const VideoSourceScriptLab = () => {
   };
 
   useEffect(() => {
-    const timer = window.setTimeout(() => {
-      setTestPayload(
-        testHook === 'getSources'
-          ? JSON.stringify({}, null, 2)
-          : testHook === 'search'
-          ? JSON.stringify(
-              { keyword: '凡人修仙传', page: 1, sourceId: 'main' },
-              null,
-              2
-            )
-          : testHook === 'recommend'
-          ? JSON.stringify({ page: 1 }, null, 2)
-          : testHook === 'detail'
-          ? JSON.stringify({ id: 'demo-id', sourceId: 'main' }, null, 2)
-          : JSON.stringify(
-              {
-                sourceId: 'main',
-                playUrl: 'https://example.com/video.m3u8',
-                episodeIndex: 0,
-              },
-              null,
-              2
-            )
-      );
-    }, 0);
-
-    return () => window.clearTimeout(timer);
+    setTestPayload(
+      testHook === 'getSources'
+        ? JSON.stringify({}, null, 2)
+        : testHook === 'search'
+        ? JSON.stringify(
+            { keyword: '凡人修仙传', page: 1, sourceId: 'main' },
+            null,
+            2
+          )
+        : testHook === 'recommend'
+        ? JSON.stringify({ page: 1 }, null, 2)
+        : testHook === 'detail'
+        ? JSON.stringify({ id: 'demo-id', sourceId: 'main' }, null, 2)
+        : JSON.stringify(
+            {
+              sourceId: 'main',
+              playUrl: 'https://example.com/video.m3u8',
+              episodeIndex: 0,
+            },
+            null,
+            2
+          )
+    );
   }, [testHook]);
 
   return (

@@ -52,10 +52,8 @@ export default function TVPrivatePage() {
 
   useEffect(() => {
     if (enabledSources.length > 0 && !enabledSources.includes(source)) {
-      const timer = window.setTimeout(() => {
-        setSource(enabledSources[0]);
-      }, 0);
-      return () => window.clearTimeout(timer);
+      setSource(enabledSources[0]);
+      return;
     }
   }, [enabledSources, source]);
 
@@ -108,10 +106,7 @@ export default function TVPrivatePage() {
   }, [authed, enabledSources.length, source, embyKey, embySources.length, xiaoyaPath]);
 
   useEffect(() => {
-    const timer = window.setTimeout(() => {
-      void load();
-    }, 0);
-    return () => window.clearTimeout(timer);
+    void load();
   }, [load]);
 
   const sourceLabel = { openlist: 'OpenList', emby: 'Emby', xiaoya: '小雅' };
