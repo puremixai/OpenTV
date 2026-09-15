@@ -10,6 +10,7 @@ import { PROJECT_NAME, PROJECT_REPOSITORY_URL } from '@/lib/project';
 import { CURRENT_VERSION } from '@/lib/version';
 import { checkForUpdates, UpdateStatus } from '@/lib/version_check';
 
+import ProxyImage from '@/components/ProxyImage';
 import { useSite } from '@/components/SiteProvider';
 import { ThemeToggle } from '@/components/ThemeToggle';
 
@@ -23,7 +24,7 @@ function VersionDisplay() {
       try {
         const status = await checkForUpdates();
         setUpdateStatus(status);
-      } catch (_) {
+      } catch {
         // do nothing
       } finally {
         setIsChecking(false);
@@ -82,7 +83,7 @@ function getOIDCProviderIcon(buttonText: string) {
 
   for (const provider of providers) {
     if (provider.keywords.some(keyword => text.includes(keyword))) {
-      return <img src={provider.icon} alt={provider.alt} className='w-5 h-5 mr-2' />;
+      return <ProxyImage originalSrc={provider.icon} alt={provider.alt} className='w-5 h-5 mr-2' />;
     }
   }
 
@@ -119,13 +120,17 @@ function LoginPageClient() {
   useEffect(() => {
     const errorParam = searchParams.get('error');
     if (errorParam) {
-      setError(decodeURIComponent(errorParam));
+      const timer = window.setTimeout(
+        () => setError(decodeURIComponent(errorParam)),
+        0
+      );
+      return () => window.clearTimeout(timer);
     }
   }, [searchParams]);
 
   // 在客户端挂载后设置配置
   useEffect(() => {
-    if (typeof window !== 'undefined') {
+    const timer = window.setTimeout(() => {
       const runtimeConfig = (window as any).RUNTIME_CONFIG;
       const storageType = runtimeConfig?.STORAGE_TYPE;
       const shouldAsk = storageType && storageType !== 'localstorage';
@@ -168,12 +173,13 @@ function LoginPageClient() {
             setUsername(credentials.username);
           }
           setRememberPassword(true);
-        } catch (error) {
+        } catch {
           // 清除无效的数据
           localStorage.removeItem('rememberedCredentials');
         }
       }
-    }
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, []);
 
   // 加载Cloudflare Turnstile脚本
@@ -210,7 +216,8 @@ function LoginPageClient() {
           setTurnstileToken(token);
         },
       });
-      setTurnstileWidgetId(widgetId);
+      const timer = window.setTimeout(() => setTurnstileWidgetId(widgetId), 0);
+      return () => window.clearTimeout(timer);
     }
   }, [turnstileLoaded, siteConfig]);
 
@@ -268,7 +275,7 @@ function LoginPageClient() {
           setError(data.error ?? '服务器错误');
         }
       }
-    } catch (error) {
+    } catch {
       // 网络错误，重置Turnstile
       if (siteConfig?.LoginRequireTurnstile && turnstileWidgetId !== null && (window as any).turnstile) {
         (window as any).turnstile.reset(turnstileWidgetId);
@@ -327,7 +334,7 @@ function LoginPageClient() {
           setError('Telegram 登录已过期');
         }
       }, 2000);
-    } catch (error) {
+    } catch {
       setError('Telegram 登录请求失败，请稍后重试');
       setTelegramLoginLoading(false);
       setTelegramLoginHint(null);
@@ -495,7 +502,7 @@ function LoginPageClient() {
               {siteConfig?.EnableOIDCLogin && (
                 <button
                   type='button'
-                  onClick={() => window.location.href = '/api/auth/oidc/login'}
+                   onClick={() => window.location.assign(new URL('/api/auth/oidc/login', window.location.origin).toString())}
                   className='w-full inline-flex justify-center items-center rounded-lg border-2 border-gray-300 dark:border-gray-600 bg-white/60 dark:bg-zinc-800/60 py-3 text-base font-semibold text-gray-700 dark:text-gray-200 shadow-xs transition-all duration-200 hover:bg-gray-50 dark:hover:bg-zinc-700/60'
                 >
                   {getOIDCProviderIcon(siteConfig?.OIDCButtonText || '')}

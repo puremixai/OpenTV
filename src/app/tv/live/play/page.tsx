@@ -2,16 +2,18 @@
 
 import { AlertTriangle, ArrowLeft, Clock, Heart, Loader2, Maximize, Radio, RotateCcw, Search, Star, Volume2, VolumeX } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { deleteFavorite, isFavorited, saveFavorite } from '@/lib/db.client';
 import { resolveLivePlayback } from '@/lib/live-playback';
 
+import ProxyImage from '@/components/ProxyImage';
 import TVNativeVideo from '@/components/tv/player/TVNativeVideo';
 import TVVirtualRemote from '@/components/tv/TVVirtualRemote';
 
 type LiveSource = { key: string; name: string; proxyMode?: 'full' | 'm3u8-only' | 'direct' };
 type LiveChannel = { id: string; tvgId?: string; name: string; logo?: string; group?: string; url: string };
+type LiveChannelResponse = Partial<LiveChannel> & { id: string; name: string; url: string };
 type EpgProgram = { start: string; end: string; title: string };
 type TVPlayerSourceType = 'm3u8' | 'flv' | 'native';
 
@@ -109,8 +111,10 @@ function TVLivePlayClient() {
   useEffect(() => {
     if (!source) return;
     let alive = true;
-    setLoading(true);
-    setError('');
+    const timer = window.setTimeout(() => {
+      setLoading(true);
+      setError('');
+    }, 0);
     fetch(`/api/live/channels?source=${encodeURIComponent(source.key)}`)
       .then((r) => {
         if (r.status === 401 || r.status === 403) throw new Error('无权限访问电视直播，请先登录或检查权限');
@@ -119,7 +123,8 @@ function TVLivePlayClient() {
       })
       .then((data) => {
         if (!alive) return;
-        const list = (data.data || []).map((item: any) => ({
+        const rawChannels = (data.data || []) as LiveChannelResponse[];
+        const list = rawChannels.map((item) => ({
           id: item.id,
           tvgId: item.tvgId || item.name,
           name: item.name,
@@ -134,17 +139,19 @@ function TVLivePlayClient() {
       })
       .catch((err) => setError(err instanceof Error ? err.message : '获取频道列表失败'))
       .finally(() => alive && setLoading(false));
-    return () => { alive = false; };
+    return () => { alive = false; window.clearTimeout(timer); };
   }, [source, needChannel]);
 
   useEffect(() => {
     let alive = true;
     if (!channel) return;
-    setVideoUrl('');
-    setVideoType(undefined);
-    setUnsupportedError('');
-    setPlaybackError(false);
-    setRetryCount(0);
+    const timer = window.setTimeout(() => {
+      setVideoUrl('');
+      setVideoType(undefined);
+      setUnsupportedError('');
+      setPlaybackError(false);
+      setRetryCount(0);
+    }, 0);
     resolveLiveUrl(channel.url, source)
       .then(({ url, type }) => {
         if (!alive) return;
@@ -155,7 +162,7 @@ function TVLivePlayClient() {
         if (!alive) return;
         setUnsupportedError(err instanceof Error ? err.message : '不支持的直播流格式');
       });
-    return () => { alive = false; };
+    return () => { alive = false; window.clearTimeout(timer); };
   }, [channel, source]);
 
   useEffect(() => {
@@ -165,11 +172,11 @@ function TVLivePlayClient() {
 
   useEffect(() => {
     if (!source || !channel?.tvgId) {
-      setEpgPrograms([]);
-      return;
+      const timer = window.setTimeout(() => setEpgPrograms([]), 0);
+      return () => window.clearTimeout(timer);
     }
     let alive = true;
-    setEpgLoading(true);
+    const timer = window.setTimeout(() => setEpgLoading(true), 0);
     fetch(`/api/live/epg?source=${encodeURIComponent(source.key)}&tvgId=${encodeURIComponent(channel.tvgId)}`)
       .then((r) => r.ok ? r.json() : null)
       .then((data) => {
@@ -178,7 +185,7 @@ function TVLivePlayClient() {
       })
       .catch(() => alive && setEpgPrograms([]))
       .finally(() => alive && setEpgLoading(false));
-    return () => { alive = false; };
+    return () => { alive = false; window.clearTimeout(timer); };
   }, [channel?.tvgId, source]);
 
   useEffect(() => {
@@ -235,16 +242,16 @@ function TVLivePlayClient() {
     });
   }, [channels, query, selectedGroup]);
 
-  const precheckChannel = async (next: LiveChannel) => {
+  const precheckChannel = useCallback(async (next: LiveChannel) => {
     if (!source) return;
     try {
       await fetch(`/api/live/precheck?url=${encodeURIComponent(next.url)}&moontv-source=${encodeURIComponent(source.key)}`, { cache: 'no-store' });
     } catch {
       // 预检查失败不阻止切台，播放器错误层会给出重试/换台。
     }
-  };
+  }, [source]);
 
-  const switchChannel = (next: LiveChannel, revealControls = true) => {
+  const switchChannel = useCallback((next: LiveChannel, revealControls = true) => {
     precheckChannel(next);
     setChannel(next);
     setSelectedGroup(next.group || '其他');
@@ -253,7 +260,7 @@ function TVLivePlayClient() {
     setChannelHint({ number: number > 0 ? number : 1, name: next.name });
     if (channelHintTimerRef.current) window.clearTimeout(channelHintTimerRef.current);
     channelHintTimerRef.current = window.setTimeout(() => setChannelHint(null), 5000);
-  };
+  }, [channels, precheckChannel]);
 
   const switchSource = (next: LiveSource) => {
     setSource(next);
@@ -421,7 +428,7 @@ function TVLivePlayClient() {
       window.removeEventListener('keydown', onKey, true);
       window.removeEventListener('keyup', onKey, true);
     };
-  }, [channel?.id, channels, digitBuffer, router, showPanel, source, volume]);
+  }, [channel?.id, channels, digitBuffer, router, showPanel, source, switchChannel, volume]);
 
   useEffect(() => {
     if (!showPanel || !channel?.id) return;
@@ -496,7 +503,7 @@ function TVLivePlayClient() {
       <div className={`absolute left-8 right-8 top-8 flex items-center justify-between transition-opacity duration-300 ${showPanel ? 'opacity-100' : 'opacity-0'}`}>
         <button onClick={() => { if (showPanel) setShowPanel(false); else router.back(); }} data-tv-live-control className='tv-focusable flex cursor-pointer items-center gap-3 rounded-2xl bg-black/70 px-5 py-4 text-2xl font-black outline-hidden backdrop-blur-sm focus:ring-4 focus:ring-rose-300'><ArrowLeft className='h-7 w-7' />返回</button>
         <div className='flex items-center gap-4 rounded-2xl bg-black/70 px-6 py-4 backdrop-blur-sm'>
-          {channel.logo ? <img src={getLogoUrl(channel.logo, source?.key)} alt='' className='h-12 w-12 rounded-xl object-contain' /> : <Radio className='h-10 w-10 text-rose-500' />}
+          {channel.logo ? <ProxyImage originalSrc={getLogoUrl(channel.logo, source?.key)} alt='' className='h-12 w-12 rounded-xl object-contain' /> : <Radio className='h-10 w-10 text-rose-500' />}
           <div><div className='text-3xl font-black'>{channel.name}</div><div className='text-xl text-slate-300'>{source?.name} · {channel.group}</div></div>
         </div>
         <div className='flex items-center gap-3'>
@@ -540,7 +547,7 @@ function TVLivePlayClient() {
             <div className='grid grid-cols-1 gap-3'>
               {filteredChannels.map((item) => {
                 const absoluteIndex = channels.findIndex((c) => c.id === item.id) + 1;
-                return <button key={item.id} ref={(el) => { channelButtonRefs.current[item.id] = el; }} onClick={() => switchChannel(item)} className={`tv-focusable flex min-h-16 cursor-pointer items-center gap-3 rounded-2xl px-4 py-3 text-left text-xl font-black outline-hidden focus:ring-4 focus:ring-inset focus:ring-rose-300 ${item.id === channel.id ? 'bg-rose-600' : 'bg-white/10'}`}>{item.logo ? <img src={getLogoUrl(item.logo, source?.key)} alt='' className='h-9 w-9 rounded-lg object-contain' /> : <Radio className='h-8 w-8 text-rose-400' />}<span className='min-w-12 text-slate-300'>#{absoluteIndex}</span><span className='line-clamp-1'>{item.name}</span></button>;
+                return <button key={item.id} ref={(el) => { channelButtonRefs.current[item.id] = el; }} onClick={() => switchChannel(item)} className={`tv-focusable flex min-h-16 cursor-pointer items-center gap-3 rounded-2xl px-4 py-3 text-left text-xl font-black outline-hidden focus:ring-4 focus:ring-inset focus:ring-rose-300 ${item.id === channel.id ? 'bg-rose-600' : 'bg-white/10'}`}>{item.logo ? <ProxyImage originalSrc={getLogoUrl(item.logo, source?.key)} alt='' className='h-9 w-9 rounded-lg object-contain' /> : <Radio className='h-8 w-8 text-rose-400' />}<span className='min-w-12 text-slate-300'>#{absoluteIndex}</span><span className='line-clamp-1'>{item.name}</span></button>;
               })}
             </div>
           </div>

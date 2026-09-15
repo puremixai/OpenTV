@@ -137,7 +137,7 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: '无权限操作此歌单' }, { status: 403 });
     }
 
-    const updates: any = {};
+    const updates: { name?: string; description?: string; cover?: string } = {};
     if (name !== undefined) updates.name = name.trim();
     if (description !== undefined) updates.description = description?.trim();
     if (cover !== undefined) updates.cover = cover;

@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
     const source = searchParams.get('source') || 'wy';
     if (!isMusicSource(source)) return badRequest('不支持的音源');
 
-    const payload = await lxGetJson<any>(`/api/music/songList/tags?source=${source}`, 'none');
+    const payload = await lxGetJson<{ tags?: unknown[]; hotTag?: unknown[]; sortList?: unknown[] }>(`/api/music/songList/tags?source=${source}`, 'none');
 
     return NextResponse.json({
       success: true,

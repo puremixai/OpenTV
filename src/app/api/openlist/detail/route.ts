@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -86,7 +85,7 @@ export async function GET(request: NextRequest) {
             setCachedVideoInfo(folderPath, videoInfo);
           }
         }
-      } catch (error) {
+      } catch {
         logger.debug('videoinfo.json 不存在，将解析文件名');
       }
     }

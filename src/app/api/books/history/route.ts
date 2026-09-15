@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import { BookReadRecord } from '@/lib/book.types';
-import { db } from '@/lib/db';
+import { db, getStorage } from '@/lib/db';
 import { logger } from '@/lib/logger';
 
 import { getAuthorizedBooksUsername } from '../_utils';
@@ -67,8 +67,9 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    if ((db as any).storage.cleanupOldBookReadRecords) {
-      (db as any).storage.cleanupOldBookReadRecords(username).catch((err: Error) => {
+    const storage = getStorage();
+    if (storage.cleanupOldBookReadRecords) {
+      storage.cleanupOldBookReadRecords(username).catch((err: Error) => {
         logger.error('异步清理电子书阅读历史失败:', err);
       });
     }

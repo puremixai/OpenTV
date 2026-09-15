@@ -59,6 +59,7 @@ const MobileBottomNav = ({ activePath }: MobileBottomNavProps) => {
   ]);
 
   useEffect(() => {
+    const timer = window.setTimeout(() => {
     const runtimeConfig = (window as any).RUNTIME_CONFIG;
 
     // 基础导航项（不包括观影室）
@@ -140,6 +141,8 @@ const MobileBottomNav = ({ activePath }: MobileBottomNavProps) => {
     }
 
     setNavItems(items);
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, [watchRoomContext?.isEnabled]);
 
   const isActive = (href: string) => {

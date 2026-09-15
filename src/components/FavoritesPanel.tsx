@@ -96,7 +96,10 @@ export const FavoritesPanel: React.FC<FavoritesPanelProps> = ({
   // 打开面板时加载收藏
   useEffect(() => {
     if (isOpen) {
-      loadFavorites();
+      const timer = window.setTimeout(() => {
+        void loadFavorites();
+      }, 0);
+      return () => window.clearTimeout(timer);
     }
   }, [isOpen]);
 

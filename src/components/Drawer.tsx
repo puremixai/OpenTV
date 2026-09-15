@@ -27,22 +27,28 @@ export default function Drawer({
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setMounted(true);
+    const timer = window.setTimeout(() => setMounted(true), 0);
+    return () => window.clearTimeout(timer);
   }, []);
 
   useEffect(() => {
     let animationId: number;
     let timer: NodeJS.Timeout;
+    let animationStateTimer: NodeJS.Timeout;
 
     if (isOpen) {
-      setIsVisible(true);
+      animationStateTimer = setTimeout(() => {
+        setIsVisible(true);
+      }, 0);
       animationId = requestAnimationFrame(() => {
         animationId = requestAnimationFrame(() => {
           setIsAnimating(true);
         });
       });
     } else {
-      setIsAnimating(false);
+      animationStateTimer = setTimeout(() => {
+        setIsAnimating(false);
+      }, 0);
       timer = setTimeout(() => {
         setIsVisible(false);
       }, 300);
@@ -54,6 +60,9 @@ export default function Drawer({
       }
       if (timer) {
         clearTimeout(timer);
+      }
+      if (animationStateTimer) {
+        clearTimeout(animationStateTimer);
       }
     };
   }, [isOpen]);

@@ -1,4 +1,4 @@
-/* eslint-disable react-hooks/exhaustive-deps, @typescript-eslint/no-explicit-any,@typescript-eslint/no-non-null-assertion,no-empty */
+/* eslint-disable react-hooks/exhaustive-deps, @typescript-eslint/no-explicit-any,no-empty */
 'use client';
 
 import {
@@ -49,7 +49,7 @@ import SearchResultFilter, {
   SearchFilterCategory,
 } from '@/components/SearchResultFilter';
 import SearchSuggestions from '@/components/SearchSuggestions';
-import VideoCard, { VideoCardHandle } from '@/components/VideoCard';
+import VideoCard from '@/components/VideoCard';
 import VirtualScrollableGrid from '@/components/VirtualScrollableGrid';
 
 const PANSOU_CLOUD_TYPE_OPTIONS = Object.entries(CLOUD_TYPE_NAMES).map(
@@ -62,6 +62,8 @@ type SearchCachePayload = {
   query: string;
   updatedAt: number;
 };
+
+const getCurrentTimestamp = () => Date.now();
 
 function SearchPageClient() {
   const searchCacheUser = getAuthInfoFromBrowserCookie()?.username;
@@ -89,7 +91,7 @@ function SearchPageClient() {
   const pansouCloudFilterButtonRef = useRef<HTMLButtonElement | null>(null);
   const pansouCloudFilterDropdownRef = useRef<HTMLDivElement | null>(null);
   // 用户权限
-  const [userRole, setUserRole] = useState<'owner' | 'admin' | 'user' | null>(
+  const [, setUserRole] = useState<'owner' | 'admin' | 'user' | null>(
     null
   );
   const [netdiskSearchEnabled, setNetdiskSearchEnabled] = useState(false);
@@ -118,16 +120,6 @@ function SearchPageClient() {
   const pendingResultsRef = useRef<SearchResult[]>([]);
   const flushTimerRef = useRef<number | null>(null);
   const [useFluidSearch, setUseFluidSearch] = useState(true);
-  // 聚合卡片 refs 与聚合统计缓存
-  const groupRefs = useRef<Map<string, React.RefObject<VideoCardHandle | null>>>(
-    new Map()
-  );
-  const groupStatsRef = useRef<
-    Map<
-      string,
-      { douban_id?: number; episodes?: number; source_names: string[] }
-    >
-  >(new Map());
   // 强制刷新状态
   const [forceRefresh, setForceRefresh] = useState(false);
   // 是否使用了缓存结果
@@ -156,7 +148,7 @@ function SearchPageClient() {
       if (!cached) return null;
 
       const parsed = JSON.parse(cached) as SearchCachePayload;
-      if (parsed?.status === 'complete' && Array.isArray(parsed.results) && Date.now() - parsed.updatedAt < SEARCH_CACHE_MAX_AGE) {
+      if (parsed?.status === 'complete' && Array.isArray(parsed.results) && getCurrentTimestamp() - parsed.updatedAt < SEARCH_CACHE_MAX_AGE) {
         return parsed.results;
       }
     } catch (error) {
@@ -179,7 +171,7 @@ function SearchPageClient() {
         status,
         results,
         query: query.trim(),
-        updatedAt: Date.now(),
+        updatedAt: getCurrentTimestamp(),
       };
       sessionStorage.setItem(cacheKey, JSON.stringify(payload));
     } catch (error) {
@@ -207,15 +199,6 @@ function SearchPageClient() {
     } catch (error) {
       logger.error('Failed to clear cached results:', error);
     }
-  };
-
-  const getGroupRef = (key: string) => {
-    let ref = groupRefs.current.get(key);
-    if (!ref) {
-      ref = React.createRef<VideoCardHandle>();
-      groupRefs.current.set(key, ref);
-    }
-    return ref;
   };
 
   const computeGroupStats = (group: SearchResult[]) => {
@@ -500,40 +483,11 @@ function SearchPageClient() {
     );
   }, [allExactSearchResults]);
 
-  // 当聚合结果变化时，如果某个聚合已存在，则调用其卡片 ref 的 set 方法增量更新
-  useEffect(() => {
-    aggregatedResults.forEach(([mapKey, group]) => {
-      const stats = computeGroupStats(group);
-      const prev = groupStatsRef.current.get(mapKey);
-      if (!prev) {
-        // 第一次出现，记录初始值，不调用 ref（由初始 props 渲染）
-        groupStatsRef.current.set(mapKey, stats);
-        return;
-      }
-      // 对比变化并调用对应的 set 方法
-      const ref = groupRefs.current.get(mapKey);
-      if (ref && ref.current) {
-        if (prev.episodes !== stats.episodes) {
-          ref.current.setEpisodes(stats.episodes);
-        }
-        const prevNames = (prev.source_names || []).join('|');
-        const nextNames = (stats.source_names || []).join('|');
-        if (prevNames !== nextNames) {
-          ref.current.setSourceNames(stats.source_names);
-        }
-        if (prev.douban_id !== stats.douban_id) {
-          ref.current.setDoubanId(stats.douban_id);
-        }
-        groupStatsRef.current.set(mapKey, stats);
-      }
-    });
-  }, [aggregatedResults]);
-
   // 构建筛选选项
   const filterOptions = useMemo(() => {
     const exactSearchFiltered = exactSearch
       ? searchResults.filter((item) =>
-          titleContainsQuery(item.title, currentQueryRef.current)
+          titleContainsQuery(item.title, submittedSearchQuery)
         )
       : searchResults;
 
@@ -1049,16 +1003,20 @@ function SearchPageClient() {
   // 监听选项卡切换，自动执行搜索
   useEffect(() => {
     // 如果切换到网盘搜索选项卡，且有搜索关键词，且已显示结果，则触发搜索
-    if (activeTab === 'pansou' && searchQuery.trim() && showResults) {
-      setTriggerPansouSearch((prev) => !prev);
-    }
-    // 如果切换到 ACG 磁力搜索选项卡，且有搜索关键词，且已显示结果，则触发搜索
-    if (activeTab === 'acg' && searchQuery.trim() && showResults) {
-      setTriggerAcgSearch((prev) => !prev);
-    }
+    const timer = window.setTimeout(() => {
+      if (activeTab === 'pansou' && searchQuery.trim() && showResults) {
+        setTriggerPansouSearch((prev) => !prev);
+      }
+      // 如果切换到 ACG 磁力搜索选项卡，且有搜索关键词，且已显示结果，则触发搜索
+      if (activeTab === 'acg' && searchQuery.trim() && showResults) {
+        setTriggerAcgSearch((prev) => !prev);
+      }
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, [activeTab]);
 
   useEffect(() => {
+    const configTimer = window.setTimeout(() => {
     // 获取用户权限
     const authInfo = getAuthInfoFromBrowserCookie();
     setUserRole(authInfo?.role || null);
@@ -1116,6 +1074,7 @@ function SearchPageClient() {
       privateLibraryOnlyLoadedRef.current = true;
       setPrivateLibraryOnlyReady(true);
     }
+    }, 0);
 
     // 监听搜索历史更新事件
     const unsubscribe = subscribeToDataUpdates(
@@ -1155,6 +1114,7 @@ function SearchPageClient() {
     document.body.addEventListener('scroll', handleScroll, { passive: true });
 
     return () => {
+      window.clearTimeout(configTimer);
       unsubscribe();
       isRunning = false; // 停止 requestAnimationFrame 循环
 
@@ -1166,28 +1126,31 @@ function SearchPageClient() {
   useEffect(() => {
     if (!featureFlagsReady) return;
 
-    const typeParam = searchParams.get('type');
-    const query = searchParams.get('q');
+    const timer = window.setTimeout(() => {
+      const typeParam = searchParams.get('type');
+      const query = searchParams.get('q');
 
-    if (typeParam === 'pansou') {
-      if (netdiskSearchEnabled) {
-        setActiveTab('pansou');
+      if (typeParam === 'pansou') {
+        if (netdiskSearchEnabled) {
+          setActiveTab('pansou');
+        } else {
+          setActiveTab('video');
+        }
+      } else if (typeParam === 'acg') {
+        if (magnetSearchEnabled) {
+          setActiveTab('acg');
+        } else {
+          setActiveTab('video');
+        }
       } else {
         setActiveTab('video');
       }
-    } else if (typeParam === 'acg') {
-      if (magnetSearchEnabled) {
-        setActiveTab('acg');
-      } else {
-        setActiveTab('video');
-      }
-    } else {
-      setActiveTab('video');
-    }
 
-    if (!query) {
-      document.getElementById('searchInput')?.focus();
-    }
+      if (!query) {
+        document.getElementById('searchInput')?.focus();
+      }
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, [
     searchParams,
     netdiskSearchEnabled,
@@ -1201,6 +1164,7 @@ function SearchPageClient() {
       return;
     }
 
+    const timer = window.setTimeout(() => {
     // 当搜索参数变化时更新搜索状态
     let query = searchParams.get('q') || '';
 
@@ -1490,7 +1454,9 @@ function SearchPageClient() {
       setShowResults(false);
       setShowSuggestions(false);
     }
+    }, 0);
     return () => {
+      window.clearTimeout(timer);
       searchAbortRef.current?.abort();
       searchAbortRef.current = null;
       eventSourceRef.current?.close();
@@ -1514,19 +1480,22 @@ function SearchPageClient() {
     const query = searchParams.get('q');
     if (!query || !query.trim()) return;
 
-    if (typeParam === 'pansou' && netdiskSearchEnabled) {
-      setSearchQuery(query);
-      setShowResults(true);
-      setTimeout(() => {
-        setTriggerPansouSearch((prev) => !prev);
-      }, 100);
-    } else if (typeParam === 'acg' && magnetSearchEnabled) {
-      setSearchQuery(query);
-      setShowResults(true);
-      setTimeout(() => {
-        setTriggerAcgSearch((prev) => !prev);
-      }, 100);
-    }
+    const timer = window.setTimeout(() => {
+      if (typeParam === 'pansou' && netdiskSearchEnabled) {
+        setSearchQuery(query);
+        setShowResults(true);
+        setTimeout(() => {
+          setTriggerPansouSearch((prev) => !prev);
+        }, 100);
+      } else if (typeParam === 'acg' && magnetSearchEnabled) {
+        setSearchQuery(query);
+        setShowResults(true);
+        setTimeout(() => {
+          setTriggerAcgSearch((prev) => !prev);
+        }, 100);
+      }
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, [
     searchParams,
     netdiskSearchEnabled,
@@ -1777,7 +1746,7 @@ function SearchPageClient() {
         top: 0,
         behavior: 'smooth',
       });
-    } catch (error) {
+    } catch {
       // 如果平滑滚动完全失败，使用立即滚动
       document.body.scrollTop = 0;
     }
@@ -2299,14 +2268,6 @@ function SearchPageClient() {
                                   ? 'movie'
                                   : 'tv';
 
-                              if (!groupStatsRef.current.has(mapKey)) {
-                                groupStatsRef.current.set(mapKey, {
-                                  episodes,
-                                  source_names,
-                                  douban_id,
-                                });
-                              }
-
                               if (resultDisplayMode === 'list') {
                                 return renderListItem({
                                   key: `agg-${mapKey}`,
@@ -2330,7 +2291,6 @@ function SearchPageClient() {
                               return (
                                 <div key={`agg-${mapKey}`} className='w-full'>
                                   <VideoCard
-                                    ref={getGroupRef(mapKey)}
                                     from='search'
                                     onBeforeNavigate={
                                       savePartialCacheForPlayback

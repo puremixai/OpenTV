@@ -10,7 +10,21 @@ import {
 
 export const runtime = 'nodejs';
 
-function extractSubscriptionKeys(subscription: any) {
+interface PushSubscriptionPayload {
+  endpoint?: string;
+  keys?: {
+    p256dh?: string;
+    auth?: string;
+  };
+  toJSON?: () => {
+    keys?: {
+      p256dh?: string;
+      auth?: string;
+    };
+  };
+}
+
+function extractSubscriptionKeys(subscription: PushSubscriptionPayload) {
   const p256dh = subscription?.keys?.p256dh || subscription?.toJSON?.()?.keys?.p256dh;
   const auth = subscription?.keys?.auth || subscription?.toJSON?.()?.keys?.auth;
   return { p256dh, auth };

@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
 import { AlertCircle, AlertTriangle, CheckCircle, Download, FileCheck, Lock, Upload } from 'lucide-react';
@@ -42,16 +41,19 @@ const AlertModal = ({
 
   // 控制动画状态
   useEffect(() => {
-    if (isOpen) {
-      setIsVisible(true);
-      if (timer) {
-        setTimeout(() => {
-          onClose();
-        }, timer);
+    const visibilityTimer = window.setTimeout(() => {
+      if (isOpen) {
+        setIsVisible(true);
+        if (timer) {
+          setTimeout(() => {
+            onClose();
+          }, timer);
+        }
+      } else {
+        setIsVisible(false);
       }
-    } else {
-      setIsVisible(false);
-    }
+    }, 0);
+    return () => window.clearTimeout(visibilityTimer);
   }, [isOpen, timer, onClose]);
 
   if (!isOpen) return null;

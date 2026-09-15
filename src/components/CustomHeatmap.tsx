@@ -1,11 +1,10 @@
 'use client';
 
-import React, { useCallback,useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 interface DanmakuData {
   time: number;
   text: string;
-  [key: string]: any;
 }
 
 interface CustomHeatmapProps {
@@ -27,7 +26,6 @@ const CustomHeatmap: React.FC<CustomHeatmapProps> = ({
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const [heatmapData, setHeatmapData] = useState<number[]>([]);
   const [isHovering, setIsHovering] = useState(false);
   const [hoverTime, setHoverTime] = useState(0);
 
@@ -54,11 +52,10 @@ const CustomHeatmap: React.FC<CustomHeatmapProps> = ({
     return heatData.map((count) => count / maxCount);
   }, [danmakuList, duration]);
 
-  // 当弹幕列表或时长变化时重新计算热力图数据
-  useEffect(() => {
-    const data = calculateHeatmapData();
-    setHeatmapData(data);
-  }, [calculateHeatmapData]);
+  const heatmapData = useMemo(
+    () => calculateHeatmapData(),
+    [calculateHeatmapData]
+  );
 
   // 绘制热力图
   useEffect(() => {

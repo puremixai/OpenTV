@@ -3,18 +3,21 @@
 
 import { List as ListIcon, Lock, RefreshCw,UserPlus, Users } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useEffect,useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 import { getAuthInfoFromBrowserCookie } from '@/lib/auth';
 import { logger } from '@/lib/logger';
+import { getRuntimeConfig } from '@/lib/runtime-config';
 
 import PageLayout from '@/components/PageLayout';
 import Toast, { ToastProps } from '@/components/Toast';
 import { useWatchRoomContext } from '@/components/WatchRoomProvider';
 
-import type { Room, RoomType } from '@/types/watch-room';
+import type { LiveState, PlayState, Room, RoomType } from '@/types/watch-room';
 
 type TabType = 'create' | 'join' | 'list';
+
+const getCurrentTimestamp = () => Date.now();
 
 function getScreenShareHostSupportError() {
   if (typeof window === 'undefined') return null;
@@ -55,12 +58,19 @@ export default function WatchRoomPage() {
   const [currentUsername, setCurrentUsername] = useState<string>('游客');
 
   useEffect(() => {
-    const authInfo = getAuthInfoFromBrowserCookie();
-    setCurrentUsername(authInfo?.username || '游客');
+    const timer = window.setTimeout(() => {
+      const authInfo = getAuthInfoFromBrowserCookie();
+      setCurrentUsername(authInfo?.username || '游客');
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, []);
 
   useEffect(() => {
-    setMusicEnabled(Boolean((window as any).RUNTIME_CONFIG?.MUSIC_ENABLED));
+    const timer = window.setTimeout(
+      () => setMusicEnabled(Boolean(getRuntimeConfig().MUSIC_ENABLED)),
+      0
+    );
+    return () => window.clearTimeout(timer);
   }, []);
 
   // 创建房间表单
@@ -97,7 +107,7 @@ export default function WatchRoomPage() {
   const getAvatarText = (name?: string) => (name?.trim().charAt(0).toUpperCase() || '用');
 
   // 加载房间列表
-  const loadRooms = async (showLoading = false) => {
+  const loadRooms = useCallback(async (showLoading = false) => {
     if (!isConnected) return;
 
     if (showLoading) {
@@ -113,17 +123,20 @@ export default function WatchRoomPage() {
         setLoading(false);
       }
     }
-  };
+  }, [getRoomList, isConnected]);
 
   // 切换到房间列表 tab 时加载房间
   useEffect(() => {
     if (activeTab === 'list') {
-      loadRooms(true);
+      const initialLoadTimer = window.setTimeout(() => loadRooms(true), 0);
       // 每5秒刷新一次
       const interval = setInterval(() => loadRooms(false), 5000);
-      return () => clearInterval(interval);
+      return () => {
+        window.clearTimeout(initialLoadTimer);
+        clearInterval(interval);
+      };
     }
-  }, [activeTab, isConnected]);
+  }, [activeTab, isConnected, loadRooms]);
 
   // 处理创建房间
   const handleCreateRoom = async (e: React.FormEvent) => {
@@ -160,8 +173,8 @@ export default function WatchRoomPage() {
         isPublic: true,
         roomType: 'sync',
       });
-    } catch (error: any) {
-      showToast(error.message || '创建房间失败', 'error');
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : '创建房间失败', 'error');
     } finally {
       setCreateLoading(false);
     }
@@ -187,7 +200,7 @@ export default function WatchRoomPage() {
 
     setJoinLoading(true);
     try {
-      const result = await joinRoom({
+      await joinRoom({
         roomId: targetRoomId,
         password: joinForm.password.trim() || undefined,
         userName: currentUsername,
@@ -201,8 +214,8 @@ export default function WatchRoomPage() {
 
       // 注意：加入房间后，isOwner 状态会在 useWatchRoom 中更新
       // 跳转逻辑会在 useEffect 中处理
-    } catch (error: any) {
-      showToast(error.message || '加入房间失败', 'error');
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : '加入房间失败', 'error');
     } finally {
       setJoinLoading(false);
     }
@@ -228,7 +241,7 @@ export default function WatchRoomPage() {
 
     // 检查房主的播放状态 - 仅在首次加入且状态是最近更新时才跳转
     // 这里不再自动跳转，而是等待房主的下一次操作
-  }, [currentRoom, isOwner]);
+  }, [currentRoom, isOwner, router]);
 
   // 监听房主的主动操作（切换视频/频道）
   useEffect(() => {
@@ -236,7 +249,7 @@ export default function WatchRoomPage() {
 
     if (currentRoom.roomType === 'screen' || currentRoom.roomType === 'music') return;
 
-    const handlePlayChange = (state: any) => {
+    const handlePlayChange = (state: PlayState) => {
       if (state.type === 'play') {
         const params = new URLSearchParams({
           id: state.videoId,
@@ -252,7 +265,7 @@ export default function WatchRoomPage() {
       }
     };
 
-    const handleLiveChange = (state: any) => {
+    const handleLiveChange = (state: LiveState) => {
       if (state.type === 'live') {
         // 判断是否为 weblive 格式（channelUrl 包含 platform:roomId）
         if (state.channelUrl && state.channelUrl.includes(':')) {
@@ -306,7 +319,7 @@ export default function WatchRoomPage() {
   };
 
   const formatTime = (timestamp: number) => {
-    const now = Date.now();
+    const now = getCurrentTimestamp();
     const diff = now - timestamp;
     const minutes = Math.floor(diff / 60000);
     const hours = Math.floor(minutes / 60);

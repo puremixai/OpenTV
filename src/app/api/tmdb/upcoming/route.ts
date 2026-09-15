@@ -1,19 +1,19 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 
 import { getConfig } from '@/lib/config';
 import { logger } from '@/lib/logger';
-import { getTMDBUpcomingContent } from '@/lib/tmdb.client';
+import { getTMDBUpcomingContent, TMDBItem } from '@/lib/tmdb.client';
 
 // 内存缓存对象
 interface CacheItem {
-  data: any;
+  data: TMDBItem[];
   timestamp: number;
 }
 
 let cache: CacheItem | null = null;
 const CACHE_DURATION = 60 * 60 * 1000; // 1小时（毫秒）
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     // 检查缓存是否存在且未过期
     const now = Date.now();

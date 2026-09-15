@@ -57,6 +57,7 @@ import {
 import { loadTVPlayerUpDownAction } from '@/lib/tv-preferences';
 import { SearchResult } from '@/lib/types';
 
+import ProxyImage from '@/components/ProxyImage';
 import TVNativeVideo from '@/components/tv/player/TVNativeVideo';
 import {
   fetchTVDetail,
@@ -518,8 +519,10 @@ function TVPlayClient() {
 
   useEffect(() => {
     let alive = true;
-    setLoading(true);
-    setError('');
+    const timer = window.setTimeout(() => {
+      setLoading(true);
+      setError('');
+    }, 0);
     fetchTVDetail({ source, id, title, fileName })
       .then((data) => {
         if (!alive) return;
@@ -563,8 +566,9 @@ function TVPlayClient() {
       .finally(() => alive && setLoading(false));
     return () => {
       alive = false;
+      window.clearTimeout(timer);
     };
-  }, [source, id, title, fileName, initialIndex]);
+  }, [fileName, id, initialIndex, searchParams, source, title]);
 
   useEffect(() => {
     let alive = true;
@@ -684,15 +688,17 @@ function TVPlayClient() {
     };
   }, [danmakuEnabled, detail?.title, episodeIndex, title]);
 
+  const currentPlaybackTime = time.current;
+
   useEffect(() => {
     if (!danmakuEnabled || danmakuItems.length === 0) {
-      setActiveDanmakuItems([]);
+      const timer = window.setTimeout(() => setActiveDanmakuItems([]), 0);
       spawnedDanmakuRef.current.clear();
-      lastDanmakuTimeRef.current = time.current;
-      return;
+      lastDanmakuTimeRef.current = currentPlaybackTime;
+      return () => window.clearTimeout(timer);
     }
 
-    const current = time.current;
+    const current = currentPlaybackTime;
     const previous = lastDanmakuTimeRef.current;
     const jumped = current < previous - 1 || current - previous > 2;
     const spawnWindow = jumped
@@ -725,14 +731,17 @@ function TVPlayClient() {
       nextItems.forEach((item) => spawned.add(item.id));
     }
 
-    setActiveDanmakuItems((prev) => {
-      if (jumped) return nextItems;
-      if (nextItems.length === 0) return prev;
-      return [...prev, ...nextItems];
-    });
+    const timer = window.setTimeout(() => {
+      setActiveDanmakuItems((prev) => {
+        if (jumped) return nextItems;
+        if (nextItems.length === 0) return prev;
+        return [...prev, ...nextItems];
+      });
+    }, 0);
 
     lastDanmakuTimeRef.current = current;
-  }, [danmakuEnabled, danmakuItems, time.current]);
+    return () => window.clearTimeout(timer);
+  }, [danmakuEnabled, danmakuItems, currentPlaybackTime]);
 
   useEffect(() => {
     if (!detail?.source || !detail?.id) return;
@@ -744,7 +753,7 @@ function TVPlayClient() {
       .catch(() => setSkipConfig(null));
   }, [detail?.source, detail?.id]);
 
-  const switchEpisode = (next: number) => {
+  const switchEpisode = useCallback((next: number) => {
     if (!detail) return;
     const max = detail.episodes.length - 1;
     const target = Math.max(0, Math.min(max, next));
@@ -752,7 +761,7 @@ function TVPlayClient() {
     setEpisodeIndex(target);
     setEpisodePage(Math.floor(target / 30));
     setShowPanel(true);
-  };
+  }, [detail]);
 
   const onTime = useCallback(
     (current: number, duration: number) => {
@@ -792,7 +801,7 @@ function TVPlayClient() {
         switchEpisode(episodeIndex + 1);
       }
     },
-    [detail, episodeIndex, skipConfig]
+    [detail, episodeIndex, skipConfig, switchEpisode]
   );
 
   useEffect(() => {
@@ -848,7 +857,7 @@ function TVPlayClient() {
     };
   }, [detail, episodeIndex, title]);
 
-  const showSeekOverlay = (
+  const showSeekOverlay = useCallback((
     current: number,
     duration: number,
     delta: number
@@ -856,9 +865,9 @@ function TVPlayClient() {
     setSeekHint({ current, duration, delta });
     if (seekHintTimerRef.current) window.clearTimeout(seekHintTimerRef.current);
     seekHintTimerRef.current = window.setTimeout(() => setSeekHint(null), 1200);
-  };
+  }, []);
 
-  const seekBy = (delta: number, showOverlay = false) => {
+  const seekBy = useCallback((delta: number, showOverlay = false) => {
     const video = document.querySelector<HTMLVideoElement>(
       '[data-tv-player-root] video'
     );
@@ -870,7 +879,7 @@ function TVPlayClient() {
     );
     video.currentTime = next;
     if (showOverlay) showSeekOverlay(next, duration, delta);
-  };
+  }, [showSeekOverlay]);
 
   const seekTo = (value: number) => {
     const video = document.querySelector<HTMLVideoElement>(
@@ -970,8 +979,11 @@ function TVPlayClient() {
   }, [muted, videoUrl, volume]);
 
   useEffect(() => {
-    if (showPanel || showEpisodes || showDanmakuSettings) revealPanel();
+    const timer = window.setTimeout(() => {
+      if (showPanel || showEpisodes || showDanmakuSettings) revealPanel();
+    }, 0);
     return () => {
+      window.clearTimeout(timer);
       if (idleTimerRef.current) window.clearTimeout(idleTimerRef.current);
     };
   }, [revealPanel, showDanmakuSettings, showEpisodes, showPanel]);
@@ -1198,6 +1210,8 @@ function TVPlayClient() {
     showDetail,
     showEpisodes,
     showPanel,
+    seekBy,
+    switchEpisode,
     upDownAction,
     volume,
   ]);
@@ -1205,11 +1219,14 @@ function TVPlayClient() {
   useEffect(() => {
     if (!showEpisodes) return;
     const targetPage = Math.floor(episodeIndex / 30);
-    setEpisodePage(targetPage);
-    window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
-    window.requestAnimationFrame(() => {
-      focusEpisodePanelElement(episodeButtonRefs.current[episodeIndex]);
-    });
+    const timer = window.setTimeout(() => {
+      setEpisodePage(targetPage);
+      window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+      window.requestAnimationFrame(() => {
+        focusEpisodePanelElement(episodeButtonRefs.current[episodeIndex]);
+      });
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, [episodeIndex, showEpisodes]);
 
   useEffect(() => {
@@ -1880,8 +1897,8 @@ function TVPlayClient() {
               </button>
             </div>
             {detail.poster && (
-              <img
-                src={detail.poster}
+              <ProxyImage
+                originalSrc={detail.poster}
                 alt=''
                 className='float-left mr-7 mb-4 h-72 w-48 rounded-3xl object-cover shadow-xl shadow-black/50'
               />

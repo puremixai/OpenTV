@@ -370,9 +370,10 @@ export default async function RootLayout({
         />
         <link rel='apple-touch-icon' href='/icons/icon-192x192.png?v=opentv' />
         {/* 主题CSS */}
+        {/* The stylesheet is generated from runtime admin configuration. */}
+        {/* eslint-disable-next-line @next/next/no-css-tags */}
         <link rel='stylesheet' href='/api/theme/css' />
         {/* 将配置序列化后直接写入脚本，浏览器端可通过 window.RUNTIME_CONFIG 获取 */}
-        {/* eslint-disable-next-line @next/next/no-sync-scripts */}
         <script
           dangerouslySetInnerHTML={{
             __html: `window.RUNTIME_CONFIG = ${JSON.stringify(runtimeConfig)};`,
@@ -381,7 +382,6 @@ export default async function RootLayout({
         {/* 流量统计脚本 */}
         {analyticsEnabled && analyticsProvider === 'umami' && analyticsScriptUrl && (
           <>
-            {/* eslint-disable-next-line @next/next/no-sync-scripts */}
             <script
               async
               defer
@@ -392,7 +392,6 @@ export default async function RootLayout({
         )}
         {analyticsEnabled && analyticsProvider === 'google' && analyticsWebsiteId && (
           <>
-            {/* eslint-disable-next-line @next/next/no-sync-scripts */}
             <script
               async
               src={`https://www.googletagmanager.com/gtag/js?id=${analyticsWebsiteId}`}

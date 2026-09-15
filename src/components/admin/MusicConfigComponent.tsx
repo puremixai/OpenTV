@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, no-console, @typescript-eslint/no-non-null-assertion,react-hooks/exhaustive-deps,@typescript-eslint/no-empty-function */
 
 'use client';
 
@@ -35,12 +34,16 @@ export const MusicConfigComponent = ({
   const [musicCountdown, setMusicCountdown] = useState(10);
 
   useEffect(() => {
-    if (config?.MusicConfig) {
-      setEnabled(config.MusicConfig.Enabled || false);
-      setBaseUrl(config.MusicConfig.BaseUrl || '');
-      setToken(config.MusicConfig.Token || '');
-      setProxyEnabled(config.MusicConfig.ProxyEnabled ?? true);
-    }
+    const timer = window.setTimeout(() => {
+      if (config?.MusicConfig) {
+        setEnabled(config.MusicConfig.Enabled || false);
+        setBaseUrl(config.MusicConfig.BaseUrl || '');
+        setToken(config.MusicConfig.Token || '');
+        setProxyEnabled(config.MusicConfig.ProxyEnabled ?? true);
+      }
+    }, 0);
+
+    return () => window.clearTimeout(timer);
   }, [config]);
 
   useEffect(() => {

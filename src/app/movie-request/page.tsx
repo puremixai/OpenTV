@@ -1,15 +1,16 @@
 'use client';
 
 import { AlertCircle, CheckCircle } from 'lucide-react';
-import { useRouter } from 'next/navigation';
-import { useEffect,useState } from 'react';
+import { useEffect, useState, useSyncExternalStore } from 'react';
 
 import { logger } from '@/lib/logger';
+import { getRuntimeConfig } from '@/lib/runtime-config';
 import { getTMDBImageUrl } from '@/lib/tmdb.client';
 import { processImageUrl } from '@/lib/utils';
 
 import { createCinemaPortal as createPortal } from '@/components/CinemaPortal';
 import PageLayout from '@/components/PageLayout';
+import ProxyImage from '@/components/ProxyImage';
 
 interface TMDBResult {
   id: number;
@@ -35,7 +36,6 @@ interface MovieRequest {
 }
 
 export default function MovieRequestPage() {
-  const router = useRouter();
   const [searchKeyword, setSearchKeyword] = useState('');
   const [searchResults, setSearchResults] = useState<TMDBResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -53,15 +53,11 @@ export default function MovieRequestPage() {
   const [myRequests, setMyRequests] = useState<MovieRequest[]>([]);
   const [loadingMyRequests, setLoadingMyRequests] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [isFeatureEnabled, setIsFeatureEnabled] = useState(true);
-
-  // 检查求片功能是否启用
-  useEffect(() => {
-    const runtimeConfig = (window as any).RUNTIME_CONFIG;
-    if (runtimeConfig && runtimeConfig.ENABLE_MOVIE_REQUEST === false) {
-      setIsFeatureEnabled(false);
-    }
-  }, []);
+  const isFeatureEnabled = useSyncExternalStore(
+    () => () => undefined,
+    () => getRuntimeConfig().ENABLE_MOVIE_REQUEST !== false,
+    () => true
+  );
 
   // TMDB搜索
   const handleSearch = async () => {
@@ -94,9 +90,11 @@ export default function MovieRequestPage() {
 
       try {
         const response = await fetch(`/api/tmdb/seasons?tvId=${item.id}`);
-        const data = await response.json();
+        const data = await response.json() as {
+          seasons?: Array<{ season_number: number; name: string; poster_path?: string | null }>;
+        };
         if (data.seasons) {
-          const validSeasons = data.seasons.filter((s: any) => s.season_number > 0);
+          const validSeasons = data.seasons.filter((s) => s.season_number > 0);
           setSeasons(validSeasons);
 
           if (validSeasons.length === 1) {
@@ -272,8 +270,8 @@ export default function MovieRequestPage() {
                     className='bg-white dark:bg-gray-800 rounded-lg overflow-hidden shadow-sm hover:shadow-lg transition-shadow'
                   >
                     {request.poster ? (
-                      <img
-                        src={request.poster}
+                      <ProxyImage
+                        originalSrc={request.poster}
                         alt={request.title}
                         className='w-full aspect-2/3 object-cover'
                       />
@@ -313,11 +311,11 @@ export default function MovieRequestPage() {
                 className='bg-white dark:bg-gray-800 rounded-lg overflow-hidden shadow-sm hover:shadow-lg transition-shadow'
               >
                 {item.poster_path ? (
-                  <img
-                    src={processImageUrl(getTMDBImageUrl(item.poster_path, 'w500'))}
-                    alt={item.title || item.name}
-                    className='w-full aspect-2/3 object-cover'
-                  />
+                    <ProxyImage
+                      originalSrc={getTMDBImageUrl(item.poster_path, 'w500')}
+                      alt={item.title || item.name}
+                      className='w-full aspect-2/3 object-cover'
+                    />
                 ) : (
                   <div className='w-full aspect-2/3 bg-gray-200 dark:bg-gray-700 flex items-center justify-center'>
                     <span className='text-gray-400'>无海报</span>

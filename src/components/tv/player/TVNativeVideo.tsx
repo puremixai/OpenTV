@@ -1,16 +1,17 @@
 'use client';
 
+import type FlvJs from 'flv.js';
+import type HlsPlayer from 'hls.js';
+import type { HlsConfig } from 'hls.js';
 import { Loader2, Pause, Play } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
 import { logger } from '@/lib/logger';
 
-declare global {
-  interface HTMLVideoElement {
-    hls?: any;
-    flv?: any;
-  }
-}
+type ManagedVideoElement = HTMLVideoElement & {
+  hls?: HlsPlayer;
+  flv?: FlvJs.Player;
+};
 
 type SourceType = 'm3u8' | 'flv' | 'native';
 
@@ -115,7 +116,7 @@ export default function TVNativeVideo({
   useEffect(() => {
     const video = videoRef.current;
     if (!video || !url) return;
-    const videoEl = video;
+    const videoEl = video as ManagedVideoElement;
 
     let disposed = false;
     setLoading(true);
@@ -181,13 +182,15 @@ export default function TVNativeVideo({
           if (Hls.isSupported()) {
             const CustomLoader = adFilterEnabled
               ? class TVAdFilterLoader extends Hls.DefaultConfig.loader {
-                  constructor(config: any) {
+                  constructor(config: HlsConfig) {
                     super(config);
                     const load = this.load.bind(this);
-                    this.load = (context: any, config: any, callbacks: any) => {
-                      if (context?.type === 'manifest' || context?.type === 'level') {
+                    this.load = (context, config, callbacks) => {
+                      const contextType =
+                        'type' in context && typeof context.type === 'string' ? context.type : undefined;
+                      if (contextType === 'manifest' || contextType === 'level') {
                         const onSuccess = callbacks.onSuccess;
-                        callbacks.onSuccess = (response: any, stats: any, context: any, networkDetails: any) => {
+                        callbacks.onSuccess = (response, stats, context, networkDetails) => {
                           if (typeof response?.data === 'string') {
                             response.data = filterAdsFromM3U8(response.data);
                           }
@@ -338,7 +341,6 @@ export default function TVNativeVideo({
 
   useEffect(() => {
     if (command) toggle();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [command]);
 
   return (

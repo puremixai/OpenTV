@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
     if (!id) return badRequest('缺少专辑 ID');
     if (!isMusicSource(source)) return badRequest('不支持的音源');
 
-    const payload = await lxGetJson<any>(`/api/music/albumSongs?id=${encodeURIComponent(id)}&source=${source}`, 'none');
+    const payload = await lxGetJson<unknown>(`/api/music/albumSongs?id=${encodeURIComponent(id)}&source=${source}`, 'none');
     const list = unwrapLxArray<LxServerSong>(payload);
 
     return NextResponse.json({

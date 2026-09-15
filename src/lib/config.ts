@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-non-null-assertion */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { db } from '@/lib/db';
 import { logger } from '@/lib/logger';
@@ -85,7 +85,7 @@ export function refineConfig(adminConfig: AdminConfig): AdminConfig {
   let fileConfig: ConfigFileStruct;
   try {
     fileConfig = JSON.parse(adminConfig.ConfigFile) as ConfigFileStruct;
-  } catch (e) {
+  } catch {
     fileConfig = {} as ConfigFileStruct;
   }
 
@@ -261,7 +261,7 @@ async function getInitConfig(
 
   try {
     cfgFile = JSON.parse(configSource) as ConfigFileStruct;
-  } catch (e) {
+  } catch {
     cfgFile = {} as ConfigFileStruct;
   }
   const hasCustomDanmakuEnv = Boolean(

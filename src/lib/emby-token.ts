@@ -24,7 +24,7 @@ export async function getProxyToken(request?: NextRequest): Promise<string | nul
         if (userToken) {
           return userToken;
         }
-      } catch (error) {
+      } catch {
         // 忽略错误，继续
       }
     }

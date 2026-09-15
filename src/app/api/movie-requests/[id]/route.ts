@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getStorage } from '@/lib/db';
 import { logger } from '@/lib/logger';
 import { getAuthenticatedUser } from '@/lib/session';
+import type { MovieRequest } from '@/lib/types';
 
 export const runtime = 'nodejs';
 
@@ -62,7 +63,11 @@ export async function PATCH(
       }
     }
 
-    const body = await request.json();
+    const body = await request.json() as {
+      status: MovieRequest['status'];
+      fulfilledSource?: string;
+      fulfilledId?: string;
+    };
     const { status, fulfilledSource, fulfilledId } = body;
 
     const movieRequest = await storage.getMovieRequest(params.id);
@@ -71,7 +76,7 @@ export async function PATCH(
     }
 
     // 更新状态
-    const updates: any = {
+    const updates: Partial<MovieRequest> = {
       status,
       updatedAt: Date.now(),
     };

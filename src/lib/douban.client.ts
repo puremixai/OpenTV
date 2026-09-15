@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, no-case-declarations */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { logger } from '@/lib/logger';
 

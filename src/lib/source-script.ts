@@ -11,10 +11,8 @@ const SOURCE_SCRIPT_REGISTRY_KEY = 'source-script:registry';
 const DEFAULT_TIMEOUT_MS = 20000;
 
 // 绕过 webpack 静态分析，获取真正的 Node.js require
-// eslint-disable-next-line no-eval
 function getNodeRequire(): NodeRequire {
   assertServerScriptExecutionEnabled();
-  // eslint-disable-next-line no-eval
   return eval('require') as NodeRequire;
 }
 

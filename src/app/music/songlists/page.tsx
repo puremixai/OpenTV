@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 import { musicSources, normalizeSource } from '@/lib/music/shared';
 
 import MusicLoadingIndicator from '@/components/music/MusicLoadingIndicator';
+import ProxyImage from '@/components/ProxyImage';
 
 interface SongListItem {
   id: string;
@@ -98,83 +99,92 @@ export default function MusicSongListsPage() {
   };
 
   useEffect(() => {
-    setActiveTagLabel(tagId);
+    const timer = window.setTimeout(() => setActiveTagLabel(tagId), 0);
+    return () => window.clearTimeout(timer);
   }, [tagId]);
 
   useEffect(() => {
-    setActiveSource(source);
+    const timer = window.setTimeout(() => setActiveSource(source), 0);
+    return () => window.clearTimeout(timer);
   }, [source]);
 
   useEffect(() => {
-    setActiveSortId(sortId);
+    const timer = window.setTimeout(() => setActiveSortId(sortId), 0);
+    return () => window.clearTimeout(timer);
   }, [sortId]);
 
   useEffect(() => {
-    const cacheKey = `music_songlist_tags_${source}`;
-    const cached = readCache<{ groups: SongListGroup[]; hotTags: SongListTag[] }>(cacheKey);
-    setLoadingTags(true);
-    if (cached) {
-      setGroups(cached.groups || []);
-      setHotTags(cached.hotTags || []);
-    }
+    const timer = window.setTimeout(() => {
+      const cacheKey = `music_songlist_tags_${source}`;
+      const cached = readCache<{ groups: SongListGroup[]; hotTags: SongListTag[] }>(cacheKey);
+      setLoadingTags(true);
+      if (cached) {
+        setGroups(cached.groups || []);
+        setHotTags(cached.hotTags || []);
+      }
 
-    fetch(`/api/music/v2/discovery/songlist-tags?source=${source}`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.success) {
-          const next = {
-            groups: data.data?.groups || [],
-            hotTags: data.data?.hotTags || [],
-          };
-          setGroups(next.groups);
-          setHotTags(next.hotTags);
-          writeCache(cacheKey, next);
-        } else if (!cached) {
-          setGroups([]);
-          setHotTags([]);
-        }
-      })
-      .catch(() => {
-        if (!cached) {
-          setGroups([]);
-          setHotTags([]);
-        }
-      })
-      .finally(() => setLoadingTags(false));
+      fetch(`/api/music/v2/discovery/songlist-tags?source=${source}`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.success) {
+            const next = {
+              groups: data.data?.groups || [],
+              hotTags: data.data?.hotTags || [],
+            };
+            setGroups(next.groups);
+            setHotTags(next.hotTags);
+            writeCache(cacheKey, next);
+          } else if (!cached) {
+            setGroups([]);
+            setHotTags([]);
+          }
+        })
+        .catch(() => {
+          if (!cached) {
+            setGroups([]);
+            setHotTags([]);
+          }
+        })
+        .finally(() => setLoadingTags(false));
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, [source]);
 
   useEffect(() => {
-    const cacheKey = `music_songlists_${source}_${tagId}_${sortId}_${page}`;
-    const cached = readCache<{ list: SongListItem[]; total: number }>(cacheKey);
-    setLoadingList(true);
-    if (cached) {
-      setSongLists(cached.list || []);
-      setTotal(cached.total || 0);
-    }
+    const timer = window.setTimeout(() => {
+      const cacheKey = `music_songlists_${source}_${tagId}_${sortId}_${page}`;
+      const cached = readCache<{ list: SongListItem[]; total: number }>(cacheKey);
+      setLoadingList(true);
+      if (cached) {
+        setSongLists(cached.list || []);
+        setTotal(cached.total || 0);
+      }
 
-    fetch(`/api/music/v2/discovery/songlists?source=${source}&tagId=${encodeURIComponent(tagId)}&sortId=${encodeURIComponent(sortId)}&page=${page}`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.success) {
-          const next = {
-            list: data.data?.list || [],
-            total: data.data?.total || 0,
-          };
-          setSongLists(next.list);
-          setTotal(next.total);
-          writeCache(cacheKey, next);
-        } else if (!cached) {
-          setSongLists([]);
-          setTotal(0);
-        }
-      })
-      .catch(() => {
-        if (!cached) {
-          setSongLists([]);
-          setTotal(0);
-        }
-      })
-      .finally(() => setLoadingList(false));
+      fetch(`/api/music/v2/discovery/songlists?source=${source}&tagId=${encodeURIComponent(tagId)}&sortId=${encodeURIComponent(sortId)}&page=${page}`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.success) {
+            const next = {
+              list: data.data?.list || [],
+              total: data.data?.total || 0,
+            };
+            setSongLists(next.list);
+            setTotal(next.total);
+            writeCache(cacheKey, next);
+          } else if (!cached) {
+            setSongLists([]);
+            setTotal(0);
+          }
+        })
+        .catch(() => {
+          if (!cached) {
+            setSongLists([]);
+            setTotal(0);
+          }
+        })
+        .finally(() => setLoadingList(false));
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, [source, tagId, sortId, page]);
 
   const openDetail = (item: SongListItem) => {
@@ -184,7 +194,6 @@ export default function MusicSongListsPage() {
   const sortButtonClass = (active: boolean) =>
     `px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap shrink-0 ${active ? 'bg-green-500 text-white' : 'bg-white/10 text-black dark:text-white hover:bg-white/20 dark:hover:bg-white/15'}`;
 
-  const flatTags = hotTags.length > 0 ? hotTags : groups.flatMap((group) => group.list || []);
   const selectedTagLabel = activeTagLabel || '分类';
 
   return (
@@ -360,7 +369,7 @@ export default function MusicSongListsPage() {
             >
               <div className="aspect-square bg-white/5">
                 {item.pic ? (
-                  <img src={item.pic} alt={item.name} className="h-full w-full object-cover" />
+                  <ProxyImage originalSrc={item.pic} alt={item.name} className="h-full w-full object-cover" />
                 ) : (
                   <div className="flex h-full w-full items-center justify-center text-zinc-600">♪</div>
                 )}

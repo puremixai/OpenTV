@@ -464,8 +464,7 @@ export class OfflineDownloader {
       throw new Error('响应体为空');
     }
 
-    const body = (await (response as any).getBody?.()) ??
-      (response.body as unknown as NodeJS.ReadableStream | null);
+    const body = response.body as unknown as NodeJS.ReadableStream | null;
 
     if (!body || typeof body.pipe !== 'function') {
       const arrayBuffer = await response.arrayBuffer();

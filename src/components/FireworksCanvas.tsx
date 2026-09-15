@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState } from 'react';
 
+import { getRuntimeConfig } from '@/lib/runtime-config';
+
 type Rocket = {
   x: number;
   y: number;
@@ -26,14 +28,14 @@ const FireworksCanvas = () => {
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    const runtimeEnabled =
-      (window as any).RUNTIME_CONFIG?.FESTIVE_EFFECT_ENABLED === true;
+    const runtimeEnabled = getRuntimeConfig().FESTIVE_EFFECT_ENABLED === true;
 
     const start = new Date(2026, 1, 16, 0, 0, 0);
     const end = new Date(2026, 2, 3, 23, 59, 59, 999);
     const now = new Date();
     if (runtimeEnabled || (now >= start && now <= end)) {
-      setActive(true);
+      const timer = window.setTimeout(() => setActive(true), 0);
+      return () => window.clearTimeout(timer);
     }
   }, []);
 

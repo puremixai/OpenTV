@@ -78,7 +78,10 @@ export default function BooksLayout({
   }, [isRead]);
 
   useEffect(() => {
-    if (!isRead) setReadHeader(null);
+    if (!isRead) {
+      const timer = window.setTimeout(() => setReadHeader(null), 0);
+      return () => window.clearTimeout(timer);
+    }
   }, [isRead, pathname]);
 
   useEffect(() => {

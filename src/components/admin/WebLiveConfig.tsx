@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, no-console, @typescript-eslint/no-non-null-assertion,react-hooks/exhaustive-deps,@typescript-eslint/no-empty-function */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 'use client';
 
@@ -39,9 +39,13 @@ export const WebLiveConfig = ({
   const [isEnabling, setIsEnabling] = useState(false);
 
   useEffect(() => {
-    if (config?.WebLiveConfig) {
-      setWebLiveSources(config.WebLiveConfig);
-    }
+    const timer = window.setTimeout(() => {
+      if (config?.WebLiveConfig) {
+        setWebLiveSources(config.WebLiveConfig);
+      }
+    }, 0);
+
+    return () => window.clearTimeout(timer);
   }, [config]);
 
   useEffect(() => {
@@ -132,7 +136,7 @@ export const WebLiveConfig = ({
       await callApi({ action: 'toggleEnabled', enabled: true });
       setShowDisclaimerModal(false);
       setCountdown(10);
-    } catch (err) {
+    } catch {
       // Error already handled by callApi
     } finally {
       setIsEnabling(false);

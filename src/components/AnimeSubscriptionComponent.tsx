@@ -32,6 +32,8 @@ const downloadToolOptions: Array<{ value: AnimeSubscriptionDownloadTool; label: 
   { value: 'Transmission', label: 'Transmission' },
 ];
 
+const getCurrentTimestamp = () => Date.now();
+
 // Switch 组件
 const Switch = ({ checked, onChange, disabled }: { checked: boolean; onChange: (checked: boolean) => void; disabled?: boolean }) => (
   <button
@@ -80,11 +82,10 @@ const AlertModal = ({
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
-    if (isOpen) {
-      setIsVisible(true);
-    } else {
-      setIsVisible(false);
-    }
+    const timer = window.setTimeout(() => {
+      setIsVisible(isOpen);
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, [isOpen]);
 
   if (!isOpen) return null;
@@ -202,11 +203,14 @@ export default function AnimeSubscriptionComponent({
 
   // 加载配置
   useEffect(() => {
-    if (config?.AnimeSubscriptionConfig) {
-      setEnabled(config.AnimeSubscriptionConfig.Enabled || false);
-      setDownloadTool(config.AnimeSubscriptionConfig.DownloadTool || 'aria2');
-      setSubscriptions(config.AnimeSubscriptionConfig.Subscriptions || []);
-    }
+    const timer = window.setTimeout(() => {
+      if (config?.AnimeSubscriptionConfig) {
+        setEnabled(config.AnimeSubscriptionConfig.Enabled || false);
+        setDownloadTool(config.AnimeSubscriptionConfig.DownloadTool || 'aria2');
+        setSubscriptions(config.AnimeSubscriptionConfig.Subscriptions || []);
+      }
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, [config]);
 
   // 重置表单
@@ -476,7 +480,7 @@ export default function AnimeSubscriptionComponent({
 
   const formatTime = (timestamp: number) => {
     if (!timestamp) return '从未';
-    const now = Date.now();
+    const now = getCurrentTimestamp();
     const diff = now - timestamp;
     const minutes = Math.floor(diff / 60000);
     if (minutes < 1) return '刚刚';

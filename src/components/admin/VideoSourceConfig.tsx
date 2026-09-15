@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, no-console, @typescript-eslint/no-non-null-assertion,react-hooks/exhaustive-deps,@typescript-eslint/no-empty-function */
+/* eslint-disable @typescript-eslint/no-explicit-any, no-console,react-hooks/exhaustive-deps */
 
 'use client';
 import {
@@ -57,7 +57,7 @@ export const VideoSourceConfig = ({
   const { isLoading, withLoading } = useLoadingState();
   const [sources, setSources] = useState<DataSource[]>([]);
   const [showAddForm, setShowAddForm] = useState(false);
-  const [orderChanged, setOrderChanged] = useState(false);
+  const [, setOrderChanged] = useState(false);
   const [newSource, setNewSource] = useState<DataSource>({
     name: '',
     key: '',
@@ -146,13 +146,17 @@ export const VideoSourceConfig = ({
 
   // 初始化
   useEffect(() => {
-    if (config?.SourceConfig) {
-      setSources(config.SourceConfig);
-      // 进入时重置 orderChanged
-      setOrderChanged(false);
-      // 重置选择状态
-      setSelectedSources(new Set());
-    }
+    const timer = window.setTimeout(() => {
+      if (config?.SourceConfig) {
+        setSources(config.SourceConfig);
+        // 进入时重置 orderChanged
+        setOrderChanged(false);
+        // 重置选择状态
+        setSelectedSources(new Set());
+      }
+    }, 0);
+
+    return () => window.clearTimeout(timer);
   }, [config]);
 
   // 通用 API 请求
@@ -331,51 +335,6 @@ export const VideoSourceConfig = ({
     }
 
     await doSaveSpecialSources();
-  };
-
-  const handleUpdateWeight = (key: string, weight: number) => {
-    // 先乐观更新本地状态
-    setSources((prev) =>
-      prev.map((s) => (s.key === key ? { ...s, weight } : s))
-    );
-
-    // 调用API更新
-    withLoading(`updateWeight_${key}`, async () => {
-      try {
-        const response = await fetch('/api/admin/source', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            action: 'update_weight',
-            key,
-            weight,
-          }),
-        });
-
-        if (!response.ok) {
-          const data = await response.json().catch(() => ({}));
-          throw new Error(data.error || `操作失败: ${response.status}`);
-        }
-
-        await refreshConfig();
-      } catch (error) {
-        // 失败时回滚本地状态到配置中的值
-        const originalWeight =
-          config?.SourceConfig?.find((s) => s.key === key)?.weight ?? 0;
-        setSources((prev) =>
-          prev.map((s) =>
-            s.key === key ? { ...s, weight: originalWeight } : s
-          )
-        );
-        showError(
-          error instanceof Error ? error.message : '更新权重失败',
-          showAlert
-        );
-        throw error;
-      }
-    }).catch(() => {
-      console.error('操作失败', 'update_weight', key, weight);
-    });
   };
 
   const handleAddSource = () => {

@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -200,7 +199,7 @@ export async function GET(
         // 取消上游 fetch，停止继续下载
         try {
           await reader.cancel();
-        } catch (e) {
+        } catch {
           // 忽略取消错误
         }
       } finally {
@@ -208,7 +207,7 @@ export async function GET(
         try {
           reader.releaseLock();
           await writer.close();
-        } catch (e) {
+        } catch {
           // 忽略关闭错误
         }
       }

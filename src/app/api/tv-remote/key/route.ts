@@ -2,10 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 
 import { getAuthenticatedUser } from '@/lib/session';
 import { isTVModeEnabled } from '@/lib/tv-mode';
+import { sendTVRemoteCommand } from '@/lib/tv-remote-hub';
 import type { TVRemoteKeyCommand } from '@/lib/tv-remote-types';
-
-// eslint-disable-next-line @typescript-eslint/no-var-requires -- Load the runtime adapter only on the server or share the CommonJS server singleton.
-const { sendTVRemoteCommand } = require('@/lib/tv-remote-hub');
 
 export const runtime = 'nodejs';
 

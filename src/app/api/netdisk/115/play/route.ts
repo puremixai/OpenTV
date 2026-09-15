@@ -27,7 +27,9 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: '无效的 episodeIndex' }, { status: 400 });
     }
 
-    refreshPan115NetdiskSession(id) || getPan115NetdiskSession(id);
+    if (!refreshPan115NetdiskSession(id)) {
+      getPan115NetdiskSession(id);
+    }
     const { session, cookie } = await resolvePan115Session(id);
     const file = session.files[episodeIndex];
     if (!file) {

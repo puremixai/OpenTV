@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, no-console, @typescript-eslint/no-non-null-assertion,react-hooks/exhaustive-deps,@typescript-eslint/no-empty-function */
+/* eslint-disable react-hooks/exhaustive-deps */
 
 'use client';
 
@@ -117,7 +117,11 @@ export const VideoSourceScriptLab = () => {
   };
 
   useEffect(() => {
-    loadScripts();
+    const timer = window.setTimeout(() => {
+      void loadScripts();
+    }, 0);
+
+    return () => window.clearTimeout(timer);
   }, []);
 
   const handleCreateNew = () => {
@@ -317,29 +321,33 @@ export const VideoSourceScriptLab = () => {
   };
 
   useEffect(() => {
-    setTestPayload(
-      testHook === 'getSources'
-        ? JSON.stringify({}, null, 2)
-        : testHook === 'search'
-        ? JSON.stringify(
-            { keyword: '凡人修仙传', page: 1, sourceId: 'main' },
-            null,
-            2
-          )
-        : testHook === 'recommend'
-        ? JSON.stringify({ page: 1 }, null, 2)
-        : testHook === 'detail'
-        ? JSON.stringify({ id: 'demo-id', sourceId: 'main' }, null, 2)
-        : JSON.stringify(
-            {
-              sourceId: 'main',
-              playUrl: 'https://example.com/video.m3u8',
-              episodeIndex: 0,
-            },
-            null,
-            2
-          )
-    );
+    const timer = window.setTimeout(() => {
+      setTestPayload(
+        testHook === 'getSources'
+          ? JSON.stringify({}, null, 2)
+          : testHook === 'search'
+          ? JSON.stringify(
+              { keyword: '凡人修仙传', page: 1, sourceId: 'main' },
+              null,
+              2
+            )
+          : testHook === 'recommend'
+          ? JSON.stringify({ page: 1 }, null, 2)
+          : testHook === 'detail'
+          ? JSON.stringify({ id: 'demo-id', sourceId: 'main' }, null, 2)
+          : JSON.stringify(
+              {
+                sourceId: 'main',
+                playUrl: 'https://example.com/video.m3u8',
+                episodeIndex: 0,
+              },
+              null,
+              2
+            )
+      );
+    }, 0);
+
+    return () => window.clearTimeout(timer);
   }, [testHook]);
 
   return (

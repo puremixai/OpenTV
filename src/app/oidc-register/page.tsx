@@ -10,12 +10,18 @@ import { CURRENT_VERSION } from '@/lib/version';
 import { useSite } from '@/components/SiteProvider';
 import { ThemeToggle } from '@/components/ThemeToggle';
 
+interface OIDCInfo {
+  email?: string;
+  name?: string;
+  trust_level?: string | number;
+}
+
 function OIDCRegisterPageClient() {
   const router = useRouter();
   const [username, setUsername] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [oidcInfo, setOidcInfo] = useState<any>(null);
+  const [oidcInfo, setOidcInfo] = useState<OIDCInfo | null>(null);
 
   const { siteName } = useSite();
 
@@ -25,7 +31,7 @@ function OIDCRegisterPageClient() {
       try {
         const res = await fetch('/api/auth/oidc/session-info');
         if (res.ok) {
-          const data = await res.json();
+          const data = await res.json() as OIDCInfo;
           setOidcInfo(data);
         } else {
           // session无效,跳转到登录页
@@ -64,7 +70,7 @@ function OIDCRegisterPageClient() {
         const data = await res.json().catch(() => ({}));
         setError(data.error || '注册失败');
       }
-    } catch (error) {
+    } catch {
       setError('网络错误，请稍后重试');
     } finally {
       setLoading(false);

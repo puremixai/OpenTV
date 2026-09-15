@@ -13,6 +13,7 @@ interface FileSystemFileHandle {
 }
 
 interface FileSystemDirectoryHandle {
+  requestPermission(options?: { mode?: 'read' | 'readwrite' }): Promise<'granted' | 'denied' | 'prompt'>;
   getFileHandle(name: string, options?: { create?: boolean }): Promise<FileSystemFileHandle>;
   getDirectoryHandle(name: string, options?: { create?: boolean }): Promise<FileSystemDirectoryHandle>;
   removeEntry(name: string, options?: { recursive?: boolean }): Promise<void>;

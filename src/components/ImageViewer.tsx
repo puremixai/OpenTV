@@ -25,23 +25,29 @@ const ImageViewer: React.FC<ImageViewerProps> = ({
 
   // 确保组件在客户端挂载后才渲染 Portal
   useEffect(() => {
-    setMounted(true);
+    const timer = window.setTimeout(() => setMounted(true), 0);
+    return () => window.clearTimeout(timer);
   }, []);
 
   // 控制动画状态
   useEffect(() => {
     let animationId: number;
     let timer: NodeJS.Timeout;
+    let animationStateTimer: NodeJS.Timeout;
 
     if (isOpen) {
-      setIsVisible(true);
+      animationStateTimer = setTimeout(() => {
+        setIsVisible(true);
+      }, 0);
       animationId = requestAnimationFrame(() => {
         animationId = requestAnimationFrame(() => {
           setIsAnimating(true);
         });
       });
     } else {
-      setIsAnimating(false);
+      animationStateTimer = setTimeout(() => {
+        setIsAnimating(false);
+      }, 0);
       timer = setTimeout(() => {
         setIsVisible(false);
       }, 200);
@@ -53,6 +59,9 @@ const ImageViewer: React.FC<ImageViewerProps> = ({
       }
       if (timer) {
         clearTimeout(timer);
+      }
+      if (animationStateTimer) {
+        clearTimeout(animationStateTimer);
       }
     };
   }, [isOpen]);

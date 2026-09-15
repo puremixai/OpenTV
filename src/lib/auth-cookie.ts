@@ -1,6 +1,5 @@
 import type { AuthInfo } from './auth';
 import { signAuthData } from './auth-signature';
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import {
   generateRefreshToken,
   generateTokenId,

@@ -9,8 +9,34 @@ import {
   searchTMDBMulti,
 } from '@/lib/tmdb.client';
 
+interface TMDBSearchResult {
+  id: number;
+  media_type?: 'movie' | 'tv';
+  title?: string;
+  name?: string;
+  original_title?: string;
+  original_name?: string;
+}
+
+type TMDBTypedSearchResult = TMDBSearchResult & {
+  media_type: 'movie' | 'tv';
+};
+
+interface TMDBRecommendationResult {
+  id: number;
+  title?: string;
+  name?: string;
+  poster_path: string | null;
+  vote_average: number;
+}
+
+interface SearchCacheData {
+  tmdbId: number;
+  mediaType: 'movie' | 'tv';
+}
+
 // 服务器端缓存（1天）
-const searchCache = new Map<string, { data: any; timestamp: number }>();
+const searchCache = new Map<string, { data: SearchCacheData; timestamp: number }>();
 const CACHE_TTL = 24 * 60 * 60 * 1000; // 1天
 
 // 移除季度信息的辅助函数
@@ -26,7 +52,10 @@ function removeSeasonInfo(title: string): string {
 }
 
 // 精确匹配标题
-function findExactMatch(results: any[], originalTitle: string): any | null {
+function findExactMatch<T extends TMDBSearchResult>(
+  results: T[],
+  originalTitle: string
+): T | null {
   if (!results || results.length === 0) return null;
 
   // 如果只有一个结果，直接返回
@@ -109,7 +138,8 @@ export async function GET(request: NextRequest) {
 
         // 过滤出电影和电视剧
         const validResults = searchResult.results.filter(
-          (r: any) => r.media_type === 'movie' || r.media_type === 'tv'
+          (r: TMDBSearchResult): r is TMDBTypedSearchResult =>
+            r.media_type === 'movie' || r.media_type === 'tv'
         );
 
         // 精确匹配
@@ -164,10 +194,10 @@ export async function GET(request: NextRequest) {
     }
 
     // 转换为统一格式
-    const recommendations = (recommendationsResult.results as any[])
-      .filter((r: any) => r.poster_path) // 只保留有海报的
+    const recommendations = (recommendationsResult.results as TMDBRecommendationResult[])
+      .filter((r) => r.poster_path) // 只保留有海报的
       .slice(0, 20) // 最多20个
-      .map((r: any) => ({
+      .map((r) => ({
         tmdbId: r.id,
         title: r.title || r.name,
         poster: getTMDBImageUrl(r.poster_path, 'w342'),

@@ -3,6 +3,8 @@
 import { Loader2, PlayCircle } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
+import ProxyImage from '@/components/ProxyImage';
+
 import TVLayout from './TVLayout';
 import TVRow from './TVRow';
 import { TVItem, TVSection } from './types';
@@ -64,9 +66,9 @@ export default function TVBrowsePage({
       <section className='relative overflow-hidden rounded-[42px] border border-white/10 bg-slate-950/70 p-10 shadow-2xl shadow-black/60'>
         <div className='absolute inset-0 opacity-35'>
           {hero?.poster ? (
-            <img src={hero.poster} alt='' className='h-full w-full object-cover blur-xs' />
+            <ProxyImage originalSrc={hero.poster} alt='' className='h-full w-full object-cover blur-xs' />
           ) : (
-            <img src={fallbackPosters[0]} alt='' className='h-full w-full object-cover blur-xs' />
+            <ProxyImage originalSrc={fallbackPosters[0]} alt='' className='h-full w-full object-cover blur-xs' />
           )}
           <div className='absolute inset-0 bg-linear-to-r from-black via-black/80 to-transparent' />
         </div>

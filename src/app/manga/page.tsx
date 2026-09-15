@@ -12,6 +12,7 @@ import {
   MangaShelfItem,
   MangaSource,
 } from '@/lib/manga.types';
+import { getRuntimeConfig } from '@/lib/runtime-config';
 
 import CapsuleSwitch from '@/components/CapsuleSwitch';
 import MangaCard from '@/components/MangaCard';
@@ -46,7 +47,7 @@ export default function MangaRecommendPage() {
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    if (typeof window !== 'undefined' && !(window as any).RUNTIME_CONFIG?.SUWAYOMI_ENABLED) {
+    if (typeof window !== 'undefined' && !getRuntimeConfig().SUWAYOMI_ENABLED) {
       router.replace('/');
     }
   }, [router]);
@@ -110,7 +111,10 @@ export default function MangaRecommendPage() {
 
   useEffect(() => {
     if (!sourceId) return;
-    void fetchRecommend(1, false);
+    const timer = window.setTimeout(() => {
+      void fetchRecommend(1, false);
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, [fetchRecommend, sourceId]);
 
   useEffect(() => {

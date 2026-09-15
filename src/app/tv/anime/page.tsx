@@ -56,8 +56,11 @@ export default function TVAnimePage() {
   const [activeDay, setActiveDay] = useState('');
 
   useEffect(() => {
-    const weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-    setActiveDay(weekdays[new Date().getDay()]);
+    const timer = window.setTimeout(() => {
+      const weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+      setActiveDay(weekdays[new Date().getDay()]);
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, []);
 
   useEffect(() => {

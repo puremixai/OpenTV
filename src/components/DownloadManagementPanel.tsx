@@ -46,24 +46,26 @@ export function DownloadManagementPanel({
   const [mounted, setMounted] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  useEffect(() => {
-    if (isOpen) {
-      loadCompletedTasks();
-    }
-  }, [isOpen]);
-
-  const loadCompletedTasks = async () => {
+  async function loadCompletedTasks() {
     try {
       const tasks = await downloadDB.getCompletedTasks();
       setCompletedTasks(tasks);
     } catch (error) {
       logger.error('加载已完成任务失败:', error);
     }
-  };
+  }
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => setMounted(true), 0);
+    return () => window.clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    if (isOpen) {
+      const timer = window.setTimeout(() => void loadCompletedTasks(), 0);
+      return () => window.clearTimeout(timer);
+    }
+  }, [isOpen]);
 
   const handleSelectAll = () => {
     if (selectedIds.size === completedTasks.length) {
@@ -167,7 +169,7 @@ export function DownloadManagementPanel({
 
             if (dirHandle) {
               // 请求写权限
-              const permission = await (dirHandle as any).requestPermission({
+              const permission = await dirHandle.requestPermission({
                 mode: 'readwrite',
               });
               if (permission !== 'granted') {
@@ -414,7 +416,7 @@ export function DownloadManagementPanel({
           return;
         }
 
-        const permission = await (dirHandle as any).requestPermission({
+        const permission = await dirHandle.requestPermission({
           mode: 'read',
         });
         if (permission !== 'granted') {

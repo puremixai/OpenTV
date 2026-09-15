@@ -23,7 +23,7 @@ function VersionDisplay() {
       try {
         const status = await checkForUpdates();
         setUpdateStatus(status);
-      } catch (_) {
+      } catch {
         // do nothing
       } finally {
         setIsChecking(false);
@@ -91,7 +91,7 @@ function RegisterPageClient() {
 
   // 在客户端挂载后设置配置
   useEffect(() => {
-    if (typeof window !== 'undefined') {
+    const timer = window.setTimeout(() => {
       const runtimeConfig = (window as any).RUNTIME_CONFIG;
 
       // 设置背景图（支持多张随机选择）
@@ -122,7 +122,8 @@ function RegisterPageClient() {
       if (!config.EnableRegistration) {
         router.replace('/login');
       }
-    }
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, [router]);
 
   // 加载Cloudflare Turnstile脚本
@@ -159,7 +160,8 @@ function RegisterPageClient() {
           setTurnstileToken(token);
         },
       });
-      setTurnstileWidgetId(widgetId);
+      const timer = window.setTimeout(() => setTurnstileWidgetId(widgetId), 0);
+      return () => window.clearTimeout(timer);
     }
   }, [turnstileLoaded, siteConfig]);
 
@@ -237,7 +239,7 @@ function RegisterPageClient() {
           setError(data.error ?? '服务器错误');
         }
       }
-    } catch (error) {
+    } catch {
       // 网络错误，重置Turnstile
       if (siteConfig?.RegistrationRequireTurnstile && turnstileWidgetId !== null && (window as any).turnstile) {
         (window as any).turnstile.reset(turnstileWidgetId);

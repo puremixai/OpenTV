@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, no-console, @typescript-eslint/no-non-null-assertion,react-hooks/exhaustive-deps,@typescript-eslint/no-empty-function */
+/* eslint-disable @typescript-eslint/no-explicit-any, no-console,react-hooks/exhaustive-deps */
 
 'use client';
 
@@ -309,8 +309,11 @@ function AdminPageClient() {
 
   useEffect(() => {
     // 首次加载时显示骨架
-    fetchConfig(true);
+    const timer = window.setTimeout(() => {
+      void fetchConfig(true);
+    }, 0);
     // 不再自动获取用户列表，等用户打开用户管理选项卡时再获取
+    return () => window.clearTimeout(timer);
   }, [fetchConfig]);
 
   useEffect(() => {
@@ -339,7 +342,11 @@ function AdminPageClient() {
   }, [role]);
 
   useEffect(() => {
-    if (activeSection === 'userConfig' && !usersV2) void fetchUsersV2();
+    if (activeSection !== 'userConfig' || usersV2) return;
+    const timer = window.setTimeout(() => {
+      void fetchUsersV2();
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, [activeSection, usersV2, fetchUsersV2]);
 
   const navigate = (id: AdminSectionId, discard = false) => {

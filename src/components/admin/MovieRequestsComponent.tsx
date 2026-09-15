@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, no-console, @typescript-eslint/no-non-null-assertion,react-hooks/exhaustive-deps,@typescript-eslint/no-empty-function */
+/* eslint-disable @typescript-eslint/no-explicit-any, no-console,react-hooks/exhaustive-deps */
 
 'use client';
 
@@ -15,6 +15,7 @@ import {
   useAlertModal,
   useLoadingState,
 } from '@/components/admin/shared';
+import ProxyImage from '@/components/ProxyImage';
 
 export const MovieRequestsComponent = ({
   config,
@@ -40,12 +41,7 @@ export const MovieRequestsComponent = ({
   );
   const [savingSettings, setSavingSettings] = useState(false);
 
-  useEffect(() => {
-    loadRequests();
-    loadCounts();
-  }, [filter]);
-
-  const loadCounts = async () => {
+  async function loadCounts() {
     try {
       const response = await fetch('/api/movie-requests');
       const data = await response.json();
@@ -59,9 +55,9 @@ export const MovieRequestsComponent = ({
     } catch (error) {
       console.error('加载求片数量失败:', error);
     }
-  };
+  }
 
-  const loadRequests = async () => {
+  async function loadRequests() {
     setLoading(true);
     try {
       const response = await fetch(
@@ -74,7 +70,15 @@ export const MovieRequestsComponent = ({
     } finally {
       setLoading(false);
     }
-  };
+  }
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      void loadRequests();
+      void loadCounts();
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [filter]);
 
   const handleFulfill = async (id: string) => {
     await withLoading(`fulfill_${id}`, async () => {
@@ -249,8 +253,8 @@ export const MovieRequestsComponent = ({
               >
                 <div className='flex gap-4'>
                   {req.poster && (
-                    <img
-                      src={req.poster}
+                    <ProxyImage
+                      originalSrc={req.poster}
                       alt={req.title}
                       className='w-16 h-24 object-cover rounded-sm'
                     />

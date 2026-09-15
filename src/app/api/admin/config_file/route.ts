@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -67,7 +66,7 @@ export const POST = withConfigMutation(async function POST(request: NextRequest)
     // 验证 JSON 格式
     try {
       parseSubscriptionConfig(configFile);
-    } catch (e) {
+    } catch {
       return NextResponse.json(
         { error: '配置文件格式错误，请检查 JSON 语法' },
         { status: 400 }

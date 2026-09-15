@@ -25,8 +25,10 @@ function MangaHistorySkeleton() {
 }
 
 export default function MangaHistoryPage() {
-  const [history, setHistory] = useState<Record<string, MangaReadRecord>>({});
-  const [loading, setLoading] = useState(true);
+  const [history, setHistory] = useState<Record<string, MangaReadRecord>>(
+    getCachedMangaReadRecordsSnapshot
+  );
+  const [loading, setLoading] = useState(() => Object.keys(history).length === 0);
   const [shelf, setShelf] = useState<Record<string, MangaShelfItem>>({});
   const [displayAll, setDisplayAll] = useState(false);
 
@@ -40,12 +42,6 @@ export default function MangaHistoryPage() {
   };
 
   useEffect(() => {
-    const cachedHistory = getCachedMangaReadRecordsSnapshot();
-    if (Object.keys(cachedHistory).length > 0) {
-      updateHistory(cachedHistory);
-      setLoading(false);
-    }
-
     Promise.all([getAllMangaReadRecords(), getAllMangaShelf()])
       .then(([historyData, shelfData]) => {
         updateHistory(historyData);

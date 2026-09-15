@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 
 import { getAvailableApiSites, getCacheTime, getConfig } from '@/lib/config';
 import { getDetailFromApi } from '@/lib/downstream';
+import { OpenListFile } from '@/lib/openlist.client';
+import { MetaInfo } from '@/lib/openlist-cache';
 import { getAuthenticatedUser } from '@/lib/session';
 import {
   executeSavedSourceScript,
@@ -89,8 +91,8 @@ export async function GET(request: NextRequest) {
       const rootPath = openListConfig.RootPath || '/';
 
       // 1. 读取 metainfo 获取元数据
-      let metaInfo: any = null;
-      let folderMeta: any = null;
+      let metaInfo: MetaInfo | null = null;
+      let folderMeta: MetaInfo['folders'][string] | undefined;
       try {
         const { getCachedMetaInfo, setCachedMetaInfo } = await import('@/lib/openlist-cache');
         const { db } = await import('@/lib/db');
@@ -100,7 +102,7 @@ export async function GET(request: NextRequest) {
         if (!metaInfo) {
           const metainfoJson = await db.getGlobalValue('video.metainfo');
           if (metainfoJson) {
-            metaInfo = JSON.parse(metainfoJson);
+            metaInfo = JSON.parse(metainfoJson) as MetaInfo;
             setCachedMetaInfo(metaInfo);
           }
         }
@@ -132,7 +134,7 @@ export async function GET(request: NextRequest) {
       let videoInfo = getCachedVideoInfo(folderPath);
 
       // 获取所有分页的视频文件
-      const allFiles: any[] = [];
+      const allFiles: OpenListFile[] = [];
       let currentPage = 1;
       const pageSize = 100;
       let total = 0;

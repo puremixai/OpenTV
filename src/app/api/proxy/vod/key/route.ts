@@ -60,7 +60,7 @@ export async function GET(request: NextRequest) {
     );
 
     return new Response(response.body, { headers });
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: 'Failed to fetch key' }, { status: 500 });
   }
 }

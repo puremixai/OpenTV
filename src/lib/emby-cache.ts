@@ -9,7 +9,7 @@ export interface EmbyCachedEntry<T> {
 // 缓存配置
 const EMBY_CACHE_TTL_MS = 6 * 60 * 60 * 1000; // 6小时
 const EMBY_VIEWS_CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 1天
-const EMBY_CACHE: Map<string, EmbyCachedEntry<any>> = new Map();
+const EMBY_CACHE: Map<string, EmbyCachedEntry<unknown>> = new Map();
 const EMBY_VIEWS_CACHE_KEY = 'emby:views';
 
 /**
@@ -28,7 +28,7 @@ export function getCachedEmbyList(
   pageSize: number,
   parentId?: string,
   embyKey?: string
-): any | null {
+): unknown | null {
   const key = makeListCacheKey(page, pageSize, parentId, embyKey);
   const entry = EMBY_CACHE.get(key);
   if (!entry) return null;
@@ -48,7 +48,7 @@ export function getCachedEmbyList(
 export function setCachedEmbyList(
   page: number,
   pageSize: number,
-  data: any,
+  data: unknown,
   parentId?: string,
   embyKey?: string
 ): void {
@@ -72,7 +72,7 @@ export function clearEmbyCache(): { cleared: number } {
 /**
  * 获取缓存的 Emby 媒体库列表
  */
-export function getCachedEmbyViews(embyKey = 'default'): any | null {
+export function getCachedEmbyViews(embyKey = 'default'): unknown | null {
   const cacheKey = `${EMBY_VIEWS_CACHE_KEY}:${embyKey}`;
   const entry = EMBY_CACHE.get(cacheKey);
   if (!entry) return null;
@@ -89,7 +89,7 @@ export function getCachedEmbyViews(embyKey = 'default'): any | null {
 /**
  * 设置缓存的 Emby 媒体库列表
  */
-export function setCachedEmbyViews(embyKey = 'default', data: any): void {
+export function setCachedEmbyViews(embyKey = 'default', data: unknown): void {
   const now = Date.now();
   const cacheKey = `${EMBY_VIEWS_CACHE_KEY}:${embyKey}`;
   EMBY_CACHE.set(cacheKey, {

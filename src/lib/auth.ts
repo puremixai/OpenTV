@@ -44,14 +44,14 @@ export function parseAuthInfo(value?: string | null): AuthInfo | null {
 
   try {
     decoded = decodeURIComponent(decoded);
-  } catch (error) {
+  } catch {
     decoded = value;
   }
 
   if (decoded.includes('%')) {
     try {
       decoded = decodeURIComponent(decoded);
-    } catch (error) {
+    } catch {
       decoded = value;
     }
   }
@@ -59,7 +59,7 @@ export function parseAuthInfo(value?: string | null): AuthInfo | null {
   try {
     const parsed = JSON.parse(decoded);
     return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed as AuthInfo : null;
-  } catch (error) {
+  } catch {
     return null;
   }
 }
@@ -114,7 +114,7 @@ export function getAuthInfoFromBrowserCookie(): AuthInfo | null {
     }
 
     return parseAuthInfo(authCookie);
-  } catch (error) {
+  } catch {
     return null;
   }
 }

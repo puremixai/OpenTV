@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any,react-hooks/exhaustive-deps,@typescript-eslint/no-empty-function */
+/* eslint-disable @typescript-eslint/no-explicit-any,react-hooks/exhaustive-deps */
 
 import {
   Cloud,
@@ -319,7 +319,7 @@ const VideoCard = forwardRef<VideoCardHandle, VideoCardProps>(
         try {
           const fav = await isFavorited(actualSource, actualId);
           setFavorited(fav);
-        } catch (err) {
+        } catch {
           throw new Error('检查收藏状态失败');
         }
       };
@@ -375,7 +375,7 @@ const VideoCard = forwardRef<VideoCardHandle, VideoCardProps>(
               setFavorited(true);
             }
           }
-        } catch (err) {
+        } catch {
           throw new Error('切换收藏状态失败');
         }
       },
@@ -401,7 +401,7 @@ const VideoCard = forwardRef<VideoCardHandle, VideoCardProps>(
         try {
           await deletePlayRecord(actualSource, actualId);
           onDelete?.();
-        } catch (err) {
+        } catch {
           throw new Error('删除播放记录失败');
         }
       },
@@ -448,7 +448,7 @@ const VideoCard = forwardRef<VideoCardHandle, VideoCardProps>(
         if (isCurrentlyOnPlayPage) {
           // 在 play 页面内，添加 _reload 参数强制刷新
           url += `&_reload=${Date.now()}`;
-          window.location.href = url;
+          window.location.assign(new URL(url, window.location.origin).toString());
         } else {
           // 不在 play 页面，正常跳转
           router.push(url);
@@ -471,7 +471,7 @@ const VideoCard = forwardRef<VideoCardHandle, VideoCardProps>(
         if (isCurrentlyOnPlayPage) {
           // 在 play 页面内，添加 _reload 参数强制刷新
           url += `&_reload=${Date.now()}`;
-          window.location.href = url;
+          window.location.assign(new URL(url, window.location.origin).toString());
         } else {
           // 不在 play 页面，正常跳转
           router.push(url);
@@ -561,7 +561,7 @@ const VideoCard = forwardRef<VideoCardHandle, VideoCardProps>(
         try {
           const fav = await isFavorited(actualSource, actualId);
           setSearchFavorited(fav);
-        } catch (err) {
+        } catch {
           setSearchFavorited(false);
         }
       }

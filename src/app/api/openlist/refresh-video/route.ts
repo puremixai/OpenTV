@@ -4,7 +4,6 @@ import { NextRequest, NextResponse } from 'next/server';
 
 import { getConfig } from '@/lib/config';
 import { logger } from '@/lib/logger';
-import { OpenListClient } from '@/lib/openlist.client';
 import { invalidateVideoInfoCache } from '@/lib/openlist-cache';
 import { requireFeaturePermission } from '@/lib/permissions';
 import { getAuthenticatedUser } from '@/lib/session';
@@ -46,12 +45,6 @@ export async function POST(request: NextRequest) {
 
     // folder 已经是完整路径，直接使用
     const folderPath = folder;
-    const client = new OpenListClient(
-      openListConfig.URL,
-      openListConfig.Username,
-      openListConfig.Password
-    );
-
     // 清除缓存
     invalidateVideoInfoCache(folderPath);
 

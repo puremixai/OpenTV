@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, react-hooks/exhaustive-deps, no-console */
+/* eslint-disable no-console */
 
 'use client';
 
@@ -12,10 +12,17 @@ import {
 } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
-import { Suspense, useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import {
+  Suspense,
+  useEffect,
+  useState,
+  useSyncExternalStore,
+} from 'react';
 
 import type { InitialBannerArtwork } from '@/lib/home/banner-artwork';
 import type { BannerData } from '@/lib/home/banner-types';
+import { getRuntimeConfig } from '@/lib/runtime-config';
 import { getTMDBImageUrl } from '@/lib/tmdb.client';
 import { base58Encode, processImageUrl } from '@/lib/utils';
 
@@ -37,6 +44,8 @@ const AIChatPanel = dynamic(() => import('@/components/AIChatPanel'), {
   ssr: false,
 });
 
+const subscribeToRuntimeConfig = () => () => undefined;
+
 interface HomePageProps {
   initialBannerArtwork?: InitialBannerArtwork;
   initialBannerData?: BannerData | null;
@@ -48,6 +57,7 @@ function HomeClient({
   initialBannerArtwork,
   initialBannerEnabled = true,
 }: HomePageProps) {
+  const router = useRouter();
   const [layoutReady, setLayoutReady] = useState(false);
   const { announcement, announcementDisplayMode } = useSite();
   // 首页模块配置状态
@@ -75,15 +85,50 @@ function HomeClient({
   const [showHttpWarning, setShowHttpWarning] = useState(true);
   const [showAIChat, setShowAIChat] = useState(false);
   const [aiChatLoaded, setAIChatLoaded] = useState(false);
-  const [aiEnabled, setAiEnabled] = useState(false);
-  const [aiDefaultMessageNoVideo, setAiDefaultMessageNoVideo] = useState(
-    '你好！我是OpenTV的AI影视助手。想看什么电影或剧集？需要推荐吗？'
+  const aiEnabled = useSyncExternalStore(
+    subscribeToRuntimeConfig,
+    () =>
+      Boolean(
+        getRuntimeConfig().AI_ENABLED &&
+          getRuntimeConfig().AI_ENABLE_HOMEPAGE_ENTRY
+      ),
+    () => false
   );
-  const [sourceSearchEnabled, setSourceSearchEnabled] = useState(true);
-  const [musicEnabled, setMusicEnabled] = useState(false);
-  const [mangaEnabled, setMangaEnabled] = useState(false);
-  const [booksEnabled, setBooksEnabled] = useState(false);
-  const [netdiskTempPlayEnabled, setNetdiskTempPlayEnabled] = useState(false);
+  const aiDefaultMessageNoVideo = useSyncExternalStore(
+    subscribeToRuntimeConfig,
+    () => {
+      const value = getRuntimeConfig().AI_DEFAULT_MESSAGE_NO_VIDEO;
+      return typeof value === 'string'
+        ? value
+        : '你好！我是OpenTV的AI影视助手。想看什么电影或剧集？需要推荐吗？';
+    },
+    () => '你好！我是OpenTV的AI影视助手。想看什么电影或剧集？需要推荐吗？'
+  );
+  const sourceSearchEnabled = useSyncExternalStore(
+    subscribeToRuntimeConfig,
+    () => getRuntimeConfig().ENABLE_SOURCE_SEARCH !== false,
+    () => true
+  );
+  const musicEnabled = useSyncExternalStore(
+    subscribeToRuntimeConfig,
+    () => Boolean(getRuntimeConfig().MUSIC_ENABLED),
+    () => false
+  );
+  const mangaEnabled = useSyncExternalStore(
+    subscribeToRuntimeConfig,
+    () => Boolean(getRuntimeConfig().SUWAYOMI_ENABLED),
+    () => false
+  );
+  const booksEnabled = useSyncExternalStore(
+    subscribeToRuntimeConfig,
+    () => Boolean(getRuntimeConfig().BOOKS_ENABLED),
+    () => false
+  );
+  const netdiskTempPlayEnabled = useSyncExternalStore(
+    subscribeToRuntimeConfig,
+    () => Boolean(getRuntimeConfig().NETDISK_TEMP_PLAY_ENABLED),
+    () => false
+  );
   const [showDirectPlayDialog, setShowDirectPlayDialog] = useState(false);
   const [directPlayUrl, setDirectPlayUrl] = useState('');
   const [directPlaySubmitting, setDirectPlaySubmitting] = useState(false);
@@ -235,7 +280,7 @@ function HomeClient({
         )}`;
         setShowDirectPlayDialog(false);
         setDirectPlayUrl('');
-        window.location.assign(targetUrl);
+        router.push(targetUrl);
         return;
       }
 
@@ -246,7 +291,7 @@ function HomeClient({
       )}`;
       setShowDirectPlayDialog(false);
       setDirectPlayUrl('');
-      window.location.assign(targetUrl);
+      router.push(targetUrl);
     } catch (error) {
       setToast({
         message: error instanceof Error ? error.message : '播放失败',
@@ -310,8 +355,11 @@ function HomeClient({
 
   // 加载首页模块配置
   useEffect(() => {
-    loadHomeLayoutSettings();
-    setLayoutReady(true);
+    const timer = window.setTimeout(() => {
+      loadHomeLayoutSettings();
+      setLayoutReady(true);
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, []);
 
   // 监听首页模块配置更新事件
@@ -329,87 +377,30 @@ function HomeClient({
     };
   }, []);
 
-  // 检查AI功能是否启用
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const enabled =
-        (window as any).RUNTIME_CONFIG?.AI_ENABLED &&
-        (window as any).RUNTIME_CONFIG?.AI_ENABLE_HOMEPAGE_ENTRY;
-      setAiEnabled(enabled);
-
-      // 加载AI默认消息配置
-      const defaultMsg = (window as any).RUNTIME_CONFIG
-        ?.AI_DEFAULT_MESSAGE_NO_VIDEO;
-      if (defaultMsg) {
-        setAiDefaultMessageNoVideo(defaultMsg);
-      }
-    }
-  }, []);
-
-  // 检查源站寻片功能是否启用
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const enabled =
-        (window as any).RUNTIME_CONFIG?.ENABLE_SOURCE_SEARCH !== false;
-      setSourceSearchEnabled(enabled);
-    }
-  }, []);
-
-  // 检查音乐功能是否启用
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const enabled = !!(window as any).RUNTIME_CONFIG?.MUSIC_ENABLED;
-      setMusicEnabled(enabled);
-    }
-  }, []);
-
-  // 检查漫画功能是否启用
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const enabled = !!(window as any).RUNTIME_CONFIG?.SUWAYOMI_ENABLED;
-      setMangaEnabled(enabled);
-    }
-  }, []);
-
-  // 检查电子书功能是否启用
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const enabled = !!(window as any).RUNTIME_CONFIG?.BOOKS_ENABLED;
-      setBooksEnabled(enabled);
-    }
-  }, []);
-
-  // 检查网盘临时播放权限，仅有权限时在直链播放弹窗展示网盘在线播放提示
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const enabled = !!(window as any).RUNTIME_CONFIG
-        ?.NETDISK_TEMP_PLAY_ENABLED;
-      setNetdiskTempPlayEnabled(enabled);
-    }
-  }, []);
-
   // 检查公告弹窗状态
   useEffect(() => {
-    if (typeof window !== 'undefined' && announcement) {
-      // 会话级标记：只在首次访问站点时弹出，导航切回首页不重复弹
-      if (sessionStorage.getItem('announcementShown')) {
-        return;
+    const timer = window.setTimeout(() => {
+      if (typeof window !== 'undefined' && announcement) {
+        // 会话级标记：只在首次访问站点时弹出，导航切回首页不重复弹
+        if (sessionStorage.getItem('announcementShown')) {
+          return;
+        }
+        // 每次显示模式：每次新会话首次访问弹出一次
+        if (announcementDisplayMode === 'every') {
+          setShowAnnouncement(true);
+          sessionStorage.setItem('announcementShown', '1');
+          return;
+        }
+        // 单次显示模式：localStorage 记住已看过的公告文本，换公告则重新弹出
+        const hasSeenAnnouncement = localStorage.getItem('hasSeenAnnouncement');
+        if (hasSeenAnnouncement !== announcement) {
+          setShowAnnouncement(true);
+        } else {
+          setShowAnnouncement(Boolean(!hasSeenAnnouncement && announcement));
+        }
       }
-      // 每次显示模式：每次新会话首次访问弹出一次
-      if (announcementDisplayMode === 'every') {
-        setShowAnnouncement(true);
-        sessionStorage.setItem('announcementShown', '1');
-        return;
-      }
-      // 单次显示模式：localStorage 记住已看过的公告文本，换公告则重新弹出
-      const hasSeenAnnouncement = localStorage.getItem('hasSeenAnnouncement');
-      if (hasSeenAnnouncement !== announcement) {
-        setShowAnnouncement(true);
-      } else {
-        setShowAnnouncement(Boolean(!hasSeenAnnouncement && announcement));
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, [announcement, announcementDisplayMode]);
 
   const handleCloseAnnouncement = (announcement: string) => {

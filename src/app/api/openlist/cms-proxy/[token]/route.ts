@@ -132,7 +132,7 @@ export async function GET(
       if (ac === 'detail') {
         return await handleDetailBySearch(metaInfo, wd, openListConfig, rootPath, requestToken, request);
       }
-      return await handleSearch(metaInfo, wd, request);
+      return await handleSearch(metaInfo, wd);
     }
 
     // 详情模式
@@ -152,7 +152,7 @@ export async function GET(
     }
 
     // 列表模式（返回所有）
-    return await handleSearch(metaInfo, '', request);
+    return await handleSearch(metaInfo, '');
   } catch (error) {
     logger.error('[OpenList CMS Proxy] 错误:', error);
     return NextResponse.json(
@@ -173,7 +173,7 @@ export async function GET(
 /**
  * 处理搜索请求
  */
-async function handleSearch(metaInfo: any, query: string, request: NextRequest) {
+async function handleSearch(metaInfo: any, query: string) {
   const { getTMDBImageUrl } = await import('@/lib/tmdb.search');
 
   const lowerQuery = query.toLowerCase();

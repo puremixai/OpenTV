@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 
 interface VirtualScrollableGridProps {
   children: React.ReactNode[];
@@ -57,8 +57,6 @@ export default function VirtualScrollableGrid({
   const rafRef = useRef<number | null>(null);
   const needsMeasureRef = useRef(true);
 
-  childrenRef.current = children;
-
   const initialLayout: LayoutMetrics = {
     columns: Math.max(1, mobileColumns),
     rowHeight: DEFAULT_ROW_HEIGHT,
@@ -69,7 +67,7 @@ export default function VirtualScrollableGrid({
   const [layout, setLayout] = useState<LayoutMetrics>(() => initialLayout);
   const [range, setRange] = useState({ startRow: 0, endRow: 0 });
 
-  const computeFallbackColumns = () => {
+  const computeFallbackColumns = useCallback(() => {
     if (typeof window === 'undefined') return mobileColumns;
     if (window.innerWidth < 640) return mobileColumns;
 
@@ -79,9 +77,9 @@ export default function VirtualScrollableGrid({
     );
 
     return Math.max(mobileColumns, Math.floor(containerWidth / minItemWidth));
-  };
+  }, [maxContentWidth, minItemWidth, mobileColumns]);
 
-  const readLayout = (): LayoutMetrics => {
+  const readLayout = useCallback((): LayoutMetrics => {
     const currentChildren = childrenRef.current;
 
     if (currentChildren.length === 0) {
@@ -138,9 +136,9 @@ export default function VirtualScrollableGrid({
       rowHeight,
       totalRows: Math.ceil(currentChildren.length / Math.max(1, columns)),
     };
-  };
+  }, [computeFallbackColumns, mobileColumns]);
 
-  const computeRange = (nextLayout: LayoutMetrics) => {
+  const computeRange = useCallback((nextLayout: LayoutMetrics) => {
     if (nextLayout.totalRows <= 0 || typeof window === 'undefined') {
       return { startRow: 0, endRow: 0 };
     }
@@ -171,9 +169,9 @@ export default function VirtualScrollableGrid({
     );
 
     return { startRow: clampedStart, endRow: clampedEnd };
-  };
+  }, [overscanRows]);
 
-  const syncRange = (nextLayout: LayoutMetrics) => {
+  const syncRange = useCallback((nextLayout: LayoutMetrics) => {
     const nextRange = computeRange(nextLayout);
     setRange((prev) => {
       if (
@@ -185,9 +183,9 @@ export default function VirtualScrollableGrid({
 
       return nextRange;
     });
-  };
+  }, [computeRange]);
 
-  const syncMeasuredLayout = () => {
+  const syncMeasuredLayout = useCallback(() => {
     const nextLayout = readLayout();
     layoutRef.current = nextLayout;
 
@@ -204,9 +202,9 @@ export default function VirtualScrollableGrid({
     });
 
     syncRange(nextLayout);
-  };
+  }, [readLayout, syncRange]);
 
-  const scheduleUpdate = (measure = false) => {
+  const scheduleUpdate = useCallback((measure = false) => {
     if (typeof window === 'undefined') return;
     if (measure) {
       needsMeasureRef.current = true;
@@ -224,7 +222,11 @@ export default function VirtualScrollableGrid({
 
       syncRange(layoutRef.current);
     });
-  };
+  }, [syncMeasuredLayout, syncRange]);
+
+  useEffect(() => {
+    childrenRef.current = children;
+  }, [children]);
 
   useEffect(() => {
     scheduleUpdate(true);
@@ -269,14 +271,7 @@ export default function VirtualScrollableGrid({
       resizeObserver?.disconnect();
       if (rafRef.current != null) window.cancelAnimationFrame(rafRef.current);
     };
-  }, [
-    children.length,
-    gridClassName,
-    overscanRows,
-    mobileColumns,
-    minItemWidth,
-    maxContentWidth,
-  ]);
+  }, [children.length, gridClassName, maxContentWidth, minItemWidth, mobileColumns, overscanRows, scheduleUpdate]);
 
   const columns = layout.columns;
   const totalRows = layout.totalRows;

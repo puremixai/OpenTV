@@ -1,11 +1,9 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { NextRequest, NextResponse } from 'next/server';
 
 import { getConfig } from '@/lib/config';
 import { db } from '@/lib/db';
 import { logger } from '@/lib/logger';
-import { OpenListClient } from '@/lib/openlist.client';
 import {
   getCachedMetaInfo,
   invalidateMetaInfoCache,
@@ -34,7 +32,6 @@ export async function POST(request: NextRequest) {
     const {
       key,
       tmdbId,
-      doubanId,
       title,
       posterPath,
       releaseDate,
@@ -68,12 +65,6 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
-
-    const client = new OpenListClient(
-      openListConfig.URL,
-      openListConfig.Username,
-      openListConfig.Password
-    );
 
     // 读取现有 metainfo (从数据库或缓存)
     let metaInfo: MetaInfo | null = getCachedMetaInfo();

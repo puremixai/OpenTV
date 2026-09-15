@@ -3,7 +3,7 @@
 import { ArrowDownWideNarrow, ArrowUpWideNarrow } from 'lucide-react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { type MouseEvent, useEffect, useMemo, useRef, useState } from 'react';
+import { type MouseEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { getAllMangaReadRecords, getAllMangaShelf, saveMangaReadRecord, saveMangaShelf } from '@/lib/db.client';
 import type { MangaChapter, MangaDetail, MangaReadRecord, MangaShelfItem } from '@/lib/manga.types';
@@ -69,6 +69,14 @@ function MangaReadSkeleton({ readMode, pageGap }: { readMode: ReadMode; pageGap:
   );
 }
 
+function setIndexedRef<T>(
+  ref: { current: Array<T | null> },
+  index: number,
+  value: T | null
+) {
+  ref.current[index] = value;
+}
+
 export default function MangaReadPage() {
   const searchParams = useSearchParams();
   const mangaId = searchParams.get('mangaId') || '';
@@ -126,9 +134,9 @@ export default function MangaReadPage() {
     requestVerticalPageSyncRef.current?.();
   };
 
-  const getPreloadAnchorPage = () => (
+  const getPreloadAnchorPage = useCallback(() => (
     readMode === 'vertical' ? currentVerticalPageIndexRef.current : activePage
-  );
+  ), [activePage, readMode]);
 
   const getImageLoadingStrategy = (index: number): 'eager' | 'lazy' => {
     const anchorPage = getPreloadAnchorPage();
@@ -139,18 +147,21 @@ export default function MangaReadPage() {
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    const savedMode = window.localStorage.getItem(READ_MODE_STORAGE_KEY) as ReadMode | null;
-    if (savedMode && READ_MODE_OPTIONS.some((item) => item.value === savedMode)) {
-      setReadMode(savedMode);
-    }
-    const savedScaleMode = window.localStorage.getItem(SCALE_MODE_STORAGE_KEY) as ScaleMode | null;
-    if (savedScaleMode && SCALE_MODE_OPTIONS.some((item) => item.value === savedScaleMode)) {
-      setScaleMode(savedScaleMode);
-    }
-    const savedGap = Number(window.localStorage.getItem(PAGE_GAP_STORAGE_KEY) || 0);
-    if (!Number.isNaN(savedGap)) {
-      setPageGap(Math.min(Math.max(savedGap, 0), 48));
-    }
+    const timer = window.setTimeout(() => {
+      const savedMode = window.localStorage.getItem(READ_MODE_STORAGE_KEY) as ReadMode | null;
+      if (savedMode && READ_MODE_OPTIONS.some((item) => item.value === savedMode)) {
+        setReadMode(savedMode);
+      }
+      const savedScaleMode = window.localStorage.getItem(SCALE_MODE_STORAGE_KEY) as ScaleMode | null;
+      if (savedScaleMode && SCALE_MODE_OPTIONS.some((item) => item.value === savedScaleMode)) {
+        setScaleMode(savedScaleMode);
+      }
+      const savedGap = Number(window.localStorage.getItem(PAGE_GAP_STORAGE_KEY) || 0);
+      if (!Number.isNaN(savedGap)) {
+        setPageGap(Math.min(Math.max(savedGap, 0), 48));
+      }
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, []);
 
   useEffect(() => {
@@ -220,9 +231,12 @@ export default function MangaReadPage() {
   }, [cover, mangaId, sourceId, sourceName, title]);
 
   useEffect(() => {
-    setActivePage(0);
-    restoredChapterKeyRef.current = null;
-    preloadedImageUrlsRef.current.clear();
+    const timer = window.setTimeout(() => {
+      setActivePage(0);
+      restoredChapterKeyRef.current = null;
+      preloadedImageUrlsRef.current.clear();
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, [chapterId]);
 
   useEffect(() => {
@@ -274,7 +288,8 @@ export default function MangaReadPage() {
   }, [chapterId, mangaId, pages.length, readMode, sourceId]);
 
   useEffect(() => {
-    setShowChapterComplete(false);
+    const timer = window.setTimeout(() => setShowChapterComplete(false), 0);
+    return () => window.clearTimeout(timer);
   }, [activePage, chapterId, readMode]);
 
   useEffect(() => {
@@ -425,7 +440,7 @@ export default function MangaReadPage() {
       img.src = resolvedUrl;
       preloadedImageUrlsRef.current.add(resolvedUrl);
     });
-  }, [activePage, pages, readMode]);
+  }, [activePage, getPreloadAnchorPage, pages, readMode]);
 
   useEffect(() => {
     if (!mangaId || !sourceId || !chapterId) return;
@@ -704,6 +719,8 @@ export default function MangaReadPage() {
     setSettingsOpen(false);
   };
 
+  // These callback refs collect page DOM nodes during commit for scroll/navigation.
+  /* eslint-disable react-hooks/refs */
   return (
     <div className='mx-auto max-w-6xl'>
       {settingsOpen && (
@@ -899,7 +916,7 @@ export default function MangaReadPage() {
               <div
                 key={`${page}-${index}`}
                 ref={(node) => {
-                  verticalPageRefs.current[index] = node;
+                  setIndexedRef(verticalPageRefs, index, node);
                 }}
                 data-index={index}
                 className='overflow-hidden bg-gray-100 shadow-xs dark:bg-gray-900'
@@ -965,4 +982,5 @@ export default function MangaReadPage() {
       </Link>
     </div>
   );
+  /* eslint-enable react-hooks/refs */
 }

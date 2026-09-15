@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from 'next/server';
 
 import { generateAuthCookieValue } from '@/lib/auth-cookie';
@@ -6,7 +5,6 @@ import { setAuthCookies } from '@/lib/auth-response';
 import { getConfig } from '@/lib/config';
 import { db } from '@/lib/db';
 import { logger } from '@/lib/logger';
-import { TOKEN_CONFIG } from '@/lib/token-config';
 
 export const runtime = 'nodejs';
 
@@ -165,8 +163,6 @@ export async function GET(request: NextRequest) {
       const userAgent = request.headers.get('user-agent') || 'Unknown';
       const deviceInfo = getDeviceInfo(userAgent);
       const cookieValue = await generateAuthCookieValue({ username, role: userRole, deviceInfo });
-      const expires = new Date(Date.now() + TOKEN_CONFIG.REFRESH_TOKEN_AGE);
-
       setAuthCookies(response, cookieValue, request);
 
       // 清除state cookie

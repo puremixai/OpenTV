@@ -1,6 +1,7 @@
 'use client';
 
 import { logger } from '@/lib/logger';
+import { getRuntimeConfig } from '@/lib/runtime-config';
 
 function throwIfCancelled(signal?: AbortSignal) {
   if (signal?.aborted) {
@@ -129,11 +130,6 @@ const SERVER_PROXY_BASE_URL = '/api/bangumi';
 
 function normalizeBaseUrl(baseUrl: string): string {
   return baseUrl.trim().replace(/\/+$/, '');
-}
-
-function getRuntimeConfig() {
-  if (typeof window === 'undefined') return {} as any;
-  return (window as any).RUNTIME_CONFIG || {};
 }
 
 function getPrimaryAnimeDataSource(): AnimeDataSource {

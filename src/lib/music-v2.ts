@@ -270,12 +270,20 @@ export function normalizeLxSong(song: LxServerSong): MusicV2Song {
   });
 }
 
-export function unwrapLxArray<T>(payload: any): T[] {
+export function asRecord(value: unknown): Record<string, unknown> {
+  return typeof value === 'object' && value !== null
+    ? value as Record<string, unknown>
+    : {};
+}
+
+export function unwrapLxArray<T>(payload: unknown): T[] {
   if (Array.isArray(payload)) return payload as T[];
-  if (Array.isArray(payload?.list)) return payload.list as T[];
-  if (Array.isArray(payload?.data)) return payload.data as T[];
-  if (Array.isArray(payload?.data?.list)) return payload.data.list as T[];
-  if (Array.isArray(payload?.data?.data)) return payload.data.data as T[];
+  const record = asRecord(payload);
+  if (Array.isArray(record.list)) return record.list as T[];
+  if (Array.isArray(record.data)) return record.data as T[];
+  const data = asRecord(record.data);
+  if (Array.isArray(data.list)) return data.list as T[];
+  if (Array.isArray(data.data)) return data.data as T[];
   return [];
 }
 
@@ -334,7 +342,7 @@ export async function lxGetJson<T>(path: string, authMode: LxFetchAuthMode = 'au
   return response.json() as Promise<T>;
 }
 
-export async function lxPostJson<T>(path: string, body: any, authMode: LxFetchAuthMode = 'auto'): Promise<T> {
+export async function lxPostJson<T>(path: string, body: unknown, authMode: LxFetchAuthMode = 'auto'): Promise<T> {
   const response = await lxFetch(path, {
     method: 'POST',
     body: JSON.stringify(body),
@@ -350,17 +358,18 @@ export function extractSongmid(song: Pick<MusicV2Song, 'songId' | 'songmid'>) {
   return song.songmid || song.songId.split('_').slice(1).join('_');
 }
 
-function normalizeLyricPayload(payload: any) {
+function normalizeLyricPayload(payload: unknown) {
+  const record = asRecord(payload);
   return {
-    lyric: typeof payload?.lyric === 'string'
-      ? payload.lyric
-      : typeof payload?.lrc === 'string'
-        ? payload.lrc
+    lyric: typeof record.lyric === 'string'
+      ? record.lyric
+      : typeof record.lrc === 'string'
+        ? record.lrc
         : '',
-    tlyric: typeof payload?.tlyric === 'string'
-      ? payload.tlyric
-      : typeof payload?.trc === 'string'
-        ? payload.trc
+    tlyric: typeof record.tlyric === 'string'
+      ? record.tlyric
+      : typeof record.trc === 'string'
+        ? record.trc
         : '',
   };
 }
@@ -384,10 +393,10 @@ export async function fetchLxLyric(song: MusicV2Song) {
   if (song.trcUrl) query.set('trcUrl', song.trcUrl);
 
   try {
-    const payload = await lxGetJson<any>(`/api/music/lyric?${query.toString()}`, 'none');
+    const payload = await lxGetJson<unknown>(`/api/music/lyric?${query.toString()}`, 'none');
     return normalizeLyricPayload(payload);
   } catch {
-    const payload = await lxPostJson<any>('/api/music/lyric', {
+    const payload = await lxPostJson<unknown>('/api/music/lyric', {
       songInfo: {
         source: song.source,
         id: song.songId,

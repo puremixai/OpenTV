@@ -5,6 +5,7 @@ import React, { useEffect, useState } from 'react';
 import { logger } from '@/lib/logger';
 
 import { createCinemaPortal as createPortal } from '@/components/CinemaPortal';
+import ProxyImage from '@/components/ProxyImage';
 
 interface OfflineDownloadTask {
   id: string;
@@ -38,13 +39,14 @@ interface OfflineDownloadPanelProps {
 
 export function OfflineDownloadPanel({ isOpen, onClose }: OfflineDownloadPanelProps) {
   const [tasks, setTasks] = useState<OfflineDownloadTask[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [viewMode, setViewMode] = useState<'tasks' | 'library'>('tasks'); // 视图模式：任务列表或视频库
 
   // 确保只在客户端渲染
   useEffect(() => {
-    setMounted(true);
+    const timer = window.setTimeout(() => setMounted(true), 0);
+    return () => window.clearTimeout(timer);
   }, []);
 
   // 获取任务列表
@@ -88,7 +90,7 @@ export function OfflineDownloadPanel({ isOpen, onClose }: OfflineDownloadPanelPr
       });
 
       if (response.ok) {
-        const data = await response.json();
+        await response.json();
         // 更新任务状态（保留进度，只重试失败的片段）
         setTasks((prev) =>
           prev.map((t) =>
@@ -117,9 +119,12 @@ export function OfflineDownloadPanel({ isOpen, onClose }: OfflineDownloadPanelPr
   // 定期刷新任务列表
   useEffect(() => {
     if (isOpen) {
-      fetchTasks();
+      const timer = window.setTimeout(() => void fetchTasks(), 0);
       const interval = setInterval(fetchTasks, 3000); // 每3秒刷新一次
-      return () => clearInterval(interval);
+      return () => {
+        window.clearTimeout(timer);
+        clearInterval(interval);
+      };
     }
   }, [isOpen]);
 
@@ -259,8 +264,8 @@ export function OfflineDownloadPanel({ isOpen, onClose }: OfflineDownloadPanelPr
                     {/* 封面图 */}
                     {video.metadata?.cover && (
                       <div className='shrink-0'>
-                        <img
-                          src={video.metadata.cover}
+                        <ProxyImage
+                          originalSrc={video.metadata.cover}
                           alt={video.metadata.videoTitle || video.title}
                           className='w-32 h-48 object-cover rounded-sm'
                         />

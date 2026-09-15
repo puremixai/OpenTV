@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, no-console, @typescript-eslint/no-non-null-assertion,react-hooks/exhaustive-deps,@typescript-eslint/no-empty-function */
 
 'use client';
 
@@ -14,6 +13,7 @@ import {
   useAlertModal,
   useLoadingState,
 } from '@/components/admin/shared';
+import ProxyImage from '@/components/ProxyImage';
 
 export const ThemeConfigComponent = ({
   config,
@@ -45,49 +45,53 @@ export const ThemeConfigComponent = ({
   ]);
 
   useEffect(() => {
-    if (config?.ThemeConfig) {
-      setThemeSettings({
-        enableBuiltInTheme: config.ThemeConfig.enableBuiltInTheme || false,
-        builtInTheme: config.ThemeConfig.builtInTheme || 'default',
-        customCSS: config.ThemeConfig.customCSS || '',
-        enableCache: config.ThemeConfig.enableCache !== false,
-        cacheMinutes: config.ThemeConfig.cacheMinutes || 1440,
-        progressThumbType: config.ThemeConfig.progressThumbType || 'default',
-        progressThumbPresetId: config.ThemeConfig.progressThumbPresetId || '',
-        progressThumbCustomUrl: config.ThemeConfig.progressThumbCustomUrl || '',
-      });
+    const timer = window.setTimeout(() => {
+      if (config?.ThemeConfig) {
+        setThemeSettings({
+          enableBuiltInTheme: config.ThemeConfig.enableBuiltInTheme || false,
+          builtInTheme: config.ThemeConfig.builtInTheme || 'default',
+          customCSS: config.ThemeConfig.customCSS || '',
+          enableCache: config.ThemeConfig.enableCache !== false,
+          cacheMinutes: config.ThemeConfig.cacheMinutes || 1440,
+          progressThumbType: config.ThemeConfig.progressThumbType || 'default',
+          progressThumbPresetId: config.ThemeConfig.progressThumbPresetId || '',
+          progressThumbCustomUrl: config.ThemeConfig.progressThumbCustomUrl || '',
+        });
 
-      // 解析背景图配置
-      if (config.ThemeConfig.loginBackgroundImage) {
-        const urls = config.ThemeConfig.loginBackgroundImage
-          .split('\n')
-          .map((url) => url.trim())
-          .filter((url) => url !== '');
-        setLoginBackgroundImages(urls.length > 0 ? urls : ['']);
-      } else {
-        setLoginBackgroundImages(['']);
-      }
+        // 解析背景图配置
+        if (config.ThemeConfig.loginBackgroundImage) {
+          const urls = config.ThemeConfig.loginBackgroundImage
+            .split('\n')
+            .map((url) => url.trim())
+            .filter((url) => url !== '');
+          setLoginBackgroundImages(urls.length > 0 ? urls : ['']);
+        } else {
+          setLoginBackgroundImages(['']);
+        }
 
-      if (config.ThemeConfig.registerBackgroundImage) {
-        const urls = config.ThemeConfig.registerBackgroundImage
-          .split('\n')
-          .map((url) => url.trim())
-          .filter((url) => url !== '');
-        setRegisterBackgroundImages(urls.length > 0 ? urls : ['']);
-      } else {
-        setRegisterBackgroundImages(['']);
-      }
+        if (config.ThemeConfig.registerBackgroundImage) {
+          const urls = config.ThemeConfig.registerBackgroundImage
+            .split('\n')
+            .map((url) => url.trim())
+            .filter((url) => url !== '');
+          setRegisterBackgroundImages(urls.length > 0 ? urls : ['']);
+        } else {
+          setRegisterBackgroundImages(['']);
+        }
 
-      if (config.ThemeConfig.homeBackgroundImage) {
-        const urls = config.ThemeConfig.homeBackgroundImage
-          .split('\n')
-          .map((url) => url.trim())
-          .filter((url) => url !== '');
-        setHomeBackgroundImages(urls.length > 0 ? urls : ['']);
-      } else {
-        setHomeBackgroundImages(['']);
+        if (config.ThemeConfig.homeBackgroundImage) {
+          const urls = config.ThemeConfig.homeBackgroundImage
+            .split('\n')
+            .map((url) => url.trim())
+            .filter((url) => url !== '');
+          setHomeBackgroundImages(urls.length > 0 ? urls : ['']);
+        } else {
+          setHomeBackgroundImages(['']);
+        }
       }
-    }
+    }, 0);
+
+    return () => window.clearTimeout(timer);
   }, [config]);
 
   const handleSave = async () => {
@@ -728,8 +732,8 @@ export const ThemeConfigComponent = ({
                   }`}
                 >
                   <div className='flex flex-col items-center gap-2'>
-                    <img
-                      src={thumb.url}
+                    <ProxyImage
+                      originalSrc={thumb.url}
                       alt={thumb.name}
                       className='w-12 h-12 object-contain'
                       onError={(e) => {
@@ -784,8 +788,8 @@ export const ThemeConfigComponent = ({
                 <p className='text-xs text-gray-600 dark:text-gray-400 mb-2'>
                   预览：
                 </p>
-                <img
-                  src={themeSettings.progressThumbCustomUrl}
+                <ProxyImage
+                  originalSrc={themeSettings.progressThumbCustomUrl}
                   alt='自定义图标预览'
                   className='w-12 h-12 object-contain border border-gray-300 dark:border-gray-600 rounded-sm'
                   onError={(e) => {

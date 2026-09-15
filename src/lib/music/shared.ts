@@ -2,6 +2,37 @@ import React from 'react';
 
 import type { MusicSource, Song } from '@/lib/music/types';
 
+export interface MusicSongInput {
+  id?: string | number;
+  songId?: string | number;
+  rid?: string | number;
+  mid?: string | number;
+  source?: string;
+  platform?: string;
+  vendor?: string;
+  origin?: string;
+  name?: string;
+  title?: string;
+  artist?: string;
+  singer?: string;
+  artists?: string;
+  album?: string | { picUrl?: string; pic?: string };
+  albumName?: string;
+  pic?: string;
+  cover?: string;
+  img?: string;
+  image?: string;
+  imageUrl?: string;
+  albumPicUrl?: string;
+  meta?: { picUrl?: string };
+  al?: { picUrl?: string };
+  durationSec?: number;
+  duration?: number;
+  durationText?: string;
+  interval?: string;
+  songmid?: string;
+}
+
 export const musicSources: Array<{ key: MusicSource; label: string }> = [
   { key: 'wy', label: '网易云' },
   { key: 'tx', label: 'QQ' },
@@ -18,8 +49,9 @@ export function normalizeSource(source: string | undefined | null): MusicSource 
   return 'wy';
 }
 
-export function mapSong(song: any): Song {
+export function mapSong(song: MusicSongInput): Song {
   const rawSource = song.source || song.platform || song.vendor || song.origin;
+  const albumObject = typeof song.album === 'object' ? song.album : undefined;
   const pic =
     song.pic ||
     song.cover ||
@@ -28,20 +60,20 @@ export function mapSong(song: any): Song {
     song.imageUrl ||
     song.albumPicUrl ||
     song.meta?.picUrl ||
-    song.album?.picUrl ||
-    song.album?.pic ||
+    albumObject?.picUrl ||
+    albumObject?.pic ||
     song.al?.picUrl;
 
   return {
     id: String(song.id ?? song.songId ?? song.rid ?? song.mid ?? ''),
     name: song.name || song.title || '未知歌曲',
     artist: song.artist || song.singer || song.artists || '未知艺术家',
-    album: song.album || song.albumName,
+    album: (typeof song.album === 'string' ? song.album : undefined) || song.albumName,
     pic,
     platform: normalizeSource(rawSource),
     duration: song.durationSec || song.duration,
     durationText: song.durationText || song.interval,
-    songmid: song.songmid || song.mid,
+    songmid: song.songmid || (song.mid !== undefined ? String(song.mid) : undefined),
   };
 }
 

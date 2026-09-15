@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/ban-ts-comment, @typescript-eslint/no-explicit-any, react-hooks/exhaustive-deps, no-console, @next/next/no-img-element */
+/* eslint-disable @typescript-eslint/no-explicit-any, react-hooks/exhaustive-deps, no-console, @next/next/no-img-element */
 
 'use client';
 
@@ -1726,7 +1726,7 @@ function LivePageClient() {
                   const url = new URL(context.url);
                   url.searchParams.set('moontv-source', currentSourceRef.current?.key || '');
                   context.url = url.toString();
-                } catch (error) {
+                } catch {
                   // ignore
                 }
               } else if (proxyMode === 'm3u8-only') {
@@ -1736,7 +1736,7 @@ function LivePageClient() {
                   url.searchParams.set('moontv-source', currentSourceRef.current?.key || '');
                   url.searchParams.set('allowCORS', 'true');
                   context.url = url.toString();
-                } catch (error) {
+                } catch {
                   context.url = context.url + '&allowCORS=true';
                 }
               }
@@ -1751,7 +1751,7 @@ function LivePageClient() {
                   const url = new URL(context.url);
                   url.searchParams.set('moontv-source', currentSourceRef.current?.key || '');
                   context.url = url.toString();
-                } catch (error) {
+                } catch {
                   // ignore
                 }
               }

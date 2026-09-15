@@ -9,6 +9,15 @@ import {
   searchTMDBMulti,
 } from '@/lib/tmdb.client';
 
+interface TMDBSearchResult {
+  id: number;
+  media_type?: 'movie' | 'tv';
+  title?: string;
+  name?: string;
+  original_title?: string;
+  original_name?: string;
+}
+
 // 服务器端缓存（内存）
 const searchCache = new Map<
   string,
@@ -28,7 +37,10 @@ function removeSeasonInfo(title: string): string {
 }
 
 // 精确匹配标题
-function findExactMatch(results: any[], originalTitle: string): any | null {
+function findExactMatch<T extends TMDBSearchResult>(
+  results: T[],
+  originalTitle: string
+): T | null {
   if (!results || results.length === 0) return null;
   if (results.length === 1) return results[0];
 

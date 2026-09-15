@@ -2,7 +2,7 @@
 
 import { BookOpen, CircleMinus, CirclePlus, Info, Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 
 import { MangaReadRecord } from '@/lib/manga.types';
 import { processImageUrl } from '@/lib/utils';
@@ -40,7 +40,7 @@ export default function MangaHistoryCard({ item, inShelf, onToggleShelf, onDelet
   );
 
   const openActions = () => setShowActions(true);
-  const goRead = () => router.push(readHref);
+  const goRead = useCallback(() => router.push(readHref), [readHref, router]);
 
   const longPressProps = useLongPress({
     onLongPress: openActions,

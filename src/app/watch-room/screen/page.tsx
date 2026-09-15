@@ -13,7 +13,6 @@ import { useWatchRoomContext } from '@/components/WatchRoomProvider';
 const NEW_TAB_KEY_PREFIX = 'watch_room_screen_home_opened_';
 const WATCH_ROOM_NO_CONNECT_KEY = 'watch_room_no_connect';
 const WATCH_ROOM_NO_CONNECT_TIMESTAMP_KEY = 'watch_room_no_connect_timestamp';
-const WATCH_ROOM_NO_CONNECT_TTL_MS = 10 * 60 * 1000;
 const SCREEN_SHARE_QUALITY_KEY = 'watch_room_screen_quality';
 
 function getScreenShareHostSupportError() {
@@ -79,10 +78,13 @@ export default function WatchRoomScreenPage() {
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
-    const saved = window.localStorage.getItem(SCREEN_SHARE_QUALITY_KEY);
-    if (saved === 'smooth' || saved === 'hd' || saved === 'ultra') {
-      setQualityPreset(saved);
-    }
+    const timer = window.setTimeout(() => {
+      const saved = window.localStorage.getItem(SCREEN_SHARE_QUALITY_KEY);
+      if (saved === 'smooth' || saved === 'hd' || saved === 'ultra') {
+        setQualityPreset(saved);
+      }
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, []);
 
   useEffect(() => {
@@ -108,11 +110,14 @@ export default function WatchRoomScreenPage() {
       ? getScreenShareHostSupportError()
       : getScreenShareViewerSupportError();
     if (supportError) {
-      showToast(`当前设备无法使用屏幕共享房间：${supportError}`, 'error');
-      leaveRoom();
-      router.replace('/watch-room');
+      const timer = window.setTimeout(() => {
+        showToast(`当前设备无法使用屏幕共享房间：${supportError}`, 'error');
+        leaveRoom();
+        router.replace('/watch-room');
+      }, 0);
+      return () => window.clearTimeout(timer);
     }
-  }, [isOwner, leaveRoom, router, screenRoom?.id, screenRoom?.roomType]);
+  }, [isOwner, leaveRoom, router, screenRoom]);
 
   useEffect(() => {
     if (!screenRoom || !isOwner) return;
@@ -133,7 +138,7 @@ export default function WatchRoomScreenPage() {
       localStorage.removeItem(WATCH_ROOM_NO_CONNECT_TIMESTAMP_KEY);
       window.clearInterval(heartbeat);
     };
-  }, [isOwner, openDetachedPage, screenRoom?.id]);
+  }, [isOwner, openDetachedPage, screenRoom]);
 
   if (!screenRoom || screenRoom.roomType !== 'screen') {
     return null;

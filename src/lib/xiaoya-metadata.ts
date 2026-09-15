@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { logger } from '@/lib/logger';
 
@@ -86,7 +85,7 @@ async function findNFO(
       if (metadata) {
         return metadata;
       }
-    } catch (error) {
+    } catch {
       continue;
     }
   }

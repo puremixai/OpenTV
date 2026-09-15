@@ -35,7 +35,7 @@ export const sql = new Proxy(() => undefined, {
   get: () => unsupported('@vercel/postgres'),
 });
 
-const shim: any = new Proxy(
+const shim = new Proxy(
   function nodeUnsupportedDefault() {
     unsupported();
   },

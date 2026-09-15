@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, no-console */
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -43,24 +42,28 @@ export const EmailConfigComponent = ({
   const [testEmail, setTestEmail] = useState('');
 
   useEffect(() => {
-    if (config?.EmailConfig) {
-      setEnabled(config.EmailConfig.enabled || false);
-      setProvider(config.EmailConfig.provider || 'smtp');
+    const timer = window.setTimeout(() => {
+      if (config?.EmailConfig) {
+        setEnabled(config.EmailConfig.enabled || false);
+        setProvider(config.EmailConfig.provider || 'smtp');
 
-      if (config.EmailConfig.smtp) {
-        setSmtpHost(config.EmailConfig.smtp.host || '');
-        setSmtpPort(config.EmailConfig.smtp.port || 587);
-        setSmtpSecure(config.EmailConfig.smtp.secure || false);
-        setSmtpUser(config.EmailConfig.smtp.user || '');
-        setSmtpPassword(config.EmailConfig.smtp.password || '');
-        setSmtpFrom(config.EmailConfig.smtp.from || '');
-      }
+        if (config.EmailConfig.smtp) {
+          setSmtpHost(config.EmailConfig.smtp.host || '');
+          setSmtpPort(config.EmailConfig.smtp.port || 587);
+          setSmtpSecure(config.EmailConfig.smtp.secure || false);
+          setSmtpUser(config.EmailConfig.smtp.user || '');
+          setSmtpPassword(config.EmailConfig.smtp.password || '');
+          setSmtpFrom(config.EmailConfig.smtp.from || '');
+        }
 
-      if (config.EmailConfig.resend) {
-        setResendApiKey(config.EmailConfig.resend.apiKey || '');
-        setResendFrom(config.EmailConfig.resend.from || '');
+        if (config.EmailConfig.resend) {
+          setResendApiKey(config.EmailConfig.resend.apiKey || '');
+          setResendFrom(config.EmailConfig.resend.from || '');
+        }
       }
-    }
+    }, 0);
+
+    return () => window.clearTimeout(timer);
   }, [config]);
 
   const handleSave = async () => {

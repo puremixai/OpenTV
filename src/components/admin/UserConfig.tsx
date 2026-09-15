@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, no-console, @typescript-eslint/no-non-null-assertion,react-hooks/exhaustive-deps,@typescript-eslint/no-empty-function */
+/* eslint-disable @typescript-eslint/no-explicit-any, no-console,react-hooks/exhaustive-deps */
 
 'use client';
 
@@ -275,7 +275,7 @@ export const UserConfig = ({
       await handleUserGroupAction('delete', deletingUserGroup.name);
       setShowDeleteUserGroupModal(false);
       setDeletingUserGroup(null);
-    } catch (err) {
+    } catch {
       // 错误处理已在 handleUserGroupAction 中处理
     }
   };
@@ -497,7 +497,7 @@ export const UserConfig = ({
           setShowConfigureUserGroupModal(false);
           setSelectedUserForGroup(null);
           setSelectedUserGroups([]);
-        } catch (err) {
+        } catch {
           // 错误处理已在 handleAssignUserGroup 中处理
         }
       }
@@ -666,7 +666,7 @@ export const UserConfig = ({
         await handleUserAction('deleteUser', deletingUser);
         setShowDeleteUserModal(false);
         setDeletingUser(null);
-      } catch (err) {
+      } catch {
         // 错误处理已在 handleUserAction 中处理
       }
     });

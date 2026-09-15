@@ -45,7 +45,8 @@ export function AdminWorkspace({
 
   useEffect(() => {
     dialog.current?.close();
-    setQuery('');
+    const timer = window.setTimeout(() => setQuery(''), 0);
+    return () => window.clearTimeout(timer);
   }, [active]);
 
   useEffect(() => {

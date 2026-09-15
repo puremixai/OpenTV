@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { logger } from '@/lib/logger';
 
@@ -75,7 +75,7 @@ export function useScreenShare(qualityPreset: ScreenShareQualityPreset = 'smooth
   const socket = watchRoom?.socket || null;
   const isConnected = watchRoom?.isConnected || false;
   const isOwner = watchRoom?.isOwner || false;
-  const members = watchRoom?.members || [];
+  const members = useMemo(() => watchRoom?.members || [], [watchRoom?.members]);
   const currentState = currentRoom?.currentState;
   const isSharing = currentState?.type === 'screen' && currentState.status === 'sharing';
 
@@ -226,9 +226,9 @@ export function useScreenShare(qualityPreset: ScreenShareQualityPreset = 'smooth
       await Promise.all(
         members.filter((member) => !member.isOwner).map((member) => sendOfferToMember(member.id))
       );
-    } catch (err: any) {
+    } catch (err: unknown) {
       logger.error('[ScreenShare] Failed to start sharing:', err);
-      setError(err?.message || '开启屏幕共享失败');
+      setError(err instanceof Error ? err.message : '开启屏幕共享失败');
     } finally {
       setIsStarting(false);
     }

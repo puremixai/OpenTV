@@ -37,24 +37,37 @@ export interface WebPushDispatchResult {
 
 const globalVapidCacheKey = Symbol.for('__MOONTV_WEB_PUSH_VAPID_KEYS__');
 const globalVapidPromiseKey = Symbol.for('__MOONTV_WEB_PUSH_VAPID_KEYS_PROMISE__');
+const globalVapidStore = globalThis as typeof globalThis & Record<symbol, unknown>;
+
+function isVapidKeys(value: unknown): value is VapidKeys {
+  if (!value || typeof value !== 'object') return false;
+  const candidate = value as Partial<VapidKeys>;
+  return typeof candidate.publicKey === 'string' && typeof candidate.privateKey === 'string';
+}
+
+function isVapidKeysPromise(value: unknown): value is Promise<VapidKeys> {
+  return value instanceof Promise;
+}
 
 function getCachedVapidKeys(): VapidKeys | null {
-  return ((globalThis as any)[globalVapidCacheKey] as VapidKeys | undefined) || null;
+  const cached = globalVapidStore[globalVapidCacheKey];
+  return isVapidKeys(cached) ? cached : null;
 }
 
 function setCachedVapidKeys(keys: VapidKeys): void {
-  (globalThis as any)[globalVapidCacheKey] = keys;
+  globalVapidStore[globalVapidCacheKey] = keys;
 }
 
 function getCachedVapidKeysPromise(): Promise<VapidKeys> | null {
-  return ((globalThis as any)[globalVapidPromiseKey] as Promise<VapidKeys> | undefined) || null;
+  const cached = globalVapidStore[globalVapidPromiseKey];
+  return isVapidKeysPromise(cached) ? cached : null;
 }
 
 function setCachedVapidKeysPromise(promise: Promise<VapidKeys> | null): void {
   if (promise) {
-    (globalThis as any)[globalVapidPromiseKey] = promise;
+    globalVapidStore[globalVapidPromiseKey] = promise;
   } else {
-    delete (globalThis as any)[globalVapidPromiseKey];
+    delete globalVapidStore[globalVapidPromiseKey];
   }
 }
 
@@ -132,7 +145,7 @@ async function fetchWebPushEndpoint(
     return fetch(requestUrl, init) as Promise<Response>;
   }
 
-  const fetchOptions: any = {
+  const fetchOptions: RequestInit = {
     method: init.method,
     headers: init.headers,
     body: init.body,

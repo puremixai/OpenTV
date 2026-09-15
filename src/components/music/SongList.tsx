@@ -6,6 +6,8 @@ import { addMusicSongToPlaylist, playMusicLater, playMusicSong } from '@/lib/mus
 import { SourcePill } from '@/lib/music/shared';
 import type { Song } from '@/lib/music/types';
 
+import ProxyImage from '@/components/ProxyImage';
+
 function SongCover({ song }: { song: Song }) {
   const [failed, setFailed] = useState(false);
   const cover = song.pic && !failed ? song.pic : '';
@@ -13,8 +15,8 @@ function SongCover({ song }: { song: Song }) {
   return (
     <div className="relative h-11 w-11 shrink-0 overflow-hidden rounded-lg bg-white/10 shadow-inner">
       {cover ? (
-        <img
-          src={cover}
+        <ProxyImage
+          originalSrc={cover}
           alt={`${song.name} 封面`}
           loading="lazy"
           referrerPolicy="no-referrer"

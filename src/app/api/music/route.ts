@@ -177,7 +177,7 @@ async function replaceAudioUrlsWithOpenList(
             logger.error('[Music Cache] 异步缓存音频失败:', error);
           });
       }
-    } catch (error) {
+    } catch {
       song.cached = false;
 
       cacheAudioToOpenList(openListClient, song.url, platform, song.id, quality, cachePath)
@@ -279,7 +279,6 @@ async function executeMethod(
 
             // 尝试计算表达式
             try {
-              // eslint-disable-next-line no-eval
               result = eval(result);
             } catch (err) {
               logger.error(`[executeMethod] Cloudflare 环境执行表达式失败: ${expr}`, err);
@@ -290,7 +289,6 @@ async function executeMethod(
             return String(result);
           } else {
             // 在 Node.js 环境下，使用 Function 构造器
-            // eslint-disable-next-line no-new-func
             const func = new Function(...Object.keys(evalContext), `return ${expression}`);
             const result = func(...Object.values(evalContext));
             return String(result);
@@ -360,7 +358,6 @@ async function executeMethod(
     } else {
       // 在 Node.js 环境下，直接执行 transform
       try {
-        // eslint-disable-next-line no-eval
         const transformFn = eval(`(${config.transform})`);
         data = transformFn(data);
       } catch (err) {
@@ -655,7 +652,7 @@ export async function POST(request: NextRequest) {
                 return NextResponse.json(updatedData);
               }
             }
-          } catch (error) {
+          } catch {
             // OpenList 缓存未命中，继续调用音乐服务
           }
         }

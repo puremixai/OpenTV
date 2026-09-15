@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-import { isMusicSource, lxGetJson, normalizeLxSong, unwrapLxArray } from '@/lib/music-v2';
+import { asRecord, isMusicSource, lxGetJson, LxServerSong, normalizeLxSong, unwrapLxArray } from '@/lib/music-v2';
 import { badRequest, internalError } from '@/lib/music-v2-api';
 
 export const runtime = 'nodejs';
@@ -15,12 +15,15 @@ export async function GET(request: NextRequest) {
     if (!isMusicSource(source)) return badRequest('不支持的音源');
     if (!boardId) return badRequest('缺少榜单 ID');
 
-    const payload = await lxGetJson<any>(`/api/music/leaderboard/list?source=${source}&bangid=${encodeURIComponent(boardId)}&page=${page}`, 'none');
-    const list = unwrapLxArray<any>(payload);
+    const payload = await lxGetJson<unknown>(`/api/music/leaderboard/list?source=${source}&bangid=${encodeURIComponent(boardId)}&page=${page}`, 'none');
+    const list = unwrapLxArray<LxServerSong>(payload);
+    const payloadRecord = asRecord(payload);
+    const dataRecord = asRecord(payloadRecord.data);
+    const nestedDataRecord = asRecord(dataRecord.data);
     const total =
-      payload?.total ??
-      payload?.data?.total ??
-      payload?.data?.data?.total ??
+      payloadRecord.total ??
+      dataRecord.total ??
+      nestedDataRecord.total ??
       list.length;
 
     return NextResponse.json({

@@ -34,7 +34,7 @@ interface DoubanDetailApiResponse {
   episodes_info?: string;
   cover_url?: string;
   url?: string;
-  [key: string]: any; // 允许其他字段
+  [key: string]: unknown; // 允许其他字段
 }
 
 export const runtime = 'nodejs';

@@ -26,7 +26,9 @@ export async function GET(request: NextRequest) {
     }
 
     const proxyUrl = `/api/netdisk/uc/proxy?id=${encodeURIComponent(id)}&episodeIndex=${episodeIndex}`;
-    refreshUCNetdiskSession(id) || getUCNetdiskSession(id);
+    if (!refreshUCNetdiskSession(id)) {
+      getUCNetdiskSession(id);
+    }
 
     if (format === 'json') {
       return NextResponse.json({ url: proxyUrl, headers: {} });

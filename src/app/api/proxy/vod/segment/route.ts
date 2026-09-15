@@ -107,7 +107,7 @@ export async function GET(request: NextRequest) {
           if (reader) {
             try {
               reader.releaseLock();
-            } catch (e) {
+            } catch {
               // reader 可能已经被释放，忽略错误
             }
             reader = null;
@@ -122,7 +122,7 @@ export async function GET(request: NextRequest) {
         if (reader) {
           try {
             reader.releaseLock();
-          } catch (e) {
+          } catch {
             // reader 可能已经被释放，忽略错误
           }
           reader = null;
@@ -131,7 +131,7 @@ export async function GET(request: NextRequest) {
         if (response?.body) {
           try {
             response.body.cancel();
-          } catch (e) {
+          } catch {
             // 忽略取消时的错误
           }
         }
@@ -139,12 +139,12 @@ export async function GET(request: NextRequest) {
     });
 
     return new Response(stream, { headers });
-  } catch (error) {
+  } catch {
     // 确保在错误情况下也释放资源
     if (reader) {
       try {
         (reader as ReadableStreamDefaultReader<Uint8Array>).releaseLock();
-      } catch (e) {
+      } catch {
         // 忽略错误
       }
     }
@@ -152,7 +152,7 @@ export async function GET(request: NextRequest) {
     if (response?.body) {
       try {
         response.body.cancel();
-      } catch (e) {
+      } catch {
         // 忽略错误
       }
     }

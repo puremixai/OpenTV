@@ -10,6 +10,7 @@ import {
   XCircle,
 } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 
 import { BookSource } from '@/lib/book.types';
@@ -60,6 +61,7 @@ function CapabilityPill({
 }
 
 export default function BooksHomePage() {
+  const router = useRouter();
   const [sources, setSources] = useState<BookSource[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -70,7 +72,7 @@ export default function BooksHomePage() {
       !(window as Window & { RUNTIME_CONFIG?: { BOOKS_ENABLED?: boolean } })
         .RUNTIME_CONFIG?.BOOKS_ENABLED
     ) {
-      window.location.href = '/';
+      router.push('/');
       return;
     }
     fetch('/api/books/sources')
@@ -78,7 +80,7 @@ export default function BooksHomePage() {
       .then((data) => setSources(data.sources || []))
       .catch((err) => setError(err.message || '加载书源失败'))
       .finally(() => setLoading(false));
-  }, []);
+  }, [router]);
 
   const stats = useMemo(() => {
     const catalogCount = sources.filter(

@@ -5,7 +5,8 @@ import NProgress from 'nprogress';
 import { useEffect, useRef } from 'react';
 
 // 创建全局钩子来拦截 router
-let globalRouterRef: any = null;
+type AppRouter = ReturnType<typeof useRouter>;
+let globalRouterRef: AppRouter | null = null;
 
 export default function TopProgressBar() {
   const pathname = usePathname();
@@ -14,6 +15,9 @@ export default function TopProgressBar() {
   const isNavigatingRef = useRef(false);
   const previousPathnameRef = useRef(pathname);
 
+  // Next App Router does not expose navigation lifecycle events, so this
+  // component intentionally wraps its imperative methods for progress UI.
+  /* eslint-disable react-hooks/immutability */
   useEffect(() => {
     // 配置 NProgress
     NProgress.configure({
@@ -93,7 +97,7 @@ export default function TopProgressBar() {
               isNavigatingRef.current = true;
               NProgress.start();
             }
-          } catch (e) {
+          } catch {
             // URL 解析失败，忽略
           }
         }
@@ -122,6 +126,7 @@ export default function TopProgressBar() {
       window.removeEventListener('popstate', handlePopState);
     };
   }, [router]);
+  /* eslint-enable react-hooks/immutability */
 
   useEffect(() => {
     // 仅在页面路径变化时结束进度条，参数变化不触发

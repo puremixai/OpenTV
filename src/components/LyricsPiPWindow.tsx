@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import ReactDOM from 'react-dom/client';
 
 import { logger } from '@/lib/logger';
@@ -285,7 +285,7 @@ const copyStylesToPiPWindow = (pipWin: Window) => {
       const style = pipWin.document.createElement('style');
       style.textContent = cssRules;
       pipWin.document.head.appendChild(style);
-    } catch (e) {
+    } catch {
       // 跨域样式表使用 link 标签
       if ((styleSheet as any).href) {
         const link = pipWin.document.createElement('link');
@@ -302,20 +302,18 @@ export default function LyricsPiPWindow({
   currentSong,
   lyrics,
   currentLyricIndex,
-  isPlaying,
-  currentTime,
   opacity,
   minimized,
-  onOpacityChange,
-  onMinimizedChange,
   onLyricSeek,
   onClose,
 }: LyricsPiPWindowProps) {
   const pipWindowRef = useRef<Window | null>(null);
   const rootRef = useRef<ReactDOM.Root | null>(null);
+  const renderPiPContentRef = useRef<((pipWin: Window) => void) | null>(null);
+  const onCloseRef = useRef(onClose);
 
   // 渲染 PiP 内容
-  const renderPiPContent = (pipWin: Window) => {
+  const renderPiPContent = useCallback((pipWin: Window) => {
     const container = pipWin.document.createElement('div');
     container.id = 'pip-lyrics-root';
     pipWin.document.body.appendChild(container);
@@ -348,7 +346,12 @@ export default function LyricsPiPWindow({
         }}
       />
     );
-  };
+  }, [currentLyricIndex, currentSong, lyrics, minimized, onLyricSeek, opacity]);
+
+  useEffect(() => {
+    renderPiPContentRef.current = renderPiPContent;
+    onCloseRef.current = onClose;
+  }, [onClose, renderPiPContent]);
 
   // 更新 PiP 内容
   useEffect(() => {
@@ -401,14 +404,14 @@ export default function LyricsPiPWindow({
             rootRef.current = null;
           }
           pipWindowRef.current = null;
-          onClose();
+          onCloseRef.current();
         });
 
         // 渲染内容
-        renderPiPContent(pipWin);
+        renderPiPContentRef.current?.(pipWin);
       } catch (error) {
         logger.error('打开画中画窗口失败:', error);
-        onClose();
+        onCloseRef.current();
       }
     };
 

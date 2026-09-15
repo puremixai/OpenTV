@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, no-console */
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -32,14 +31,18 @@ export const XiaoyaConfigComponent = ({
   const [disableVideoPreview, setDisableVideoPreview] = useState(false);
 
   useEffect(() => {
-    if (config?.XiaoyaConfig) {
-      setEnabled(config.XiaoyaConfig.Enabled || false);
-      setServerURL(config.XiaoyaConfig.ServerURL || '');
-      setToken(config.XiaoyaConfig.Token || '');
-      setUsername(config.XiaoyaConfig.Username || '');
-      setPassword(config.XiaoyaConfig.Password || '');
-      setDisableVideoPreview(config.XiaoyaConfig.DisableVideoPreview || false);
-    }
+    const timer = window.setTimeout(() => {
+      if (config?.XiaoyaConfig) {
+        setEnabled(config.XiaoyaConfig.Enabled || false);
+        setServerURL(config.XiaoyaConfig.ServerURL || '');
+        setToken(config.XiaoyaConfig.Token || '');
+        setUsername(config.XiaoyaConfig.Username || '');
+        setPassword(config.XiaoyaConfig.Password || '');
+        setDisableVideoPreview(config.XiaoyaConfig.DisableVideoPreview || false);
+      }
+    }, 0);
+
+    return () => window.clearTimeout(timer);
   }, [config]);
 
   const handleSave = async () => {

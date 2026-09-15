@@ -2,7 +2,7 @@
 'use client';
 
 import { AlertTriangle, ChevronRight } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 import type { PlayRecord } from '@/lib/db.client';
 import {
@@ -31,7 +31,7 @@ export default function ContinueWatching({ className }: ContinueWatchingProps) {
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [showPlayRecordsPanel, setShowPlayRecordsPanel] = useState(false);
 
-  const updatePlayRecords = (
+  const updatePlayRecords = useCallback((
     allRecords: Record<string, PlayRecord>,
     limit?: number
   ) => {
@@ -42,9 +42,9 @@ export default function ContinueWatching({ className }: ContinueWatchingProps) {
 
     const sortedRecords = recordsArray.sort((a, b) => b.save_time - a.save_time);
     setPlayRecords(limit ? sortedRecords.slice(0, limit) : sortedRecords);
-  };
+  }, []);
 
-  const applyCachedSnapshot = () => {
+  const applyCachedSnapshot = useCallback(() => {
     const cachedRecords = getCachedPlayRecordsSnapshot();
     if (Object.keys(cachedRecords).length === 0) {
       return false;
@@ -53,7 +53,7 @@ export default function ContinueWatching({ className }: ContinueWatchingProps) {
     updatePlayRecords(cachedRecords, cachedDisplayLimit);
     setLoading(false);
     return true;
-  };
+  }, [cachedDisplayLimit, updatePlayRecords]);
 
   useEffect(() => {
     const unsubscribe = subscribeToDataUpdates(
@@ -83,7 +83,7 @@ export default function ContinueWatching({ className }: ContinueWatchingProps) {
 
     fetchPlayRecords();
     return unsubscribe;
-  }, [cachedDisplayLimit]);
+  }, [applyCachedSnapshot, cachedDisplayLimit, updatePlayRecords]);
 
   if (!loading && playRecords.length === 0) {
     return null;

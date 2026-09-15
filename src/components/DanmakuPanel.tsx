@@ -12,6 +12,8 @@ import type {
 } from '@/lib/danmaku/types';
 import { logger } from '@/lib/logger';
 
+import ProxyImage from '@/components/ProxyImage';
+
 interface DanmakuPanelProps {
   videoTitle: string;
   currentEpisodeIndex: number;
@@ -166,17 +168,23 @@ export default function DanmakuPanel({
   // 当视频标题首次加载时，初始化搜索关键词（仅执行一次）
   useEffect(() => {
     if (videoTitle && !initializedRef.current) {
-      setSearchKeyword(videoTitle);
-      initializedRef.current = true; // 标记已初始化，防止后续自动填充
+      const timer = window.setTimeout(() => {
+        setSearchKeyword(videoTitle);
+        initializedRef.current = true; // 标记已初始化，防止后续自动填充
+      }, 0);
+      return () => window.clearTimeout(timer);
     }
   }, [videoTitle]);
 
   useEffect(() => {
-    if (episodes.length > 0) {
-      setEpisodeGroupIndex(Math.floor(currentEpisodeIndex / episodesPerGroup));
-    } else {
-      setEpisodeGroupIndex(0);
-    }
+    const timer = window.setTimeout(() => {
+      if (episodes.length > 0) {
+        setEpisodeGroupIndex(Math.floor(currentEpisodeIndex / episodesPerGroup));
+      } else {
+        setEpisodeGroupIndex(0);
+      }
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, [episodes, currentEpisodeIndex]);
 
   const episodeGroupCount = Math.ceil(episodes.length / episodesPerGroup);
@@ -584,8 +592,8 @@ export default function DanmakuPanel({
                 {/* 封面 */}
                 {anime.imageUrl && (
                   <div className='h-16 w-12 shrink-0 overflow-hidden rounded-sm'>
-                    <img
-                      src={anime.imageUrl}
+                    <ProxyImage
+                      originalSrc={anime.imageUrl}
                       alt={anime.animeTitle}
                       className='h-full w-full object-cover'
                       onError={(e) => {

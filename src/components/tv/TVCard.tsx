@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 
 import { processImageUrl } from '@/lib/utils';
 
+import ProxyImage from '@/components/ProxyImage';
+
 import { TVItem } from './types';
 
 export default function TVCard({ item }: { item: TVItem }) {
@@ -22,7 +24,7 @@ export default function TVCard({ item }: { item: TVItem }) {
     >
       <div className='relative aspect-2/3 overflow-hidden rounded-[22px] bg-slate-900 shadow-xl shadow-black/50 transition duration-200 group-hover:scale-[1.03] group-focus-visible:scale-[1.03]'>
         {poster ? (
-          <img src={poster} alt={item.title} className='h-full w-full object-cover' />
+          <ProxyImage originalSrc={poster} alt={item.title} className='h-full w-full object-cover' />
         ) : (
           <div className='flex h-full w-full items-center justify-center bg-linear-to-br from-slate-800 to-slate-950 text-slate-500'>
             <Play className='h-14 w-14' />

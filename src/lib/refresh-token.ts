@@ -3,19 +3,31 @@
 import { logger } from '@/lib/logger';
 
 import { TOKEN_CONFIG } from './token-config';
+import type { IStorage } from './types';
 
 // Re-export TOKEN_CONFIG for backward compatibility
 export { TOKEN_CONFIG };
 
 // Lazy import to avoid Edge Runtime issues in middleware
-let getStorage: (() => any) | null = null;
+interface RefreshTokenAdapter {
+  hSet(key: string, field: string, value: string): Promise<unknown>;
+  hGet(key: string, field: string): Promise<string | null>;
+  hDel(key: string, field: string): Promise<unknown>;
+  hCompareAndSet(key: string, field: string, expected: string, value: string): Promise<boolean>;
+  hGetAll(key: string): Promise<Record<string, string>>;
+  del(key: string): Promise<unknown>;
+}
 
-async function loadStorage() {
+type RefreshTokenStorage = IStorage & { adapter?: RefreshTokenAdapter };
+
+let getStorage: (() => IStorage) | null = null;
+
+async function loadStorage(): Promise<RefreshTokenStorage> {
   if (!getStorage) {
     const db = await import('./db');
     getStorage = db.getStorage;
   }
-  return getStorage();
+  return getStorage() as RefreshTokenStorage;
 }
 
 interface TokenData {
@@ -47,14 +59,14 @@ export async function storeRefreshToken(
   tokenData: TokenData
 ): Promise<void> {
   const hashKey = `user_tokens:${username}`;
-  const storage = await loadStorage();
+  const adapter = (await loadStorage()).adapter;
 
-  if (!storage || typeof (storage as any).adapter?.hSet !== 'function') {
+  if (!adapter || typeof adapter.hSet !== 'function') {
     throw new Error('The configured storage does not support persistent sessions');
   }
 
   try {
-    await (storage as any).adapter.hSet(
+    await adapter.hSet(
       hashKey,
       tokenId,
       JSON.stringify(tokenData)
@@ -74,17 +86,17 @@ export async function verifyRefreshToken(
   updateLastUsed = true
 ): Promise<boolean> {
   const hashKey = `user_tokens:${username}`;
-  const storage = await loadStorage();
+  const adapter = (await loadStorage()).adapter;
 
-  if (!storage || typeof (storage as any).adapter?.hGet !== 'function') {
+  if (!adapter || typeof adapter.hGet !== 'function') {
     logger.warn('Redis Hash not supported');
     return false;
   }
 
   try {
-    const dataStr = await (storage as any).adapter.hGet(hashKey, tokenId);
+    const dataStr = await adapter.hGet(hashKey, tokenId);
 
-    if (!dataStr) {
+    if (typeof dataStr !== 'string' || !dataStr) {
       return false;
     }
 
@@ -93,7 +105,7 @@ export async function verifyRefreshToken(
     // 检查是否过期
     if (!Number.isFinite(tokenData.expiresAt) || Date.now() >= tokenData.expiresAt) {
       // 过期了，删除
-      await (storage as any).adapter.hDel(hashKey, tokenId);
+      await adapter.hDel(hashKey, tokenId);
       return false;
     }
 
@@ -103,10 +115,10 @@ export async function verifyRefreshToken(
     }
 
     // 更新最后使用时间
-    if (updateLastUsed && typeof storage.adapter.hCompareAndSet === 'function') {
+    if (updateLastUsed && typeof adapter.hCompareAndSet === 'function') {
       tokenData.lastUsed = Date.now();
       // Never recreate a device session deleted while the refresh request was reading it.
-      if (!(await storage.adapter.hCompareAndSet(hashKey, tokenId, dataStr, JSON.stringify(tokenData)))) return false;
+      if (!(await adapter.hCompareAndSet(hashKey, tokenId, dataStr, JSON.stringify(tokenData)))) return false;
     }
 
     return true;
@@ -122,15 +134,15 @@ export async function revokeRefreshToken(
   tokenId: string
 ): Promise<void> {
   const hashKey = `user_tokens:${username}`;
-  const storage = await loadStorage();
+  const adapter = (await loadStorage()).adapter;
 
-  if (!storage || typeof (storage as any).adapter?.hDel !== 'function') {
+  if (!adapter || typeof adapter.hDel !== 'function') {
     logger.warn('Redis Hash not supported');
     return;
   }
 
   try {
-    await (storage as any).adapter.hDel(hashKey, tokenId);
+    await adapter.hDel(hashKey, tokenId);
     logger.debug(`Revoked refresh token for ${username}:${tokenId}`);
   } catch (error) {
     logger.error('Failed to revoke refresh token:', error);
@@ -146,15 +158,15 @@ export async function getUserDevices(username: string): Promise<Array<{
   expiresAt: number;
 }>> {
   const hashKey = `user_tokens:${username}`;
-  const storage = await loadStorage();
+  const adapter = (await loadStorage()).adapter;
 
-  if (!storage || typeof (storage as any).adapter?.hGetAll !== 'function') {
+  if (!adapter || typeof adapter.hGetAll !== 'function') {
     logger.warn('Redis Hash not supported');
     return [];
   }
 
   try {
-    const allTokens = await (storage as any).adapter.hGetAll(hashKey);
+    const allTokens = await adapter.hGetAll(hashKey);
 
     if (!allTokens || typeof allTokens !== 'object') {
       return [];
@@ -170,7 +182,7 @@ export async function getUserDevices(username: string): Promise<Array<{
         // 检查是否过期
         if (now > tokenData.expiresAt) {
           // 过期了，删除
-          await (storage as any).adapter.hDel(hashKey, tokenId);
+          await adapter.hDel(hashKey, tokenId);
           continue;
         }
 
@@ -196,15 +208,15 @@ export async function getUserDevices(username: string): Promise<Array<{
 // 撤销所有 Token
 export async function revokeAllRefreshTokens(username: string): Promise<void> {
   const hashKey = `user_tokens:${username}`;
-  const storage = await loadStorage();
+  const adapter = (await loadStorage()).adapter;
 
-  if (!storage || typeof (storage as any).adapter?.del !== 'function') {
+  if (!adapter || typeof adapter.del !== 'function') {
     logger.warn('Redis Hash not supported');
     return;
   }
 
   try {
-    await (storage as any).adapter.del(hashKey);
+    await adapter.del(hashKey);
     logger.debug(`Revoked all refresh tokens for ${username}`);
   } catch (error) {
     logger.error('Failed to revoke all refresh tokens:', error);
@@ -214,14 +226,14 @@ export async function revokeAllRefreshTokens(username: string): Promise<void> {
 // 清理过期的 Token（定期任务）
 export async function cleanupExpiredTokens(username: string): Promise<number> {
   const hashKey = `user_tokens:${username}`;
-  const storage = await loadStorage();
+  const adapter = (await loadStorage()).adapter;
 
-  if (!storage || typeof (storage as any).adapter?.hGetAll !== 'function') {
+  if (!adapter || typeof adapter.hGetAll !== 'function') {
     return 0;
   }
 
   try {
-    const allTokens = await (storage as any).adapter.hGetAll(hashKey);
+    const allTokens = await adapter.hGetAll(hashKey);
 
     if (!allTokens || typeof allTokens !== 'object') {
       return 0;
@@ -235,7 +247,7 @@ export async function cleanupExpiredTokens(username: string): Promise<number> {
         const tokenData: TokenData = JSON.parse(dataStr as string);
 
         if (now > tokenData.expiresAt) {
-          await (storage as any).adapter.hDel(hashKey, tokenId);
+          await adapter.hDel(hashKey, tokenId);
           cleanedCount++;
         }
       } catch (err) {

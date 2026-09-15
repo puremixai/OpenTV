@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
 import { Plus, ToggleLeft, ToggleRight,Trash2, X } from 'lucide-react';
@@ -37,16 +36,20 @@ export default function EpisodeFilterSettings({
 
   // 确保组件在客户端挂载后才渲染 Portal
   useEffect(() => {
-    setMounted(true);
+    const timer = window.setTimeout(() => setMounted(true), 0);
+    return () => window.clearTimeout(timer);
   }, []);
 
   // 控制动画状态
   useEffect(() => {
     let animationId: number;
     let timer: NodeJS.Timeout;
+    let animationStateTimer: NodeJS.Timeout;
 
     if (isOpen) {
-      setIsVisible(true);
+      animationStateTimer = setTimeout(() => {
+        setIsVisible(true);
+      }, 0);
       // 使用双重 requestAnimationFrame 确保DOM完全渲染
       animationId = requestAnimationFrame(() => {
         animationId = requestAnimationFrame(() => {
@@ -54,7 +57,9 @@ export default function EpisodeFilterSettings({
         });
       });
     } else {
-      setIsAnimating(false);
+      animationStateTimer = setTimeout(() => {
+        setIsAnimating(false);
+      }, 0);
       // 等待动画完成后隐藏组件
       timer = setTimeout(() => {
         setIsVisible(false);
@@ -67,6 +72,9 @@ export default function EpisodeFilterSettings({
       }
       if (timer) {
         clearTimeout(timer);
+      }
+      if (animationStateTimer) {
+        clearTimeout(animationStateTimer);
       }
     };
   }, [isOpen]);
@@ -121,14 +129,7 @@ export default function EpisodeFilterSettings({
     }
   }, [isVisible]);
 
-  // 加载配置
-  useEffect(() => {
-    if (isOpen) {
-      loadConfig();
-    }
-  }, [isOpen]);
-
-  const loadConfig = async () => {
+  async function loadConfig() {
     setLoading(true);
     try {
       const loadedConfig = await getEpisodeFilterConfig();
@@ -142,7 +143,15 @@ export default function EpisodeFilterSettings({
     } finally {
       setLoading(false);
     }
-  };
+  }
+
+  // 加载配置
+  useEffect(() => {
+    if (isOpen) {
+      const timer = window.setTimeout(() => void loadConfig(), 0);
+      return () => window.clearTimeout(timer);
+    }
+  }, [isOpen]);
 
   const handleToggleReverseMode = () => {
     setConfig((prev) => {

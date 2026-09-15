@@ -17,7 +17,7 @@ export async function checkBaidu(link) {
   try {
     const u = new URL(normalizedLink);
     password = u.searchParams.get('pwd') || '';
-  } catch (_) { /* Continue without an extraction password. */ }
+  } catch { /* Continue without an extraction password. */ }
 
   const shorturl = surl.length > 1 ? surl.substring(1) : surl;
 
@@ -103,7 +103,7 @@ export function extractBaiduShareID(shareURL) {
     if (u.pathname.startsWith('/share/init')) {
       return u.searchParams.get('surl') || '';
     }
-  } catch (_) { /* An invalid URL has no share ID. */ }
+  } catch { /* An invalid URL has no share ID. */ }
   return '';
 }
 

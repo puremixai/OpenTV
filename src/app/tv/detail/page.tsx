@@ -14,6 +14,7 @@ import {
 import { SearchResult } from '@/lib/types';
 import { getVideoResolutionFromM3u8, processImageUrl } from '@/lib/utils';
 
+import ProxyImage from '@/components/ProxyImage';
 import {
   fetchTVDetail,
   resolveTVEpisodeUrl,
@@ -111,8 +112,10 @@ function TVDetailClient() {
 
   useEffect(() => {
     let alive = true;
-    setLoading(true);
-    setError('');
+    const timer = window.setTimeout(() => {
+      setLoading(true);
+      setError('');
+    }, 0);
     fetchTVDetail({ source, id, title, fileName })
       .then((data) => {
         if (!alive) return;
@@ -126,12 +129,13 @@ function TVDetailClient() {
       .finally(() => alive && setLoading(false));
     return () => {
       alive = false;
+      window.clearTimeout(timer);
     };
   }, [source, id, title, fileName]);
 
   const poster = useMemo(
     () => (detail?.poster ? processImageUrl(detail.poster) : ''),
-    [detail?.poster]
+    [detail]
   );
 
   useEffect(() => {
@@ -399,8 +403,8 @@ function TVDetailClient() {
     <TVLayout>
       <section className='relative overflow-hidden rounded-[44px] border border-white/10 bg-slate-950/80 p-8 shadow-2xl shadow-black/70'>
         {poster && (
-          <img
-            src={poster}
+          <ProxyImage
+            originalSrc={poster}
             alt=''
             className='absolute inset-0 h-full w-full object-cover opacity-20 blur-xl'
           />
@@ -408,8 +412,8 @@ function TVDetailClient() {
         <div className='relative grid grid-cols-[300px_1fr] gap-10'>
           <div className='overflow-hidden rounded-[32px] bg-slate-900 shadow-2xl shadow-black/70'>
             {poster ? (
-              <img
-                src={poster}
+              <ProxyImage
+                originalSrc={poster}
                 alt={detail.title}
                 className='aspect-2/3 h-full w-full object-cover'
               />

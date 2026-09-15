@@ -10,6 +10,12 @@ export const runtime = 'nodejs';
 
 const imageCache = new Map<string, { expiresAt: number; contentType: string; data: Uint8Array }>();
 
+interface ImageRequestOptions {
+  method?: string;
+  headers?: Record<string, string>;
+  body?: BodyInit | null;
+}
+
 function asObjectHeader(value?: string | Record<string, string>): Record<string, string> {
   if (!value) return {};
   if (typeof value === 'object') return value;
@@ -36,10 +42,10 @@ export async function GET(request: NextRequest) {
     if (!sourceId || !url) return NextResponse.json({ error: '缺少 sourceId 或 url' }, { status: 400 });
     if (!(await validateProxyUrlServerSide(url))) return NextResponse.json({ error: '图片地址未通过安全校验' }, { status: 400 });
     const source = await legadoClient.getSourceById(sourceId);
-    let imageOptions: any = {};
+    let imageOptions: ImageRequestOptions = {};
     try {
       const rawOptions = searchParams.get('options') || '';
-      imageOptions = rawOptions ? JSON.parse(rawOptions) : {};
+      imageOptions = rawOptions ? (JSON.parse(rawOptions) as ImageRequestOptions) : {};
     } catch {
       imageOptions = {};
     }

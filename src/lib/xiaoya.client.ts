@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { logger } from '@/lib/logger';
 import { normalizeApiBaseUrl } from '@/lib/url';
@@ -244,7 +243,7 @@ export class XiaoyaClient {
     try {
       await this.getFileInfo(path);
       return true;
-    } catch (error) {
+    } catch {
       return false;
     }
   }

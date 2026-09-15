@@ -240,7 +240,7 @@ export async function searchFromApi(
     }
 
     return results;
-  } catch (error) {
+  } catch {
     checkSearchSignal(signal);
     return [];
   } finally {

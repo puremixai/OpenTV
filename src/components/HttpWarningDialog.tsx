@@ -38,13 +38,20 @@ export default function HttpWarningDialog({ onClose }: HttpWarningDialogProps) {
       return isHttp && !isLocalhost;
     };
 
-    const shouldDisplay = checkShouldShow();
-    setShouldShow(shouldDisplay);
+    let visibilityTimer: number | null = null;
+    const timer = window.setTimeout(() => {
+      const shouldDisplay = checkShouldShow();
+      setShouldShow(shouldDisplay);
 
-    if (shouldDisplay) {
-      // 延迟显示动画
-      setTimeout(() => setIsVisible(true), 100);
-    }
+      if (shouldDisplay) {
+        // 延迟显示动画
+        visibilityTimer = window.setTimeout(() => setIsVisible(true), 100);
+      }
+    }, 0);
+    return () => {
+      window.clearTimeout(timer);
+      if (visibilityTimer !== null) window.clearTimeout(visibilityTimer);
+    };
   }, []);
 
   const handleDontShowAgain = () => {

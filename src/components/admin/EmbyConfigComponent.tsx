@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, no-console, @typescript-eslint/no-non-null-assertion,react-hooks/exhaustive-deps,@typescript-eslint/no-empty-function */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 'use client';
 
@@ -58,25 +58,29 @@ export const EmbyConfigComponent = ({
 
   // 从配置加载源列表
   useEffect(() => {
-    if (config?.EmbyConfig?.Sources) {
-      setSources(config.EmbyConfig.Sources);
-    } else if (config?.EmbyConfig?.ServerURL) {
-      // 兼容旧格式
-      setSources([
-        {
-          key: 'default',
-          name: 'Emby',
-          enabled: config.EmbyConfig.Enabled || false,
-          ServerURL: config.EmbyConfig.ServerURL,
-          ApiKey: config.EmbyConfig.ApiKey,
-          Username: config.EmbyConfig.Username,
-          Password: config.EmbyConfig.Password,
-          UserId: config.EmbyConfig.UserId,
-          embyAuthorizationHeader: config.EmbyConfig.embyAuthorizationHeader,
-          isDefault: true,
-        },
-      ]);
-    }
+    const timer = window.setTimeout(() => {
+      if (config?.EmbyConfig?.Sources) {
+        setSources(config.EmbyConfig.Sources);
+      } else if (config?.EmbyConfig?.ServerURL) {
+        // 兼容旧格式
+        setSources([
+          {
+            key: 'default',
+            name: 'Emby',
+            enabled: config.EmbyConfig.Enabled || false,
+            ServerURL: config.EmbyConfig.ServerURL,
+            ApiKey: config.EmbyConfig.ApiKey,
+            Username: config.EmbyConfig.Username,
+            Password: config.EmbyConfig.Password,
+            UserId: config.EmbyConfig.UserId,
+            embyAuthorizationHeader: config.EmbyConfig.embyAuthorizationHeader,
+            isDefault: true,
+          },
+        ]);
+      }
+    }, 0);
+
+    return () => window.clearTimeout(timer);
   }, [config]);
 
   // 重置表单

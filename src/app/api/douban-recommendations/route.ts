@@ -17,7 +17,7 @@ interface DoubanRecommendation {
 interface DoubanDetailApiResponse {
   id: string;
   title: string;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 export async function GET(request: NextRequest) {

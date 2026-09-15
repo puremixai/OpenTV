@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/ban-ts-comment, @typescript-eslint/no-explicit-any, react-hooks/exhaustive-deps, no-console, @next/next/no-img-element */
+/* eslint-disable @typescript-eslint/no-explicit-any, react-hooks/exhaustive-deps, no-console */
 
 'use client';
 import type { ReadonlyURLSearchParams } from 'next/navigation';
@@ -1096,7 +1096,7 @@ export function usePlayerEngine({
                     artPlayerRef.current = null;
                   }
                   setBlockAdEnabled(newVal);
-                } catch (_) {
+                } catch {
                   // ignore
                 }
                 return newVal ? '当前开启' : '当前关闭';
@@ -1572,7 +1572,7 @@ export function usePlayerEngine({
                     style: {
                       color: '#fff',
                     },
-                    mounted: function ($el: HTMLElement) {
+                    mounted: function (_el: HTMLElement) {
                       // 添加 CSS 样式：横屏和竖屏都显示
                       const style = document.createElement('style');
                       style.textContent = `
@@ -2502,7 +2502,6 @@ export function usePlayerEngine({
               window.addEventListener('resize', resizeHandler);
 
               let heatmapData: number[] = [];
-              let isHovering = false;
               let hoverTime = 0;
               let tooltipEl: HTMLElement | null = null;
 
@@ -2706,7 +2705,6 @@ export function usePlayerEngine({
                 const percentage = x / rect.width;
                 const duration = artPlayerRef.current.duration || 0;
                 hoverTime = percentage * duration;
-                isHovering = true;
 
                 // 创建或更新提示框
                 if (!tooltipEl) {
@@ -2737,7 +2735,6 @@ export function usePlayerEngine({
 
               // 鼠标离开事件
               canvas.addEventListener('mouseleave', () => {
-                isHovering = false;
                 if (tooltipEl) {
                   tooltipEl.style.display = 'none';
                 }
@@ -3455,12 +3452,12 @@ export function usePlayerEngine({
                     for (let i = 0; i < maxFragmentsToPreload; i++) {
                       try {
                         await fetch(tsUrls[i]);
-                      } catch (err) {
+                      } catch {
                         // 静默处理分片加载失败
                       }
                     }
                   }
-                } catch (error) {
+                } catch {
                   // 静默处理预缓冲失败
                 }
               };

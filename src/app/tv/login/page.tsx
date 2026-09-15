@@ -4,6 +4,7 @@ import { Loader2, Smartphone } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 
+import ProxyImage from '@/components/ProxyImage';
 import TVLayout from '@/components/tv/TVLayout';
 
 type QrState = { token: string; qrUrl: string; expiresAt: number; ttl: number };
@@ -29,7 +30,12 @@ export default function TVLoginPage() {
     setStatus('请使用手机扫码登录');
   }, []);
 
-  useEffect(() => { create(); }, [create]);
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      void create();
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [create]);
 
   useEffect(() => {
     if (!qr) return;
@@ -73,7 +79,7 @@ export default function TVLoginPage() {
           <p className='mt-8 text-2xl font-bold text-rose-300'>{status}</p>
         </div>
         <div className='rounded-[36px] border border-white/10 bg-white p-7 text-center text-black shadow-2xl shadow-black/60'>
-          {qrImg ? <img src={qrImg} alt='扫码登录二维码' className='mx-auto h-[360px] w-[360px]' /> : <div className='flex h-[360px] items-center justify-center'><Loader2 className='h-12 w-12 animate-spin' /></div>}
+          {qrImg ? <ProxyImage originalSrc={qrImg} alt='扫码登录二维码' className='mx-auto h-[360px] w-[360px]' /> : <div className='flex h-[360px] items-center justify-center'><Loader2 className='h-12 w-12 animate-spin' /></div>}
           <div className='mt-5 text-2xl font-black'>剩余 {left} 秒</div>
         </div>
       </section>

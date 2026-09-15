@@ -5,10 +5,11 @@ import Link from 'next/link';
 
 import { DoubanItem } from '@/lib/types';
 import {
-  processImageUrl,
   tryApplyBangumiImageFallback,
   tryApplyDoubanImageFallback,
 } from '@/lib/utils';
+
+import ProxyImage from '@/components/ProxyImage';
 
 function posterFallback(
   event: React.SyntheticEvent<HTMLImageElement>,
@@ -34,9 +35,9 @@ export default function CatalogSpotlight({
   return (
     <section className='cinema-spotlight' aria-label={`${category}精选`}>
       {featured.poster && (
-        <img
+        <ProxyImage
           className='cinema-spotlight-backdrop'
-          src={processImageUrl(featured.poster)}
+          originalSrc={featured.poster}
           alt=''
           aria-hidden='true'
           referrerPolicy='no-referrer'
@@ -71,8 +72,8 @@ export default function CatalogSpotlight({
               href={searchHref(item)}
               aria-label={`搜索 ${item.title}`}
             >
-              <img
-                src={processImageUrl(item.poster)}
+              <ProxyImage
+                originalSrc={item.poster}
                 alt={item.title}
                 referrerPolicy='no-referrer'
                 onError={(event) => posterFallback(event, item.poster)}

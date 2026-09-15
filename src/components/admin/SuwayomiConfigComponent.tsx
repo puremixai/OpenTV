@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, no-console, @typescript-eslint/no-non-null-assertion,react-hooks/exhaustive-deps,@typescript-eslint/no-empty-function */
 
 'use client';
 
@@ -41,16 +40,20 @@ export const SuwayomiConfigComponent = ({
   const [mangaCountdown, setMangaCountdown] = useState(10);
 
   useEffect(() => {
-    if (config?.SuwayomiConfig) {
-      setEnabled(config.SuwayomiConfig.Enabled || false);
-      setServerURL(config.SuwayomiConfig.ServerURL || '');
-      setAuthMode(config.SuwayomiConfig.AuthMode || 'none');
-      setUsername(config.SuwayomiConfig.Username || '');
-      setPassword(config.SuwayomiConfig.Password || '');
-      setDefaultLang(config.SuwayomiConfig.DefaultLang || 'zh');
-      setSourceIds((config.SuwayomiConfig.SourceIds || []).join(','));
-      setMaxSources(config.SuwayomiConfig.MaxSources || 10);
-    }
+    const timer = window.setTimeout(() => {
+      if (config?.SuwayomiConfig) {
+        setEnabled(config.SuwayomiConfig.Enabled || false);
+        setServerURL(config.SuwayomiConfig.ServerURL || '');
+        setAuthMode(config.SuwayomiConfig.AuthMode || 'none');
+        setUsername(config.SuwayomiConfig.Username || '');
+        setPassword(config.SuwayomiConfig.Password || '');
+        setDefaultLang(config.SuwayomiConfig.DefaultLang || 'zh');
+        setSourceIds((config.SuwayomiConfig.SourceIds || []).join(','));
+        setMaxSources(config.SuwayomiConfig.MaxSources || 10);
+      }
+    }, 0);
+
+    return () => window.clearTimeout(timer);
   }, [config]);
 
   useEffect(() => {

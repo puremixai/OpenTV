@@ -1,9 +1,37 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-import { isMusicSource, lxGetJson, unwrapLxArray } from '@/lib/music-v2';
+import { asRecord, isMusicSource, lxGetJson, unwrapLxArray } from '@/lib/music-v2';
 import { badRequest, internalError } from '@/lib/music-v2-api';
 
 export const runtime = 'nodejs';
+
+interface SongListItem {
+  id?: string;
+  songlistId?: string;
+  listId?: string;
+  name?: string;
+  title?: string;
+  img?: string;
+  cover?: string;
+  pic?: string;
+  coverImgUrl?: string;
+  source?: string;
+  author?: string;
+  creator?: { nickname?: string };
+  uname?: string;
+  desc?: string;
+  description?: string;
+  play_count?: string | number;
+  playCount?: string | number;
+  listencnt?: string | number;
+  visitnum?: string | number;
+  total?: number;
+  trackCount?: number;
+  songCount?: number;
+  updateFrequency?: string;
+  update_frequency?: string;
+  time?: string;
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -15,8 +43,9 @@ export async function GET(request: NextRequest) {
 
     if (!isMusicSource(source)) return badRequest('不支持的音源');
 
-    const payload = await lxGetJson<any>(`/api/music/songList/list?source=${source}&tagId=${encodeURIComponent(tagId)}&sortId=${encodeURIComponent(sortId)}&page=${page}`, 'none');
-    const list = unwrapLxArray<any>(payload);
+    const payload = await lxGetJson<Record<string, unknown>>(`/api/music/songList/list?source=${source}&tagId=${encodeURIComponent(tagId)}&sortId=${encodeURIComponent(sortId)}&page=${page}`, 'none');
+    const list = unwrapLxArray<SongListItem>(payload);
+    const payloadData = asRecord(payload.data);
 
     return NextResponse.json({
       success: true,
@@ -25,8 +54,8 @@ export async function GET(request: NextRequest) {
         page,
         tagId,
         sortId,
-        total: payload?.total ?? payload?.data?.total ?? list.length,
-        limit: payload?.limit ?? payload?.data?.limit ?? list.length,
+        total: payload.total ?? payloadData.total ?? list.length,
+        limit: payload.limit ?? payloadData.limit ?? list.length,
         list: list.map((item) => ({
           id: item.id || item.songlistId || item.listId || '',
           name: item.name || item.title || '未命名歌单',

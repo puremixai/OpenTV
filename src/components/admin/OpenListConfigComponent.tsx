@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, no-console, @typescript-eslint/no-non-null-assertion,react-hooks/exhaustive-deps,@typescript-eslint/no-empty-function */
+/* eslint-disable @typescript-eslint/no-explicit-any, no-console */
 
 'use client';
 
@@ -68,61 +68,55 @@ export const OpenListConfigComponent = ({
   );
 
   useEffect(() => {
-    if (config?.OpenListConfig) {
-      setEnabled(config.OpenListConfig.Enabled || false);
-      setUrl(config.OpenListConfig.URL || '');
-      setUsername(config.OpenListConfig.Username || '');
-      setPassword(config.OpenListConfig.Password || '');
-      setRootPaths(
-        config.OpenListConfig.RootPaths ||
-          (config.OpenListConfig.RootPath
-            ? [config.OpenListConfig.RootPath]
-            : ['/'])
-      );
-      setOfflineDownloadPath(config.OpenListConfig.OfflineDownloadPath || '/');
-      setOfflineDownloadUseCustomSource(
-        config.OpenListConfig.OfflineDownloadUseCustomSource || false
-      );
-      setOfflineDownloadUrl(config.OpenListConfig.OfflineDownloadURL || '');
-      setOfflineDownloadUsername(
-        config.OpenListConfig.OfflineDownloadUsername || ''
-      );
-      setOfflineDownloadPassword(
-        config.OpenListConfig.OfflineDownloadPassword || ''
-      );
-      setScanInterval(config.OpenListConfig.ScanInterval || 0);
-      setScanMode(config.OpenListConfig.ScanMode || 'hybrid');
-      setDisableVideoPreview(
-        config.OpenListConfig.DisableVideoPreview || false
-      );
-      const pathMeta = config.OpenListConfig.PathMeta || {};
-      setPathMetaRows(
-        Object.entries(pathMeta).map(([path, meta]) => ({
-          path,
-          category: meta?.category || '',
-          refresh14m: Boolean(meta?.refresh14m),
-          proxyPlay: Boolean(meta?.proxyPlay),
-          proxyCacheMinutes:
-            typeof meta?.proxyCacheMinutes === 'number' &&
-            meta.proxyCacheMinutes > 0
-              ? meta.proxyCacheMinutes
-              : 60,
-        }))
-      );
-    }
+    const timer = window.setTimeout(() => {
+      if (config?.OpenListConfig) {
+        setEnabled(config.OpenListConfig.Enabled || false);
+        setUrl(config.OpenListConfig.URL || '');
+        setUsername(config.OpenListConfig.Username || '');
+        setPassword(config.OpenListConfig.Password || '');
+        setRootPaths(
+          config.OpenListConfig.RootPaths ||
+            (config.OpenListConfig.RootPath
+              ? [config.OpenListConfig.RootPath]
+              : ['/'])
+        );
+        setOfflineDownloadPath(config.OpenListConfig.OfflineDownloadPath || '/');
+        setOfflineDownloadUseCustomSource(
+          config.OpenListConfig.OfflineDownloadUseCustomSource || false
+        );
+        setOfflineDownloadUrl(config.OpenListConfig.OfflineDownloadURL || '');
+        setOfflineDownloadUsername(
+          config.OpenListConfig.OfflineDownloadUsername || ''
+        );
+        setOfflineDownloadPassword(
+          config.OpenListConfig.OfflineDownloadPassword || ''
+        );
+        setScanInterval(config.OpenListConfig.ScanInterval || 0);
+        setScanMode(config.OpenListConfig.ScanMode || 'hybrid');
+        setDisableVideoPreview(
+          config.OpenListConfig.DisableVideoPreview || false
+        );
+        const pathMeta = config.OpenListConfig.PathMeta || {};
+        setPathMetaRows(
+          Object.entries(pathMeta).map(([path, meta]) => ({
+            path,
+            category: meta?.category || '',
+            refresh14m: Boolean(meta?.refresh14m),
+            proxyPlay: Boolean(meta?.proxyPlay),
+            proxyCacheMinutes:
+              typeof meta?.proxyCacheMinutes === 'number' &&
+              meta.proxyCacheMinutes > 0
+                ? meta.proxyCacheMinutes
+                : 60,
+          }))
+        );
+      }
+    }, 0);
+
+    return () => window.clearTimeout(timer);
   }, [config]);
 
-  useEffect(() => {
-    if (
-      config?.OpenListConfig?.URL &&
-      config?.OpenListConfig?.Username &&
-      config?.OpenListConfig?.Password
-    ) {
-      fetchVideos();
-    }
-  }, [config]);
-
-  const fetchVideos = async (noCache = false) => {
+  async function fetchVideos(noCache = false) {
     try {
       setRefreshing(true);
       const url = `/api/openlist/list?page=1&pageSize=100&includeFailed=true${
@@ -138,7 +132,18 @@ export const OpenListConfigComponent = ({
     } finally {
       setRefreshing(false);
     }
-  };
+  }
+
+  useEffect(() => {
+    if (
+      config?.OpenListConfig?.URL &&
+      config?.OpenListConfig?.Username &&
+      config?.OpenListConfig?.Password
+    ) {
+      const timer = window.setTimeout(() => void fetchVideos(), 0);
+      return () => window.clearTimeout(timer);
+    }
+  }, [config]);
 
   const handleSave = async () => {
     await withLoading('saveOpenList', async () => {

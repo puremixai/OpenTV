@@ -1,9 +1,10 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
 import { useEffect, useState } from 'react';
 
 import { logger } from '@/lib/logger';
+
+import ProxyImage from '@/components/ProxyImage';
 
 interface Song {
   id: string;
@@ -104,14 +105,7 @@ export default function AddToPlaylistModal({
   const [creating, setCreating] = useState(false);
   const [addingToPlaylistId, setAddingToPlaylistId] = useState<string | null>(null); // 正在添加的歌单ID
 
-  // 加载用户的歌单列表
-  useEffect(() => {
-    if (isOpen) {
-      loadPlaylists();
-    }
-  }, [isOpen]);
-
-  const loadPlaylists = async () => {
+  async function loadPlaylists() {
     try {
       setLoading(true);
       const response = await fetch('/api/music/v2/playlists');
@@ -124,7 +118,15 @@ export default function AddToPlaylistModal({
     } finally {
       setLoading(false);
     }
-  };
+  }
+
+  // 加载用户的歌单列表
+  useEffect(() => {
+    if (isOpen) {
+      const timer = window.setTimeout(() => void loadPlaylists(), 0);
+      return () => window.clearTimeout(timer);
+    }
+  }, [isOpen]);
 
   const handleCreatePlaylist = async () => {
     if (!newPlaylistName.trim()) {
@@ -298,8 +300,8 @@ export default function AddToPlaylistModal({
                   className="w-full px-4 py-3 bg-white/5 hover:bg-white/10 disabled:bg-white/5 disabled:cursor-not-allowed rounded-lg transition-colors text-left flex items-center gap-3"
                 >
                   {playlist.cover ? (
-                    <img
-                      src={playlist.cover}
+                    <ProxyImage
+                      originalSrc={playlist.cover}
                       alt={playlist.name}
                       className="w-12 h-12 rounded-sm object-cover"
                     />

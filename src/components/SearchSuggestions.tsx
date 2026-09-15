@@ -90,8 +90,8 @@ export default function SearchSuggestions({
 
   useEffect(() => {
     if (!query.trim() || !isVisible) {
-      setSuggestions([]);
-      return;
+      const timer = window.setTimeout(() => setSuggestions([]), 0);
+      return () => window.clearTimeout(timer);
     }
     debouncedFetchSuggestions(query);
 

@@ -35,11 +35,15 @@ export function ConfigFileComponent({
   );
 
   useEffect(() => {
-    if (!config || dirty) return;
-    setDraftVersion(config.ConfigVersion || 0);
-    setSubscriptions(structuredClone(config.ConfigSubscriptions || []));
-    setLocalContent(config.ConfigFileLocal || '{}');
-    setDirty(false);
+    const timer = window.setTimeout(() => {
+      if (!config || dirty) return;
+      setDraftVersion(config.ConfigVersion || 0);
+      setSubscriptions(structuredClone(config.ConfigSubscriptions || []));
+      setLocalContent(config.ConfigFileLocal || '{}');
+      setDirty(false);
+    }, 0);
+
+    return () => window.clearTimeout(timer);
   }, [config, dirty]);
 
   const preview = useMemo(() => {
@@ -100,7 +104,7 @@ export function ConfigFileComponent({
         error: error instanceof Error ? error.message : '配置格式无效',
       };
     }
-  }, [localContent, subscriptions, config?.ConfigFile]);
+  }, [localContent, subscriptions, config]);
 
   const update = (id: string, patch: Partial<ConfigSubscription>) => {
     setSubscriptions((current) =>

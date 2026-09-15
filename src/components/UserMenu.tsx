@@ -1,4 +1,4 @@
-/* eslint-disable no-console,@typescript-eslint/no-explicit-any, @typescript-eslint/no-non-null-assertion */
+/* eslint-disable no-console,@typescript-eslint/no-explicit-any */
 
 'use client';
 
@@ -52,6 +52,7 @@ import { CURRENT_VERSION } from '@/lib/version';
 import { UpdateStatus } from '@/lib/version_check';
 
 import { createCinemaPortal as createPortal } from '@/components/CinemaPortal';
+import ProxyImage from '@/components/ProxyImage';
 
 const DeviceManagementPanel = dynamic(
   () =>
@@ -485,7 +486,8 @@ export const UserMenu: React.FC<UserMenuProps> = ({
 
   // 确保组件已挂载
   useEffect(() => {
-    setMounted(true);
+    const timer = window.setTimeout(() => setMounted(true), 0);
+    return () => window.clearTimeout(timer);
   }, []);
 
   // 加载未读通知数量
@@ -526,33 +528,44 @@ export const UserMenu: React.FC<UserMenuProps> = ({
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
-    // 检查是否已经有其他实例在加载
-    const globalWindow = window as any;
-    if (globalWindow.__loadingNotifications) {
-      // 如果正在加载，等待加载完成后获取结果
-      const checkInterval = setInterval(() => {
-        if (
-          !globalWindow.__loadingNotifications &&
-          globalWindow.__unreadNotificationCount !== undefined
-        ) {
-          setUnreadCount(globalWindow.__unreadNotificationCount);
-          clearInterval(checkInterval);
-        }
-      }, 100);
-      return () => clearInterval(checkInterval);
-    }
+    let checkInterval: number | undefined;
+    const timer = window.setTimeout(() => {
+      // 检查是否已经有其他实例在加载
+      const globalWindow = window as any;
+      if (globalWindow.__loadingNotifications) {
+        // 如果正在加载，等待加载完成后获取结果
+        checkInterval = window.setInterval(() => {
+          if (
+            !globalWindow.__loadingNotifications &&
+            globalWindow.__unreadNotificationCount !== undefined
+          ) {
+            setUnreadCount(globalWindow.__unreadNotificationCount);
+            if (checkInterval !== undefined) {
+              window.clearInterval(checkInterval);
+              checkInterval = undefined;
+            }
+          }
+        }, 100);
+        return;
+      }
 
-    // 检查是否已经加载过
-    if (globalWindow.__unreadNotificationCount !== undefined) {
-      setUnreadCount(globalWindow.__unreadNotificationCount);
-      return;
-    }
+      // 检查是否已经加载过
+      if (globalWindow.__unreadNotificationCount !== undefined) {
+        setUnreadCount(globalWindow.__unreadNotificationCount);
+        return;
+      }
 
-    // 标记正在加载
-    globalWindow.__loadingNotifications = true;
-    loadUnreadCount().finally(() => {
-      globalWindow.__loadingNotifications = false;
-    });
+      // 标记正在加载
+      globalWindow.__loadingNotifications = true;
+      void loadUnreadCount().finally(() => {
+        globalWindow.__loadingNotifications = false;
+      });
+    }, 0);
+
+    return () => {
+      window.clearTimeout(timer);
+      if (checkInterval !== undefined) window.clearInterval(checkInterval);
+    };
   }, []);
 
   useEffect(() => {
@@ -583,14 +596,18 @@ export const UserMenu: React.FC<UserMenuProps> = ({
 
   // 从运行时配置读取订阅是否启用
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const enabled =
-        (window as any).RUNTIME_CONFIG?.ENABLE_TVBOX_SUBSCRIBE || false;
-      setSubscribeEnabled(enabled);
-      setTvModeEnabled(
-        (window as any).RUNTIME_CONFIG?.ENABLE_TV_MODE !== false
-      );
-    }
+    const timer = window.setTimeout(() => {
+      if (typeof window !== 'undefined') {
+        const enabled =
+          (window as any).RUNTIME_CONFIG?.ENABLE_TVBOX_SUBSCRIBE || false;
+        setSubscribeEnabled(enabled);
+        setTvModeEnabled(
+          (window as any).RUNTIME_CONFIG?.ENABLE_TV_MODE !== false
+        );
+      }
+    }, 0);
+
+    return () => window.clearTimeout(timer);
   }, []);
 
   // 懒加载订阅 URL - 只在打开订阅面板时请求
@@ -701,21 +718,26 @@ export const UserMenu: React.FC<UserMenuProps> = ({
 
   // 获取认证信息和存储类型
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const auth = getAuthInfoFromBrowserCookie();
-      setAuthInfo(auth);
+    const timer = window.setTimeout(() => {
+      if (typeof window !== 'undefined') {
+        const auth = getAuthInfoFromBrowserCookie();
+        setAuthInfo(auth);
 
-      const runtimeConfig = (window as any).RUNTIME_CONFIG || {};
-      const type = runtimeConfig.STORAGE_TYPE || 'localstorage';
-      const displayType = runtimeConfig.DISPLAY_STORAGE_TYPE || type;
-      setStorageType(type);
-      setDisplayStorageType(displayType);
-    }
+        const runtimeConfig = (window as any).RUNTIME_CONFIG || {};
+        const type = runtimeConfig.STORAGE_TYPE || 'localstorage';
+        const displayType = runtimeConfig.DISPLAY_STORAGE_TYPE || type;
+        setStorageType(type);
+        setDisplayStorageType(displayType);
+      }
+    }, 0);
+
+    return () => window.clearTimeout(timer);
   }, []);
 
   // 从 localStorage 读取设置
   useEffect(() => {
-    if (typeof window !== 'undefined') {
+    const timer = window.setTimeout(() => {
+      if (typeof window !== 'undefined') {
       const savedAggregateSearch = localStorage.getItem(
         'defaultAggregateSearch'
       );
@@ -1006,7 +1028,10 @@ export const UserMenu: React.FC<UserMenuProps> = ({
       if (savedFilesystemSavePath !== null) {
         setFilesystemSavePath(savedFilesystemSavePath);
       }
-    }
+      }
+    }, 0);
+
+    return () => window.clearTimeout(timer);
   }, []);
 
   // 加载通知设置
@@ -1367,7 +1392,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({
 
           if (response.ok) {
             // 登出所有设备后，重定向到首页
-            window.location.href = '/';
+            window.location.assign(new URL('/', window.location.origin).toString());
           } else {
             alert('操作失败，请重试');
           }
@@ -1552,7 +1577,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({
     } catch (error) {
       console.error('注销请求失败:', error);
     }
-    window.location.href = '/';
+    window.location.assign(new URL('/', window.location.origin).toString());
   };
 
   const handleAdminPanel = () => {
@@ -1627,7 +1652,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({
 
         setTvQrScannerStatus('识别成功，正在打开确认登录页...');
         stopTvQrScanner();
-        window.location.href = `/qr-login?token=${encodeURIComponent(token)}`;
+        router.push(`/qr-login?token=${encodeURIComponent(token)}`);
         return true;
       } catch {
         setTvQrScannerError(
@@ -1636,7 +1661,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({
         return false;
       }
     },
-    [stopTvQrScanner]
+    [router, stopTvQrScanner]
   );
 
   const startTvQrScanner = useCallback(async () => {
@@ -1748,13 +1773,17 @@ export const UserMenu: React.FC<UserMenuProps> = ({
 
   useEffect(() => {
     if (!tvboxToken || !isSubscribeOpen) return;
-    setSubscribeUrl(
-      buildSubscribeUrl(
-        tvboxToken,
-        subscribeAdFilterEnabled,
-        subscribeYellowFilterEnabled
-      )
-    );
+    const timer = window.setTimeout(() => {
+      setSubscribeUrl(
+        buildSubscribeUrl(
+          tvboxToken,
+          subscribeAdFilterEnabled,
+          subscribeYellowFilterEnabled
+        )
+      );
+    }, 0);
+
+    return () => window.clearTimeout(timer);
   }, [
     tvboxToken,
     subscribeAdFilterEnabled,
@@ -1799,7 +1828,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({
       // 修改成功，关闭弹窗并登出
       setIsChangePasswordOpen(false);
       await handleLogout();
-    } catch (error) {
+    } catch {
       setPasswordError('网络错误，请稍后重试');
     } finally {
       setPasswordLoading(false);
@@ -2388,47 +2417,51 @@ export const UserMenu: React.FC<UserMenuProps> = ({
   // 初始化：读取根布局注入的全局模式
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    const runtimeConfig = (window as any).RUNTIME_CONFIG || {};
-    const mode =
-      runtimeConfig.LOCAL_SETTINGS_SYNC_MODE === 'manual' ||
-      runtimeConfig.LOCAL_SETTINGS_SYNC_MODE === 'auto'
-        ? runtimeConfig.LOCAL_SETTINGS_SYNC_MODE
-        : 'off';
-    const storageType = runtimeConfig.STORAGE_TYPE || 'localstorage';
-    const supportedStorageTypes = new Set([
-      'd1',
-      'postgres',
-      'turso',
-      'redis',
-      'upstash',
-      'kvrocks',
-    ]);
-    const username = getAuthInfoFromBrowserCookie()?.username;
-    const enabled =
-      supportedStorageTypes.has(storageType) &&
-      Boolean(username) &&
-      mode !== 'off';
+    const timer = window.setTimeout(() => {
+      const runtimeConfig = (window as any).RUNTIME_CONFIG || {};
+      const mode =
+        runtimeConfig.LOCAL_SETTINGS_SYNC_MODE === 'manual' ||
+        runtimeConfig.LOCAL_SETTINGS_SYNC_MODE === 'auto'
+          ? runtimeConfig.LOCAL_SETTINGS_SYNC_MODE
+          : 'off';
+      const storageType = runtimeConfig.STORAGE_TYPE || 'localstorage';
+      const supportedStorageTypes = new Set([
+        'd1',
+        'postgres',
+        'turso',
+        'redis',
+        'upstash',
+        'kvrocks',
+      ]);
+      const username = getAuthInfoFromBrowserCookie()?.username;
+      const enabled =
+        supportedStorageTypes.has(storageType) &&
+        Boolean(username) &&
+        mode !== 'off';
 
-    setSyncAvailable(enabled);
-    setSyncMode(mode);
+      setSyncAvailable(enabled);
+      setSyncMode(mode);
 
-    // 自动模式：同一用户在当前页面生命周期内只恢复一次，两个 UserMenu 实例共享同一请求。
-    if (mode === 'auto' && enabled && username) {
-      const syncState = (window as any).__moontvLocalSettingsAutoPull as
-        | { username: string; promise: Promise<boolean> }
-        | undefined;
-      if (!syncState || syncState.username !== username) {
-        (window as any).__moontvLocalSettingsAutoPull = {
-          username,
-          promise: pullRemoteSettings(false),
-        };
+      // 自动模式：同一用户在当前页面生命周期内只恢复一次，两个 UserMenu 实例共享同一请求。
+      if (mode === 'auto' && enabled && username) {
+        const syncState = (window as any).__moontvLocalSettingsAutoPull as
+          | { username: string; promise: Promise<boolean> }
+          | undefined;
+        if (!syncState || syncState.username !== username) {
+          (window as any).__moontvLocalSettingsAutoPull = {
+            username,
+            promise: pullRemoteSettings(false),
+          };
+        }
       }
-    }
+    }, 0);
+
+    return () => window.clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // 从 localStorage 读取白名单键的当前快照（仅含已设置的键）
-  const snapshotLocalSettings = (): Record<string, string> => {
+  const snapshotLocalSettings = useCallback((): Record<string, string> => {
     if (typeof window === 'undefined') return {};
     const data: Record<string, string> = {};
     for (const key of LOCAL_SETTINGS_KEYS) {
@@ -2438,7 +2471,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({
       }
     }
     return data;
-  };
+  }, []);
 
   // 把单个键重置为「未设置」：删除 localStorage 并将组件状态恢复为默认值
   const resetKeyToDefault = (key: string) => {
@@ -2778,16 +2811,16 @@ export const UserMenu: React.FC<UserMenuProps> = ({
   }, []);
 
   // 云同步结果以 Toast 展示
-  const showSyncToast = (text: string, ok: boolean) => {
+  const showSyncToast = useCallback((text: string, ok: boolean) => {
     setSyncToast({
       message: text,
       type: ok ? 'success' : 'error',
       onClose: () => setSyncToast(null),
     });
-  };
+  }, []);
 
   // 从云端拉取副本（自动模式进入网站时、手动恢复时调用）
-  const pullRemoteSettings = async (manual: boolean): Promise<boolean> => {
+  async function pullRemoteSettings(manual: boolean): Promise<boolean> {
     if (manual) setSyncBusy(true);
     try {
       const res = await fetch('/api/local-settings-sync', {
@@ -2828,10 +2861,10 @@ export const UserMenu: React.FC<UserMenuProps> = ({
     } finally {
       if (manual) setSyncBusy(false);
     }
-  };
+  }
 
   // 上传本地设置到云端（手动备份 / 自动静默同步共用）
-  const pushRemoteSettings = async (opts?: {
+  const pushRemoteSettings = useCallback(async (opts?: {
     silent?: boolean;
     confirmBefore?: boolean;
   }) => {
@@ -2901,7 +2934,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({
       return;
     }
     return doPush();
-  };
+  }, [showSyncToast, snapshotLocalSettings]);
 
   // 手动恢复按钮：先确认再拉取
   const handleRestoreFromCloud = () => {
@@ -2920,14 +2953,20 @@ export const UserMenu: React.FC<UserMenuProps> = ({
   // 自动模式：关闭本地设置面板时，把本地设置同步到云端
   const prevSettingsOpenRef = useRef(false);
   useEffect(() => {
+    let timer: number | undefined;
     if (prevSettingsOpenRef.current && !isSettingsOpen) {
       // 面板从打开 → 关闭：自动模式下静默上传本地设置
       if (syncAvailable && syncMode === 'auto') {
-        void pushRemoteSettings({ silent: true });
+        timer = window.setTimeout(() => {
+          void pushRemoteSettings({ silent: true });
+        }, 0);
       }
     }
     prevSettingsOpenRef.current = isSettingsOpen;
-  }, [isSettingsOpen, syncAvailable, syncMode]);
+    return () => {
+      if (timer !== undefined) window.clearTimeout(timer);
+    };
+  }, [isSettingsOpen, pushRemoteSettings, syncAvailable, syncMode]);
 
   // 清除弹幕缓存
   const handleClearDanmakuCache = async () => {
@@ -5633,8 +5672,8 @@ export const UserMenu: React.FC<UserMenuProps> = ({
               {tvAccessTab === 'orion' && (
                 <section className='rounded-2xl border border-slate-200 bg-slate-50 p-5 dark:border-white/10 dark:bg-white/4'>
                   <div className='flex items-center gap-3'>
-                    <img
-                      src='/icons/OrionTV.png'
+                    <ProxyImage
+                      originalSrc='/icons/OrionTV.png'
                       alt='OrionTV'
                       className='h-11 w-11 rounded-2xl object-cover shadow-lg shadow-indigo-500/20'
                     />
@@ -6010,8 +6049,8 @@ export const UserMenu: React.FC<UserMenuProps> = ({
               <div className='bg-gray-50 dark:bg-gray-800 rounded-lg p-5 border border-gray-200 dark:border-gray-700'>
                 <div className='flex items-start gap-4'>
                   <div className='shrink-0 relative'>
-                    <img
-                      src='/logo.png?v=opentv'
+                    <ProxyImage
+                      originalSrc='/logo.png?v=opentv'
                       alt='OpenTV-PC'
                       className='w-16 h-16 rounded-xl object-cover'
                     />
@@ -6044,8 +6083,8 @@ export const UserMenu: React.FC<UserMenuProps> = ({
               <div className='bg-gray-50 dark:bg-gray-800 rounded-lg p-5 border border-gray-200 dark:border-gray-700'>
                 <div className='flex items-start gap-4'>
                   <div className='shrink-0 relative'>
-                    <img
-                      src='/icons/Selene.png'
+                    <ProxyImage
+                      originalSrc='/icons/Selene.png'
                       alt='Selene'
                       className='w-16 h-16 rounded-xl object-cover'
                     />
@@ -6080,8 +6119,8 @@ export const UserMenu: React.FC<UserMenuProps> = ({
               <div className='bg-gray-50 dark:bg-gray-800 rounded-lg p-5 border border-gray-200 dark:border-gray-700'>
                 <div className='flex items-start gap-4'>
                   <div className='shrink-0 relative'>
-                    <img
-                      src='/icons/OrionTV.png'
+                    <ProxyImage
+                      originalSrc='/icons/OrionTV.png'
                       alt='OrionTV'
                       className='w-16 h-16 rounded-xl object-cover'
                     />

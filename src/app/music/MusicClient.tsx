@@ -23,16 +23,17 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import { GripVertical, SlidersHorizontal } from 'lucide-react';
 import { usePathname, useRouter } from 'next/navigation';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { logger } from '@/lib/logger';
-import { getSourceDisplayLabel, normalizeSource, SourcePill } from '@/lib/music/shared';
+import { normalizeSource, SourcePill } from '@/lib/music/shared';
 import type { MusicQuality, MusicSource, Song } from '@/lib/music/types';
 
 import AddToPlaylistModal from '@/components/AddToPlaylistModal';
 import { createCinemaPortal as createPortal } from '@/components/CinemaPortal';
 import LyricsPiPWindow from '@/components/LyricsPiPWindow';
 import MusicSidebarDrawer from '@/components/music/MusicSidebarDrawer';
+import ProxyImage from '@/components/ProxyImage';
 import Toast, { ToastProps } from '@/components/Toast';
 import { useWatchRoomContextSafe } from '@/components/WatchRoomProvider';
 
@@ -44,6 +45,8 @@ const SPECTRUM_EDGE_TRIM = 8;
 const SPECTRUM_REFERENCE_VOLUME = 10;
 const SPECTRUM_MIN_VOLUME = 5;
 const SPECTRUM_MAX_REFERENCE_VOLUME = 15;
+const getCurrentTimestamp = () => Date.now();
+const createSpectrumSeed = () => Math.random() * Math.PI * 2;
 const EQ_BANDS = [
   { label: '31', frequency: 31 }, { label: '62', frequency: 62 },
   { label: '125', frequency: 125 }, { label: '250', frequency: 250 },
@@ -109,6 +112,62 @@ function getMusicQueueItemKey(song: { id: string; platform?: string }, fallbackP
   return `${song.platform || fallbackPlatform}:${song.id}`;
 }
 
+function toMusicQueueItem(song: Song, fallbackPlatform: MusicSource): MusicQueueItem {
+  return {
+    id: song.id,
+    name: song.name,
+    artist: song.artist,
+    album: song.album,
+    pic: song.pic,
+    platform: song.platform || fallbackPlatform,
+    songmid: song.songmid,
+    duration: song.duration,
+    durationText: song.durationText,
+  };
+}
+
+function parseMusicLyric(lyricText: string, tlyricText?: string): LyricLine[] {
+  if (!lyricText && !tlyricText) return [];
+
+  const timeRegex = /\[(\d{2}):(\d{2})(?:\.(\d{2,3}))?\]/g;
+  const parseLyricText = (text: string) => {
+    const parsed = new Map<number, string>();
+    const lines = text.split('\n');
+
+    lines.forEach((line) => {
+      const matches = Array.from(line.matchAll(timeRegex));
+      if (matches.length === 0) return;
+
+      const content = line.replace(timeRegex, '').trim();
+      if (!content) return;
+
+      matches.forEach((match) => {
+        const minutes = Number(match[1]);
+        const seconds = Number(match[2]);
+        const milliseconds = match[3] ? Number(match[3].padEnd(3, '0')) : 0;
+        parsed.set(minutes * 60 + seconds + milliseconds / 1000, content);
+      });
+    });
+
+    return parsed;
+  };
+
+  const mainMap = parseLyricText(lyricText);
+  const transMap = parseLyricText(tlyricText || '');
+  const times = Array.from(new Set([
+    ...Array.from(mainMap.keys()),
+    ...Array.from(transMap.keys()),
+  ])).sort((a, b) => a - b);
+
+  return times
+    .map((time) => ({
+      time,
+      text: mainMap.get(time) || '',
+      translation: transMap.get(time) || undefined,
+    }))
+    .filter((line) => line.text || line.translation);
+}
+
 // 播放列表里的一行。只有左侧握把能触发拖拽，整行点击仍然是“播放这首”。
 function SortablePlaylistRow({
   song,
@@ -156,8 +215,8 @@ function SortablePlaylistRow({
       >
         <div className="w-12 h-12 rounded-lg bg-zinc-800 overflow-hidden shrink-0">
           {song.pic ? (
-            <img
-              src={song.pic}
+            <ProxyImage
+              originalSrc={song.pic}
               alt={song.name}
               className="w-full h-full object-cover"
             />
@@ -338,8 +397,8 @@ function VinylTurntable({
         <div className="pointer-events-none absolute left-[18%] top-[10%] h-[42%] w-[22%] rotate-[-28deg] rounded-full bg-white/10 blur-md" />
         <div className="relative z-10 flex h-[158px] w-[158px] items-center justify-center overflow-hidden rounded-full border-[5px] border-black bg-zinc-800 md:h-[192px] md:w-[192px]">
           {cover ? (
-            <img
-              src={cover}
+            <ProxyImage
+              originalSrc={cover}
               alt={title}
               className="h-full w-full rounded-full object-cover"
               onError={(e) => {
@@ -385,7 +444,7 @@ export default function MusicClient({ children: _children }: { children?: React.
   const [showPlayer, setShowPlayer] = useState(false);
   const [showLyrics, setShowLyrics] = useState(false);
   const [mobileLyricsView, setMobileLyricsView] = useState<'lyrics' | 'vinyl'>('lyrics');
-  const [musicProxyEnabled, setMusicProxyEnabled] = useState(() => {
+  const [, setMusicProxyEnabled] = useState(() => {
     if (typeof window === 'undefined') return true;
     return (window as any).RUNTIME_CONFIG?.MUSIC_PROXY_ENABLED !== false;
   });
@@ -462,22 +521,24 @@ export default function MusicClient({ children: _children }: { children?: React.
   );
 
   useEffect(() => {
-    if (typeof window === 'undefined') return;
-    try {
-      const saved = JSON.parse(localStorage.getItem('musicEqGains') || 'null');
-      if (Array.isArray(saved) && saved.length === EQ_BANDS.length) setEqGains(saved.map(value => Math.max(-12, Math.min(12, Number(value) || 0))));
-      setEqualizerEnabled(localStorage.getItem('musicEqEnabled') === '1');
-      setLoudnessEnabled(localStorage.getItem('musicLoudnessEnabled') === '1');
-      setReverbEnabled(localStorage.getItem('musicReverbEnabled') === '1');
-      setReverbPreset((localStorage.getItem('musicReverbPreset') as keyof typeof REVERB_PRESETS) || 'none');
-      setReverbMainGain(Math.max(0, Math.min(150, Number(localStorage.getItem('musicReverbMainGain')) || 100)));
-      setReverbMix(Math.max(0, Math.min(40, Number(localStorage.getItem('musicReverbMix')) || 12)));
-      setEqPreset(localStorage.getItem('musicEqPreset') || 'Flat');
-      setPitchRate(Math.max(0.5, Math.min(1.5, Number(localStorage.getItem('musicPitchRate')) || 1)));
-      setSurroundEnabled(localStorage.getItem('musicSurroundEnabled') === '1');
-      setSurroundSpeed(Math.max(5, Math.min(60, Number(localStorage.getItem('musicSurroundSpeed')) || 25)));
-      setSurroundDistance(Math.max(1, Math.min(10, Number(localStorage.getItem('musicSurroundDistance')) || 5)));
-    } catch { /* Keep default audio settings if persisted settings cannot be read. */ }
+    const timer = window.setTimeout(() => {
+      try {
+        const saved = JSON.parse(localStorage.getItem('musicEqGains') || 'null');
+        if (Array.isArray(saved) && saved.length === EQ_BANDS.length) setEqGains(saved.map(value => Math.max(-12, Math.min(12, Number(value) || 0))));
+        setEqualizerEnabled(localStorage.getItem('musicEqEnabled') === '1');
+        setLoudnessEnabled(localStorage.getItem('musicLoudnessEnabled') === '1');
+        setReverbEnabled(localStorage.getItem('musicReverbEnabled') === '1');
+        setReverbPreset((localStorage.getItem('musicReverbPreset') as keyof typeof REVERB_PRESETS) || 'none');
+        setReverbMainGain(Math.max(0, Math.min(150, Number(localStorage.getItem('musicReverbMainGain')) || 100)));
+        setReverbMix(Math.max(0, Math.min(40, Number(localStorage.getItem('musicReverbMix')) || 12)));
+        setEqPreset(localStorage.getItem('musicEqPreset') || 'Flat');
+        setPitchRate(Math.max(0.5, Math.min(1.5, Number(localStorage.getItem('musicPitchRate')) || 1)));
+        setSurroundEnabled(localStorage.getItem('musicSurroundEnabled') === '1');
+        setSurroundSpeed(Math.max(5, Math.min(60, Number(localStorage.getItem('musicSurroundSpeed')) || 25)));
+        setSurroundDistance(Math.max(1, Math.min(10, Number(localStorage.getItem('musicSurroundDistance')) || 5)));
+      } catch { /* Keep default audio settings if persisted settings cannot be read. */ }
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, []);
 
   useEffect(() => {
@@ -518,7 +579,8 @@ export default function MusicClient({ children: _children }: { children?: React.
   const spectrumFrameRef = useRef<number | null>(null);
   const currentTimeRef = useRef(0);
   const volumeRef = useRef(volume);
-  const spectrumSeedRef = useRef(Math.random() * Math.PI * 2);
+  const [spectrumSeed] = useState(createSpectrumSeed);
+  const spectrumSeedRef = useRef(spectrumSeed);
   const qualitySwitchRequestRef = useRef(0);
   const currentSongRef = useRef<Song | null>(null);
   const currentSourceRef = useRef(currentSource);
@@ -530,19 +592,7 @@ export default function MusicClient({ children: _children }: { children?: React.
     watchRoom.currentRoom?.roomType === 'music'
   );
 
-  const toMusicQueueItem = (song: Song): MusicQueueItem => ({
-    id: song.id,
-    name: song.name,
-    artist: song.artist,
-    album: song.album,
-    pic: song.pic,
-    platform: song.platform || currentSourceRef.current,
-    songmid: song.songmid,
-    duration: song.duration,
-    durationText: song.durationText,
-  });
-
-  const buildMusicRoomState = (
+  const buildMusicRoomState = useCallback((
     song: Song,
     options: {
       currentTime?: number;
@@ -594,22 +644,22 @@ export default function MusicClient({ children: _children }: { children?: React.
     const nextSong = resolveNextSong();
     return {
       type: 'music',
-      song: toMusicQueueItem(currentSong),
-      nextSong: nextSong ? toMusicQueueItem(nextSong) : null,
+      song: toMusicQueueItem(currentSong, currentSourceRef.current),
+      nextSong: nextSong ? toMusicQueueItem(nextSong, currentSourceRef.current) : null,
       currentTime: options.currentTime ?? audioRef.current?.currentTime ?? currentTimeRef.current ?? 0,
       isPlaying: options.isPlaying ?? isPlaying,
       quality,
       playMode,
       updatedAt: Date.now(),
     };
-  };
+  }, [isPlaying, playMode, playlist, quality]);
 
-  const emitMusicChange = (state: MusicSyncState | null) => {
+  const emitMusicChange = useCallback((state: MusicSyncState | null) => {
     if (!isMusicRoomOwner || !watchRoom || !state) return;
     watchRoom.changeMusic(state);
-  };
+  }, [isMusicRoomOwner, watchRoom]);
 
-  const buildStreamUrl = (song: Song, source: MusicSource, songQuality: MusicQuality) => {
+  const buildStreamUrl = useCallback((song: Song, source: MusicSource, songQuality: MusicQuality) => {
     const params = new URLSearchParams({
       songId: song.id,
       source,
@@ -622,14 +672,14 @@ export default function MusicClient({ children: _children }: { children?: React.
     if (song.durationText) params.set('durationText', song.durationText);
 
     return `/api/music/v2/stream?${params.toString()}`;
-  };
+  }, []);
 
-  const getMusicProxyEnabled = () => {
+  const getMusicProxyEnabled = useCallback(() => {
     if (typeof window === 'undefined') return true;
     return (window as any).RUNTIME_CONFIG?.MUSIC_PROXY_ENABLED !== false;
-  };
+  }, []);
 
-  const fetchPlayData = async (
+  const fetchPlayData = useCallback(async (
     song: Song,
     source: MusicSource,
     songQuality: MusicQuality,
@@ -656,17 +706,17 @@ export default function MusicClient({ children: _children }: { children?: React.
     });
 
     return response.json();
-  };
+  }, []);
 
-  const beginResolving = () => {
+  const beginResolving = useCallback(() => {
     setResolvingCount((prev) => prev + 1);
-  };
+  }, []);
 
-  const endResolving = () => {
+  const endResolving = useCallback(() => {
     setResolvingCount((prev) => Math.max(0, prev - 1));
-  };
+  }, []);
 
-  const saveHistoryRecord = async (
+  const saveHistoryRecord = useCallback(async (
     record: PlayRecord,
     song: Song,
     playTime: number,
@@ -695,9 +745,9 @@ export default function MusicClient({ children: _children }: { children?: React.
         createdAt: record.timestamp,
       }),
     });
-  };
+  }, [quality]);
 
-  const saveHistoryRecordSafely = (
+  const saveHistoryRecordSafely = useCallback((
     record: PlayRecord,
     song: Song,
     playTime = 0,
@@ -708,10 +758,10 @@ export default function MusicClient({ children: _children }: { children?: React.
     saveHistoryRecord(record, song, playTime, totalDuration, lastPlayedAt, recordQuality).catch(err => {
       logger.error('保存播放记录到数据库失败:', err);
     });
-  };
+  }, [saveHistoryRecord]);
 
   // 保存播放状态到 localStorage
-  const savePlayState = () => {
+  const savePlayState = useCallback(() => {
     if (!currentSong) return;
 
     const playState = {
@@ -730,7 +780,7 @@ export default function MusicClient({ children: _children }: { children?: React.
     };
 
     localStorage.setItem('musicPlayState', JSON.stringify(playState));
-  };
+  }, [currentSong, currentSongIndex, currentSource, currentSongUrl, lyrics, playMode, playRecords, playlist, playlistIndex, quality, volume]);
 
   // 清空当前播放状态，并在需要时停止正在播放的音频
   const clearCurrentPlaybackState = () => {
@@ -761,14 +811,13 @@ export default function MusicClient({ children: _children }: { children?: React.
     localStorage.removeItem('musicPlayState');
   };
 
-  // 从 localStorage 恢复播放状态（已废弃，现在统一使用数据库）
-  const restorePlayState = async () => {
-    // 此函数已不再使用，所有状态恢复都在 initializePlayState 中完成
-  };
-
   useEffect(() => {
-    setMusicProxyEnabled(getMusicProxyEnabled());
-  }, []);
+    const timer = window.setTimeout(
+      () => setMusicProxyEnabled(getMusicProxyEnabled()),
+      0
+    );
+    return () => window.clearTimeout(timer);
+  }, [getMusicProxyEnabled]);
 
   // 页面加载时恢复播放状态和数据库记录
   useEffect(() => {
@@ -860,7 +909,7 @@ export default function MusicClient({ children: _children }: { children?: React.
             fetchPlayData(latestDbSong, platform, selectedQuality, false)
               .then((data) => {
                 if (data.success && data.data?.lyric?.lyric) {
-                  const parsedLyrics = parseLyric(data.data.lyric.lyric, data.data.lyric.tlyric);
+                  const parsedLyrics = parseMusicLyric(data.data.lyric.lyric, data.data.lyric.tlyric);
                   setLyrics(parsedLyrics);
                 }
               })
@@ -877,7 +926,7 @@ export default function MusicClient({ children: _children }: { children?: React.
               audioRef.current.load();
 
               if (data.data.lyric?.lyric) {
-                const parsedLyrics = parseLyric(data.data.lyric.lyric, data.data.lyric.tlyric);
+              const parsedLyrics = parseMusicLyric(data.data.lyric.lyric, data.data.lyric.tlyric);
                 setLyrics(parsedLyrics);
               }
             }
@@ -889,14 +938,17 @@ export default function MusicClient({ children: _children }: { children?: React.
     };
 
     initializePlayState();
-  }, []);
+  }, [buildStreamUrl, fetchPlayData, getMusicProxyEnabled]);
 
   // 恢复 PiP 偏好设置
   useEffect(() => {
-    const savedOpacity = localStorage.getItem('lyricsPiPOpacity');
-    const savedMinimized = localStorage.getItem('lyricsPiPMinimized');
-    if (savedOpacity) setPipOpacity(parseFloat(savedOpacity));
-    if (savedMinimized) setPipMinimized(savedMinimized === 'true');
+    const timer = window.setTimeout(() => {
+      const savedOpacity = localStorage.getItem('lyricsPiPOpacity');
+      const savedMinimized = localStorage.getItem('lyricsPiPMinimized');
+      if (savedOpacity) setPipOpacity(parseFloat(savedOpacity));
+      if (savedMinimized) setPipMinimized(savedMinimized === 'true');
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, []);
 
   // 监听来自 PiP 窗口的消息
@@ -926,7 +978,7 @@ export default function MusicClient({ children: _children }: { children?: React.
     if (currentSong) {
       savePlayState();
     }
-  }, [currentSong, currentSongIndex, currentSource, quality, playMode, volume, currentSongUrl, lyrics, playRecords, playlistIndex]);
+  }, [currentSong, currentSongIndex, currentSource, currentSongUrl, lyrics, playMode, playRecords, playlistIndex, quality, savePlayState, volume]);
 
   useEffect(() => {
     currentSongRef.current = currentSong;
@@ -940,7 +992,7 @@ export default function MusicClient({ children: _children }: { children?: React.
     if (!isMusicRoomOwner || !watchRoom || !currentSong) return;
 
     watchRoom.updateMusicState(buildMusicRoomState(currentSong));
-  }, [isMusicRoomOwner, watchRoom, currentSong, playlist, playlistIndex, playMode, quality]);
+  }, [buildMusicRoomState, currentSong, isMusicRoomOwner, playlist, playlistIndex, playMode, quality, watchRoom]);
 
   useEffect(() => {
     if (!isMusicRoomOwner || !watchRoom || !currentSong || !isPlaying) return;
@@ -953,16 +1005,19 @@ export default function MusicClient({ children: _children }: { children?: React.
     }, 5000);
 
     return () => window.clearInterval(interval);
-  }, [isMusicRoomOwner, watchRoom, currentSong, isPlaying, playlist, playlistIndex, playMode, quality]);
+  }, [buildMusicRoomState, currentSong, isMusicRoomOwner, isPlaying, playlist, playlistIndex, playMode, quality, watchRoom]);
 
   // 监听 playRecords 变化，更新 playlistIndex
   useEffect(() => {
     if (pendingSongToPlay) {
-      const index = playRecords.findIndex(
-        r => r.platform === pendingSongToPlay.platform && r.id === pendingSongToPlay.id
-      );
-      setPlaylistIndex(index);
-      setPendingSongToPlay(null);
+      const timer = window.setTimeout(() => {
+        const index = playRecords.findIndex(
+          r => r.platform === pendingSongToPlay.platform && r.id === pendingSongToPlay.id
+        );
+        setPlaylistIndex(index);
+        setPendingSongToPlay(null);
+      }, 0);
+      return () => window.clearTimeout(timer);
     }
   }, [playRecords, pendingSongToPlay]);
 
@@ -974,76 +1029,8 @@ export default function MusicClient({ children: _children }: { children?: React.
     }
   }, [volume]);
 
-  const handlePlayAllCurrentSongsWith = async (targetSongs: Song[], title: string) => {
-    try {
-      if (targetSongs.length === 0) {
-        setToast({ message: '当前列表为空', type: 'error', onClose: () => setToast(null) });
-        return;
-      }
-
-      await fetch('/api/music/v2/history', { method: 'DELETE' });
-      const baseTime = Date.now();
-      const recordsToAdd = targetSongs.map((song, i) => ({
-        song: {
-          songId: song.id,
-          source: song.platform,
-          songmid: song.songmid,
-          name: song.name,
-          artist: song.artist,
-          album: song.album,
-          cover: song.pic,
-          durationSec: song.duration || 0,
-          durationText: song.durationText,
-        },
-        playProgressSec: 0,
-        lastPlayedAt: baseTime + i,
-        playCount: 1,
-        lastQuality: quality,
-        createdAt: baseTime + i,
-      }));
-      await fetch('/api/music/v2/history', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ records: recordsToAdd }),
-      });
-      const newRecords: PlayRecord[] = targetSongs.map((song, i) => ({
-        platform: song.platform,
-        id: song.id,
-        playTime: 0,
-        duration: song.duration || 0,
-        timestamp: baseTime + i,
-      }));
-      setPlayRecords(newRecords);
-      setPlaylist(targetSongs);
-      setPlaylistIndex(0);
-      await playSong(targetSongs[0], 0);
-      setToast({ message: `已开始播放 ${title}`, type: 'success', onClose: () => setToast(null) });
-    } catch (error) {
-      logger.error('播放全部失败:', error);
-      setToast({ message: '播放全部失败', type: 'error', onClose: () => setToast(null) });
-    }
-  };
-
-  const addSongToQueue = async (song: Song) => {
-    if (!currentSong && playlist.length === 0 && playRecords.length === 0) {
-      await playSong(song, -1);
-      return;
-    }
-    const platform = song.platform || currentSource;
-    const exists = playlist.some((item) => item.id === song.id && item.platform === platform);
-    if (exists) {
-      setToast({ message: '歌曲已在播放列表中', type: 'info', onClose: () => setToast(null) });
-      return;
-    }
-    const record: PlayRecord = { platform, id: song.id, playTime: 0, duration: song.duration || 0, timestamp: Date.now() };
-    setPlayRecords((prev) => [...prev, record]);
-    setPlaylist((prev) => [...prev, { ...song, platform }]);
-    saveHistoryRecordSafely(record, { ...song, platform }, 0, song.duration || 0);
-    setToast({ message: '已添加到稍后播放', type: 'success', onClose: () => setToast(null) });
-  };
-
   // 播放歌曲
-  const playSong = async (song: Song, index: number) => {
+  const playSong = useCallback(async (song: Song, index: number) => {
     beginResolving();
     try {
       // 使用歌曲自己的平台信息，如果没有则使用当前选择的平台
@@ -1133,7 +1120,7 @@ export default function MusicClient({ children: _children }: { children?: React.
               }
 
               if (data.data.lyric?.lyric) {
-                const parsedLyrics = parseLyric(data.data.lyric.lyric, data.data.lyric.tlyric);
+                const parsedLyrics = parseMusicLyric(data.data.lyric.lyric, data.data.lyric.tlyric);
                 setLyrics(parsedLyrics);
               }
             } else {
@@ -1155,7 +1142,7 @@ export default function MusicClient({ children: _children }: { children?: React.
           }
 
           if (data.data.lyric?.lyric) {
-            const parsedLyrics = parseLyric(data.data.lyric.lyric, data.data.lyric.tlyric);
+            const parsedLyrics = parseMusicLyric(data.data.lyric.lyric, data.data.lyric.tlyric);
             setLyrics(parsedLyrics);
           }
 
@@ -1181,52 +1168,75 @@ export default function MusicClient({ children: _children }: { children?: React.
     } finally {
       endResolving();
     }
-  };
+  }, [beginResolving, buildMusicRoomState, buildStreamUrl, currentSource, emitMusicChange, endResolving, fetchPlayData, getMusicProxyEnabled, playRecords, quality, saveHistoryRecordSafely]);
 
-  // 解析歌词文本
-  const parseLyric = (lyricText: string, tlyricText?: string): LyricLine[] => {
-    if (!lyricText && !tlyricText) return [];
+  const handlePlayAllCurrentSongsWith = useCallback(async (targetSongs: Song[], title: string) => {
+    try {
+      if (targetSongs.length === 0) {
+        setToast({ message: '当前列表为空', type: 'error', onClose: () => setToast(null) });
+        return;
+      }
 
-    // 匹配 [mm:ss.xx] 或 [mm:ss] 格式
-    const timeRegex = /\[(\d{2}):(\d{2})(?:\.(\d{2,3}))?\]/g;
-    const parseLyricText = (text: string) => {
-      const parsed = new Map<number, string>();
-      const lines = text.split('\n');
-
-      lines.forEach(line => {
-        const matches = Array.from(line.matchAll(timeRegex));
-        if (matches.length > 0) {
-          const content = line.replace(timeRegex, '').trim();
-          if (content) {
-            matches.forEach(match => {
-              const minutes = parseInt(match[1]);
-              const seconds = parseInt(match[2]);
-              const milliseconds = match[3] ? parseInt(match[3].padEnd(3, '0')) : 0;
-              const time = minutes * 60 + seconds + milliseconds / 1000;
-              parsed.set(time, content);
-            });
-          }
-        }
+      await fetch('/api/music/v2/history', { method: 'DELETE' });
+      const baseTime = Date.now();
+      const recordsToAdd = targetSongs.map((song, i) => ({
+        song: {
+          songId: song.id,
+          source: song.platform,
+          songmid: song.songmid,
+          name: song.name,
+          artist: song.artist,
+          album: song.album,
+          cover: song.pic,
+          durationSec: song.duration || 0,
+          durationText: song.durationText,
+        },
+        playProgressSec: 0,
+        lastPlayedAt: baseTime + i,
+        playCount: 1,
+        lastQuality: quality,
+        createdAt: baseTime + i,
+      }));
+      await fetch('/api/music/v2/history', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ records: recordsToAdd }),
       });
+      const newRecords: PlayRecord[] = targetSongs.map((song, i) => ({
+        platform: song.platform,
+        id: song.id,
+        playTime: 0,
+        duration: song.duration || 0,
+        timestamp: baseTime + i,
+      }));
+      setPlayRecords(newRecords);
+      setPlaylist(targetSongs);
+      setPlaylistIndex(0);
+      await playSong(targetSongs[0], 0);
+      setToast({ message: `已开始播放 ${title}`, type: 'success', onClose: () => setToast(null) });
+    } catch (error) {
+      logger.error('播放全部失败:', error);
+      setToast({ message: '播放全部失败', type: 'error', onClose: () => setToast(null) });
+    }
+  }, [playSong, quality]);
 
-      return parsed;
-    };
-
-    const mainMap = parseLyricText(lyricText || '');
-    const transMap = parseLyricText(tlyricText || '');
-    const times = Array.from(new Set([
-      ...Array.from(mainMap.keys()),
-      ...Array.from(transMap.keys()),
-    ])).sort((a, b) => a - b);
-
-    return times
-      .map(time => ({
-        time,
-        text: mainMap.get(time) || '',
-        translation: transMap.get(time) || undefined,
-      }))
-      .filter(line => line.text || line.translation);
-  };
+  const addSongToQueue = useCallback(async (song: Song) => {
+    if (!currentSong && playlist.length === 0 && playRecords.length === 0) {
+      await playSong(song, -1);
+      return;
+    }
+    const platform = song.platform || currentSource;
+    const exists = playlist.some((item) => item.id === song.id && item.platform === platform);
+    if (exists) {
+      setToast({ message: '歌曲已在播放列表中', type: 'info', onClose: () => setToast(null) });
+      return;
+    }
+    const record: PlayRecord = { platform, id: song.id, playTime: 0, duration: song.duration || 0, timestamp: Date.now() };
+    setPlayRecords((prev) => [...prev, record]);
+    setPlaylist((prev) => [...prev, { ...song, platform }]);
+    saveHistoryRecordSafely(record, { ...song, platform }, 0, song.duration || 0);
+    setToast({ message: '已添加到稍后播放', type: 'success', onClose: () => setToast(null) });
+  }, [currentSong, currentSource, playRecords, playSong, playlist, saveHistoryRecordSafely]);
 
   // 切换播放/暂停
   const togglePlay = () => {
@@ -1286,13 +1296,13 @@ export default function MusicClient({ children: _children }: { children?: React.
   };
 
   // 下一曲
-  const playNext = () => {
+  const playNext = useCallback(() => {
     if (playlist.length > 0) {
       const nextIndex = playlistIndex < playlist.length - 1 ? playlistIndex + 1 : 0;
       setPlaylistIndex(nextIndex);
       playSong(playlist[nextIndex], -1);
     }
-  };
+  }, [playSong, playlist, playlistIndex]);
 
   // 切换音质
   const handleQualityChange = async (nextQuality: MusicQuality) => {
@@ -1356,7 +1366,7 @@ export default function MusicClient({ children: _children }: { children?: React.
         }
 
         if (data.data.lyric?.lyric) {
-          const parsedLyrics = parseLyric(data.data.lyric.lyric, data.data.lyric.tlyric);
+          const parsedLyrics = parseMusicLyric(data.data.lyric.lyric, data.data.lyric.tlyric);
           setLyrics(parsedLyrics);
         }
       }
@@ -1439,13 +1449,6 @@ export default function MusicClient({ children: _children }: { children?: React.
     } finally {
       endResolving();
     }
-  };
-
-  const cycleQuality = () => {
-    const qualities: MusicQuality[] = ['128k', '320k', 'flac', 'flac24bit'];
-    const currentIndex = qualities.indexOf(quality);
-    const nextIndex = (currentIndex + 1) % qualities.length;
-    void handleQualityChange(qualities[nextIndex]);
   };
 
   // 拖拽调整播放顺序。playlist / playRecords 是下标严格对齐的并行数组，必须同步移动；
@@ -1788,7 +1791,7 @@ export default function MusicClient({ children: _children }: { children?: React.
       audio.removeEventListener('durationchange', handleDurationChange);
       audio.removeEventListener('ended', handleEnded);
     };
-  }, [playMode, currentSongIndex, lyrics, currentSong, playlistIndex, playRecords, quality]);
+  }, [currentSong, currentSongIndex, lyrics, playMode, playNext, playRecords, playSong, playlist, playlistIndex, quality, saveHistoryRecord, savePlayState]);
 
   // 歌词自动滚动
   useEffect(() => {
@@ -1945,16 +1948,6 @@ export default function MusicClient({ children: _children }: { children?: React.
     }
   };
 
-  const getSourceLabel = () => {
-    return getSourceDisplayLabel(currentSource, false);
-  };
-
-  const resetAudioEffects = () => {
-    setEqGains([...DEFAULT_EQ_GAINS]); setEqPreset('Flat'); setEqualizerEnabled(false);
-    setLoudnessEnabled(false); setReverbEnabled(false); setReverbMix(12); setReverbPreset('none'); setReverbMainGain(100);
-    setPitchRate(1); setSurroundEnabled(false); setSurroundSpeed(25); setSurroundDistance(5);
-  };
-
   const applyEqPreset = (name: string) => {
     const preset = EQ_PRESETS[name as keyof typeof EQ_PRESETS];
     if (!preset) return;
@@ -1986,7 +1979,7 @@ export default function MusicClient({ children: _children }: { children?: React.
   };
 
   const setSleepTimer = (minutes: number) => {
-    const endAt = Date.now() + minutes * 60 * 1000;
+    const endAt = getCurrentTimestamp() + minutes * 60 * 1000;
     setSleepTimerEndAt(endAt);
     setSleepTimerRemaining(minutes * 60);
     setShowSleepTimerMenu(false);
@@ -2059,7 +2052,7 @@ export default function MusicClient({ children: _children }: { children?: React.
     updateSleepTimer();
     const timerId = window.setInterval(updateSleepTimer, 1000);
     return () => window.clearInterval(timerId);
-  }, [sleepTimerEndAt]);
+  }, [savePlayState, sleepTimerEndAt]);
 
   useEffect(() => {
     if (!showSleepTimerMenu) return;
@@ -2256,7 +2249,7 @@ export default function MusicClient({ children: _children }: { children?: React.
       window.removeEventListener('music:add-to-playlist', handleAddToPlaylistEvent);
       window.removeEventListener('music:play-later', handlePlayLaterEvent);
     };
-  }, [playlist, playRecords, currentSong, quality, currentSource]);
+  }, [addSongToQueue, currentSong, currentSource, handlePlayAllCurrentSongsWith, playRecords, playSong, playlist, quality]);
 
   return (
     <div data-cinema-specialty="music" className="music-theme min-h-screen bg-zinc-950 text-white">
@@ -2536,8 +2529,8 @@ export default function MusicClient({ children: _children }: { children?: React.
                   onClick={() => setShowLyrics(true)}
                 >
                   {currentSong.pic ? (
-                    <img
-                      src={currentSong.pic}
+                    <ProxyImage
+                      originalSrc={currentSong.pic}
                       alt={currentSong.name}
                       className="w-full h-full object-cover"
                       onError={(e) => {
@@ -2689,8 +2682,8 @@ export default function MusicClient({ children: _children }: { children?: React.
               <div className="relative h-32 md:h-auto md:w-[380px] lg:w-[430px] xl:w-[480px] bg-linear-to-b from-zinc-800 to-zinc-900 shrink-0 overflow-hidden">
                 {currentSong.pic && (
                   <div className="absolute inset-0">
-                    <img
-                      src={currentSong.pic}
+                    <ProxyImage
+                      originalSrc={currentSong.pic}
                       alt={currentSong.name}
                       className="w-full h-full object-cover opacity-30 blur-xl"
                     />
@@ -2705,8 +2698,8 @@ export default function MusicClient({ children: _children }: { children?: React.
                     className="w-16 h-16 md:hidden rounded-xl overflow-hidden shadow-2xl mb-2"
                   >
                     {currentSong.pic ? (
-                      <img
-                        src={currentSong.pic}
+                      <ProxyImage
+                        originalSrc={currentSong.pic}
                         alt={currentSong.name}
                         className="w-full h-full object-cover"
                       />
@@ -2733,8 +2726,8 @@ export default function MusicClient({ children: _children }: { children?: React.
                 <div className="relative md:hidden flex-1 min-h-0 overflow-hidden bg-linear-to-b from-zinc-800 to-zinc-900">
                   {currentSong.pic && (
                     <div className="absolute inset-0">
-                      <img
-                        src={currentSong.pic}
+                      <ProxyImage
+                        originalSrc={currentSong.pic}
                         alt={currentSong.name}
                         className="w-full h-full object-cover opacity-30 blur-xl"
                       />

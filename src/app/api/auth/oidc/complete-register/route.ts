@@ -6,7 +6,6 @@ import { setAuthCookies } from '@/lib/auth-response';
 import { getConfig } from '@/lib/config';
 import { db } from '@/lib/db';
 import { logger } from '@/lib/logger';
-import { TOKEN_CONFIG } from '@/lib/token-config';
 
 export const runtime = 'nodejs';
 
@@ -152,8 +151,6 @@ export async function POST(request: NextRequest) {
       const userAgent = request.headers.get('user-agent') || 'Unknown';
       const deviceInfo = getDeviceInfo(userAgent);
       const cookieValue = await generateAuthCookieValue({ username, role: 'user', deviceInfo });
-      const expires = new Date(Date.now() + TOKEN_CONFIG.REFRESH_TOKEN_AGE);
-
       setAuthCookies(response, cookieValue, request);
 
       // 清除OIDC session

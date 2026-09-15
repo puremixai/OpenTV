@@ -15,7 +15,7 @@ type PlayMetaPayload = {
     tlyric?: string;
   };
   meta: {
-    attempts: any[];
+    attempts: unknown[];
   };
 };
 
@@ -110,7 +110,7 @@ export async function POST(request: NextRequest) {
     let attempts = cachedMeta.meta.attempts || [];
 
     if (includeUrl) {
-      const urlResult = await lxPostJson<{ url?: string; type?: string; attempts?: any[]; error?: string }>(
+      const urlResult = await lxPostJson<{ url?: string; type?: string; attempts?: unknown[]; error?: string }>(
         '/api/music/url',
         {
           songInfo: {

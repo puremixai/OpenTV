@@ -10,7 +10,7 @@ import {
   X,
 } from 'lucide-react';
 import Link from 'next/link';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 
 import {
   deleteBookReadRecord,
@@ -84,13 +84,19 @@ function BookHistorySkeleton() {
 }
 
 export default function BookHistoryPage() {
-  const [records, setRecords] = useState<Record<string, BookReadRecord>>({});
+  const [records, setRecords] = useState<Record<string, BookReadRecord>>(
+    getCachedBookReadRecordsSnapshot
+  );
   const [shelf, setShelf] = useState<Record<string, BookShelfItem>>({});
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(() => Object.keys(records).length === 0);
   const [cacheModalOpen, setCacheModalOpen] = useState(false);
   const [cacheItems, setCacheItems] = useState<CachedBookFile[]>([]);
   const [cacheLoading, setCacheLoading] = useState(false);
-  const [mounted, setMounted] = useState(false);
+  const mounted = useSyncExternalStore(
+    () => () => undefined,
+    () => true,
+    () => false
+  );
   const [confirmAction, setConfirmAction] = useState<{
     type: 'delete-one' | 'clear-all';
     key?: string;
@@ -108,13 +114,6 @@ export default function BookHistoryPage() {
   };
 
   useEffect(() => {
-    setMounted(true);
-    const cachedRecords = getCachedBookReadRecordsSnapshot();
-    if (Object.keys(cachedRecords).length > 0) {
-      updateRecords(cachedRecords);
-      setLoading(false);
-    }
-
     getAllBookReadRecords()
       .then(updateRecords)
       .catch(() => undefined)
@@ -141,7 +140,10 @@ export default function BookHistoryPage() {
 
   useEffect(() => {
     if (!cacheModalOpen) return;
-    void loadCacheItems();
+    const timer = window.setTimeout(() => {
+      void loadCacheItems();
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, [cacheModalOpen]);
 
   const items = useMemo(

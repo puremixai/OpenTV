@@ -88,7 +88,7 @@ export async function GET(request: NextRequest) {
       status: 200,
       headers,
     });
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: 'Failed to fetch m3u8' }, { status: 500 });
   } finally {
     // 确保 response 被正确关闭以释放资源

@@ -15,8 +15,7 @@ import { safeFetch } from './safe-http';
  * 时间一律换算为北京时间（UTC+8）。
  */
 
-const SEASONS = ['winter', 'spring', 'summer', 'fall'] as const;
-type Season = (typeof SEASONS)[number];
+type Season = 'winter' | 'spring' | 'summer' | 'fall';
 
 const BEIJING_OFFSET_MS = 8 * 60 * 60 * 1000;
 

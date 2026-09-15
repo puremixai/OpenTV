@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 
 import { clearAuthCookie,getAuthInfoFromBrowserCookie } from '@/lib/auth';
 import { logger } from '@/lib/logger';
+import { getRuntimeConfig } from '@/lib/runtime-config';
 import { TOKEN_CONFIG } from '@/lib/token-config';
 import { isLoginPathname, resolveLoginPath } from '@/lib/tv-mode';
 
@@ -22,7 +23,7 @@ import { isLoginPathname, resolveLoginPath } from '@/lib/tv-mode';
 export function TokenRefreshManager() {
   useEffect(() => {
     // localStorage 模式不需要刷新
-    const storageType = (window as any).RUNTIME_CONFIG?.STORAGE_TYPE || 'localstorage';
+    const storageType = getRuntimeConfig().STORAGE_TYPE || 'localstorage';
     if (storageType === 'localstorage') {
       return;
     }
@@ -30,6 +31,9 @@ export function TokenRefreshManager() {
     // 刷新状态管理
     let isRefreshing = false;
     let refreshPromise: Promise<boolean> | null = null;
+    const navigateWithFullReload = (path: string) => {
+      window.location.assign(new URL(path, window.location.origin).toString());
+    };
 
     // Token 刷新函数
     const refreshToken = async (): Promise<boolean> => {
@@ -72,7 +76,7 @@ export function TokenRefreshManager() {
                 clearAuthCookie();
               }
               const loginPath = resolveLoginPath(window.location.pathname);
-              window.location.href = `${loginPath}?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`;
+              navigateWithFullReload(`${loginPath}?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`);
             }
             return false;
           }
@@ -113,7 +117,7 @@ export function TokenRefreshManager() {
           clearAuthCookie();
         }).finally(() => {
           const loginPath = resolveLoginPath(window.location.pathname);
-          window.location.href = `${loginPath}?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`;
+          navigateWithFullReload(`${loginPath}?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`);
         });
         return false;
       }
@@ -201,7 +205,7 @@ export function TokenRefreshManager() {
                   clearAuthCookie();
                 }
                 const loginPath = resolveLoginPath(window.location.pathname);
-                window.location.href = `${loginPath}?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`;
+                navigateWithFullReload(`${loginPath}?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`);
               }
             }
           } else {

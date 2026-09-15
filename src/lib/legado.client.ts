@@ -51,7 +51,6 @@ interface RequestOptions {
 
 const cookieJar = new Map<string, string>();
 const variableStore = new Map<string, any>();
-const imageMemoryCache = new Map<string, { expiresAt: number; contentType: string; data: Uint8Array }>();
 
 function stableId(input: string) {
   return crypto.createHash('sha1').update(input).digest('hex').slice(0, 16);
@@ -201,7 +200,6 @@ function safeEvalTemplateExpression(expr: string, keyword: string, page: number)
     encodeURIComponent: (value: unknown) => encodeURIComponent(String(value ?? '')),
   };
   try {
-    // eslint-disable-next-line no-new-func
     const fn = new Function('key', 'keyword', 'searchTerms', 'page', 'java', `return (${expr});`);
     return jsonPrimitiveToString(fn(key, keyword, searchTerms, page, java));
   } catch {
@@ -1114,30 +1112,6 @@ export function normalizeImportedSources(input: unknown): BookSource[] {
     })
     .filter((source) => !!source.url)
     .map((source) => resolveLegadoSource(source));
-}
-
-function normalizeConfiguredLegadoSource(item: any, index: number): BookSource | null {
-  if (!item || typeof item !== 'object') return null;
-  if (item.type === 'legado' || item.legado) {
-    const rule = item.legado || item;
-    const name = item.name || rule.bookSourceName || `Legado 书源 ${index + 1}`;
-    const url = item.url || rule.bookSourceUrl || '';
-    if (!url) return null;
-    return resolveLegadoSource({
-      ...item,
-      id: item.id || `legado_${stableId(`${name}|${url}|${index}`)}`,
-      name,
-      type: 'legado',
-      url,
-      enabled: item.enabled !== false && rule.enabled !== false,
-      authMode: item.authMode || 'none',
-      legado: { ...rule, bookSourceName: rule.bookSourceName || name, bookSourceUrl: rule.bookSourceUrl || url },
-    });
-  }
-  if (item.bookSourceUrl || item.searchUrl || item.ruleSearch) {
-    return normalizeImportedSources([item])[0] || null;
-  }
-  return null;
 }
 
 function wait(ms: number) {

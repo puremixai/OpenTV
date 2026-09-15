@@ -6,6 +6,15 @@ import type { AIComment } from '@/lib/ai-comments.types';
 import { AISettings, resolveAIModelConfig } from '@/lib/ai-model-config';
 import { logger } from '@/lib/logger';
 
+interface WebSearchResult {
+  content?: string;
+  snippet?: string;
+}
+
+interface BingRssItem {
+  description?: string[];
+}
+
 export type { AIComment } from '@/lib/ai-comments.types';
 
 interface GenerateCommentsParams {
@@ -90,11 +99,11 @@ async function searchMovieInfo(
       });
 
       if (response.ok) {
-        const data = await response.json();
+        const data = (await response.json()) as { results?: WebSearchResult[] };
         searchResults = data.results
-          ?.map((r: any) => r.content)
+          ?.map((r) => r.content)
           .join('\n')
-          .slice(0, 1000);
+          .slice(0, 1000) || '';
       }
     } else if (provider === 'serper' && aiConfig.SerperApiKey) {
       const response = await fetch('https://google.serper.dev/search', {
@@ -111,11 +120,11 @@ async function searchMovieInfo(
       });
 
       if (response.ok) {
-        const data = await response.json();
+        const data = (await response.json()) as { organic?: WebSearchResult[] };
         searchResults = data.organic
-          ?.map((r: any) => r.snippet)
+          ?.map((r) => r.snippet)
           .join('\n')
-          .slice(0, 1000);
+          .slice(0, 1000) || '';
       }
     } else if (provider === 'serpapi' && aiConfig.SerpApiKey) {
       const response = await fetch(
@@ -126,11 +135,11 @@ async function searchMovieInfo(
       );
 
       if (response.ok) {
-        const data = await response.json();
+        const data = (await response.json()) as { organic_results?: WebSearchResult[] };
         searchResults = data.organic_results
-          ?.map((r: any) => r.snippet)
+          ?.map((r) => r.snippet)
           .join('\n')
-          .slice(0, 1000);
+          .slice(0, 1000) || '';
       }
     } else if (provider === 'bing') {
       const response = await fetch(
@@ -149,10 +158,10 @@ async function searchMovieInfo(
         const parsed = await parseStringPromise(await response.text(), {
           trim: true,
         });
-        const items = parsed?.rss?.channel?.[0]?.item || [];
+        const items = (parsed?.rss?.channel?.[0]?.item || []) as BingRssItem[];
         searchResults = items
           .slice(0, 5)
-          .map((item: any) => item.description?.[0] || '')
+          .map((item) => item.description?.[0] || '')
           .join('\n')
           .slice(0, 1000);
       }

@@ -1,8 +1,9 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
+import ProxyImage from '@/components/ProxyImage';
 import { useWatchRoomContext } from '@/components/WatchRoomProvider';
 
 import type { MusicQueueItem, MusicSyncState } from '@/types/watch-room';
@@ -209,7 +210,7 @@ function VinylTurntable({ song, isPlaying }: { song: MusicQueueItem; isPlaying: 
         <div className="pointer-events-none absolute left-[18%] top-[10%] h-[42%] w-[22%] rotate-[-28deg] rounded-full bg-white/10 blur-md" />
         <div className="relative z-10 flex h-[158px] w-[158px] items-center justify-center overflow-hidden rounded-full border-[5px] border-black bg-zinc-800 md:h-[192px] md:w-[192px]">
           {song.pic ? (
-            <img src={song.pic} alt={song.name} className="h-full w-full rounded-full object-cover" />
+            <ProxyImage originalSrc={song.pic} alt={song.name} className="h-full w-full rounded-full object-cover" />
           ) : (
             <div className="flex h-full w-full items-center justify-center text-4xl text-zinc-500">♪</div>
           )}
@@ -252,28 +253,31 @@ export default function WatchRoomMusicPage() {
   const [bars, setBars] = useState<number[]>(() => Array.from({ length: SPECTRUM_BIN_COUNT }, () => SPECTRUM_IDLE_LEVEL));
 
   useEffect(() => {
-    const nextState =
-      currentRoom?.roomType === 'music' && currentRoom.currentState?.type === 'music'
-        ? currentRoom.currentState
-        : null;
+    const timer = window.setTimeout(() => {
+      const nextState =
+        currentRoom?.roomType === 'music' && currentRoom.currentState?.type === 'music'
+          ? currentRoom.currentState
+          : null;
 
-    setState((prev) => {
-      if (prev === nextState) return prev;
-      return nextState;
-    });
+      setState((prev) => {
+        if (prev === nextState) return prev;
+        return nextState;
+      });
 
-    if (!nextState) {
-      playbackRequestIdRef.current += 1;
-      audioRef.current?.pause();
-      setCurrentTime(0);
-      setDuration(0);
-      return;
-    }
+      if (!nextState) {
+        playbackRequestIdRef.current += 1;
+        audioRef.current?.pause();
+        setCurrentTime(0);
+        setDuration(0);
+        return;
+      }
 
-    setCurrentTime(adjustedTime(nextState, nextState.isPlaying));
-    if (Number.isFinite(nextState.song.duration) && nextState.song.duration) {
-      setDuration(nextState.song.duration);
-    }
+      setCurrentTime(adjustedTime(nextState, nextState.isPlaying));
+      if (Number.isFinite(nextState.song.duration) && nextState.song.duration) {
+        setDuration(nextState.song.duration);
+      }
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, [currentRoom?.currentState, currentRoom?.id, currentRoom?.roomType]);
 
   const currentLyricIndex = useMemo(() => {
@@ -327,7 +331,7 @@ export default function WatchRoomMusicPage() {
     }
   }, [volume]);
 
-  const ensureAnalyser = async () => {
+  const ensureAnalyser = useCallback(async () => {
     const audio = audioRef.current;
     if (!audio || typeof window === 'undefined') return;
     const AudioContextClass = window.AudioContext || (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
@@ -344,9 +348,9 @@ export default function WatchRoomMusicPage() {
       analyserRef.current = analyser;
     }
     if (audioContextRef.current.state === 'suspended') await audioContextRef.current.resume();
-  };
+  }, []);
 
-  const applyPlaybackState = async (nextState: MusicSyncState) => {
+  const applyPlaybackState = useCallback(async (nextState: MusicSyncState) => {
     const audio = audioRef.current;
     if (!audio) return;
     const requestId = ++playbackRequestIdRef.current;
@@ -414,12 +418,12 @@ export default function WatchRoomMusicPage() {
     } else {
       audio.pause();
     }
-  };
+  }, [ensureAnalyser, needsActivation]);
 
   useEffect(() => {
     if (!state) return;
     void applyPlaybackState(state);
-  }, [state, needsActivation]);
+  }, [applyPlaybackState, state]);
 
   useEffect(() => {
     if (!socket) return;
@@ -504,7 +508,6 @@ export default function WatchRoomMusicPage() {
   const themeRootClass = isDark ? 'bg-zinc-950 text-white' : 'bg-white text-zinc-900';
   const showCoverPanel = mobilePanel === 'cover';
   const showLyricsPanel = mobilePanel === 'lyrics';
-  const isPlaying = Boolean(state?.isPlaying);
   const lyricActiveClass = isDark
     ? 'scale-105 text-lg font-bold text-emerald-300 md:text-2xl'
     : 'scale-105 text-lg font-bold text-emerald-600 md:text-2xl';
@@ -522,7 +525,7 @@ export default function WatchRoomMusicPage() {
       <audio ref={audioRef} className="hidden" />
 
       {song?.pic && (
-        <img src={song.pic} alt="" className={`absolute inset-0 h-full w-full object-cover blur-3xl ${isDark ? 'opacity-20' : 'opacity-12'}`} />
+        <ProxyImage originalSrc={song.pic} alt="" className={`absolute inset-0 h-full w-full object-cover blur-3xl ${isDark ? 'opacity-20' : 'opacity-12'}`} />
       )}
       <div className={`absolute inset-0 ${isDark ? 'bg-zinc-950/80' : 'bg-white/75'}`} />
 
@@ -550,7 +553,7 @@ export default function WatchRoomMusicPage() {
                     >
                       <div className="h-11 w-11 shrink-0 overflow-hidden rounded-lg border border-white/10 bg-zinc-800">
                         {song.pic ? (
-                          <img src={song.pic} alt={song.name} className="h-full w-full object-cover" />
+                          <ProxyImage originalSrc={song.pic} alt={song.name} className="h-full w-full object-cover" />
                         ) : (
                           <div className="flex h-full w-full items-center justify-center text-base text-zinc-500">♪</div>
                         )}

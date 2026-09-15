@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
 
     for (const candidate of fallbackSources) {
       try {
-        const candidatePayload = await lxGetJson<any>(
+        const candidatePayload = await lxGetJson<unknown>(
           `/api/music/leaderboard/boards?source=${candidate}`,
           'none'
         );

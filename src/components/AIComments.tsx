@@ -2,6 +2,8 @@
 
 import { useSavedAIComments } from '@/hooks/useSavedAIComments';
 
+import ProxyImage from '@/components/ProxyImage';
+
 interface AICommentsProps {
   movieName: string;
   movieYear?: string;
@@ -205,8 +207,8 @@ export default function AIComments({
             <div className='flex items-start gap-3 mb-3'>
               {/* 头像 */}
               <div className='shrink-0'>
-                <img
-                  src={comment.userAvatar}
+                <ProxyImage
+                  originalSrc={comment.userAvatar}
                   alt={comment.userName}
                   className='w-10 h-10 rounded-full'
                 />

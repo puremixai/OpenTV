@@ -65,7 +65,7 @@ async function getFinalUrl(url: string, maxRedirects = 5): Promise<string> {
         if (getResponse.body) {
           try {
             await getResponse.body.cancel();
-          } catch (e) {
+          } catch {
             // 忽略取消错误
           }
         }
@@ -404,11 +404,11 @@ export async function GET(
               await writer.write(chunk.value);
             }
           }
-        } catch (error) {
+        } catch {
           // 取消上游 fetch，停止继续下载
           try {
             await reader.cancel();
-          } catch (e) {
+          } catch {
             // 忽略取消错误
           }
         } finally {
@@ -416,7 +416,7 @@ export async function GET(
           try {
             reader.releaseLock();
             await writer.close();
-          } catch (e) {
+          } catch {
             // 忽略关闭错误
           }
         }

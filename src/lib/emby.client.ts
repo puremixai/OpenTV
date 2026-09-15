@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { checkSearchSignal, fetchSearchResponse } from '@/lib/server/search-control';
 import { normalizeApiBaseUrl } from '@/lib/url';
@@ -507,7 +506,7 @@ export class EmbyClient {
       const mediaSourceId = data.MediaSources?.[0]?.Id;
 
       return { MediaSourceId: mediaSourceId };
-    } catch (error) {
+    } catch {
       return {};
     }
   }
@@ -551,7 +550,7 @@ export class EmbyClient {
           if (playbackInfo.MediaSourceId) {
             url += `&MediaSourceId=${playbackInfo.MediaSourceId}`;
           }
-        } catch (error) {
+        } catch {
           // 继续使用不带 MediaSourceId 的 URL
         }
       }

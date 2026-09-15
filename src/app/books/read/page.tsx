@@ -651,7 +651,9 @@ function ChapterReader({ manifest }: { manifest: BookReadManifest }) {
   const [chapter, setChapter] = useState<BookChapterContent | null>(null);
   const [tocOpen, setTocOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [settings, setSettings] = useState<ReaderSettings>(DEFAULT_SETTINGS);
+  const [settings, setSettings] = useState<ReaderSettings>(() =>
+    loadReaderSettings()
+  );
   const [loading, setLoading] = useState(true);
   const [chaptersLoaded, setChaptersLoaded] = useState(false);
   const [error, setError] = useState('');
@@ -701,10 +703,6 @@ function ChapterReader({ manifest }: { manifest: BookReadManifest }) {
   }, [currentIndex]);
 
   useEffect(() => {
-    setSettings(loadReaderSettings());
-  }, []);
-
-  useEffect(() => {
     if (typeof window !== 'undefined')
       localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(settings));
   }, [settings]);
@@ -729,7 +727,12 @@ function ChapterReader({ manifest }: { manifest: BookReadManifest }) {
   }, [ttsStatus]);
   useEffect(() => {
     ttsSeekingRef.current = ttsSeeking;
-    if (!ttsSeeking) setTtsSeekValue(ttsCurrentTime);
+    if (ttsSeeking) return;
+    const timer = window.setTimeout(
+      () => setTtsSeekValue(ttsCurrentTime),
+      0
+    );
+    return () => window.clearTimeout(timer);
   }, [ttsCurrentTime, ttsSeeking]);
 
   const stopTts = useCallback((clearQueue = false) => {
@@ -786,36 +789,39 @@ function ChapterReader({ manifest }: { manifest: BookReadManifest }) {
   }, []);
 
   useEffect(() => {
-    const cachedVoices = loadCachedTtsVoices();
-    if (cachedVoices) {
-      setTtsAvailable(true);
-      setTtsVoices(cachedVoices.voices);
-      setTtsSettings((prev) => applyTtsDefaults(prev, cachedVoices.defaults));
-      return;
-    }
     let cancelled = false;
-    fetch('/api/books/tts/voices')
-      .then(async (res) => {
-        const json = await res.json();
-        if (!res.ok) throw new Error(json.error || '获取朗读配置失败');
-        if (cancelled) return;
+    const timer = window.setTimeout(() => {
+      const cachedVoices = loadCachedTtsVoices();
+      if (cachedVoices) {
         setTtsAvailable(true);
-        setTtsVoices(json.voices || []);
-        setTtsSettings((prev) => applyTtsDefaults(prev, json.defaults));
-        saveCachedTtsVoices({
-          voices: json.voices || [],
-          defaults: json.defaults || {},
+        setTtsVoices(cachedVoices.voices);
+        setTtsSettings((prev) => applyTtsDefaults(prev, cachedVoices.defaults));
+        return;
+      }
+      fetch('/api/books/tts/voices')
+        .then(async (res) => {
+          const json = await res.json();
+          if (!res.ok) throw new Error(json.error || '获取朗读配置失败');
+          if (cancelled) return;
+          setTtsAvailable(true);
+          setTtsVoices(json.voices || []);
+          setTtsSettings((prev) => applyTtsDefaults(prev, json.defaults));
+          saveCachedTtsVoices({
+            voices: json.voices || [],
+            defaults: json.defaults || {},
+          });
+        })
+        .catch((err) => {
+          if (!cancelled) {
+            setTtsAvailable(false);
+            setTtsVoices([]);
+            setTtsError(err.message || '朗读能力不可用');
+          }
         });
-      })
-      .catch((err) => {
-        if (!cancelled) {
-          setTtsAvailable(false);
-          setTtsVoices([]);
-          setTtsError(err.message || '朗读能力不可用');
-        }
-      });
+    }, 0);
     return () => {
       cancelled = true;
+      window.clearTimeout(timer);
     };
   }, []);
 
@@ -899,86 +905,106 @@ function ChapterReader({ manifest }: { manifest: BookReadManifest }) {
   useEffect(() => {
     if (!manifest.chaptersUrl && !manifest.book.id) return;
     let cancelled = false;
-    setChapters([]);
-    setChaptersLoaded(false);
-    setChapter(null);
-    setCurrentIndex(0);
-    restoredChapterPositionRef.current = false;
-    pendingChapterRestoreRatioRef.current = null;
-    lastChapterSavedAtRef.current = 0;
-    lastChapterSavedLocatorValueRef.current =
-      manifest.lastRecord?.locator?.value || '';
-    setLoading(true);
-    setError('');
-    const url =
-      manifest.chaptersUrl ||
-      `/api/books/read/chapters?sourceId=${encodeURIComponent(
-        manifest.book.sourceId
-      )}&bookId=${encodeURIComponent(manifest.book.id)}`;
-    fetchJsonWithRetry<{ chapters?: BookChapter[] }>(url, { cache: 'no-store' })
-      .then((json) => {
-        if (cancelled) return;
-        const list = (json.chapters || []) as BookChapter[];
-        setChapters(list);
-        setChaptersLoaded(true);
-        const savedHref =
-          initialChapterHref ||
-          manifest.lastRecord?.chapterHref ||
-          manifest.lastRecord?.locator?.href ||
-          manifest.lastRecord?.locator?.value?.split('#scroll=')[0] ||
-          '';
-        const savedIndex = list.findIndex((item) => item.href === savedHref);
-        setCurrentIndex(savedIndex >= 0 ? savedIndex : 0);
-      })
-      .catch((err) => {
-        if (!cancelled) {
-          setError(err.message || '获取目录失败');
+    const timer = window.setTimeout(() => {
+      if (cancelled) return;
+      setChapters([]);
+      setChaptersLoaded(false);
+      setChapter(null);
+      setCurrentIndex(0);
+      restoredChapterPositionRef.current = false;
+      pendingChapterRestoreRatioRef.current = null;
+      lastChapterSavedAtRef.current = 0;
+      lastChapterSavedLocatorValueRef.current =
+        manifest.lastRecord?.locator?.value || '';
+      setLoading(true);
+      setError('');
+      const url =
+        manifest.chaptersUrl ||
+        `/api/books/read/chapters?sourceId=${encodeURIComponent(
+          manifest.book.sourceId
+        )}&bookId=${encodeURIComponent(manifest.book.id)}`;
+      fetchJsonWithRetry<{ chapters?: BookChapter[] }>(url, { cache: 'no-store' })
+        .then((json) => {
+          if (cancelled) return;
+          const list = (json.chapters || []) as BookChapter[];
+          setChapters(list);
           setChaptersLoaded(true);
-        }
-      });
+          const savedHref =
+            initialChapterHref ||
+            manifest.lastRecord?.chapterHref ||
+            manifest.lastRecord?.locator?.href ||
+            manifest.lastRecord?.locator?.value?.split('#scroll=')[0] ||
+            '';
+          const savedIndex = list.findIndex((item) => item.href === savedHref);
+          setCurrentIndex(savedIndex >= 0 ? savedIndex : 0);
+        })
+        .catch((err) => {
+          if (!cancelled) {
+            setError(err.message || '获取目录失败');
+            setChaptersLoaded(true);
+          }
+        });
+    }, 0);
     return () => {
       cancelled = true;
+      window.clearTimeout(timer);
     };
   }, [initialChapterHref, manifest]);
 
   useEffect(() => {
     const item = chapters[currentIndex];
     if (!item) {
-      if (chaptersLoaded && chapters.length === 0) setLoading(false);
+      if (chaptersLoaded && chapters.length === 0) {
+        const timer = window.setTimeout(() => setLoading(false), 0);
+        return () => window.clearTimeout(timer);
+      }
       return;
     }
-    stopTts(true);
-    setLoading(true);
-    setError('');
-    lastChapterScrollMetricsRef.current = null;
-    setChapterScrollTop(scrollRef.current, 0);
-    pendingChapterRestoreRatioRef.current = null;
-    const params = new URLSearchParams({
-      sourceId: manifest.book.sourceId,
-      href: item.href,
-    });
-    if (manifest.acquisitionHref)
-      params.set('tocHref', manifest.acquisitionHref);
-    fetchJsonWithRetry<BookChapterContent>(
-      `/api/books/read/chapter?${params.toString()}`,
-      { cache: 'no-store' }
-    )
-      .then((json) => {
-        const shouldRestore =
-          !restoredChapterPositionRef.current &&
-          !initialChapterHref &&
-          (manifest.lastRecord?.chapterHref === item.href ||
-            manifest.lastRecord?.locator?.href === item.href);
-        pendingChapterRestoreRatioRef.current = shouldRestore
-          ? parseChapterScrollLocator(manifest.lastRecord?.locator?.value)
-          : null;
-        setChapter({
-          ...(json as BookChapterContent),
-          title: (json as BookChapterContent).title || item.title,
+    let cancelled = false;
+    const timer = window.setTimeout(() => {
+      if (cancelled) return;
+      stopTts(true);
+      setLoading(true);
+      setError('');
+      lastChapterScrollMetricsRef.current = null;
+      setChapterScrollTop(scrollRef.current, 0);
+      pendingChapterRestoreRatioRef.current = null;
+      const params = new URLSearchParams({
+        sourceId: manifest.book.sourceId,
+        href: item.href,
+      });
+      if (manifest.acquisitionHref)
+        params.set('tocHref', manifest.acquisitionHref);
+      fetchJsonWithRetry<BookChapterContent>(
+        `/api/books/read/chapter?${params.toString()}`,
+        { cache: 'no-store' }
+      )
+        .then((json) => {
+          if (cancelled) return;
+          const shouldRestore =
+            !restoredChapterPositionRef.current &&
+            !initialChapterHref &&
+            (manifest.lastRecord?.chapterHref === item.href ||
+              manifest.lastRecord?.locator?.href === item.href);
+          pendingChapterRestoreRatioRef.current = shouldRestore
+            ? parseChapterScrollLocator(manifest.lastRecord?.locator?.value)
+            : null;
+          setChapter({
+            ...(json as BookChapterContent),
+            title: (json as BookChapterContent).title || item.title,
+          });
+        })
+        .catch((err) => {
+          if (!cancelled) setError(err.message || '获取章节失败');
+        })
+        .finally(() => {
+          if (!cancelled) setLoading(false);
         });
-      })
-      .catch((err) => setError(err.message || '获取章节失败'))
-      .finally(() => setLoading(false));
+    }, 0);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
   }, [
     chapters,
     chaptersLoaded,
@@ -2017,7 +2043,9 @@ export default function BookReadPage() {
   const [cacheHit, setCacheHit] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [tocOpen, setTocOpen] = useState(false);
-  const [settings, setSettings] = useState<ReaderSettings>(DEFAULT_SETTINGS);
+  const [settings, setSettings] = useState<ReaderSettings>(() =>
+    loadReaderSettings()
+  );
   const [ttsSettings, setTtsSettings] = useState<TtsSettings>(() =>
     loadTtsSettings()
   );
@@ -2088,10 +2116,6 @@ export default function BookReadPage() {
   const ttsResumeTimeRef = useRef<number>(0);
 
   useEffect(() => {
-    setSettings(loadReaderSettings());
-  }, []);
-
-  useEffect(() => {
     settingsRef.current = settings;
     if (typeof window !== 'undefined') {
       localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(settings));
@@ -2118,9 +2142,12 @@ export default function BookReadPage() {
 
   useEffect(() => {
     ttsSeekingRef.current = ttsSeeking;
-    if (!ttsSeeking) {
-      setTtsSeekValue(ttsCurrentTime);
-    }
+    if (ttsSeeking) return;
+    const timer = window.setTimeout(
+      () => setTtsSeekValue(ttsCurrentTime),
+      0
+    );
+    return () => window.clearTimeout(timer);
   }, [ttsCurrentTime, ttsSeeking]);
 
   useEffect(() => {
@@ -2207,35 +2234,38 @@ export default function BookReadPage() {
 
   useEffect(() => {
     if (!manifest || manifest.format !== 'epub') return;
-    const cachedVoices = loadCachedTtsVoices();
-    if (cachedVoices) {
-      setTtsAvailable(true);
-      setTtsVoices(cachedVoices.voices);
-      setTtsSettings((prev) => applyTtsDefaults(prev, cachedVoices.defaults));
-      return;
-    }
     let cancelled = false;
-    fetch('/api/books/tts/voices')
-      .then(async (res) => {
-        const json = await res.json();
-        if (!res.ok) throw new Error(json.error || '获取朗读配置失败');
-        if (cancelled) return;
+    const timer = window.setTimeout(() => {
+      const cachedVoices = loadCachedTtsVoices();
+      if (cachedVoices) {
         setTtsAvailable(true);
-        setTtsVoices(json.voices || []);
-        setTtsSettings((prev) => applyTtsDefaults(prev, json.defaults));
-        saveCachedTtsVoices({
-          voices: json.voices || [],
-          defaults: json.defaults || {},
+        setTtsVoices(cachedVoices.voices);
+        setTtsSettings((prev) => applyTtsDefaults(prev, cachedVoices.defaults));
+        return;
+      }
+      fetch('/api/books/tts/voices')
+        .then(async (res) => {
+          const json = await res.json();
+          if (!res.ok) throw new Error(json.error || '获取朗读配置失败');
+          if (cancelled) return;
+          setTtsAvailable(true);
+          setTtsVoices(json.voices || []);
+          setTtsSettings((prev) => applyTtsDefaults(prev, json.defaults));
+          saveCachedTtsVoices({
+            voices: json.voices || [],
+            defaults: json.defaults || {},
+          });
+        })
+        .catch((err) => {
+          if (cancelled) return;
+          setTtsAvailable(false);
+          setTtsVoices([]);
+          setTtsError(err.message || '朗读能力不可用');
         });
-      })
-      .catch((err) => {
-        if (cancelled) return;
-        setTtsAvailable(false);
-        setTtsVoices([]);
-        setTtsError(err.message || '朗读能力不可用');
-      });
+    }, 0);
     return () => {
       cancelled = true;
+      window.clearTimeout(timer);
     };
   }, [manifest]);
 
@@ -3088,7 +3118,8 @@ export default function BookReadPage() {
   useEffect(() => {
     if (!ttsCurrentChapterHref || !currentHref) return;
     if (!isSameTocTarget(ttsCurrentChapterHref, currentHref)) {
-      stopTts(true);
+      const timer = window.setTimeout(() => stopTts(true), 0);
+      return () => window.clearTimeout(timer);
     }
   }, [currentHref, stopTts, ttsCurrentChapterHref]);
 
@@ -3096,30 +3127,34 @@ export default function BookReadPage() {
     if (!manifest || manifest.format !== 'pdf') return;
     let revokedUrl = '';
     let cancelled = false;
-    setFileLoadState('downloading');
-    setDownloadedBytes(0);
-    setTotalBytes(null);
-    setPdfBlobUrl('');
+    const timer = window.setTimeout(() => {
+      if (cancelled) return;
+      setFileLoadState('downloading');
+      setDownloadedBytes(0);
+      setTotalBytes(null);
+      setPdfBlobUrl('');
 
-    downloadBookWithProgress(manifest, (received, total) => {
-      if (!cancelled) {
-        setDownloadedBytes(received);
-        setTotalBytes(total);
-      }
-    })
-      .then(async (blob) => {
-        if (cancelled) return;
-        const objectUrl = URL.createObjectURL(blob);
-        revokedUrl = objectUrl;
-        setPdfBlobUrl(objectUrl);
-        setFileLoadState('ready');
+      downloadBookWithProgress(manifest, (received, total) => {
+        if (!cancelled) {
+          setDownloadedBytes(received);
+          setTotalBytes(total);
+        }
       })
-      .catch((err) => {
-        if (!cancelled) setError(err.message || 'PDF 加载失败');
-      });
+        .then(async (blob) => {
+          if (cancelled) return;
+          const objectUrl = URL.createObjectURL(blob);
+          revokedUrl = objectUrl;
+          setPdfBlobUrl(objectUrl);
+          setFileLoadState('ready');
+        })
+        .catch((err) => {
+          if (!cancelled) setError(err.message || 'PDF 加载失败');
+        });
+    }, 0);
 
     return () => {
       cancelled = true;
+      window.clearTimeout(timer);
       if (revokedUrl) URL.revokeObjectURL(revokedUrl);
     };
   }, [manifest]);
@@ -3340,8 +3375,8 @@ export default function BookReadPage() {
   }, [bindScrolledIframeListener]);
 
   const renderTocItems = useCallback(
-    (items: TocItem[], depth = 0) =>
-      items.map((item) => {
+    function renderTocItems(items: TocItem[], depth = 0) {
+      return items.map((item) => {
         const active = tocItemIsActive(item, currentHref);
         const clickable = !!item.href;
         return (
@@ -3385,7 +3420,8 @@ export default function BookReadPage() {
               : null}
           </div>
         );
-      }),
+      });
+    },
     [currentHref, navigateToTarget, persistScrolledPosition]
   );
 

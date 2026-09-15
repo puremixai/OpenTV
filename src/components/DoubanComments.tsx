@@ -5,6 +5,8 @@ import { useCallback,useEffect, useState } from 'react';
 import { logger } from '@/lib/logger';
 import { useEnableComments } from '@/hooks/useEnableComments';
 
+import ProxyImage from '@/components/ProxyImage';
+
 interface DoubanComment {
   id: string;
   userName: string;
@@ -18,11 +20,6 @@ interface DoubanComment {
 
 interface DoubanCommentsProps {
   doubanId: number;
-}
-
-// 获取运行时配置的类型
-interface RuntimeConfig {
-  EnableComments: boolean;
 }
 
 export default function DoubanComments({ doubanId }: DoubanCommentsProps) {
@@ -80,12 +77,15 @@ export default function DoubanComments({ doubanId }: DoubanCommentsProps) {
 
   useEffect(() => {
     // 重置状态当 doubanId 变化时
-    setHasStartedLoading(false);
-    setComments([]);
-    setLoading(false);
-    setError(null);
-    setTotal(0);
-    setHasMore(false);
+    const timer = window.setTimeout(() => {
+      setHasStartedLoading(false);
+      setComments([]);
+      setLoading(false);
+      setError(null);
+      setTotal(0);
+      setHasMore(false);
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, [doubanId]); // 只在 doubanId 变化时重新获取
 
   const startLoading = () => {
@@ -206,8 +206,8 @@ export default function DoubanComments({ doubanId }: DoubanCommentsProps) {
                 rel='noopener noreferrer'
                 className='shrink-0'
               >
-                <img
-                  src={comment.userAvatar}
+                <ProxyImage
+                  originalSrc={comment.userAvatar}
                   alt={comment.userName}
                   className='w-10 h-10 rounded-full'
                   onError={(e) => {

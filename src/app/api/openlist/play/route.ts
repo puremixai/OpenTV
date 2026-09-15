@@ -55,7 +55,7 @@ async function getFinalUrl(url: string, maxRedirects = 5): Promise<string> {
         if (getResponse.body) {
           try {
             await getResponse.body.cancel();
-          } catch (e) {
+          } catch {
             // 忽略取消错误
           }
         }

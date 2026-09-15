@@ -6,6 +6,7 @@ import { startTransition, useCallback, useEffect, useMemo, useRef, useState } fr
 
 import { deleteMangaShelf, getAllMangaShelf, saveMangaShelf } from '@/lib/db.client';
 import { MangaSearchItem, MangaShelfItem, MangaSource } from '@/lib/manga.types';
+import { getRuntimeConfig } from '@/lib/runtime-config';
 
 import MangaCard from '@/components/MangaCard';
 
@@ -90,7 +91,7 @@ export default function MangaSearchPage() {
     } catch {
       // ignore invalid localStorage values
     }
-    return (window as any).RUNTIME_CONFIG?.FLUID_SEARCH !== false;
+    return getRuntimeConfig().FLUID_SEARCH !== false;
   }, []);
 
   const closeEventSource = useCallback(() => {
@@ -153,7 +154,10 @@ export default function MangaSearchPage() {
   }, []);
 
   useEffect(() => {
-    setUseFluidSearch(readFluidSearchSetting());
+    const timer = window.setTimeout(
+      () => setUseFluidSearch(readFluidSearchSetting()),
+      0
+    );
 
     fetch('/api/manga/sources')
       .then((res) => res.json())
@@ -163,6 +167,7 @@ export default function MangaSearchPage() {
     getAllMangaShelf().then(setShelf).catch(() => undefined);
 
     return () => {
+      window.clearTimeout(timer);
       closeEventSource();
       clearPendingResults();
     };
@@ -319,43 +324,46 @@ export default function MangaSearchPage() {
   );
 
   useEffect(() => {
-    if (!restoredRef.current) {
-      restoredRef.current = true;
+    const timer = window.setTimeout(() => {
+      if (!restoredRef.current) {
+        restoredRef.current = true;
+
+        if (!urlQuery) {
+          const cachedState = restoreSearchState();
+          if (cachedState?.query?.trim()) {
+            setQuery(cachedState.query);
+            setSourceId(cachedState.sourceId || '');
+            setResults(cachedState.results || []);
+            setHasSearched(true);
+            setLastSearchedQuery(cachedState.query);
+            setLastSearchedSourceId(cachedState.sourceId || '');
+          }
+          return;
+        }
+      }
+
+      setQuery(urlQuery);
+      setSourceId(urlSourceId);
 
       if (!urlQuery) {
-        const cachedState = restoreSearchState();
-        if (cachedState?.query?.trim()) {
-          setQuery(cachedState.query);
-          setSourceId(cachedState.sourceId || '');
-          setResults(cachedState.results || []);
-          setHasSearched(true);
-          setLastSearchedQuery(cachedState.query);
-          setLastSearchedSourceId(cachedState.sourceId || '');
-        }
+        closeEventSource();
+        clearPendingResults();
+        setResults([]);
+        setLoading(false);
+        setHasSearched(false);
+        setLastSearchedQuery('');
+        setLastSearchedSourceId('');
+        setTotalSources(0);
+        setCompletedSources(0);
+        setError('');
         return;
       }
-    }
 
-    setQuery(urlQuery);
-    setSourceId(urlSourceId);
-
-    if (!urlQuery) {
-      closeEventSource();
-      clearPendingResults();
-      setResults([]);
-      setLoading(false);
-      setHasSearched(false);
-      setLastSearchedQuery('');
-      setLastSearchedSourceId('');
-      setTotalSources(0);
-      setCompletedSources(0);
-      setError('');
-      return;
-    }
-
-    const forceRefresh = forceNextUrlSearchRef.current;
-    forceNextUrlSearchRef.current = false;
-    void performSearch(urlQuery, urlSourceId, { forceRefresh });
+      const forceRefresh = forceNextUrlSearchRef.current;
+      forceNextUrlSearchRef.current = false;
+      void performSearch(urlQuery, urlSourceId, { forceRefresh });
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, [clearPendingResults, closeEventSource, performSearch, restoreSearchState, urlQuery, urlSourceId]);
 
   const handleSearch = async (e: React.FormEvent) => {

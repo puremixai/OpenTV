@@ -126,7 +126,7 @@ function startGeneration(
 export default function artplayerPluginAutoThumbnail(
   option: AutoThumbnailOption = {}
 ) {
-  return (art: any) => {
+  return (art: Artplayer) => {
     const width = option.width || 160;
     const number = option.number || 100;
     const scale = option.scale || 1;
@@ -157,3 +157,4 @@ export default function artplayerPluginAutoThumbnail(
     return { name: 'artplayerPluginAutoThumbnail', destroy: stop };
   };
 }
+import type Artplayer from 'artplayer';

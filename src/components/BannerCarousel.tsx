@@ -18,6 +18,7 @@ import {
   useEffect,
   useRef,
   useState,
+  useSyncExternalStore,
 } from 'react';
 
 import { getDoubanDetail } from '@/lib/douban.client';
@@ -46,6 +47,8 @@ interface BannerCarouselProps {
 }
 
 type HomeBannerHeightScale = '1' | '1.5' | '2';
+const LOCALSTORAGE_DURATION = 24 * 60 * 60 * 1000;
+const subscribeToClientState = () => () => undefined;
 
 const getSavedBannerHeightScale = (): HomeBannerHeightScale => {
   if (typeof window === 'undefined') return '1';
@@ -61,8 +64,11 @@ export default function BannerCarousel({
   delayLoad = false,
 }: BannerCarouselProps) {
   const router = useRouter();
-  const [imagesReady, setImagesReady] = useState(false);
-  useEffect(() => setImagesReady(true), []);
+  const imagesReady = useSyncExternalStore(
+    subscribeToClientState,
+    () => true,
+    () => false
+  );
   const artworkFor = (
     item: BannerItem,
     placement: 'hero' | 'poster' | 'thumbnail',
@@ -112,9 +118,6 @@ export default function BannerCarousel({
   const keyboardNavigation = useRef(false);
   const manualChangeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // LocalStorage 缓存配置
-  const LOCALSTORAGE_DURATION = 24 * 60 * 60 * 1000; // 1天
-
   // 根据数据源获取缓存key
   const getLocalStorageKey = (source: string) => {
     return `banner_trending_cache_${source}`;
@@ -150,12 +153,14 @@ export default function BannerCarousel({
 
   // 读取本地设置
   useEffect(() => {
-    const setting = localStorage.getItem('enableTrailers');
-    if (setting !== null) {
-      setEnableTrailers(setting === 'true');
-    }
+    const timer = window.setTimeout(() => {
+      const setting = localStorage.getItem('enableTrailers');
+      if (setting !== null) {
+        setEnableTrailers(setting === 'true');
+      }
 
-    setBannerHeightScale(getSavedBannerHeightScale());
+      setBannerHeightScale(getSavedBannerHeightScale());
+    }, 0);
 
     const handleHomeModulesUpdated = () => {
       setBannerHeightScale(getSavedBannerHeightScale());
@@ -163,6 +168,7 @@ export default function BannerCarousel({
 
     window.addEventListener('homeModulesUpdated', handleHomeModulesUpdated);
     return () => {
+      window.clearTimeout(timer);
       window.removeEventListener(
         'homeModulesUpdated',
         handleHomeModulesUpdated,
@@ -210,7 +216,8 @@ export default function BannerCarousel({
 
     // 页面加载完毕后再开始加载
     if (document.readyState === 'complete') {
-      setShouldLoad(true);
+      const timer = window.setTimeout(() => setShouldLoad(true), 0);
+      return () => window.clearTimeout(timer);
     } else {
       const handleLoad = () => {
         setShouldLoad(true);
@@ -224,8 +231,11 @@ export default function BannerCarousel({
   useEffect(() => {
     // 如果未启用预告片或数据源不是TMDB，不进行检测
     if (!enableTrailers || dataSource !== 'TMDB') {
-      setIsYouTubeAccessible(false);
-      return;
+      const timer = window.setTimeout(
+        () => setIsYouTubeAccessible(false),
+        0
+      );
+      return () => window.clearTimeout(timer);
     }
 
     const checkYouTubeAccess = () => {
@@ -256,12 +266,14 @@ export default function BannerCarousel({
   useEffect(() => {
     // The server seed is newer than browser caches and already contains the first artwork.
     if (initialData) {
-      setItems(initialData.list);
-      setCurrentIndex(0);
-      setDataSource(initialData.source);
-      setTrailersLoaded(false);
-      setIsLoading(false);
-      return;
+      const timer = window.setTimeout(() => {
+        setItems(initialData.list);
+        setCurrentIndex(0);
+        setDataSource(initialData.source);
+        setTrailersLoaded(false);
+        setIsLoading(false);
+      }, 0);
+      return () => window.clearTimeout(timer);
     }
     // 如果不应该加载，直接返回
     if (!shouldLoad) return;
@@ -425,7 +437,8 @@ export default function BannerCarousel({
 
   // 切换轮播图时重置静音状态
   useEffect(() => {
-    setIsMuted(true);
+    const timer = window.setTimeout(() => setIsMuted(true), 0);
+    return () => window.clearTimeout(timer);
   }, [currentIndex]);
 
   // 控制视频播放/暂停和静音状态

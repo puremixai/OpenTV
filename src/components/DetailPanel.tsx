@@ -12,7 +12,7 @@ import {
   Users,
   X,
 } from 'lucide-react';
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 
 import { getBangumiSubject, getBangumiSubjectUrl } from '@/lib/bangumi.client';
 import { logger } from '@/lib/logger';
@@ -88,6 +88,67 @@ interface Episode {
   air_date: string;
 }
 
+interface TMDBNamedItem {
+  name: string;
+}
+
+interface TMDBSeasonSummary {
+  id: number;
+  name: string;
+  season_number: number;
+  episode_count: number;
+  poster_path?: string | null;
+  overview?: string;
+  air_date?: string;
+}
+
+interface TMDBSeasonData {
+  name?: string;
+  air_date?: string;
+  poster_path?: string | null;
+  overview?: string;
+  episodes?: Episode[];
+}
+
+interface TMDBDetailResult {
+  title: string;
+  name: string;
+  original_title: string;
+  original_name: string;
+  release_date?: string;
+  first_air_date?: string;
+  poster_path?: string | null;
+  backdrop_path?: string | null;
+  vote_average?: number;
+  vote_count?: number;
+  overview?: string;
+  genres?: TMDBNamedItem[];
+  production_countries?: TMDBNamedItem[];
+  spoken_languages?: TMDBNamedItem[];
+  runtime?: number;
+  number_of_episodes?: number;
+  number_of_seasons?: number;
+  status?: string;
+  tagline?: string;
+}
+
+interface TMDBSearchResult {
+  id: number;
+  media_type?: 'movie' | 'tv';
+}
+
+interface TMDBCreditsPerson {
+  name: string;
+  job?: string;
+  character?: string;
+  profile_path?: string;
+}
+
+interface TMDBCreditsResult {
+  crew?: TMDBCreditsPerson[];
+  cast?: TMDBCreditsPerson[];
+}
+
 interface GalleryImage {
   file_path: string;
   width: number;
@@ -124,7 +185,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [seasonData, setSeasonData] = useState<{
-    seasons: any[];
+    seasons: TMDBSeasonSummary[];
     episodes: Episode[];
   } | null>(null);
   const [loadingSeasons, setLoadingSeasons] = useState(false);
@@ -155,7 +216,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
   const [originalSource, setOriginalSource] = useState<
     'douban' | 'bangumi' | 'cms' | 'tmdb'
   >('tmdb');
-  const [isUsingTmdb, setIsUsingTmdb] = useState(false);
+  const [isUsingTmdb] = useState(false);
   const [originalDetailData, setOriginalDetailData] =
     useState<DetailData | null>(null);
 
@@ -206,7 +267,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
   const galleryMediaType = detailData?.mediaType || type;
   const canShowGalleryEntry = !!galleryTmdbId && !!galleryMediaType;
 
-  const fetchGalleryImages = async () => {
+  const fetchGalleryImages = useCallback(async () => {
     if (!galleryTmdbId || !galleryMediaType) return;
 
     setGalleryLoading(true);
@@ -230,7 +291,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
     } finally {
       setGalleryLoading(false);
     }
-  };
+  }, [galleryMediaType, galleryTmdbId]);
 
   const openGallery = () => {
     setShowGallery(true);
@@ -238,23 +299,27 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
 
   // 确保组件在客户端挂载后才渲染 Portal
   useEffect(() => {
-    setMounted(true);
+    const timer = window.setTimeout(() => setMounted(true), 0);
+    return () => window.clearTimeout(timer);
   }, []);
 
   useEffect(() => {
     if (!showGallery) {
-      setGalleryImages([]);
-      setGalleryError(null);
-      setGalleryLoading(false);
-      setGalleryTotal(0);
-      setGalleryScrollTop(0);
-      setGalleryViewportHeight(0);
-      setGalleryViewportWidth(0);
-      return;
+      const timer = window.setTimeout(() => {
+        setGalleryImages([]);
+        setGalleryError(null);
+        setGalleryLoading(false);
+        setGalleryTotal(0);
+        setGalleryScrollTop(0);
+        setGalleryViewportHeight(0);
+        setGalleryViewportWidth(0);
+      }, 0);
+      return () => window.clearTimeout(timer);
     }
 
-    fetchGalleryImages();
-  }, [showGallery, galleryTmdbId, galleryMediaType]);
+    const timer = window.setTimeout(() => void fetchGalleryImages(), 0);
+    return () => window.clearTimeout(timer);
+  }, [fetchGalleryImages, galleryMediaType, galleryTmdbId, showGallery]);
 
   useEffect(() => {
     if (!showGallery || !galleryScrollRef.current) return;
@@ -284,17 +349,24 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
     let timer: NodeJS.Timeout;
 
     if (isOpen) {
-      setIsVisible(true);
       animationId = requestAnimationFrame(() => {
+        setIsVisible(true);
         animationId = requestAnimationFrame(() => {
           setIsAnimating(true);
         });
       });
     } else {
-      setIsAnimating(false);
+      const animationStateTimer = setTimeout(() => {
+        setIsAnimating(false);
+      }, 0);
       timer = setTimeout(() => {
         setIsVisible(false);
       }, 200);
+      return () => {
+        if (animationId) cancelAnimationFrame(animationId);
+        clearTimeout(timer);
+        clearTimeout(animationStateTimer);
+      };
     }
 
     return () => {
@@ -309,10 +381,13 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
 
   useEffect(() => {
     if (!isOpen) {
-      setShowGallery(false);
-      setShowImageViewer(false);
-      setSelectedImage('');
-      detailRequestRef.current += 1;
+      const timer = window.setTimeout(() => {
+        setShowGallery(false);
+        setShowImageViewer(false);
+        setSelectedImage('');
+        detailRequestRef.current += 1;
+      }, 0);
+      return () => window.clearTimeout(timer);
     }
   }, [isOpen]);
 
@@ -491,7 +566,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
                 }
               : undefined,
             intro: data.summary,
-            genres: data.tags?.map((tag: any) => tag.name).slice(0, 5),
+            genres: data.tags?.map((tag: { name: string }) => tag.name).slice(0, 5),
             episodesCount: data.eps,
             releaseDate: data.date,
           };
@@ -601,7 +676,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
       if (!searchResponse.ok) {
         throw new Error('搜索失败');
       }
-      const searchData = await searchResponse.json();
+      const searchData = await searchResponse.json() as { results?: TMDBSearchResult[] };
       if (!isCurrentRequest()) return;
 
       if (searchData.results && searchData.results.length > 0) {
@@ -616,18 +691,18 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
         if (!detailResponse.ok) {
           throw new Error('获取TMDB详情失败');
         }
-        const detailResult = await detailResponse.json();
+        const detailResult = await detailResponse.json() as TMDBDetailResult;
         if (!isCurrentRequest()) return;
 
         // 如果有季度信息,尝试获取季度详情
-        let seasonData = null;
+        let seasonData: TMDBSeasonData | null = null;
         if (extractedSeasonNumber && mediaType === 'tv') {
           try {
             const seasonResponse = await fetch(
               `/api/tmdb/episodes?id=${detailId}&season=${extractedSeasonNumber}`
             );
             if (seasonResponse.ok) {
-              seasonData = await seasonResponse.json();
+              seasonData = await seasonResponse.json() as TMDBSeasonData;
             }
           } catch (err) {
             logger.error('获取季度信息失败', err);
@@ -654,10 +729,10 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
           poster:
             seasonData?.poster_path || detailResult.poster_path
               ? processImageUrl(
-                  getTMDBImageUrl(
-                    seasonData?.poster_path || detailResult.poster_path,
-                    'w500'
-                  )
+                    getTMDBImageUrl(
+                      (seasonData?.poster_path || detailResult.poster_path) as string,
+                      'w500'
+                    )
                 )
               : poster,
           backdrop: detailResult.backdrop_path
@@ -666,13 +741,13 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
           rating: detailResult.vote_average
             ? {
                 value: detailResult.vote_average,
-                count: detailResult.vote_count,
+                  count: detailResult.vote_count || 0,
               }
             : undefined,
           intro: seasonData?.overview || detailResult.overview,
-          genres: detailResult.genres?.map((g: any) => g.name),
-          countries: detailResult.production_countries?.map((c: any) => c.name),
-          languages: detailResult.spoken_languages?.map((l: any) => l.name),
+          genres: detailResult.genres?.map((g) => g.name),
+          countries: detailResult.production_countries?.map((c) => c.name),
+          languages: detailResult.spoken_languages?.map((l) => l.name),
           duration: detailResult.runtime
             ? `${detailResult.runtime}分钟`
             : undefined,
@@ -802,7 +877,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
     if (!searchResponse.ok) {
       throw new Error('搜索失败');
     }
-    const searchData = await searchResponse.json();
+    const searchData = await searchResponse.json() as { results?: TMDBSearchResult[] };
     if (!isCurrentRequest()) return;
 
     if (searchData.results && searchData.results.length > 0) {
@@ -817,18 +892,18 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
       if (!detailResponse.ok) {
         throw new Error('获取TMDB详情失败');
       }
-      const detailResult = await detailResponse.json();
+      const detailResult = await detailResponse.json() as TMDBDetailResult;
       if (!isCurrentRequest()) return;
 
       // 如果有季度信息,尝试获取季度详情
-      let seasonData = null;
+      let seasonData: TMDBSeasonData | null = null;
       if (extractedSeasonNumber && mediaType === 'tv') {
         try {
           const seasonResponse = await fetch(
             `/api/tmdb/episodes?id=${detailId}&season=${extractedSeasonNumber}`
           );
           if (seasonResponse.ok) {
-            seasonData = await seasonResponse.json();
+            seasonData = await seasonResponse.json() as TMDBSeasonData;
           }
         } catch (err) {
           logger.error('获取季度信息失败', err);
@@ -856,7 +931,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
           seasonData?.poster_path || detailResult.poster_path
             ? processImageUrl(
                 getTMDBImageUrl(
-                  seasonData?.poster_path || detailResult.poster_path,
+                  (seasonData?.poster_path || detailResult.poster_path) as string,
                   'w500'
                 )
               )
@@ -867,13 +942,13 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
         rating: detailResult.vote_average
           ? {
               value: detailResult.vote_average,
-              count: detailResult.vote_count,
+              count: detailResult.vote_count || 0,
             }
           : undefined,
         intro: seasonData?.overview || detailResult.overview,
-        genres: detailResult.genres?.map((g: any) => g.name),
-        countries: detailResult.production_countries?.map((c: any) => c.name),
-        languages: detailResult.spoken_languages?.map((l: any) => l.name),
+        genres: detailResult.genres?.map((g) => g.name),
+        countries: detailResult.production_countries?.map((c) => c.name),
+        languages: detailResult.spoken_languages?.map((l) => l.name),
         duration: detailResult.runtime
           ? `${detailResult.runtime}分钟`
           : undefined,
@@ -1008,7 +1083,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
           `/api/tmdb/credits?id=${detailData.tmdbId}&type=${detailData.mediaType}`
         );
         if (!creditsResponse.ok) return;
-        const creditsData = await creditsResponse.json();
+        const creditsData = await creditsResponse.json() as TMDBCreditsResult;
         if (cancelled || requestId !== detailRequestRef.current) return;
 
         // 更新演员和导演信息
@@ -1018,14 +1093,14 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
                 ...prev,
                 directors:
                   creditsData.crew
-                    ?.filter((person: any) => person.job === 'Director')
+                    ?.filter((person) => person.job === 'Director')
                     .slice(0, 5)
-                    .map((person: any) => ({
+                    .map((person) => ({
                       name: person.name,
                       profile_path: person.profile_path,
                     })) || prev.directors,
                 actors:
-                  creditsData.cast?.slice(0, 15).map((person: any) => ({
+                  creditsData.cast?.slice(0, 15).map((person) => ({
                     name: person.name,
                     character: person.character,
                     profile_path: person.profile_path,
@@ -1060,12 +1135,15 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
         `/api/tmdb/episodes?id=${detailData.tmdbId}&season=${seasonNumber}`
       );
       if (!episodesResponse.ok) return;
-      const episodesData = await episodesResponse.json();
+      const episodesData = await episodesResponse.json() as {
+        episodes?: Episode[];
+        name?: string;
+        overview?: string;
+        air_date?: string;
+      };
 
       // 从当前 seasonData 中查找季度信息
-      const season = seasonData?.seasons.find(
-        (s: any) => s.season_number === seasonNumber
-      );
+      const season = seasonData?.seasons.find((s) => s.season_number === seasonNumber);
 
       setSeasonData((prev) => ({
         seasons: prev?.seasons || [],
@@ -1787,7 +1865,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
                             季度
                           </h4>
                           <div className='grid grid-cols-2 sm:grid-cols-3 gap-3'>
-                            {seasonData.seasons.map((season: any) => (
+                            {seasonData.seasons.map((season) => (
                               <div
                                 key={season.id}
                                 onClick={() =>
@@ -1806,7 +1884,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
                                       e.stopPropagation();
                                       handleImageClick(
                                         getTMDBImageUrl(
-                                          season.poster_path,
+                                          season.poster_path || '',
                                           'w500'
                                         )
                                       );
@@ -1842,7 +1920,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
                         <div>
                           <h4 className='text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3'>
                             {seasonData.seasons.find(
-                              (s: any) => s.season_number === selectedSeason
+                              (s) => s.season_number === selectedSeason
                             )?.name || `第${selectedSeason}季`}
                           </h4>
                           <div
@@ -2373,7 +2451,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
                             季度
                           </h4>
                           <div className='grid grid-cols-2 sm:grid-cols-3 gap-3'>
-                            {seasonData.seasons.map((season: any) => (
+                            {seasonData.seasons.map((season) => (
                               <div
                                 key={season.id}
                                 onClick={() =>
@@ -2392,7 +2470,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
                                       e.stopPropagation();
                                       handleImageClick(
                                         getTMDBImageUrl(
-                                          season.poster_path,
+                                          season.poster_path || '',
                                           'w500'
                                         )
                                       );
@@ -2428,7 +2506,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({
                         <div>
                           <h4 className='text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3'>
                             {seasonData.seasons.find(
-                              (s: any) => s.season_number === selectedSeason
+                              (s) => s.season_number === selectedSeason
                             )?.name || `第${selectedSeason}季`}
                           </h4>
                           <div

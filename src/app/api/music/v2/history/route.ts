@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 import { db } from '@/lib/db';
 import {
+  asRecord,
   hasCompleteSortOrder,
   interpolateMusicV2SortOrder,
   MUSIC_V2_SORT_STEP,
@@ -16,19 +17,24 @@ import { badRequest, getMusicV2Username, internalError, unauthorized } from '@/l
 export const runtime = 'nodejs';
 
 function toHistoryRecord(
-  input: any,
+  input: unknown,
   previous: MusicV2HistoryRecord | undefined,
   fallbackSortOrder: number
 ): MusicV2HistoryRecord {
-  const song = normalizeSong(input.song || input);
+  const inputRecord = asRecord(input);
+  const song = normalizeSong(
+    asRecord(inputRecord.song ?? inputRecord) as Parameters<typeof normalizeSong>[0]
+  );
   const now = Date.now();
   return {
     ...song,
-    playProgressSec: Number(input.playProgressSec ?? input.play_progress_sec ?? previous?.playProgressSec ?? 0),
-    lastPlayedAt: Number(input.lastPlayedAt ?? input.last_played_at ?? now),
-    playCount: Number(input.playCount ?? input.play_count ?? ((previous?.playCount || 0) + 1)),
-    lastQuality: input.lastQuality || input.last_quality || previous?.lastQuality,
-    createdAt: Number(previous?.createdAt ?? input.createdAt ?? input.created_at ?? now),
+    playProgressSec: Number(inputRecord.playProgressSec ?? inputRecord.play_progress_sec ?? previous?.playProgressSec ?? 0),
+    lastPlayedAt: Number(inputRecord.lastPlayedAt ?? inputRecord.last_played_at ?? now),
+    playCount: Number(inputRecord.playCount ?? inputRecord.play_count ?? ((previous?.playCount || 0) + 1)),
+    lastQuality: typeof (inputRecord.lastQuality || inputRecord.last_quality) === 'string'
+      ? (inputRecord.lastQuality || inputRecord.last_quality) as string
+      : previous?.lastQuality,
+    createdAt: Number(previous?.createdAt ?? inputRecord.createdAt ?? inputRecord.created_at ?? now),
     updatedAt: now,
     // 队列位置只由拖拽改变，重复播放不能把歌曲挪位置
     sortOrder: Number.isFinite(previous?.sortOrder) ? (previous?.sortOrder as number) : fallbackSortOrder,
@@ -66,7 +72,7 @@ export async function POST(request: NextRequest) {
   if (!username) return unauthorized();
 
   try {
-    const body = await request.json();
+    const body = asRecord(await request.json());
     const existingRecords = await db.listMusicV2History(username);
     const existingMap = new Map(existingRecords.map(record => [record.songId, record]));
     // 新歌一律追加到队尾，因此从当前最大 sortOrder 之后开始分配
@@ -74,8 +80,15 @@ export async function POST(request: NextRequest) {
 
     if (Array.isArray(body.records)) {
       const records = body.records
-        .map((item: any) => {
-          const previous = existingMap.get(item.song?.songId || item.songId);
+        .map((item) => {
+          const itemRecord = asRecord(item);
+          const songRecord = asRecord(itemRecord.song);
+          const songId = typeof songRecord.songId === 'string'
+            ? songRecord.songId
+            : typeof itemRecord.songId === 'string'
+              ? itemRecord.songId
+              : '';
+          const previous = songId ? existingMap.get(songId) : undefined;
           const record = toHistoryRecord(item, previous, nextSortOrder);
           // 只有真正吃掉了分配值（即新记录）才推进游标，保证批量入队后顺序等于数组顺序
           if (record.sortOrder === nextSortOrder) nextSortOrder += MUSIC_V2_SORT_STEP;
@@ -88,7 +101,13 @@ export async function POST(request: NextRequest) {
 
     const record = toHistoryRecord(
       body.record || body,
-      existingMap.get(body.song?.songId || body.songId),
+      existingMap.get(
+        typeof asRecord(body.song).songId === 'string'
+          ? asRecord(body.song).songId as string
+          : typeof body.songId === 'string'
+            ? body.songId
+            : ''
+      ),
       nextSortOrder
     );
     if (!record.songId || !record.source || !record.name || !record.artist) {

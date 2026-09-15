@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-import { db } from '@/lib/db';
+import { db, getStorage } from '@/lib/db';
 import { logger } from '@/lib/logger';
 import { MangaReadRecord } from '@/lib/manga.types';
 
@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
 
     const records = await db.getAllMangaReadRecords(username);
     return NextResponse.json(records, { status: 200 });
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }
@@ -50,14 +50,15 @@ export async function POST(request: NextRequest) {
       saveTime: record.saveTime ?? Date.now(),
     });
 
-    if ((db as any).storage.cleanupOldMangaReadRecords) {
-      (db as any).storage.cleanupOldMangaReadRecords(username).catch((err: Error) => {
+    const storage = getStorage();
+    if (storage.cleanupOldMangaReadRecords) {
+      storage.cleanupOldMangaReadRecords(username).catch((err: Error) => {
         logger.error('异步清理漫画阅读历史失败:', err);
       });
     }
 
     return NextResponse.json({ success: true }, { status: 200 });
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }
@@ -85,7 +86,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     return NextResponse.json({ success: true }, { status: 200 });
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }

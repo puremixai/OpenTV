@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, no-console, @typescript-eslint/no-non-null-assertion,react-hooks/exhaustive-deps,@typescript-eslint/no-empty-function */
+/* eslint-disable no-console */
 
 'use client';
 
@@ -226,8 +226,11 @@ export const SiteConfigComponent = ({
             ? 'every'
             : ('once' as const),
       };
-      setSiteSettings(nextSettings);
-      setSavedSettings(JSON.stringify(nextSettings));
+      const timer = window.setTimeout(() => {
+        setSiteSettings(nextSettings);
+        setSavedSettings(JSON.stringify(nextSettings));
+      }, 0);
+      return () => window.clearTimeout(timer);
     }
   }, [config]);
 

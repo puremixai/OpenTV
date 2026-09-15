@@ -2,9 +2,10 @@
 
 import { Folder, HardDrive, Loader2, Lock, PlayCircle, Server } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 
 import { getAuthInfoFromBrowserCookie } from '@/lib/auth';
+import { getRuntimeConfig } from '@/lib/runtime-config';
 import { base58Encode } from '@/lib/utils';
 
 import TVCard from '@/components/tv/TVCard';
@@ -18,15 +19,23 @@ type XiaoyaItem = { name: string; path: string };
 
 export default function TVPrivatePage() {
   const router = useRouter();
-  const runtimeConfig = useMemo(() => (typeof window !== 'undefined' ? (window as any).RUNTIME_CONFIG || {} : {}), []);
+  const runtimeConfig = useMemo(() => getRuntimeConfig(), []);
   const enabledSources: SourceType[] = useMemo(() => [
     runtimeConfig.OPENLIST_ENABLED ? 'openlist' : null,
     runtimeConfig.EMBY_ENABLED ? 'emby' : null,
     runtimeConfig.XIAOYA_ENABLED ? 'xiaoya' : null,
   ].filter(Boolean) as SourceType[], [runtimeConfig]);
 
-  const [ready, setReady] = useState(false);
-  const [authed, setAuthed] = useState(false);
+  const ready = useSyncExternalStore(
+    () => () => undefined,
+    () => true,
+    () => false
+  );
+  const authed = useSyncExternalStore(
+    () => () => undefined,
+    () => Boolean(getAuthInfoFromBrowserCookie()),
+    () => false
+  );
   const [source, setSource] = useState<SourceType>('openlist');
   const [embyKey, setEmbyKey] = useState('');
   const [embySources, setEmbySources] = useState<EmbySource[]>([]);
@@ -38,18 +47,15 @@ export default function TVPrivatePage() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    const ok = Boolean(getAuthInfoFromBrowserCookie());
-    setAuthed(ok);
-    setReady(true);
-  }, []);
-
-  useEffect(() => {
     if (ready && !authed) router.replace('/tv/login?redirect=/tv/private');
   }, [ready, authed, router]);
 
   useEffect(() => {
     if (enabledSources.length > 0 && !enabledSources.includes(source)) {
-      setSource(enabledSources[0]);
+      const timer = window.setTimeout(() => {
+        setSource(enabledSources[0]);
+      }, 0);
+      return () => window.clearTimeout(timer);
     }
   }, [enabledSources, source]);
 
@@ -101,7 +107,12 @@ export default function TVPrivatePage() {
     }
   }, [authed, enabledSources.length, source, embyKey, embySources.length, xiaoyaPath]);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      void load();
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [load]);
 
   const sourceLabel = { openlist: 'OpenList', emby: 'Emby', xiaoya: '小雅' };
 

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-import { isMusicSource, lxGetJson, normalizeLxSong, unwrapLxArray } from '@/lib/music-v2';
+import { asRecord, isMusicSource, lxGetJson, LxServerSong, normalizeLxSong, unwrapLxArray } from '@/lib/music-v2';
 import { badRequest, internalError } from '@/lib/music-v2-api';
 
 export const runtime = 'nodejs';
@@ -15,17 +15,19 @@ export async function GET(request: NextRequest) {
     if (!isMusicSource(source)) return badRequest('不支持的音源');
     if (!id) return badRequest('缺少歌单 ID');
 
-    const payload = await lxGetJson<any>(`/api/music/songList/detail?source=${source}&id=${encodeURIComponent(id)}&page=${page}`, 'none');
-    const list = unwrapLxArray<any>(payload);
+    const payload = await lxGetJson<unknown>(`/api/music/songList/detail?source=${source}&id=${encodeURIComponent(id)}&page=${page}`, 'none');
+    const list = unwrapLxArray<LxServerSong>(payload);
+    const payloadRecord = asRecord(payload);
+    const dataRecord = asRecord(payloadRecord.data);
 
     return NextResponse.json({
       success: true,
       data: {
-        info: payload?.info || payload?.data?.info || {},
+        info: payloadRecord.info || dataRecord.info || {},
         list: list.map(normalizeLxSong),
-        page: payload?.page ?? page,
-        total: payload?.total ?? list.length,
-        limit: payload?.limit ?? list.length,
+        page: payloadRecord.page ?? page,
+        total: payloadRecord.total ?? list.length,
+        limit: payloadRecord.limit ?? list.length,
       },
     });
   } catch (error) {

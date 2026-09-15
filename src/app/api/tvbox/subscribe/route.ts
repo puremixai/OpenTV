@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -173,7 +172,7 @@ export async function GET(request: NextRequest) {
               epg: live.epg || (liveChannels?.epgUrl || ''),
               logo: '',
             };
-          } catch (error) {
+          } catch {
             return {
               name: live.name,
               type: 0,

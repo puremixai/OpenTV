@@ -10,8 +10,18 @@ import { useWatchRoomContextSafe } from '@/components/WatchRoomProvider';
 
 import type { PlayState } from '@/types/watch-room';
 
+interface PlaySyncPlayer {
+  currentTime: number;
+  playing: boolean;
+  video?: { readyState: number };
+  play: () => Promise<unknown>;
+  pause: () => void;
+  on: (event: string, handler: () => void) => void;
+  off: (event: string, handler: () => void) => void;
+}
+
 interface UsePlaySyncOptions {
-  artPlayerRef: React.MutableRefObject<any>;
+  artPlayerRef: React.MutableRefObject<PlaySyncPlayer | null>;
   videoId: string;
   videoName: string;
   videoYear?: string;
@@ -154,7 +164,7 @@ export function usePlaySync({
               logger.debug('[PlaySync] Reset flag after play');
             }, 500);
           })
-          .catch((err: any) => {
+          .catch((err: unknown) => {
             logger.error('[PlaySync] Play error:', err);
             isHandlingRemoteCommandRef.current = false;
           });
@@ -272,7 +282,7 @@ export function usePlaySync({
       socket.off('play:seek', handleSeekCommand);
       socket.off('play:change', handleChangeCommand);
     };
-  }, [socket, currentRoom, isInRoom, isOwner]);
+  }, [artPlayerRef, currentRoom, isInRoom, isOwner, router, socket]);
 
   // 监听播放器事件并广播（所有成员都可以触发同步）
   useEffect(() => {

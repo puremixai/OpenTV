@@ -83,12 +83,15 @@ const Sidebar = ({ onToggle, activePath = '/', drawer = false, onClose }: Sideba
   // 首次挂载时读取 localStorage，以便刷新后仍保持上次的折叠状态
   useLayoutEffect(() => {
     if (drawer) return;
-    const saved = localStorage.getItem('sidebarCollapsed');
-    if (saved !== null) {
-      const val = JSON.parse(saved);
-      setIsCollapsed(val);
-      window.__sidebarCollapsed = val;
-    }
+    const timer = window.setTimeout(() => {
+      const saved = localStorage.getItem('sidebarCollapsed');
+      if (saved !== null) {
+        const val = JSON.parse(saved);
+        setIsCollapsed(val);
+        window.__sidebarCollapsed = val;
+      }
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, [drawer]);
 
   // 当折叠状态变化时，同步到 <html> data 属性，供首屏 CSS 使用
@@ -111,8 +114,11 @@ const Sidebar = ({ onToggle, activePath = '/', drawer = false, onClose }: Sideba
       const queryString = searchParams.toString();
       return queryString ? `${pathname}?${queryString}` : pathname;
     };
-    const fullPath = getCurrentFullPath();
-    setActive(fullPath);
+    const timer = window.setTimeout(() => {
+      const fullPath = getCurrentFullPath();
+      setActive(fullPath);
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, [pathname, searchParams]);
 
   const handleToggle = useCallback(() => {
@@ -162,6 +168,7 @@ const Sidebar = ({ onToggle, activePath = '/', drawer = false, onClose }: Sideba
   ]);
 
   useEffect(() => {
+    const timer = window.setTimeout(() => {
     const runtimeConfig = (window as any).RUNTIME_CONFIG;
 
     // 基础菜单项（不包括观影室）
@@ -242,6 +249,8 @@ const Sidebar = ({ onToggle, activePath = '/', drawer = false, onClose }: Sideba
     }
 
     setMenuItems(items);
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, [watchRoomContext?.isEnabled]);
 
   if (pathname === '/watch-room/screen') {

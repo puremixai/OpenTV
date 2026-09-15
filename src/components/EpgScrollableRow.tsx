@@ -27,6 +27,7 @@ export default function EpgScrollableRow({
   const containerRef = useRef<HTMLDivElement>(null);
   const timelineHorizontalRef = useRef<HTMLDivElement>(null);
   const timelineVerticalRef = useRef<HTMLDivElement>(null);
+  const wheelHandlersRef = useRef<WeakMap<HTMLDivElement, (event: WheelEvent) => void>>(new WeakMap());
   const [isHovered, setIsHovered] = useState(false);
   const [currentPlayingIndex, setCurrentPlayingIndex] = useState<number>(-1);
   const [viewMode, setViewMode] = useState<ViewMode>('list');
@@ -53,6 +54,17 @@ export default function EpgScrollableRow({
       e.preventDefault();
     }
   };
+
+  // 判断节目是否正在播放
+  function isCurrentlyPlaying(program: EpgProgram) {
+    try {
+      const start = parseCustomTimeFormat(program.start);
+      const end = parseCustomTimeFormat(program.end);
+      return currentTime >= start && currentTime < end;
+    } catch {
+      return false;
+    }
+  }
 
   // 自动滚动到正在播放的节目（列表视图）
   const scrollToCurrentProgram = () => {
@@ -196,17 +208,6 @@ export default function EpgScrollableRow({
     return formatTimeToHHMM(timeString);
   };
 
-  // 判断节目是否正在播放
-  const isCurrentlyPlaying = (program: EpgProgram) => {
-    try {
-      const start = parseCustomTimeFormat(program.start);
-      const end = parseCustomTimeFormat(program.end);
-      return currentTime >= start && currentTime < end;
-    } catch {
-      return false;
-    }
-  };
-
   // 计算节目时长（分钟）
   const getProgramDuration = (program: EpgProgram) => {
     try {
@@ -215,26 +216,6 @@ export default function EpgScrollableRow({
       return (end.getTime() - start.getTime()) / (1000 * 60); // 转换为分钟
     } catch {
       return 30; // 默认30分钟
-    }
-  };
-
-  // 计算当前时间在时间线上的位置百分比
-  const getCurrentTimePosition = () => {
-    if (programs.length === 0) return 0;
-
-    try {
-      const firstProgram = programs[0];
-      const lastProgram = programs[programs.length - 1];
-      const startTime = parseCustomTimeFormat(firstProgram.start).getTime();
-      const endTime = parseCustomTimeFormat(lastProgram.end).getTime();
-      const currentTimeMs = currentTime.getTime();
-
-      if (currentTimeMs < startTime) return 0;
-      if (currentTimeMs > endTime) return 100;
-
-      return ((currentTimeMs - startTime) / (endTime - startTime)) * 100;
-    } catch {
-      return 0;
     }
   };
 
@@ -426,7 +407,7 @@ export default function EpgScrollableRow({
               {/* 时间线容器 - 可横向滚动 */}
               <div
                 className='relative'
-                onMouseEnter={(e) => {
+                onMouseEnter={() => {
                   const container = timelineHorizontalRef.current;
                   if (container) {
                     const handleWheel = (e: WheelEvent) => {
@@ -436,14 +417,15 @@ export default function EpgScrollableRow({
                       }
                     };
                     container.addEventListener('wheel', handleWheel, { passive: false });
-                    (container as any)._wheelHandler = handleWheel;
+                    wheelHandlersRef.current.set(container, handleWheel);
                   }
                 }}
-                onMouseLeave={(e) => {
+                onMouseLeave={() => {
                   const container = timelineHorizontalRef.current;
-                  if (container && (container as any)._wheelHandler) {
-                    container.removeEventListener('wheel', (container as any)._wheelHandler);
-                    delete (container as any)._wheelHandler;
+                  const handleWheel = container ? wheelHandlersRef.current.get(container) : undefined;
+                  if (container && handleWheel) {
+                    container.removeEventListener('wheel', handleWheel);
+                    wheelHandlersRef.current.delete(container);
                   }
                 }}
               >

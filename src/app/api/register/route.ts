@@ -124,7 +124,7 @@ export async function POST(req: NextRequest) {
     let releaseLock: (() => void) | null = null;
     try {
       releaseLock = await lockManager.acquire(`register:${username}`);
-    } catch (error) {
+    } catch {
       return NextResponse.json(
         { error: '服务器繁忙，请稍后重试' },
         { status: 503 }

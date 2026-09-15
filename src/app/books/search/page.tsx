@@ -393,52 +393,63 @@ export default function BooksSearchPage() {
   );
 
   useEffect(() => {
-    setUseFluidSearch(readFluidSearchSetting());
+    const timer = window.setTimeout(
+      () => setUseFluidSearch(readFluidSearchSetting()),
+      0
+    );
     fetch('/api/books/sources')
       .then((res) => res.json())
       .then((json) => setSources(json.sources || []))
       .catch(() => undefined);
     return () => {
+      window.clearTimeout(timer);
       closeEventSource();
       clearPendingResults();
     };
   }, [clearPendingResults, closeEventSource, readFluidSearchSetting]);
 
   useEffect(() => {
-    const keyword = urlQuery;
-    const source = urlSourceId;
+    const timer = window.setTimeout(() => {
+      const keyword = urlQuery;
+      const source = urlSourceId;
 
-    if (!restoredRef.current) {
-      restoredRef.current = true;
-      if (!keyword) {
-        const cachedState = restoreSearchState();
-        if (cachedState?.q?.trim()) {
-          setQ(cachedState.q);
-          setSourceId(cachedState.sourceId || '');
-          setResult(cachedState.result || EMPTY_RESULT);
-          setHasSearched(true);
+      if (!restoredRef.current) {
+        restoredRef.current = true;
+        if (!keyword) {
+          const cachedState = restoreSearchState();
+          if (cachedState?.q?.trim()) {
+            setQ(cachedState.q);
+            setSourceId(cachedState.sourceId || '');
+            setResult(cachedState.result || EMPTY_RESULT);
+            setHasSearched(true);
+          }
+          return;
         }
+      }
+
+      setQ(keyword);
+      setSourceId(source);
+      if (!keyword) {
+        closeEventSource();
+        clearPendingResults();
+        setResult(EMPTY_RESULT);
+        setLoading(false);
+        setHasSearched(false);
+        setTotalSources(0);
+        setCompletedSources(0);
+        setError('');
         return;
       }
-    }
 
-    setQ(keyword);
-    setSourceId(source);
-    if (!keyword) {
+      const forceRefresh = forceNextUrlSearchRef.current;
+      forceNextUrlSearchRef.current = false;
+      void performSearch(keyword, source, { forceRefresh });
+    }, 0);
+    return () => {
+      window.clearTimeout(timer);
       closeEventSource();
       clearPendingResults();
-      setResult(EMPTY_RESULT);
-      setLoading(false);
-      setHasSearched(false);
-      setTotalSources(0);
-      setCompletedSources(0);
-      setError('');
-      return;
-    }
-
-    const forceRefresh = forceNextUrlSearchRef.current;
-    forceNextUrlSearchRef.current = false;
-    void performSearch(keyword, source, { forceRefresh });
+    };
   }, [
     clearPendingResults,
     closeEventSource,

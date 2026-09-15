@@ -30,8 +30,19 @@ export function useSavedAIComments(
   }, []);
 
   const request = useCallback(
-    async (action: 'read' | 'generate' | 'regenerate') => {
+    async (action: 'read' | 'generate' | 'regenerate', reset = false) => {
       if (action !== 'read' && !canGenerate.current) return;
+      if (reset) {
+        canGenerate.current = false;
+        setJob({
+          status: 'idle',
+          comments: [],
+          total: 0,
+          movieName,
+          isAiGenerated: true,
+        });
+        setRestoring(true);
+      }
       const current = ++sequence.current;
       controller.current?.abort();
       const abort = new AbortController();
@@ -99,17 +110,13 @@ export function useSavedAIComments(
   );
 
   useEffect(() => {
-    canGenerate.current = false;
-    setJob({
-      status: 'idle',
-      comments: [],
-      total: 0,
-      movieName,
-      isAiGenerated: true,
-    });
-    setRestoring(true);
-    void request('read');
-    return cancelRequests;
+    const timer = window.setTimeout(() => {
+      void request('read', true);
+    }, 0);
+    return () => {
+      window.clearTimeout(timer);
+      cancelRequests();
+    };
   }, [movieName, request, cancelRequests]);
 
   const pending = job.status === 'queued' || job.status === 'running';

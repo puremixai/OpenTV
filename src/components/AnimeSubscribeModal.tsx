@@ -54,25 +54,28 @@ export default function AnimeSubscribeModal({
   });
 
   useEffect(() => {
-    if (isOpen) {
-      setVisible(true);
-      setError('');
-      setForm({
-        title: initialTitle || '',
-        filterText: '',
-        excludeText: '',
-        source: 'mikan',
-        lastEpisode:
-          typeof initialLastEpisode === 'number' && initialLastEpisode > 0
-            ? initialLastEpisode
-            : 0,
-        enabled: true,
-        onePerEpisode: false,
-        refillMissingEpisodes: false,
-      });
-    } else {
-      setVisible(false);
-    }
+    const timer = window.setTimeout(() => {
+      if (isOpen) {
+        setVisible(true);
+        setError('');
+        setForm({
+          title: initialTitle || '',
+          filterText: '',
+          excludeText: '',
+          source: 'mikan',
+          lastEpisode:
+            typeof initialLastEpisode === 'number' && initialLastEpisode > 0
+              ? initialLastEpisode
+              : 0,
+          enabled: true,
+          onePerEpisode: false,
+          refillMissingEpisodes: false,
+        });
+      } else {
+        setVisible(false);
+      }
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, [isOpen, initialTitle, initialLastEpisode]);
 
   if (!isOpen) return null;

@@ -48,7 +48,7 @@ export async function GET(request: NextRequest) {
         programs: epgData
       }
     });
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       { error: '获取节目单信息失败' },
       { status: 500 }

@@ -2,7 +2,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 
-import { db } from '@/lib/db';
+import { db, getStorage } from '@/lib/db';
 import { logger } from '@/lib/logger';
 import { getAuthenticatedUser } from '@/lib/session';
 import { PlayRecord } from '@/lib/types';
@@ -111,7 +111,7 @@ export async function POST(request: NextRequest) {
     await db.savePlayRecord(authInfo.username, source, id, finalRecord);
 
     // 异步清理旧的播放记录（不阻塞响应）
-    (db as any).storage
+    getStorage()
       .cleanupOldPlayRecords(authInfo.username)
       .catch((err: Error) => {
         logger.error('异步清理播放记录失败:', err);

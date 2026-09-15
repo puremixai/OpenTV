@@ -26,7 +26,9 @@ export async function GET(request: NextRequest) {
     }
 
     const proxyUrl = `/api/netdisk/quark/proxy?id=${encodeURIComponent(id)}&episodeIndex=${episodeIndex}`;
-    refreshQuarkNetdiskSession(id) || getQuarkNetdiskSession(id);
+    if (!refreshQuarkNetdiskSession(id)) {
+      getQuarkNetdiskSession(id);
+    }
 
     if (format === 'json') {
       return NextResponse.json({ url: proxyUrl, headers: {} });

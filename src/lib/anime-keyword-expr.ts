@@ -241,7 +241,7 @@ export function matchesExclude(title: string, excludeText?: string): boolean {
 /** 校验表达式是否可解析（供 API/UI） */
 export function validateKeywordExpr(
   exprText: string | undefined | null,
-  mode: KeywordExprMode = 'and'
+  _mode: KeywordExprMode = 'and'
 ): { ok: boolean; error?: string } {
   if (exprText == null || !String(exprText).trim()) {
     return { ok: true };

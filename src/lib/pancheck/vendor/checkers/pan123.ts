@@ -22,7 +22,7 @@ export async function check123(link) {
     let data;
     try {
       data = JSON.parse(body);
-    } catch (_) {
+    } catch {
       return { valid: true, reason: '' };
     }
 
@@ -31,7 +31,7 @@ export async function check123(link) {
     }
 
     return { valid: false, reason: '链接已失效' };
-  } catch (_) {
+  } catch {
     return { valid: true, reason: '' };
   }
 }
@@ -55,7 +55,7 @@ export function extractShareKey123(urlStr) {
     if (pathParts.length > 0 && pathParts[pathParts.length - 1]) {
       return { shareKey: pathParts[pathParts.length - 1], error: null };
     }
-  } catch (_) { /* Return the invalid share URL result below. */ }
+  } catch { /* Return the invalid share URL result below. */ }
 
   return { shareKey: '', error: '无法从URL中提取shareKey' };
 }

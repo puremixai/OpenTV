@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, no-console, @typescript-eslint/no-non-null-assertion,react-hooks/exhaustive-deps,@typescript-eslint/no-empty-function */
 
 'use client';
 
@@ -51,31 +50,35 @@ export const NetDiskConfigComponent = ({
   const [pan115Cookie, setPan115Cookie] = useState('');
 
   useEffect(() => {
-    const quark = config?.NetDiskConfig?.Quark;
-    const mobile = config?.NetDiskConfig?.Mobile;
-    setEnabled(quark?.Enabled || false);
-    setCookie(quark?.Cookie || '');
-    setSavePath(quark?.SavePath || '/');
-    setQuarkPlayMode(
-      quark?.PlayMode === 'direct_first' ? 'direct_first' : 'transcode_first'
-    );
-    setQuarkMultiThreadPlayback(Boolean(quark?.MultiThreadPlayback));
-    setMobileEnabled(mobile?.Enabled || false);
-    setMobileAuthorization(mobile?.Authorization || '');
-    setBaiduEnabled(config?.NetDiskConfig?.Baidu?.Enabled || false);
-    setBaiduCookie(config?.NetDiskConfig?.Baidu?.Cookie || '');
-    setTianyiEnabled(config?.NetDiskConfig?.Tianyi?.Enabled || false);
-    setTianyiAccount(config?.NetDiskConfig?.Tianyi?.Account || '');
-    setTianyiPassword(config?.NetDiskConfig?.Tianyi?.Password || '');
-    setPan123Enabled(config?.NetDiskConfig?.Pan123?.Enabled || false);
-    setPan123Account(config?.NetDiskConfig?.Pan123?.Account || '');
-    setPan123Password(config?.NetDiskConfig?.Pan123?.Password || '');
-    setUcEnabled(config?.NetDiskConfig?.UC?.Enabled || false);
-    setUcCookie(config?.NetDiskConfig?.UC?.Cookie || '');
-    setUcToken(config?.NetDiskConfig?.UC?.Token || '');
-    setUcSavePath(config?.NetDiskConfig?.UC?.SavePath || '/');
-    setPan115Enabled(config?.NetDiskConfig?.Pan115?.Enabled || false);
-    setPan115Cookie(config?.NetDiskConfig?.Pan115?.Cookie || '');
+    const timer = window.setTimeout(() => {
+      const quark = config?.NetDiskConfig?.Quark;
+      const mobile = config?.NetDiskConfig?.Mobile;
+      setEnabled(quark?.Enabled || false);
+      setCookie(quark?.Cookie || '');
+      setSavePath(quark?.SavePath || '/');
+      setQuarkPlayMode(
+        quark?.PlayMode === 'direct_first' ? 'direct_first' : 'transcode_first'
+      );
+      setQuarkMultiThreadPlayback(Boolean(quark?.MultiThreadPlayback));
+      setMobileEnabled(mobile?.Enabled || false);
+      setMobileAuthorization(mobile?.Authorization || '');
+      setBaiduEnabled(config?.NetDiskConfig?.Baidu?.Enabled || false);
+      setBaiduCookie(config?.NetDiskConfig?.Baidu?.Cookie || '');
+      setTianyiEnabled(config?.NetDiskConfig?.Tianyi?.Enabled || false);
+      setTianyiAccount(config?.NetDiskConfig?.Tianyi?.Account || '');
+      setTianyiPassword(config?.NetDiskConfig?.Tianyi?.Password || '');
+      setPan123Enabled(config?.NetDiskConfig?.Pan123?.Enabled || false);
+      setPan123Account(config?.NetDiskConfig?.Pan123?.Account || '');
+      setPan123Password(config?.NetDiskConfig?.Pan123?.Password || '');
+      setUcEnabled(config?.NetDiskConfig?.UC?.Enabled || false);
+      setUcCookie(config?.NetDiskConfig?.UC?.Cookie || '');
+      setUcToken(config?.NetDiskConfig?.UC?.Token || '');
+      setUcSavePath(config?.NetDiskConfig?.UC?.SavePath || '/');
+      setPan115Enabled(config?.NetDiskConfig?.Pan115?.Enabled || false);
+      setPan115Cookie(config?.NetDiskConfig?.Pan115?.Cookie || '');
+    }, 0);
+
+    return () => window.clearTimeout(timer);
   }, [config]);
 
   const handleSave = async () => {

@@ -24,6 +24,7 @@ const ProxyImage: React.FC<ProxyImageProps> = ({
   retryOnError = true,
   loading = 'lazy',
   decoding = 'async',
+  alt = '',
   onError,
   src: _src,
   ...props
@@ -36,7 +37,8 @@ const ProxyImage: React.FC<ProxyImageProps> = ({
   const imgRef = useRef<HTMLImageElement | null>(null);
 
   useEffect(() => {
-    setCurrentSrc(initialSrc);
+    const timer = window.setTimeout(() => setCurrentSrc(initialSrc), 0);
+    return () => window.clearTimeout(timer);
   }, [initialSrc]);
 
   // 主源图片域主页探测：失败则 sticky 走备源（替代原 5s complete 误判）
@@ -82,10 +84,13 @@ const ProxyImage: React.FC<ProxyImageProps> = ({
   };
 
   return (
+    // ProxyImage is the project's custom loader for dynamic proxy and fallback URLs.
+    // eslint-disable-next-line @next/next/no-img-element
     <img
       {...props}
       ref={imgRef}
       src={currentSrc}
+      alt={alt}
       loading={loading}
       decoding={decoding}
       onError={handleError}

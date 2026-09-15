@@ -1,28 +1,59 @@
 'use client';
 
+import type ArtplayerInstance from 'artplayer';
+import type FlvJsModule from 'flv.js';
+import type HlsInstance from 'hls.js';
 import { AlertTriangle,Radio } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { logger } from '@/lib/logger';
+import { getRuntimeConfig } from '@/lib/runtime-config';
 import { useWebLiveSync } from '@/hooks/useWebLiveSync';
 
 import PageLayout from '@/components/PageLayout';
+import ProxyImage from '@/components/ProxyImage';
 
-let Artplayer: any = null;
-let Hls: any = null;
-let flvjs: any = null;
+type WebLiveSource = {
+  key: string;
+  name: string;
+  platform: string;
+  roomId: string;
+  from?: 'config' | 'custom';
+  disabled?: boolean;
+};
+
+type WebLiveStreamResponse = {
+  url: string;
+  originalUrl?: string;
+  name?: string;
+  title?: string;
+  error?: string;
+};
+
+type ManagedVideoElement = HTMLVideoElement & {
+  hls?: HlsInstance;
+  flv?: FlvJsModule.Player;
+};
+
+type ArtplayerConstructor = typeof ArtplayerInstance;
+type HlsConstructor = typeof HlsInstance;
+type FlvJsModuleType = typeof FlvJsModule;
+
+let Artplayer: ArtplayerConstructor | null = null;
+let Hls: HlsConstructor | null = null;
+let flvjs: FlvJsModuleType | null = null;
 
 export default function WebLivePage() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const artRef = useRef<HTMLDivElement | null>(null);
-  const artPlayerRef = useRef<any>(null);
+  const artPlayerRef = useRef<ArtplayerInstance | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadingStage, setLoadingStage] = useState<'loading' | 'fetching' | 'ready'>('loading');
   const [loadingMessage, setLoadingMessage] = useState('正在加载直播源...');
-  const [sources, setSources] = useState<any[]>([]);
-  const [currentSource, setCurrentSource] = useState<any | null>(null);
+  const [sources, setSources] = useState<WebLiveSource[]>([]);
+  const [currentSource, setCurrentSource] = useState<WebLiveSource | null>(null);
   const [videoUrl, setVideoUrl] = useState('');
   const [originalVideoUrl, setOriginalVideoUrl] = useState('');
   const [streamInfo, setStreamInfo] = useState<{ name?: string; title?: string } | null>(null);
@@ -35,20 +66,137 @@ export default function WebLivePage() {
   const [librariesLoaded, setLibrariesLoaded] = useState(false);
   const hasAutoLoadedRef = useRef(false); // 防止重复自动加载
 
+  // 清理播放器资源的统一函数
+  const cleanupPlayer = useCallback(() => {
+    if (artPlayerRef.current) {
+      try {
+        // 先暂停播放
+        const video = artPlayerRef.current.video as ManagedVideoElement;
+        video.pause();
+        video.src = '';
+        video.load();
+
+        // 销毁 HLS 实例
+        if (video.hls) {
+          video.hls.destroy();
+          video.hls = undefined;
+        }
+
+        // 销毁 FLV 实例
+        if (video.flv) {
+          try {
+            if (video.flv.unload) {
+              video.flv.unload();
+            }
+            video.flv.destroy();
+            video.flv = undefined;
+          } catch (flvError) {
+            logger.warn('FLV实例销毁时出错:', flvError);
+            video.flv = undefined;
+          }
+        }
+
+        // 移除所有事件监听器
+        artPlayerRef.current.off('ready');
+        artPlayerRef.current.off('error');
+
+        // 销毁 ArtPlayer 实例
+        artPlayerRef.current.destroy();
+        artPlayerRef.current = null;
+      } catch (err) {
+        logger.warn('清理播放器资源时出错:', err);
+        artPlayerRef.current = null;
+      }
+    }
+  }, []);
+
+  const fetchSources = useCallback(async () => {
+    try {
+      setLoading(true);
+      setLoadingStage('loading');
+      setLoadingMessage('正在加载直播源...');
+      const res = await fetch('/api/web-live/sources');
+      if (res.ok) {
+        setLoadingStage('fetching');
+        const data = await res.json();
+        setSources(data as WebLiveSource[]);
+        setLoadingStage('ready');
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
+    } catch (err) {
+      logger.error('获取直播源失败:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const handleSourceClick = useCallback(async (source: WebLiveSource) => {
+    // 立即清理旧的播放器
+    cleanupPlayer();
+
+    setCurrentSource(source);
+    setIsVideoLoading(true);
+    setErrorMessage(null);
+    setStreamInfo(null);
+
+    // 更新 URL 参数
+    const newSearchParams = new URLSearchParams(searchParams.toString());
+    newSearchParams.set('platform', source.platform);
+    newSearchParams.set('roomId', source.roomId);
+    router.replace(`/web-live?${newSearchParams.toString()}`);
+
+    try {
+      const res = await fetch(`/api/web-live/stream?platform=${source.platform}&roomId=${source.roomId}`);
+      if (res.ok) {
+        const data = await res.json() as WebLiveStreamResponse;
+
+        // 等待 DOM 渲染完成后再设置 videoUrl
+        const waitForDom = () => {
+          if (artRef.current) {
+            setVideoUrl(data.url);
+            setOriginalVideoUrl(data.originalUrl || data.url);
+          } else {
+            requestAnimationFrame(waitForDom);
+          }
+        };
+
+        // 使用 requestAnimationFrame 等待下一帧
+        requestAnimationFrame(waitForDom);
+
+        // 保存主播信息
+        if (data.name || data.title) {
+          setStreamInfo({
+            name: data.name,
+            title: data.title
+          });
+        }
+      } else {
+        const data = await res.json() as Pick<WebLiveStreamResponse, 'error'>;
+        setErrorMessage(data.error || '获取直播流失败');
+      }
+    } catch (err) {
+      logger.error('获取直播流失败:', err);
+      setErrorMessage(err instanceof Error ? err.message : '获取直播流失败');
+    } finally {
+      setIsVideoLoading(false);
+    }
+  }, [cleanupPlayer, router, searchParams]);
+
+  const handleSourceChange = useCallback((sourceKey: string) => {
+    if (!Array.isArray(sources)) return;
+    const source = sources.find(item => item.key === sourceKey);
+    if (source) {
+      handleSourceClick(source);
+    }
+  }, [handleSourceClick, sources]);
+
   // 观影室同步功能
   const webLiveSync = useWebLiveSync({
     currentSourceKey: currentSource?.key || '',
     currentSourceName: currentSource?.name || '',
     currentSourcePlatform: currentSource?.platform || '',
     currentSourceRoomId: currentSource?.roomId || '',
-    onSourceChange: (sourceKey, platform, roomId) => {
-      // 房员接收到直播源切换指令
-      if (!sources || !Array.isArray(sources)) return;
-      const source = sources.find(s => s.key === sourceKey);
-      if (source) {
-        handleSourceClick(source);
-      }
-    },
+    onSourceChange: handleSourceChange,
   });
 
   useEffect(() => {
@@ -56,6 +204,7 @@ export default function WebLivePage() {
     meta.name = 'referrer';
     meta.content = 'no-referrer';
     document.head.appendChild(meta);
+    let configTimer: number | null = null;
 
     if (typeof window !== 'undefined') {
       // 异步加载所有必需的库
@@ -67,42 +216,25 @@ export default function WebLivePage() {
         setLibrariesLoaded(true);
       });
 
-      // 检查网络直播功能是否启用
-      const runtimeConfig = (window as any).RUNTIME_CONFIG;
-      const enabled = runtimeConfig?.WEB_LIVE_ENABLED ?? false;
-      setIsWebLiveEnabled(enabled);
+      configTimer = window.setTimeout(() => {
+        // 检查网络直播功能是否启用
+        const runtimeConfig = getRuntimeConfig();
+        const enabled = runtimeConfig?.WEB_LIVE_ENABLED ?? false;
+        setIsWebLiveEnabled(enabled);
 
-      if (enabled) {
-        fetchSources();
-      } else {
-        setLoading(false);
-      }
+        if (enabled) {
+          void fetchSources();
+        } else {
+          setLoading(false);
+        }
+      }, 0);
     }
 
     return () => {
+      if (configTimer !== null) window.clearTimeout(configTimer);
       document.head.removeChild(meta);
     };
-  }, []);
-
-  const fetchSources = async () => {
-    try {
-      setLoading(true);
-      setLoadingStage('loading');
-      setLoadingMessage('正在加载直播源...');
-      const res = await fetch('/api/web-live/sources');
-      if (res.ok) {
-        setLoadingStage('fetching');
-        const data = await res.json();
-        setSources(data);
-        setLoadingStage('ready');
-        await new Promise(resolve => setTimeout(resolve, 500));
-      }
-    } catch (err) {
-      logger.error('获取直播源失败:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [fetchSources]);
 
   // 当 sources 加载完成后，检查 URL 参数并自动加载对应的频道
   useEffect(() => {
@@ -133,18 +265,21 @@ export default function WebLivePage() {
     // 查找匹配的 source
     const foundSource = sources.find(s => s.platform === needLoadPlatform && s.roomId === needLoadRoomId);
     if (foundSource) {
-      handleSourceClick(foundSource);
+      const timer = window.setTimeout(() => {
+        void handleSourceClick(foundSource);
+      }, 0);
+      return () => window.clearTimeout(timer);
     } else {
       hasAutoLoadedRef.current = false; // 重置标志以便重试
     }
-  }, [sources, librariesLoaded, searchParams]);
+  }, [currentSource?.platform, currentSource?.roomId, handleSourceClick, librariesLoaded, searchParams, sources]);
 
   function m3u8Loader(video: HTMLVideoElement, url: string) {
     if (!Hls) return;
     const hls = new Hls({ debug: false, enableWorker: true, lowLatencyMode: true });
     hls.loadSource(url);
     hls.attachMedia(video);
-    (video as any).hls = hls;
+    (video as ManagedVideoElement).hls = hls;
   }
 
   function flvLoader(video: HTMLVideoElement, url: string) {
@@ -157,53 +292,8 @@ export default function WebLivePage() {
       setVideoUrl('');
     });
     flvPlayer.load();
-    (video as any).flv = flvPlayer;
+    (video as ManagedVideoElement).flv = flvPlayer;
   }
-
-  // 清理播放器资源的统一函数
-  const cleanupPlayer = () => {
-    if (artPlayerRef.current) {
-      try {
-        // 先暂停播放
-        if (artPlayerRef.current.video) {
-          artPlayerRef.current.video.pause();
-          artPlayerRef.current.video.src = '';
-          artPlayerRef.current.video.load();
-        }
-
-        // 销毁 HLS 实例
-        if (artPlayerRef.current.video && artPlayerRef.current.video.hls) {
-          artPlayerRef.current.video.hls.destroy();
-          artPlayerRef.current.video.hls = null;
-        }
-
-        // 销毁 FLV 实例
-        if (artPlayerRef.current.video && (artPlayerRef.current.video as any).flv) {
-          try {
-            if ((artPlayerRef.current.video as any).flv.unload) {
-              (artPlayerRef.current.video as any).flv.unload();
-            }
-            (artPlayerRef.current.video as any).flv.destroy();
-            (artPlayerRef.current.video as any).flv = null;
-          } catch (flvError) {
-            logger.warn('FLV实例销毁时出错:', flvError);
-            (artPlayerRef.current.video as any).flv = null;
-          }
-        }
-
-        // 移除所有事件监听器
-        artPlayerRef.current.off('ready');
-        artPlayerRef.current.off('error');
-
-        // 销毁 ArtPlayer 实例
-        artPlayerRef.current.destroy();
-        artPlayerRef.current = null;
-      } catch (err) {
-        logger.warn('清理播放器资源时出错:', err);
-        artPlayerRef.current = null;
-      }
-    }
-  };
 
   useEffect(() => {
     if (!Artplayer || !Hls || !flvjs || !videoUrl || !artRef.current) return;
@@ -227,14 +317,14 @@ export default function WebLivePage() {
     return () => {
       cleanupPlayer();
     };
-  }, [videoUrl]);
+  }, [cleanupPlayer, videoUrl]);
 
   // 组件卸载时清理
   useEffect(() => {
     return () => {
       cleanupPlayer();
     };
-  }, []);
+  }, [cleanupPlayer]);
 
   // 页面卸载前清理
   useEffect(() => {
@@ -248,61 +338,9 @@ export default function WebLivePage() {
       window.removeEventListener('beforeunload', handleBeforeUnload);
       cleanupPlayer();
     };
-  }, []);
+  }, [cleanupPlayer]);
 
-  const handleSourceClick = async (source: any) => {
-    // 立即清理旧的播放器
-    cleanupPlayer();
-
-    setCurrentSource(source);
-    setIsVideoLoading(true);
-    setErrorMessage(null);
-    setStreamInfo(null);
-
-    // 更新 URL 参数
-    const newSearchParams = new URLSearchParams(searchParams.toString());
-    newSearchParams.set('platform', source.platform);
-    newSearchParams.set('roomId', source.roomId);
-    router.replace(`/web-live?${newSearchParams.toString()}`);
-
-    try {
-      const res = await fetch(`/api/web-live/stream?platform=${source.platform}&roomId=${source.roomId}`);
-      if (res.ok) {
-        const data = await res.json();
-
-        // 等待 DOM 渲染完成后再设置 videoUrl
-        const waitForDom = () => {
-          if (artRef.current) {
-            setVideoUrl(data.url);
-            setOriginalVideoUrl(data.originalUrl || data.url);
-          } else {
-            requestAnimationFrame(waitForDom);
-          }
-        };
-
-        // 使用 requestAnimationFrame 等待下一帧
-        requestAnimationFrame(waitForDom);
-
-        // 保存主播信息
-        if (data.name || data.title) {
-          setStreamInfo({
-            name: data.name,
-            title: data.title
-          });
-        }
-      } else {
-        const data = await res.json();
-        setErrorMessage(data.error || '获取直播流失败');
-      }
-    } catch (err) {
-      logger.error('获取直播流失败:', err);
-      setErrorMessage(err instanceof Error ? err.message : '获取直播流失败');
-    } finally {
-      setIsVideoLoading(false);
-    }
-  };
-
-  const getRoomUrl = (source: any) => {
+  const getRoomUrl = (source: WebLiveSource) => {
     if (source.platform === 'huya') {
       return `https://huya.com/${source.roomId}`;
     }
@@ -548,8 +586,8 @@ export default function WebLivePage() {
                         className='group relative flex items-center justify-center gap-1 w-8 h-8 lg:w-auto lg:h-auto lg:px-2 lg:py-1.5 bg-white hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-600 text-xs font-medium rounded-md transition-all duration-200 shadow-xs hover:shadow-md cursor-pointer overflow-hidden border border-gray-300 dark:border-gray-600 shrink-0'
                         title='PotPlayer'
                       >
-                        <img
-                          src='/players/potplayer.png'
+                        <ProxyImage
+                          originalSrc='/players/potplayer.png'
                           alt='PotPlayer'
                           className='w-4 h-4 shrink-0'
                         />
@@ -569,8 +607,8 @@ export default function WebLivePage() {
                         className='group relative flex items-center justify-center gap-1 w-8 h-8 lg:w-auto lg:h-auto lg:px-2 lg:py-1.5 bg-white hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-600 text-xs font-medium rounded-md transition-all duration-200 shadow-xs hover:shadow-md cursor-pointer overflow-hidden border border-gray-300 dark:border-gray-600 shrink-0'
                         title='VLC'
                       >
-                        <img
-                          src='/players/vlc.png'
+                        <ProxyImage
+                          originalSrc='/players/vlc.png'
                           alt='VLC'
                           className='w-4 h-4 shrink-0'
                         />
@@ -590,8 +628,8 @@ export default function WebLivePage() {
                         className='group relative flex items-center justify-center gap-1 w-8 h-8 lg:w-auto lg:h-auto lg:px-2 lg:py-1.5 bg-white hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-600 text-xs font-medium rounded-md transition-all duration-200 shadow-xs hover:shadow-md cursor-pointer overflow-hidden border border-gray-300 dark:border-gray-600 shrink-0'
                         title='MPV'
                       >
-                        <img
-                          src='/players/mpv.png'
+                        <ProxyImage
+                          originalSrc='/players/mpv.png'
                           alt='MPV'
                           className='w-4 h-4 shrink-0'
                         />
@@ -616,8 +654,8 @@ export default function WebLivePage() {
                         className='group relative flex items-center justify-center gap-1 w-8 h-8 lg:w-auto lg:h-auto lg:px-2 lg:py-1.5 bg-white hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-600 text-xs font-medium rounded-md transition-all duration-200 shadow-xs hover:shadow-md cursor-pointer overflow-hidden border border-gray-300 dark:border-gray-600 shrink-0'
                         title='MX Player'
                       >
-                        <img
-                          src='/players/mxplayer.png'
+                        <ProxyImage
+                          originalSrc='/players/mxplayer.png'
                           alt='MX Player'
                           className='w-4 h-4 shrink-0'
                         />
@@ -637,8 +675,8 @@ export default function WebLivePage() {
                         className='group relative flex items-center justify-center gap-1 w-8 h-8 lg:w-auto lg:h-auto lg:px-2 lg:py-1.5 bg-white hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-600 text-xs font-medium rounded-md transition-all duration-200 shadow-xs hover:shadow-md cursor-pointer overflow-hidden border border-gray-300 dark:border-gray-600 shrink-0'
                         title='nPlayer'
                       >
-                        <img
-                          src='/players/nplayer.png'
+                        <ProxyImage
+                          originalSrc='/players/nplayer.png'
                           alt='nPlayer'
                           className='w-4 h-4 shrink-0'
                         />
@@ -661,8 +699,8 @@ export default function WebLivePage() {
                         className='group relative flex items-center justify-center gap-1 w-8 h-8 lg:w-auto lg:h-auto lg:px-2 lg:py-1.5 bg-white hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-600 text-xs font-medium rounded-md transition-all duration-200 shadow-xs hover:shadow-md cursor-pointer overflow-hidden border border-gray-300 dark:border-gray-600 shrink-0'
                         title='IINA'
                       >
-                        <img
-                          src='/players/iina.png'
+                        <ProxyImage
+                          originalSrc='/players/iina.png'
                           alt='IINA'
                           className='w-4 h-4 shrink-0'
                         />
@@ -777,11 +815,11 @@ export default function WebLivePage() {
                           >
                             <div className='w-12 h-12 bg-gray-200 dark:bg-gray-600 rounded-lg flex items-center justify-center shrink-0 overflow-hidden'>
                               {platform === 'huya' ? (
-                                <img src='https://hd.huya.com/favicon.ico' alt='虎牙' className='w-8 h-8' />
+                                <ProxyImage originalSrc='https://hd.huya.com/favicon.ico' alt='虎牙' className='w-8 h-8' />
                               ) : platform === 'bilibili' ? (
-                                <img src='https://www.bilibili.com/favicon.ico' alt='哔哩哔哩' className='w-8 h-8' />
+                                <ProxyImage originalSrc='https://www.bilibili.com/favicon.ico' alt='哔哩哔哩' className='w-8 h-8' />
                               ) : platform === 'douyin' ? (
-                                <img src='https://lf1-cdn-tos.bytegoofy.com/goofy/ies/douyin_web/public/favicon.ico' alt='抖音' className='w-8 h-8' />
+                                <ProxyImage originalSrc='https://lf1-cdn-tos.bytegoofy.com/goofy/ies/douyin_web/public/favicon.ico' alt='抖音' className='w-8 h-8' />
                               ) : (
                                 <Radio className='w-6 h-6 text-gray-500' />
                               )}

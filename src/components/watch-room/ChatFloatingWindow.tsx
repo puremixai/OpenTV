@@ -95,7 +95,8 @@ export default function ChatFloatingWindow() {
   // 打开聊天窗口时清空未读计数
   useEffect(() => {
     if (isOpen || isMinimized) {
-      setUnreadCount(0);
+      const timer = window.setTimeout(() => setUnreadCount(0), 0);
+      return () => window.clearTimeout(timer);
     }
   }, [isOpen, isMinimized]);
 

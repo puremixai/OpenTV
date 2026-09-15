@@ -80,7 +80,6 @@ type EdgeTtsModule = {
 
 function resolveEdgeTtsModule(): EdgeTtsModule {
   try {
-    // eslint-disable-next-line no-eval
     return eval('require')('edge-tts-universal') as EdgeTtsModule;
   } catch (error) {
     throw new Error(`未安装 edge-tts-universal，请先执行 pnpm add edge-tts-universal。${(error as Error).message}`);

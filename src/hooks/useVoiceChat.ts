@@ -4,6 +4,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { logger } from '@/lib/logger';
+import { getRuntimeConfig } from '@/lib/runtime-config';
 import type { WatchRoomSocket } from '@/lib/watch-room-socket';
 
 import type { Member } from '@/types/watch-room';
@@ -22,9 +23,17 @@ type VoiceStrategy = 'webrtc-fallback' | 'server-only';
 // 获取语音聊天策略配置
 function getVoiceStrategy(): VoiceStrategy {
   if (typeof window === 'undefined') return 'webrtc-fallback';
-  const strategy = (window as any).RUNTIME_CONFIG?.VOICE_CHAT_STRATEGY || 'webrtc-fallback';
+  const strategy = getRuntimeConfig().VOICE_CHAT_STRATEGY || 'webrtc-fallback';
   return strategy as VoiceStrategy;
 }
+
+const ICE_SERVERS = [
+  { urls: 'stun:stun.cloudflare.com:3478' },
+  { urls: 'stun:stun.numb.viagenie.ca:3478' },
+  { urls: 'stun:stun.annatel.net:3478' },
+  { urls: 'stun:stun.l.google.com:19302' },
+  { urls: 'stun:stun1.l.google.com:19302' },
+];
 
 export function useVoiceChat({
   socket,
@@ -48,24 +57,11 @@ export function useVoiceChat({
   const disconnectionTimersRef = useRef<Map<string, NodeJS.Timeout>>(new Map()); // 跟踪连接断开的定时器
 
   // 服务器中转相关
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const mediaRecorderRef = useRef<ScriptProcessorNode | null>(null);
 
   // 使用ref存储回退函数，避免循环依赖
   const switchToServerRelayRef = useRef<(() => void) | null>(null);
   const playRemoteStreamRef = useRef<((peerId: string, stream: MediaStream) => void) | null>(null);
-
-  // ICE服务器配置（使用多个免费的STUN服务器作为备份）
-  const iceServers = [
-    // Cloudflare STUN 服务器（主选，全球 CDN）
-    { urls: 'stun:stun.cloudflare.com:3478' },
-    // Numb/Viagenie（备选，老牌稳定服务）
-    { urls: 'stun:stun.numb.viagenie.ca:3478' },
-    // Annatel（备选）
-    { urls: 'stun:stun.annatel.net:3478' },
-    // Google STUN 服务器（最后备选）
-    { urls: 'stun:stun.l.google.com:19302' },
-    { urls: 'stun:stun1.l.google.com:19302' },
-  ];
 
   // 获取本地麦克风流
   const getLocalStream = useCallback(async () => {
@@ -120,7 +116,7 @@ export function useVoiceChat({
 
   // 创建 RTCPeerConnection
   const createPeerConnection = useCallback((peerId: string) => {
-    const pc = new RTCPeerConnection({ iceServers });
+    const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
 
     // ICE候选收集
     pc.onicecandidate = (event) => {
@@ -469,7 +465,7 @@ export function useVoiceChat({
 
       // 保存引用以便清理
       audioContextRef.current = audioContext;
-      mediaRecorderRef.current = processor as any; // 存储processor用于清理
+      mediaRecorderRef.current = processor; // 存储processor用于清理
 
       logger.debug('[VoiceChat] Server relay started');
     } catch (err) {
@@ -482,7 +478,7 @@ export function useVoiceChat({
   const stopServerRelay = useCallback(() => {
     if (mediaRecorderRef.current) {
       // ScriptProcessorNode没有stop方法，需要断开连接
-      const processor = mediaRecorderRef.current as any;
+      const processor = mediaRecorderRef.current;
       if (processor.disconnect) {
         processor.disconnect();
       }
@@ -678,6 +674,8 @@ export function useVoiceChat({
 
   // 监听喇叭状态变化
   useEffect(() => {
+    const remoteAudioElements = remoteAudioElementsRef.current;
+
     if (isSpeakerEnabled) {
       // 开启喇叭 - 播放所有远程流
       remoteStreamsRef.current.forEach((stream, peerId) => {
@@ -685,7 +683,7 @@ export function useVoiceChat({
       });
     } else {
       // 关闭喇叭 - 静音所有远程流
-      remoteAudioElementsRef.current.forEach(audio => {
+      remoteAudioElements.forEach(audio => {
         audio.muted = true;
       });
     }
@@ -693,7 +691,7 @@ export function useVoiceChat({
     // 恢复音量
     return () => {
       if (isSpeakerEnabled) {
-        remoteAudioElementsRef.current.forEach(audio => {
+        remoteAudioElements.forEach(audio => {
           audio.muted = false;
         });
       }

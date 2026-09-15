@@ -84,15 +84,6 @@ export default function AdvancedRecommendationPage() {
   useEffect(() => {
     if (!selectedSource) return;
 
-    setVideos([]);
-    setPage(1);
-    setHasMore(true);
-    setError('');
-  }, [selectedSource]);
-
-  useEffect(() => {
-    if (!selectedSource) return;
-
     const fetchVideos = async () => {
       setIsLoadingVideos(true);
       try {
@@ -172,7 +163,13 @@ export default function AdvancedRecommendationPage() {
                     value: item.key,
                   }))}
                   active={selectedSource}
-                  onChange={setSelectedSource}
+                  onChange={(nextSource) => {
+                    setSelectedSource(nextSource);
+                    setVideos([]);
+                    setPage(1);
+                    setHasMore(true);
+                    setError('');
+                  }}
                 />
               </div>
             )}

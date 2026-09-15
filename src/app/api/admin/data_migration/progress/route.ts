@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { NextRequest } from 'next/server';
 
@@ -41,7 +40,7 @@ export async function GET(req: NextRequest) {
             const data = JSON.stringify(progress);
             controller.enqueue(encoder.encode(`data: ${data}\n\n`));
           }
-        } catch (error) {
+        } catch {
           // 如果控制器已关闭，清理定时器
           if (interval) clearInterval(interval);
           if (timeout) clearTimeout(timeout);
@@ -59,7 +58,7 @@ export async function GET(req: NextRequest) {
         if (interval) clearInterval(interval);
         try {
           controller.close();
-        } catch (error) {
+        } catch {
           // 控制器可能已经关闭
         }
       }, 30000);

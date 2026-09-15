@@ -8,6 +8,14 @@ import type { Playlist } from '@/lib/music/types';
 
 import MusicLoadingIndicator from '@/components/music/MusicLoadingIndicator';
 
+interface RankingBoard {
+  id: string;
+  name: string;
+  source?: string;
+  updateFrequency?: string;
+  description?: string;
+}
+
 export default function MusicRankingsPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -17,25 +25,29 @@ export default function MusicRankingsPage() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    const source = normalizeSource(searchParams.get('source'));
-    setCurrentSource(source);
-    setLoading(true);
-    fetch(`/api/music/v2/discovery/boards?source=${source}`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.success) {
-          setPlaylists((data.data?.list || []).map((item: any) => ({
-            id: item.id,
-            name: item.name,
-            source: normalizeSource(item.source || data.data?.source || source),
-            updateFrequency: item.updateFrequency || item.description || '',
-          })));
-        } else {
-          setPlaylists([]);
-        }
-      })
-      .catch(() => setPlaylists([]))
-      .finally(() => setLoading(false));
+    const timer = window.setTimeout(() => {
+      const source = normalizeSource(searchParams.get('source'));
+      setCurrentSource(source);
+      setLoading(true);
+      fetch(`/api/music/v2/discovery/boards?source=${source}`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.success) {
+            const list = (data.data?.list || []) as RankingBoard[];
+            setPlaylists(list.map((item) => ({
+              id: item.id,
+              name: item.name,
+              source: normalizeSource(item.source || data.data?.source || source),
+              updateFrequency: item.updateFrequency || item.description || '',
+            })));
+          } else {
+            setPlaylists([]);
+          }
+        })
+        .catch(() => setPlaylists([]))
+        .finally(() => setLoading(false));
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, [searchParams]);
 
   const currentSourceLabel = musicSources.find(s => s.key === currentSource)?.label || '音源';

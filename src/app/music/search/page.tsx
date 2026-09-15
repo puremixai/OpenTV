@@ -10,6 +10,7 @@ import type { Song } from '@/lib/music/types';
 
 import MusicLoadingIndicator from '@/components/music/MusicLoadingIndicator';
 import SongList from '@/components/music/SongList';
+import ProxyImage from '@/components/ProxyImage';
 
 type HotSearchItem = { keyword: string; artist?: string };
 type SearchType = 'song' | 'singer' | 'album';
@@ -65,8 +66,8 @@ function SingerGrid({ singers, onOpen }: { singers: SingerResult[]; onOpen: (sin
         >
           <div className="mb-3 h-20 w-20 overflow-hidden rounded-full bg-white/10 shadow-xs sm:h-24 sm:w-24 md:h-32 md:w-32">
             {singer.picUrl ? (
-              <img
-                src={singer.picUrl}
+              <ProxyImage
+                originalSrc={singer.picUrl}
                 alt={singer.name}
                 className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
                 referrerPolicy="no-referrer"
@@ -99,8 +100,8 @@ function AlbumGrid({ albums, onOpen }: { albums: AlbumResult[]; onOpen: (album: 
         >
           <div className="mb-3 aspect-square overflow-hidden rounded-xl bg-white/10 shadow-md">
             {album.picUrl ? (
-              <img
-                src={album.picUrl}
+              <ProxyImage
+                originalSrc={album.picUrl}
                 alt={album.name}
                 className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                 referrerPolicy="no-referrer"
@@ -147,7 +148,7 @@ export default function MusicSearchPage() {
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
   const userScrolledRef = useRef(false);
 
-  const loadHotSearch = async (forceRefresh = false) => {
+  const loadHotSearch = useCallback(async (forceRefresh = false) => {
     const cacheKey = getHotSearchCacheKey(source);
     let cachedData: HotSearchItem[] | null = null;
     let cacheExpired = true;
@@ -196,7 +197,7 @@ export default function MusicSearchPage() {
         setHotLoading(false);
       }
     }
-  };
+  }, [source]);
 
   const loadSearchPage = useCallback(async (pageNum: number, append = false, signal?: AbortSignal) => {
     if (!q) return;
@@ -237,8 +238,9 @@ export default function MusicSearchPage() {
 
       setPage(pageNum);
       setHasMore(nextHasMore);
-    } catch (error: any) {
-      if (error?.name !== 'AbortError') {
+    } catch (error) {
+      const errorName = error instanceof Error ? error.name : '';
+      if (errorName !== 'AbortError') {
         if (!append) {
           setSongs([]);
           setSingers([]);
@@ -257,26 +259,32 @@ export default function MusicSearchPage() {
   }, [source, q, searchType]);
 
   useEffect(() => {
-    setSelectedSource(source);
-    setSelectedType(searchType);
-    setKeyword(q);
-    void loadHotSearch();
+    let controller: AbortController | null = null;
+    const timer = window.setTimeout(() => {
+      setSelectedSource(source);
+      setSelectedType(searchType);
+      setKeyword(q);
+      void loadHotSearch();
 
-    if (!q) {
-      setSongs([]);
-      setSingers([]);
-      setAlbums([]);
+      if (!q) {
+        setSongs([]);
+        setSingers([]);
+        setAlbums([]);
+        setDetailTitle('');
+        setPage(1);
+        setHasMore(false);
+        return;
+      }
+      controller = new AbortController();
       setDetailTitle('');
       setPage(1);
-      setHasMore(false);
-      return;
-    }
-    const controller = new AbortController();
-    setDetailTitle('');
-    setPage(1);
-    void loadSearchPage(1, false, controller.signal);
-    return () => controller.abort();
-  }, [source, q, searchType, loadSearchPage]);
+      void loadSearchPage(1, false, controller.signal);
+    }, 0);
+    return () => {
+      window.clearTimeout(timer);
+      controller?.abort();
+    };
+  }, [source, q, searchType, loadHotSearch, loadSearchPage]);
 
   useEffect(() => {
     userScrolledRef.current = false;

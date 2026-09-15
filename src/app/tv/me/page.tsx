@@ -20,6 +20,7 @@ import {
   useMemo,
   useRef,
   useState,
+  useSyncExternalStore,
 } from 'react';
 
 import { clearAuthCookie, getAuthInfoFromBrowserCookie } from '@/lib/auth';
@@ -30,6 +31,7 @@ import {
   saveTVPlayerUpDownAction,
 } from '@/lib/tv-preferences';
 
+import ProxyImage from '@/components/ProxyImage';
 import TVLayout from '@/components/tv/TVLayout';
 
 const LOCAL_REMOTE_URL_KEY = 'moontv_local_remote_url';
@@ -82,23 +84,26 @@ function formatDateTime(value?: number) {
 
 export default function TVMePage() {
   const router = useRouter();
-  const [ready, setReady] = useState(false);
-  const [authInfo, setAuthInfo] = useState<AuthInfo | null>(null);
+  const ready = useSyncExternalStore(
+    () => () => undefined,
+    () => true,
+    () => false
+  );
+  const authInfo = useSyncExternalStore(
+    () => () => undefined,
+    () => getAuthInfoFromBrowserCookie() as AuthInfo | null,
+    () => null
+  );
   const [loggingOut, setLoggingOut] = useState(false);
   const [error, setError] = useState('');
   const [localRemoteUrl, setLocalRemoteUrl] = useState('');
-  const [upDownAction, setUpDownAction] = useState<TVPlayerUpDownAction>(
-    DEFAULT_TV_PLAYER_UP_DOWN_ACTION
+  const upDownAction = useSyncExternalStore(
+    () => () => undefined,
+    loadTVPlayerUpDownAction,
+    () => DEFAULT_TV_PLAYER_UP_DOWN_ACTION
   );
   const wakeMenuButtonRef = useRef<HTMLButtonElement | null>(null);
   const volumeButtonRef = useRef<HTMLButtonElement | null>(null);
-
-  useEffect(() => {
-    const auth = getAuthInfoFromBrowserCookie();
-    setAuthInfo(auth);
-    setUpDownAction(loadTVPlayerUpDownAction());
-    setReady(true);
-  }, []);
 
   useEffect(() => {
     const readLocalRemoteUrl = () => {
@@ -116,12 +121,13 @@ export default function TVMePage() {
       setLocalRemoteUrl(detail?.url || '');
     };
 
-    readLocalRemoteUrl();
+    const initialReadTimer = window.setTimeout(readLocalRemoteUrl, 0);
     window.addEventListener('moontv:local-remote-info', onLocalRemoteInfo);
     const timer = window.setInterval(readLocalRemoteUrl, 1500);
 
     return () => {
       window.removeEventListener('moontv:local-remote-info', onLocalRemoteInfo);
+      window.clearTimeout(initialReadTimer);
       window.clearInterval(timer);
     };
   }, []);
@@ -156,7 +162,6 @@ export default function TVMePage() {
   };
 
   const handleUpDownActionChange = (action: TVPlayerUpDownAction) => {
-    setUpDownAction(action);
     saveTVPlayerUpDownAction(action);
   };
 
@@ -317,8 +322,8 @@ export default function TVMePage() {
                   aria-label='局域网遥控地址二维码，手机扫码打开遥控器'
                   className='tv-focusable tv-focusable-light shrink-0 rounded-[32px] border border-white/15 bg-white p-4 shadow-2xl shadow-black/40 outline-hidden'
                 >
-                  <img
-                    src={`/api/auth/qr/image?data=${encodeURIComponent(localRemoteUrl)}`}
+                  <ProxyImage
+                    originalSrc={`/api/auth/qr/image?data=${encodeURIComponent(localRemoteUrl)}`}
                     alt='局域网遥控地址二维码'
                     className='pointer-events-none h-64 w-64 rounded-2xl'
                     draggable={false}

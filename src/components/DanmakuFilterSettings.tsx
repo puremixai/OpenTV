@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
 import { Plus, ToggleLeft, ToggleRight,Trash2, X } from 'lucide-react';
@@ -35,9 +34,12 @@ export default function DanmakuFilterSettings({
   useEffect(() => {
     let animationId: number;
     let timer: NodeJS.Timeout;
+    let animationStateTimer: NodeJS.Timeout;
 
     if (isOpen) {
-      setIsVisible(true);
+      animationStateTimer = setTimeout(() => {
+        setIsVisible(true);
+      }, 0);
       // 使用双重 requestAnimationFrame 确保DOM完全渲染
       animationId = requestAnimationFrame(() => {
         animationId = requestAnimationFrame(() => {
@@ -45,7 +47,9 @@ export default function DanmakuFilterSettings({
         });
       });
     } else {
-      setIsAnimating(false);
+      animationStateTimer = setTimeout(() => {
+        setIsAnimating(false);
+      }, 0);
       // 等待动画完成后隐藏组件
       timer = setTimeout(() => {
         setIsVisible(false);
@@ -58,6 +62,9 @@ export default function DanmakuFilterSettings({
       }
       if (timer) {
         clearTimeout(timer);
+      }
+      if (animationStateTimer) {
+        clearTimeout(animationStateTimer);
       }
     };
   }, [isOpen]);
@@ -112,14 +119,7 @@ export default function DanmakuFilterSettings({
     }
   }, [isVisible]);
 
-  // 加载配置
-  useEffect(() => {
-    if (isOpen) {
-      loadConfig();
-    }
-  }, [isOpen]);
-
-  const loadConfig = async () => {
+  async function loadConfig() {
     setLoading(true);
     try {
       const loadedConfig = await getDanmakuFilterConfig();
@@ -133,7 +133,15 @@ export default function DanmakuFilterSettings({
     } finally {
       setLoading(false);
     }
-  };
+  }
+
+  // 加载配置
+  useEffect(() => {
+    if (isOpen) {
+      const timer = window.setTimeout(() => void loadConfig(), 0);
+      return () => window.clearTimeout(timer);
+    }
+  }, [isOpen]);
 
   // 保存配置
   const handleSave = async () => {
@@ -342,7 +350,6 @@ export default function DanmakuFilterSettings({
                 {config.rules.length}
               </span>
             </div>
-            
             {loading ? (
               <div className="text-center py-12 text-gray-500 dark:text-gray-400">
                 <div className="inline-flex items-center gap-2">

@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { Redis } from '@upstash/redis';
 import type { RedisClientType } from 'redis';

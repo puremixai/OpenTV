@@ -566,7 +566,9 @@ export class M3U8Downloader {
           }
         });
       } else if (task.downloadIndex < task.rangeDownload.endSegment) {
-        !isPause && download();
+        if (!isPause) {
+          download();
+        }
       }
     };
 
@@ -869,7 +871,7 @@ export class M3U8Downloader {
           duration: parseInt(task.durationSecond.toString()),
         });
 
-        transMuxer.on('data', (segment: any) => {
+        transMuxer.on('data', (segment: { initSegment: Uint8Array; data: Uint8Array }) => {
           // 第一个片段需要包含初始化段
           if (index === 0) {
             const combinedData = new Uint8Array(
@@ -879,7 +881,7 @@ export class M3U8Downloader {
             combinedData.set(segment.data, segment.initSegment.byteLength);
             callback(combinedData.buffer);
           } else {
-            callback(segment.data);
+            callback(segment.data.slice().buffer as ArrayBuffer);
           }
         });
 

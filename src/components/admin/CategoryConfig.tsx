@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, no-console, @typescript-eslint/no-non-null-assertion,react-hooks/exhaustive-deps,@typescript-eslint/no-empty-function */
+/* eslint-disable @typescript-eslint/no-explicit-any, no-console */
 
 'use client';
 import {
@@ -73,11 +73,15 @@ export const CategoryConfig = ({
 
   // 初始化
   useEffect(() => {
-    if (config?.CustomCategories) {
-      setCategories(config.CustomCategories);
-      // 进入时重置 orderChanged
-      setOrderChanged(false);
-    }
+    const timer = window.setTimeout(() => {
+      if (config?.CustomCategories) {
+        setCategories(config.CustomCategories);
+        // 进入时重置 orderChanged
+        setOrderChanged(false);
+      }
+    }, 0);
+
+    return () => window.clearTimeout(timer);
   }, [config]);
 
   // 通用 API 请求

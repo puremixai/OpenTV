@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, no-console, @typescript-eslint/no-non-null-assertion,react-hooks/exhaustive-deps,@typescript-eslint/no-empty-function */
+/* eslint-disable no-console,react-hooks/exhaustive-deps */
 
 'use client';
 
@@ -82,14 +82,17 @@ export const CustomAdFilterConfig = ({
 }`;
 
   useEffect(() => {
-    // 从数据库配置读取自定义去广告代码
-    if (config?.SiteConfig?.CustomAdFilterCode) {
-      setAdFilterCode(config.SiteConfig.CustomAdFilterCode);
-    } else {
-      // 如果数据库没有保存的代码，使用默认代码
-      setAdFilterCode(defaultAdFilterCode);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    const timer = window.setTimeout(() => {
+      // 从数据库配置读取自定义去广告代码
+      if (config?.SiteConfig?.CustomAdFilterCode) {
+        setAdFilterCode(config.SiteConfig.CustomAdFilterCode);
+      } else {
+        // 如果数据库没有保存的代码，使用默认代码
+        setAdFilterCode(defaultAdFilterCode);
+      }
+    }, 0);
+
+    return () => window.clearTimeout(timer);
   }, [config]);
 
   // 移除 TypeScript 类型注解，转换为纯 JavaScript

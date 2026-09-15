@@ -15,6 +15,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { PansouLink, PansouSearchResult } from '@/lib/pansou.client';
 
+import ProxyImage from '@/components/ProxyImage';
 import Toast, { ToastProps } from '@/components/Toast';
 
 interface PansouSearchProps {
@@ -201,10 +202,13 @@ export default function PansouSearch({
   >({});
 
   useEffect(() => {
-    setCooldownRemainingMs(0);
-    setCheckStatesByType({});
-    setMagnetHealthMap({});
-    setMagnetHealthCheckingIds({});
+    const timer = window.setTimeout(() => {
+      setCooldownRemainingMs(0);
+      setCheckStatesByType({});
+      setMagnetHealthMap({});
+      setMagnetHealthCheckingIds({});
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, [keyword, triggerSearch]);
 
   useEffect(() => {
@@ -327,8 +331,9 @@ export default function PansouSearch({
       return;
     }
 
-    searchPansou();
-  }, [triggerSearch]); // 只在触发标志变化时搜索，避免 keyword 变化自动搜索
+    const timer = window.setTimeout(() => void searchPansou(), 0);
+    return () => window.clearTimeout(timer);
+  }, [searchPansou, triggerSearch]); // 只在触发标志变化时搜索，避免 keyword 变化自动搜索
 
   const handleCopy = async (text: string, url: string) => {
     try {
@@ -1111,9 +1116,9 @@ export default function PansouSearch({
                     {link.images && link.images.length > 0 && (
                       <div className='mt-3 flex gap-2 overflow-x-auto'>
                         {link.images.map((img, imgIndex) => (
-                          <img
+                          <ProxyImage
                             key={imgIndex}
-                            src={img}
+                            originalSrc={img}
                             alt=''
                             className='h-20 w-auto rounded-sm object-cover'
                             loading='lazy'

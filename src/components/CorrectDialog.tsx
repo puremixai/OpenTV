@@ -55,6 +55,8 @@ interface CorrectDialogProps {
   drawerWidth?: string;
 }
 
+const getCurrentTimestamp = () => Date.now();
+
 export default function CorrectDialog({
   isOpen,
   onClose,
@@ -95,14 +97,17 @@ export default function CorrectDialog({
 
   useEffect(() => {
     if (isOpen) {
-      setSearchQuery(currentTitle);
-      setResults([]);
-      setError('');
-      setSelectedResult(null);
-      setSeasons([]);
-      setShowSeasonSelection(false);
-      setShowManualInput(false);
-      // 不要在这里重置 manualData，因为它会在 handleShowManualInput 中被设置
+      const timer = window.setTimeout(() => {
+        setSearchQuery(currentTitle);
+        setResults([]);
+        setError('');
+        setSelectedResult(null);
+        setSeasons([]);
+        setShowSeasonSelection(false);
+        setShowManualInput(false);
+        // 不要在这里重置 manualData，因为它会在 handleShowManualInput 中被设置
+      }, 0);
+      return () => window.clearTimeout(timer);
     }
   }, [isOpen, currentTitle]);
 
@@ -122,7 +127,8 @@ export default function CorrectDialog({
         seasonName: currentVideo?.seasonName || '',
       };
 
-      setManualData(newManualData);
+      const timer = window.setTimeout(() => setManualData(newManualData), 0);
+      return () => window.clearTimeout(timer);
     }
   }, [showManualInput, isOpen, currentVideo, currentTitle]);
 
@@ -258,7 +264,7 @@ export default function CorrectDialog({
         const storageKey = `xiaoya_correction_${videoKey}`;
         const correctionInfo = {
           ...correctionData,
-          correctedAt: Date.now(),
+          correctedAt: getCurrentTimestamp(),
         };
         localStorage.setItem(storageKey, JSON.stringify(correctionInfo));
         console.log('小雅源纠错信息已存储到 localStorage:', storageKey, correctionInfo);
@@ -368,7 +374,7 @@ export default function CorrectDialog({
         const storageKey = `xiaoya_correction_${videoKey}`;
         const correctionInfo = {
           ...correctionData,
-          correctedAt: Date.now(),
+          correctedAt: getCurrentTimestamp(),
         };
         localStorage.setItem(storageKey, JSON.stringify(correctionInfo));
         console.log('小雅源纠错信息已存储到 localStorage:', storageKey, correctionInfo);

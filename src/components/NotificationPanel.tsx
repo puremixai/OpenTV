@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 
 'use client';
 
@@ -14,6 +13,10 @@ interface NotificationPanelProps {
   isOpen: boolean;
   onClose: () => void;
   onOpenNotificationSettings?: () => void;
+}
+
+function metadataString(value: unknown): string {
+  return value == null ? '' : String(value);
 }
 
 export const NotificationPanel: React.FC<NotificationPanelProps> = ({
@@ -123,16 +126,18 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({
     // 根据通知类型跳转
     if (notification.type === 'favorite_update' && notification.metadata) {
       const { source, id, title } = notification.metadata;
-      router.push(`/play?source=${source}&id=${id}&title=${encodeURIComponent(title)}`);
+      router.push(
+        `/play?source=${metadataString(source)}&id=${metadataString(id)}&title=${encodeURIComponent(metadataString(title))}`
+      );
       onClose();
     } else if (notification.type === 'manga_update' && notification.metadata) {
       const { sourceId, mangaId, title, cover, sourceName } = notification.metadata;
       const params = new URLSearchParams({
-        sourceId,
-        mangaId,
-        title: title || '',
-        cover: cover || '',
-        sourceName: sourceName || '',
+        sourceId: metadataString(sourceId),
+        mangaId: metadataString(mangaId),
+        title: metadataString(title),
+        cover: metadataString(cover),
+        sourceName: metadataString(sourceName),
       });
       router.push(`/manga/detail?${params.toString()}`);
       onClose();
@@ -154,7 +159,8 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({
   // 打开面板时加载通知
   useEffect(() => {
     if (isOpen) {
-      loadNotifications();
+      const timer = window.setTimeout(() => void loadNotifications(), 0);
+      return () => window.clearTimeout(timer);
     }
   }, [isOpen]);
 

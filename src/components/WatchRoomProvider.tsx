@@ -10,7 +10,7 @@ import { useWatchRoom } from '@/hooks/useWatchRoom';
 
 import Toast, { ToastProps } from '@/components/Toast';
 
-import type { ChatMessage, Member, MusicSyncState, Room, RoomType, ScreenState, WatchRoomConfig } from '@/types/watch-room';
+import type { ChatMessage, LiveState, Member, MusicSyncState, PlayState, Room, RoomType, ScreenState, WatchRoomConfig } from '@/types/watch-room';
 
 // Import type from watch-room-socket
 type WatchRoomSocket = import('@/lib/watch-room-socket').WatchRoomSocket;
@@ -56,12 +56,12 @@ interface WatchRoomContextType {
   sendChatMessage: (content: string, type?: 'text' | 'emoji') => void;
 
   // 播放控制（供 play/live 页面使用）
-  updatePlayState: (state: any) => void;
+  updatePlayState: (state: PlayState) => void;
   seekPlayback: (currentTime: number) => void;
   play: () => void;
   pause: () => void;
-  changeVideo: (state: any) => void;
-  changeLiveChannel: (state: any) => void;
+  changeVideo: (state: PlayState) => void;
+  changeLiveChannel: (state: LiveState) => void;
   startScreenShare: (state: ScreenState) => void;
   stopScreenShare: () => void;
   changeMusic: (state: MusicSyncState) => void;
@@ -139,6 +139,7 @@ export function WatchRoomProvider({ children }: WatchRoomProviderProps) {
   }, []);
 
   const watchRoom = useWatchRoom(handleRoomDeleted, handleStateCleared);
+  const { connect, disconnect } = watchRoom;
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -219,16 +220,6 @@ export function WatchRoomProvider({ children }: WatchRoomProviderProps) {
       return;
     }
 
-    if (shouldDisableWatchRoomConnection) {
-      watchRoom.disconnect();
-      setConfig({
-        enabled: false,
-        serverType: 'internal',
-      });
-      setIsEnabled(false);
-      return;
-    }
-
     const loadConfig = async () => {
       try {
         // 使用公共 API 获取观影室配置（不需要管理员权限）
@@ -286,7 +277,7 @@ export function WatchRoomProvider({ children }: WatchRoomProviderProps) {
               setReconnectFailed(false);
             });
 
-            await watchRoom.connect(watchRoomConfig);
+            await connect(watchRoomConfig);
           } else {
             logger.debug('[WatchRoom] Watch room is disabled, skipping connection');
           }
@@ -312,15 +303,29 @@ export function WatchRoomProvider({ children }: WatchRoomProviderProps) {
       }
     };
 
-    loadConfig();
-  }, [isLoggedIn, shouldDisableWatchRoomConnection]); // 添加 isLoggedIn 作为依赖
+    const timer = window.setTimeout(() => {
+      if (shouldDisableWatchRoomConnection) {
+        disconnect();
+        setConfig({
+          enabled: false,
+          serverType: 'internal',
+        });
+        setIsEnabled(false);
+        return;
+      }
+
+      void loadConfig();
+    }, 0);
+
+    return () => window.clearTimeout(timer);
+  }, [connect, disconnect, isLoggedIn, shouldDisableWatchRoomConnection]); // 添加 isLoggedIn 作为依赖
 
   // 仅在 Provider 卸载时断开，避免路由切换时误断开房间连接
   useEffect(() => {
     return () => {
-      watchRoom.disconnect();
+      disconnect();
     };
-  }, []);
+  }, [disconnect]);
 
   const contextValue: WatchRoomContextType = {
     socket: watchRoom.socket,

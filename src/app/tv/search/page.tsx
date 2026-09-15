@@ -6,8 +6,8 @@ import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 
 import { addSearchHistory, getSearchHistory } from '@/lib/db.client';
 import { SearchResult } from '@/lib/types';
-import { processImageUrl } from '@/lib/utils';
 
+import ProxyImage from '@/components/ProxyImage';
 import TVLayout from '@/components/tv/TVLayout';
 
 const hot = ['庆余年', '流浪地球', '繁花', '甄嬛传', '鬼灭之刃', '歌手', '三体', '权力的游戏'];
@@ -202,7 +202,7 @@ export default function TVSearchPage() {
                 >
                   <div className='aspect-2/3 bg-slate-900'>
                     {item.poster ? (
-                      <img src={processImageUrl(item.poster)} alt='' className='h-full w-full object-cover' />
+                      <ProxyImage originalSrc={item.poster} alt='' className='h-full w-full object-cover' />
                     ) : (
                       <div className='flex h-full items-center justify-center'><Film className='h-16 w-16 text-slate-600' /></div>
                     )}

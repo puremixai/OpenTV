@@ -6,6 +6,7 @@ import { useEffect, useMemo, useState } from 'react';
 
 import { Favorite, getAllFavorites, getAllPlayRecords, PlayRecord } from '@/lib/db.client';
 
+import ProxyImage from '@/components/ProxyImage';
 import TVLayout from '@/components/tv/TVLayout';
 
 type LiveSource = { key: string; name: string };
@@ -35,25 +36,27 @@ export default function TVLivePage() {
   const [lastChannel, setLastChannel] = useState<LastLiveChannel | null>(null);
 
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem(TV_LIVE_LAST_CHANNEL_KEY);
-      if (saved) {
-        const parsed = JSON.parse(saved) as Partial<LastLiveChannel>;
-        if (parsed.source && parsed.id && parsed.title) {
-          setLastChannel({
-            source: parsed.source,
-            sourceName: parsed.sourceName || '',
-            id: parsed.id,
-            title: parsed.title,
-            group: parsed.group || '',
-            logo: parsed.logo || '',
-            updatedAt: parsed.updatedAt,
-          });
+    const timer = window.setTimeout(() => {
+      try {
+        const saved = localStorage.getItem(TV_LIVE_LAST_CHANNEL_KEY);
+        if (saved) {
+          const parsed = JSON.parse(saved) as Partial<LastLiveChannel>;
+          if (parsed.source && parsed.id && parsed.title) {
+            setLastChannel({
+              source: parsed.source,
+              sourceName: parsed.sourceName || '',
+              id: parsed.id,
+              title: parsed.title,
+              group: parsed.group || '',
+              logo: parsed.logo || '',
+              updatedAt: parsed.updatedAt,
+            });
+          }
         }
+      } catch {
+        setLastChannel(null);
       }
-    } catch {
-      setLastChannel(null);
-    }
+    }, 0);
 
     fetch('/api/live/sources')
       .then((r) => {
@@ -67,6 +70,7 @@ export default function TVLivePage() {
       })
       .catch((err) => setError(err instanceof Error ? err.message : '获取直播源失败'))
       .finally(() => setLoading(false));
+    return () => window.clearTimeout(timer);
   }, []);
 
   useEffect(() => {
@@ -108,10 +112,12 @@ export default function TVLivePage() {
 
   useEffect(() => {
     if (!source) return;
-    setLoading(true);
-    setError('');
-    setSelectedGroup('全部');
-    setVisibleCount(120);
+    const timer = window.setTimeout(() => {
+      setLoading(true);
+      setError('');
+      setSelectedGroup('全部');
+      setVisibleCount(120);
+    }, 0);
     fetch(`/api/live/channels?source=${encodeURIComponent(source)}`)
       .then((r) => {
         if (r.status === 401 || r.status === 403) throw new Error('无权限访问电视直播，请先登录或检查权限');
@@ -124,6 +130,7 @@ export default function TVLivePage() {
         setError(err instanceof Error ? err.message : '获取频道列表失败');
       })
       .finally(() => setLoading(false));
+    return () => window.clearTimeout(timer);
   }, [source]);
 
   const groups = useMemo(() => ['全部', ...Array.from(new Set(channels.map((c) => c.group || '其他')))], [channels]);
@@ -146,7 +153,7 @@ export default function TVLivePage() {
             className='tv-focusable flex w-full cursor-pointer items-center justify-between gap-6 rounded-3xl bg-white/10 p-6 text-left outline-hidden transition hover:bg-white/14 focus:ring-4 focus:ring-rose-300'
           >
             <div className='flex min-w-0 items-center gap-5'>
-              {lastChannel.logo ? <img src={getLogoUrl(lastChannel.logo, lastChannel.source)} alt='' className='h-20 w-20 rounded-2xl object-contain' /> : <Radio className='h-16 w-16 shrink-0 text-rose-400' />}
+              {lastChannel.logo ? <ProxyImage originalSrc={getLogoUrl(lastChannel.logo, lastChannel.source)} alt='' className='h-20 w-20 rounded-2xl object-contain' /> : <Radio className='h-16 w-16 shrink-0 text-rose-400' />}
               <div className='min-w-0'>
                 <div className='mb-2 flex items-center gap-3 text-2xl font-black text-rose-100'>
                   <Play className='h-7 w-7 fill-current' />
@@ -191,7 +198,7 @@ export default function TVLivePage() {
           <div className='flex gap-4 overflow-x-auto px-2 py-2 scrollbar-none'>
             {quickChannels.map((item) => (
               <button key={`${item.type}-${item.source}-${item.id}`} onClick={() => router.push(`/tv/live/play?source=${encodeURIComponent(item.source)}&id=${encodeURIComponent(item.id)}`)} className='tv-focusable flex min-w-[220px] cursor-pointer items-center gap-3 rounded-3xl bg-white/10 p-4 text-left outline-hidden focus:ring-4 focus:ring-rose-300'>
-                {item.cover ? <img src={item.cover} alt='' className='h-12 w-12 rounded-xl object-contain' /> : <Radio className='h-10 w-10 text-rose-400' />}
+                {item.cover ? <ProxyImage originalSrc={item.cover} alt='' className='h-12 w-12 rounded-xl object-contain' /> : <Radio className='h-10 w-10 text-rose-400' />}
                 <div><div className='line-clamp-1 text-xl font-black'>{item.title}</div><div className='text-base text-slate-400'>{item.type}</div></div>
               </button>
             ))}
@@ -216,7 +223,7 @@ export default function TVLivePage() {
             <div className='grid grid-cols-2 gap-4 lg:grid-cols-4'>
             {visibleChannels.map((channel, index) => (
               <button key={channel.id} onClick={() => router.push(`/tv/live/play?source=${encodeURIComponent(source)}&id=${encodeURIComponent(channel.id)}`)} className='tv-focusable flex min-h-28 cursor-pointer items-center gap-4 rounded-3xl border border-white/10 bg-white/6 p-5 text-left outline-hidden transition hover:bg-white/12 focus:ring-4 focus:ring-rose-300'>
-                {channel.logo ? <img src={getLogoUrl(channel.logo, source)} alt='' className='h-14 w-14 rounded-xl object-contain' /> : <Radio className='h-12 w-12 text-rose-400' />}
+                {channel.logo ? <ProxyImage originalSrc={getLogoUrl(channel.logo, source)} alt='' className='h-14 w-14 rounded-xl object-contain' /> : <Radio className='h-12 w-12 text-rose-400' />}
                 <div><div className='line-clamp-1 text-2xl font-black'>{channel.name}</div><div className='mt-1 text-lg text-slate-400'>#{index + 1} · {channel.group || '直播频道'}</div></div>
               </button>
             ))}

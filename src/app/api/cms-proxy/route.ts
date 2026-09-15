@@ -311,7 +311,7 @@ async function handleOpenListProxy(request: NextRequest) {
         metaInfo = JSON.parse(metainfoJson) as MetaInfo;
         setCachedMetaInfo(metaInfo);
       }
-    } catch (error) {
+    } catch {
       return NextResponse.json(
         { code: 0, msg: 'metainfo 不存在', list: [] },
         { status: 200 }

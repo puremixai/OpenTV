@@ -4,7 +4,13 @@
 
 import { ArrowDownWideNarrow, ArrowUpNarrowWide,Film } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useEffect, useMemo,useRef, useState } from 'react';
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from 'react';
 
 import { base58Encode } from '@/lib/utils';
 
@@ -90,7 +96,11 @@ export default function PrivateLibraryPage() {
   const [xiaoyaSearchKeyword, setXiaoyaSearchKeyword] = useState<string>('');
   const [xiaoyaSearchResults, setXiaoyaSearchResults] = useState<Array<{ name: string; path: string }>>([]);
   const [isSearching, setIsSearching] = useState(false);
-  const [mounted, setMounted] = useState(false);
+  const mounted = useSyncExternalStore(
+    () => () => undefined,
+    () => true,
+    () => false
+  );
   // OpenList 分类筛选（PathMeta 完全匹配后的 category）
   const [openlistCategory, setOpenlistCategory] = useState<string>('all');
   const [openlistCategories, setOpenlistCategories] = useState<string[]>([]);
@@ -105,11 +115,6 @@ export default function PrivateLibraryPage() {
   const scrollLeftRef = useRef(0);
   const isInitializedRef = useRef(false);
   const hasRestoredViewRef = useRef(false);
-
-  // 客户端挂载标记
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   useEffect(() => {
     if (mounted && !runtimeConfig.PRIVATE_LIBRARY_ENABLED) {
@@ -146,22 +151,25 @@ export default function PrivateLibraryPage() {
 
   // 从URL初始化状态，并检查配置自动跳转
   useEffect(() => {
-    const urlSourceParam = searchParams.get('source');
+    const timer = window.setTimeout(() => {
+      const urlSourceParam = searchParams.get('source');
 
-    // 解析source参数
-    const parsed = parseSourceParam(urlSourceParam);
+      // 解析source参数
+      const parsed = parseSourceParam(urlSourceParam);
 
-    // 如果 OpenList 未配置但 Emby 已配置，强制使用 Emby
-    if (!runtimeConfig.OPENLIST_ENABLED && runtimeConfig.EMBY_ENABLED) {
-      setSourceType('emby');
-    } else if (parsed.sourceType) {
-      setSourceType(parsed.sourceType);
-      if (parsed.embyKey) {
-        setEmbyKey(parsed.embyKey);
+      // 如果 OpenList 未配置但 Emby 已配置，强制使用 Emby
+      if (!runtimeConfig.OPENLIST_ENABLED && runtimeConfig.EMBY_ENABLED) {
+        setSourceType('emby');
+      } else if (parsed.sourceType) {
+        setSourceType(parsed.sourceType);
+        if (parsed.embyKey) {
+          setEmbyKey(parsed.embyKey);
+        }
       }
-    }
 
-    isInitializedRef.current = true;
+      isInitializedRef.current = true;
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, [searchParams, runtimeConfig]);
 
   // 获取Emby源列表
@@ -186,7 +194,7 @@ export default function PrivateLibraryPage() {
     if (sourceType === 'emby') {
       fetchEmbySources();
     }
-  }, [sourceType]);
+  }, [embyKey, sourceType]);
 
   // 更新URL参数
   useEffect(() => {
@@ -212,28 +220,34 @@ export default function PrivateLibraryPage() {
   useEffect(() => {
     if (!isInitializedRef.current) return;
 
-    setPage(1);
-    setVideos([]);
-    setHasMore(true);
-    setError('');
-    setSelectedView('all');
-    setOpenlistCategory('all');
-    setLoading(false);
-    setLoadingMore(false);
-    isFetchingRef.current = false;
-  }, [sourceType, embyKey]);
+    const timer = window.setTimeout(() => {
+      setPage(1);
+      setVideos([]);
+      setHasMore(true);
+      setError('');
+      setSelectedView('all');
+      setOpenlistCategory('all');
+      setLoading(false);
+      setLoadingMore(false);
+      isFetchingRef.current = false;
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [searchParams, sourceType, embyKey]);
 
   // 切换分类时重置状态（但不在初始化时执行）
   useEffect(() => {
     if (!isInitializedRef.current) return;
 
-    setPage(1);
-    setVideos([]);
-    setHasMore(true);
-    setError('');
-    setLoading(false);
-    setLoadingMore(false);
-    isFetchingRef.current = false;
+    const timer = window.setTimeout(() => {
+      setPage(1);
+      setVideos([]);
+      setHasMore(true);
+      setError('');
+      setLoading(false);
+      setLoadingMore(false);
+      isFetchingRef.current = false;
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, [selectedView]);
 
   // 切换 OpenList 分类时重置状态
@@ -241,13 +255,16 @@ export default function PrivateLibraryPage() {
     if (!isInitializedRef.current) return;
     if (sourceType !== 'openlist') return;
 
-    setPage(1);
-    setVideos([]);
-    setHasMore(true);
-    setError('');
-    setLoading(false);
-    setLoadingMore(false);
-    isFetchingRef.current = false;
+    const timer = window.setTimeout(() => {
+      setPage(1);
+      setVideos([]);
+      setHasMore(true);
+      setError('');
+      setLoading(false);
+      setLoadingMore(false);
+      isFetchingRef.current = false;
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, [openlistCategory, sourceType]);
 
   // 切换排序时重置状态（但不在初始化时执行）
@@ -255,13 +272,16 @@ export default function PrivateLibraryPage() {
     if (!isInitializedRef.current) return;
     if (sourceType !== 'emby') return;
 
-    setPage(1);
-    setVideos([]);
-    setHasMore(true);
-    setError('');
-    setLoading(false);
-    setLoadingMore(false);
-    isFetchingRef.current = false;
+    const timer = window.setTimeout(() => {
+      setPage(1);
+      setVideos([]);
+      setHasMore(true);
+      setError('');
+      setLoading(false);
+      setLoadingMore(false);
+      isFetchingRef.current = false;
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, [sortBy, sortOrder, sourceType]);
 
   // 获取 Emby 媒体库列表
@@ -303,7 +323,7 @@ export default function PrivateLibraryPage() {
     };
 
     fetchEmbyViews();
-  }, [sourceType, embyKey]);
+  }, [embyKey, searchParams, sourceType]);
 
   // 鼠标拖动滚动
   const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -555,17 +575,6 @@ export default function PrivateLibraryPage() {
       }
     };
   }, [sourceType, embyKey, page, selectedView, xiaoyaPath, runtimeConfig, sortBy, sortOrder, openlistCategory]);
-
-  const handleVideoClick = (video: Video) => {
-    // 构建source参数
-    let sourceParam = sourceType;
-    if (sourceType === 'emby' && embyKey && embySourceOptions.length > 1) {
-      sourceParam = `emby:${embyKey}`;
-    }
-
-    // 跳转到播放页面
-    router.push(`/play?source=${sourceParam}&id=${encodeURIComponent(video.id)}`);
-  };
 
   // 使用 Intersection Observer 监听滚动
   useEffect(() => {
